@@ -1,12 +1,17 @@
 """Column packing: stacks sections top to bottom in columns while they fit a height budget.
 
 `pack_columns` decides which items share a column, from their heights alone. `PackedColumns` owns the column widgets
-and moves sections between them without rebuilding the sections. `DockPanel` and `StrokeBlock` use both, each placing
-the column widgets in its own layout.
+and moves sections between them without rebuilding the sections. `SectionPacker` is what a panel uses: it measures the
+sections, plans and fills the columns within the panel's budget, and plans again when a section opens or closes. Each
+owner places the column widgets in its own layout.
 """
-from typing import Callable, Collection, Sequence
+from contextlib import contextmanager
+from typing import Callable, Collection, Iterator, Sequence
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
+
+from src.ui.layout.panel_fit import fresh_minimum_size, held_weakly
+from src.ui.widget.panel_section import PanelSection
 
 
 def pack_columns(heights: Sequence[int], budget: int, spacing: int, alone: Collection[int] = ()) -> list[list[int]]:
@@ -103,3 +108,106 @@ class PackedColumns:
         parent = widget.parentWidget()
         if parent is not None and parent.layout() is not None:
             parent.layout().removeWidget(widget)
+
+
+class SectionPacker:
+    """Packs a strip's sections into columns, for a panel that opts in to column packing.
+
+    - The owner calls `pack` each time it arranges a strip, and `release` when it leaves one. Between the two the packer
+      is `packing`.
+    - `pack` measures the shown sections with `fresh_minimum_size`, splits them into columns that fit `budget()` with
+      `pack_columns`, and moves them into the columns. Hidden sections take no column.
+    - `budget()` returns the height a column has, or zero before the owner's first plan, which gives every section its
+      own column. Inside `base_measurement` the budget is zero, so a base size measured there doesn't depend on
+      earlier plans.
+    - While packing, opening or closing a section passed to `watch` calls `replan`, since its height decides the
+      columns.
+
+    Bound-method callbacks are held weakly, since the owner owns the packer.
+    """
+
+    def __init__(self, budget: Callable[[], int], replan: Callable[[], None]) -> None:
+        self._budget = held_weakly(budget)
+        self._replan = held_weakly(replan)
+        self._columns = PackedColumns()
+        self._packing = False
+        # Whether the columns are in the owner's layout as the current plan has them:
+        self._placed = False
+        self._base_depth = 0
+
+    @property
+    def packing(self) -> bool:
+        """Whether the owner is arranged as a packing strip: `pack` ran, and `release` hasn't since."""
+        return self._packing
+
+    @property
+    def columns(self) -> list[QWidget]:
+        """Every column widget made so far, for the owner to take out of its layout."""
+        return self._columns.columns
+
+    @property
+    def plan(self) -> list[tuple[QWidget, ...]]:
+        """The sections in each column, as of the last `pack` or `release`."""
+        return self._columns.plan
+
+    def holds(self, widget: QWidget) -> bool:
+        """Returns whether a column is the widget's parent."""
+        return self._columns.holds(widget)
+
+    def budget(self) -> int:
+        """Returns the height a column has: zero inside `base_measurement`, and otherwise the owner's budget."""
+        return 0 if self._base_depth > 0 else self._budget()
+
+    @contextmanager
+    def base_measurement(self) -> Iterator[None]:
+        """Packs every section into its own column while the block runs."""
+        self._base_depth += 1
+        try:
+            yield
+        finally:
+            self._base_depth -= 1
+
+    def watch(self, section: PanelSection) -> None:
+        """Plans again when the section opens or closes while packing."""
+        section.expanded_changed.connect(self._section_toggled)
+
+    def invalidate(self) -> None:
+        """Makes the next `pack` fill the columns even with an unchanged plan, after the owner took them out of its
+        layout."""
+        self._placed = False
+
+    def pack(self, sections: Sequence[QWidget], spacing: int, add_column: Callable[[QWidget], None],
+             clear: Callable[[], None] = lambda: None, alone: Collection[QWidget] = ()) -> bool:
+        """Packs the shown sections, in order, into columns with `spacing` between sections, and returns whether the
+        columns changed.
+
+        While the plan and the placed columns are unchanged, this does nothing. Otherwise `clear` takes `columns`, and
+        anything the owner places after them, out of its layout, and `add_column` adds each column in use in order. A
+        section in `alone` never shares a column, and takes its column's spare height.
+        """
+        self._packing = True
+        shown = [section for section in sections if not section.isHidden()]
+        heights = [fresh_minimum_size(section).height() for section in shown]
+        alone_indices = {index for index, section in enumerate(shown) if section in alone}
+        plan = [tuple(shown[index] for index in column)
+                for column in pack_columns(heights, self.budget(), spacing, alone_indices)]
+        if self._placed and plan == self._columns.plan:
+            return False
+        clear()
+        self._columns.fill(plan, spacing, add_column, alone)
+        self._placed = True
+        return True
+
+    def release(self) -> list[QWidget]:
+        """Leaves packing. Takes the packed sections out of their columns and hides the columns, and returns the
+        sections in their order. The owner removes `columns` from its layout, puts the sections back in it and shows
+        them, since reparenting hides a widget."""
+        released = [section for column in self._columns.plan for section in column]
+        self._columns.release(released)
+        self._packing = False
+        self._placed = False
+        return released
+
+    def _section_toggled(self, _expanded: bool) -> None:
+        if self._packing:
+            self._replan()

@@ -49,7 +49,7 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QL
 
 from src.ui.ink_style import InkStyle
 from src.ui.layout.bordered_widget import DEFAULT_LINE_WIDTH
-from src.ui.layout.column_packing import PackedColumns, pack_columns
+from src.ui.layout.column_packing import PackedColumns, SectionPacker
 from src.ui.layout.flow_layout import FlowWidget
 from src.ui.layout.panel_fit import (REQUIRED, strip_section_max_width, strip_section_min_width, FitItem, FitPlanner,
                                      Orientation, Placement, cross_extent, fresh_minimum_size,
@@ -278,7 +278,7 @@ class DockPanel(QWidget):
         # The room the scroll bar takes across the scrolled body, while the content scrolls:
         self._scroll_bar_room = 0
         self._measuring_final = False
-        self._packed_columns = PackedColumns()
+        self._packer = SectionPacker(self._column_budget, self.refit)
         # Shows a collapsed section's body when its header is clicked, and the section it shows:
         self._section_popover: Optional[PanelPopover] = None
         self._popover_section: Optional[DockSection] = None
@@ -325,7 +325,7 @@ class DockPanel(QWidget):
         self.build(self._layout_model)
         for section in self._layout_model.sections:
             self._section_layout.addWidget(section.widget)
-            section.widget.expanded_changed.connect(self._on_section_toggled)
+            self._packer.watch(section.widget)
             if section.collapsible:
                 section.widget.forced_header_clicked.connect(partial(self._open_section_popover, section))
 
@@ -981,11 +981,6 @@ class DockPanel(QWidget):
             self._section_popover.set_content(None)
         section.widget.restore_body()
 
-    def _on_section_toggled(self, _expanded: bool) -> None:
-        """Plans again when a section opens or closes in a packing strip, since its height decides the columns."""
-        if self._packed:
-            self.refit()
-
     def _set_packed(self, packed: bool) -> None:
         """Enters or leaves column packing. Leaving puts every section back in `section_layout` in order."""
         if packed == self._packed:
@@ -993,17 +988,20 @@ class DockPanel(QWidget):
         self._packed = packed
         if packed:
             return
-        sections = [section.widget for section in self._layout_model.sections if self._packable(section.widget)]
-        self._packed_columns.release(sections)
-        for column in self._packed_columns.columns:
+        released = self._packer.release()
+        for column in self._packer.columns:
             self._section_layout.removeWidget(column)
+        sections = [section.widget for section in self._layout_model.sections if self._packable(section.widget)]
         for widget in sections:
+            PackedColumns.detach(widget)
             self._section_layout.addWidget(widget)
+        for widget in released:
+            widget.show()
 
     def _packable(self, widget: QWidget) -> bool:
         """Whether a section is still where `section_layout` or a packed column holds it."""
         parent = widget.parentWidget()
-        return parent is self._section_holder or parent in self._packed_columns.columns
+        return parent is self._section_holder or self._packer.holds(widget)
 
     def _column_budget(self) -> int:
         """Returns the height a packed column has: the strip's, less the header and footer above and below the scrolled
@@ -1023,15 +1021,11 @@ class DockPanel(QWidget):
         return budget
 
     def _pack_sections(self) -> None:
-        """Splits the shown sections into columns by their measured heights, then moves them into the columns."""
-        widgets = [section.widget for section in self._layout_model.sections
-                   if self._packable(section.widget) and not section.widget.isHidden()]
-        spacing = max(self._section_layout.spacing(), 0)
-        heights = [fresh_minimum_size(widget).height() for widget in widgets]
-        plan = [tuple(widgets[index] for index in column)
-                for column in pack_columns(heights, self._column_budget(), spacing)]
-        if plan == self._packed_columns.plan:
-            return
-        for column in self._packed_columns.columns:
+        """Packs the sections `section_layout` holds into columns by their measured heights."""
+        self._packer.pack([section.widget for section in self._layout_model.sections if self._packable(section.widget)],
+                          max(self._section_layout.spacing(), 0), self._section_layout.addWidget,
+                          self._remove_packed_columns)
+
+    def _remove_packed_columns(self) -> None:
+        for column in self._packer.columns:
             self._section_layout.removeWidget(column)
-        self._packed_columns.fill(plan, spacing, self._section_layout.addWidget)

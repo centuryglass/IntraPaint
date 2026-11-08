@@ -45,7 +45,7 @@ from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.panel.tool_control_panels.stroke_preview import StrokePreview
-from src.ui.layout.column_packing import PackedColumns, pack_columns
+from src.ui.layout.column_packing import SectionPacker
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size, \
     held_weakly
 from src.ui.layout.label_column_layout import normalize_row_label
@@ -250,15 +250,14 @@ class StrokeBlock(QWidget):
         self._options_section = PanelSection(
             COLOR_AND_OPTIONS_SECTION_TITLE if self._paint_widget is not None else OPTIONS_SECTION_TITLE,
             self._options_body)
-        self._stroke_section.expanded_changed.connect(self._on_section_toggled)
-        self._options_section.expanded_changed.connect(self._on_section_toggled)
 
         # The tool's own sections, after the block's, and whether each takes the height the others leave:
         self._tool_sections: list[tuple[PanelSection, bool]] = []
-        # A strip stacks its sections in these columns, within this height:
-        self._packed = PackedColumns()
+        # A strip stacks its sections in columns, within the height `set_column_budget` gives:
         self._column_budget = 0
-        self._columns_placed = False
+        self._packer = SectionPacker(self._get_column_budget, self._emit_section_toggled)
+        self._packer.watch(self._stroke_section)
+        self._packer.watch(self._options_section)
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(COLUMN_SPACING)
@@ -373,7 +372,7 @@ class StrokeBlock(QWidget):
         """Adds a tool's own section after the block's: below them in a side panel, and in the next column in a
         strip. A `stretch` section takes the height the others leave. The owner caps the section's width."""
         self._tool_sections.append((section, stretch))
-        section.expanded_changed.connect(self._on_section_toggled)
+        self._packer.watch(section)
         arrangement = self.arrangement
         self._arrangement = None
         self._arrange(arrangement)
@@ -388,19 +387,26 @@ class StrokeBlock(QWidget):
             self._arrangement = None
             self._arrange(arrangement)
 
+    @property
+    def packer(self) -> SectionPacker:
+        """Packs a strip's sections into columns. Its `base_measurement` gives every section its own column."""
+        return self._packer
+
     def set_column_budget(self, budget: int) -> None:
         """Sets the height a strip's columns stack sections within. It takes effect at the next
         `update_tool_columns`. Zero, the starting value, gives every section its own column."""
         self._column_budget = budget
+
+    def _get_column_budget(self) -> int:
+        return self._column_budget
 
     def update_tool_columns(self) -> None:
         """Packs a strip's columns again, after a tool section is shown or hidden or the column budget changed."""
         if self._arrangement is not None and self._arrangement.orientation == Orientation.STRIP:
             self._place_columns()
 
-    def _on_section_toggled(self, _expanded: bool) -> None:
-        if self._arrangement is not None and self._arrangement.orientation == Orientation.STRIP:
-            self.section_toggled.emit()
+    def _emit_section_toggled(self) -> None:
+        self.section_toggled.emit()
 
     def _stroke_summary(self) -> str:
         return ', '.join(f'{field.label()} {field.value_text()}' for field in self._fields.values())
@@ -418,10 +424,10 @@ class StrokeBlock(QWidget):
         self._arrangement = arrangement
         tool_sections = [section for section, _ in self._tool_sections]
         for widget in (self._stroke_section, self._options_section, self._preview, *tool_sections,
-                       *self._packed.columns):
+                       *self._packer.columns):
             if widget is not None:
                 self._grid.removeWidget(widget)
-        self._columns_placed = False
+        self._packer.invalidate()
         if self._preview is not None:
             self._stroke_layout.removeWidget(self._preview)
         for index in range(self._grid.columnCount()):
@@ -457,10 +463,7 @@ class StrokeBlock(QWidget):
                                                           self._options_section.sizeHint().width()))
             self._place_columns()
             return
-        sections = [self._stroke_section, self._options_section, *tool_sections]
-        released = [section for section in sections if self._packed.holds(section)]
-        shown = [section for section in released if not section.isHidden()]
-        self._packed.release(released)
+        released = self._packer.release()
         # Top-aligned, so Size stays put when a taller preview sits beside the sections. No horizontal alignment,
         # which would size each widget to its hint instead of its column:
         self._grid.addWidget(self._stroke_section, 0, 0, top)
@@ -487,7 +490,7 @@ class StrokeBlock(QWidget):
         if not stretched:
             self._grid.setRowStretch(row, 1)
         # Leaving a packed column hid the sections that were shown:
-        for section in shown:
+        for section in released:
             section.show()
 
     def _place_columns(self) -> None:
@@ -496,29 +499,21 @@ class StrokeBlock(QWidget):
         assert self._arrangement is not None
         tool_sections = [section for section, _ in self._tool_sections]
         stretching = {section for section, stretch in self._tool_sections if stretch}
-        sections = [section for section in (self._stroke_section, self._options_section, *tool_sections)
-                    if not section.isHidden()]
-        spacing = max(self._grid.verticalSpacing(), 0)
-        heights = [fresh_minimum_size(section).height() for section in sections]
-        alone = {index for index, section in enumerate(sections) if section in stretching}
-        plan = [tuple(sections[index] for index in column)
-                for column in pack_columns(heights, self._column_budget, spacing, alone)]
-        if self._columns_placed and plan == self._packed.plan:
-            return
-        self._columns_placed = True
-        for column in self._packed.columns:
-            self._grid.removeWidget(column)
-        if self._preview is not None:
-            self._grid.removeWidget(self._preview)
-        for index in range(self._grid.columnCount()):
-            self._grid.setColumnStretch(index, 0)
-        for index in range(self._grid.rowCount()):
-            self._grid.setRowStretch(index, 0)
         added = 0
+
+        def _clear() -> None:
+            for column in self._packer.columns:
+                self._grid.removeWidget(column)
+            if self._preview is not None:
+                self._grid.removeWidget(self._preview)
+            for index in range(self._grid.columnCount()):
+                self._grid.setColumnStretch(index, 0)
+            for index in range(self._grid.rowCount()):
+                self._grid.setRowStretch(index, 0)
 
         def _add_column(column: QWidget) -> None:
             nonlocal added
-            members = plan[added]
+            members = self._packer.plan[added]
             column.setMaximumWidth(max(section.maximumWidth() for section in members))
             # A stretching section's column spans the spare row too, so it fills the strip's height:
             if any(section in stretching for section in members):
@@ -528,7 +523,9 @@ class StrokeBlock(QWidget):
             self._grid.setColumnStretch(added, CONTROL_COLUMN_STRETCH)
             added += 1
 
-        self._packed.fill(plan, spacing, _add_column, stretching)
+        if not self._packer.pack((self._stroke_section, self._options_section, *tool_sections),
+                                 max(self._grid.verticalSpacing(), 0), _add_column, _clear, stretching):
+            return
         # The preview is decorative, so it follows the tool's own columns:
         if self._preview is not None and self._arrangement.preview == BESIDE:
             self._grid.addWidget(self._preview, 0, added)
@@ -611,7 +608,8 @@ class StrokeToolPanel(QWidget):
         """Returns the minimum size with required items in their smallest forms and no optional items, and keeps that
         arrangement until the next `set_fit_space`."""
         self._follow_orientation(orientation)
-        return self._planner.base_size(orientation)
+        with self._block.packer.base_measurement():
+            return self._planner.base_size(orientation)
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
         """Plans the block and the tool's sections for the space the Tools panel gives the panel."""

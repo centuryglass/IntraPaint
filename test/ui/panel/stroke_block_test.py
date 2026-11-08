@@ -310,7 +310,7 @@ class StrokeBlockTest(IntraPaintTestCase):
         base = self.panel.fit_base_size(STRIP)
         self.panel.set_fit_space(STRIP, QSize(base.width(), 120))
         self.assertEqual(forms[-1], (STRIP, None))
-        self.assertNotIn(section, [packed for column in self.block._packed.plan for packed in column])  # pylint: disable=protected-access
+        self.assertNotIn(section, [packed for column in self.block._packer.plan for packed in column])  # pylint: disable=protected-access
 
 
 class StrokeBlockPackingTest(IntraPaintTestCase):
@@ -324,7 +324,7 @@ class StrokeBlockPackingTest(IntraPaintTestCase):
 
     def _shape(self) -> list[int]:
         """Returns how many sections each column holds."""
-        return [len(column) for column in self.block._packed.plan]  # pylint: disable=protected-access
+        return [len(column) for column in self.block._packer.plan]  # pylint: disable=protected-access
 
     def _plan_strip(self, height: int) -> None:
         self.panel.set_fit_space(STRIP, QSize(1400, height))

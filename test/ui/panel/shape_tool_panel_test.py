@@ -152,13 +152,13 @@ class ShapeToolPanelTest(IntraPaintTestCase):
         # pylint: disable=protected-access
         base = self.panel.fit_base_size(Orientation.STRIP)
         self._arrange(Orientation.STRIP, QSize(1200, base.height()))
-        self.assertEqual([len(column) for column in self.panel._packed.plan], [1, 1, 1])
+        self.assertEqual([len(column) for column in self.panel._packer.plan], [1, 1, 1])
         self._arrange(Orientation.STRIP, QSize(1200, 2000))
-        self.assertLess(len(self.panel._packed.plan), 3)
-        self.assertEqual([section for column in self.panel._packed.plan for section in column],
+        self.assertLess(len(self.panel._packer.plan), 3)
+        self.assertEqual([section for column in self.panel._packer.plan for section in column],
                          list(self.panel._sections))
         self._arrange(Orientation.SIDE, QSize(600, 900))
-        self.assertEqual(self.panel._packed.columns[0].isHidden() if self.panel._packed.columns else True, True)
+        self.assertEqual(self.panel._packer.columns[0].isHidden() if self.panel._packer.columns else True, True)
         for section in self.panel._sections:
             self.assertFalse(section.isHidden())
 

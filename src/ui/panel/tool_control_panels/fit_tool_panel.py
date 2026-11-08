@@ -3,12 +3,17 @@
 The Tools panel measures such a panel at `fit_base_size`, then passes it the space left over with `set_fit_space`.
 Outside a `DockPanel`, the panel plans for its own size when resized. Subclasses create `_planner`, a `FitPlanner` over
 their items, and arrange their widgets in its `apply` callback.
+
+A subclass whose strip stacks sections in columns (`src.ui.layout.column_packing`) uses `_packer`: it passes its
+sections to `_packer.watch` once, calls `_packer.pack` when it arranges a strip and `_packer.release` when it arranges a
+side panel. The column budget is the planned height, and `fit_base_size` measures with every section in its own column.
 """
 from typing import Optional
 
-from PySide6.QtCore import QEvent, QSize
+from PySide6.QtCore import QEvent, QMargins, QSize
 from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 
+from src.ui.layout.column_packing import SectionPacker
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
 from src.ui.layout.panel_fit import (strip_section_max_width, FitPlanner, Orientation, fresh_minimum_size,
                                      orientation_for_size)
@@ -27,12 +32,24 @@ class FitToolPanel(QWidget):
         self._overflow = QWidget()
         self._overflow_layout = QVBoxLayout(self._overflow)
         self._overflow_layout.setContentsMargins(0, 0, 0, 0)
+        self._packer = SectionPacker(self._column_budget, self._refit)
 
     def fit_base_size(self, orientation: Orientation) -> QSize:
-        """Returns the minimum size with required items in their smallest forms and optional items left out, and keeps
-        that arrangement until the next `set_fit_space`."""
+        """Returns the minimum size with required items in their smallest forms, optional items left out, and every
+        packed section in its own column, and keeps that arrangement until the next `set_fit_space`."""
         assert self._planner is not None
-        return self._planner.base_size(orientation)
+        with self._packer.base_measurement():
+            return self._planner.base_size(orientation)
+
+    def _column_budget(self) -> int:
+        """Returns the height a strip's packed columns have: the planned space's less the layout's margins, or zero
+        before the first plan."""
+        space = None if self._planner is None else self._planner.available
+        if space is None:
+            return 0
+        layout = self.layout()
+        margins = layout.contentsMargins() if layout is not None else QMargins()
+        return space.height() - margins.top() - margins.bottom()
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
         """Plans for the space the Tools panel gives the panel."""

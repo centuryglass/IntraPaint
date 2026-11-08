@@ -46,9 +46,8 @@ from src.ui.input_fields.pen_style_combo_box import PenStyleComboBox
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.shape_mode_combo_box import ShapeModeComboBox
 from src.ui.input_fields.slider_field import SliderField
-from src.ui.layout.column_packing import PackedColumns, pack_columns
 from src.ui.layout.label_column_layout import normalize_row_label
-from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.panel.tool_control_panels.shape_preview import ShapePreview
 from src.ui.widget.color_button import ColorButton
@@ -182,9 +181,6 @@ class ShapeToolPanel(FitToolPanel):
         cache = Cache()
         # Whether the Outline rows are paired, which drops the dash pattern's label and hint:
         self._paired = False
-        # Overrides the strip's column height while measuring the base size, which must not depend on earlier plans:
-        self._budget_override: Optional[int] = None
-        self._packed = PackedColumns()
         if _shape_mode(cache.get(Cache.SHAPE_TOOL_MODE)) is None:
             cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.name)
 
@@ -265,7 +261,7 @@ class ShapeToolPanel(FitToolPanel):
         self._grid.setVerticalSpacing(STACK_SPACING)
         self._sections = (self._shape_section, self._outline_section, self._fill_section)
         for section in self._sections:
-            section.expanded_changed.connect(self._section_toggled)
+            self._packer.watch(section)
 
         cache.connect(self, Cache.SHAPE_TOOL_MODE, self._shape_mode_changed)
         cache.connect(self, Cache.SHAPE_TOOL_LINE_JOIN_STYLE, self._join_style_changed)
@@ -467,28 +463,6 @@ class ShapeToolPanel(FitToolPanel):
         """The shape preview."""
         return self._preview
 
-    def fit_base_size(self, orientation: Orientation) -> QSize:
-        """Returns the minimum size with required items in their smallest forms, and every strip section in a column of
-        its own, so the size doesn't depend on earlier plans."""
-        self._budget_override = 0
-        try:
-            return super().fit_base_size(orientation)
-        finally:
-            self._budget_override = None
-
-    def _column_budget(self) -> int:
-        """Returns the height a strip's columns stack sections within: the planned space's, or zero before the first
-        plan, which gives every section its own column."""
-        if self._budget_override is not None:
-            return self._budget_override
-        space = self._planner.available
-        return 0 if space is None else space.height()
-
-    def _section_toggled(self, _expanded: bool) -> None:
-        """Plans again after a section opens or closes in a strip, since its height decides the columns."""
-        if self._orientation == Orientation.STRIP:
-            self._refit()
-
     def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
         shape_form, arrangement, join_form, headers, preview_form = placement
         self._orientation = orientation
@@ -601,11 +575,9 @@ class ShapeToolPanel(FitToolPanel):
         """Places the sections in strip columns, side by side under Shape, or stacked, with the preview after them or
         below them, and spare room last."""
         grid = self._grid
-        released = [section for section in self._sections if self._packed.holds(section)]
-        shown = [section for section in released if not section.isHidden()]
-        if not strip:
-            self._packed.release(released)
-        self._clear(grid, (*self._sections, self._antialias_checkbox, self._preview, *self._packed.columns))
+        released = [] if strip else self._packer.release()
+        self._clear(grid, (*self._sections, self._antialias_checkbox, self._preview, *self._packer.columns))
+        self._packer.invalidate()
         for section in self._sections:
             self._cap_width(section)
         if strip:
@@ -628,7 +600,7 @@ class ShapeToolPanel(FitToolPanel):
                 columns += 1
             grid.setRowStretch(used_rows, SPARE_COLUMN_STRETCH)
             # Leaving a packed column hid the sections that were shown:
-            for section in shown:
+            for section in released:
                 section.show()
         for column in range(columns):
             grid.setColumnStretch(column, CONTENT_COLUMN_STRETCH)
@@ -652,16 +624,13 @@ class ShapeToolPanel(FitToolPanel):
         """Packs a strip's sections into columns that stack them within the column budget, and adds the columns to the
         grid. Returns the number of columns."""
         grid = self._grid
-        heights = [fresh_minimum_size(section).height() for section in self._sections]
-        plan = [tuple(self._sections[index] for index in column)
-                for column in pack_columns(heights, self._column_budget(), STACK_SPACING)]
         added = 0
 
         def _add_column(column: QWidget) -> None:
             nonlocal added
-            column.setMaximumWidth(max(section.maximumWidth() for section in plan[added]))
+            column.setMaximumWidth(max(section.maximumWidth() for section in self._packer.plan[added]))
             grid.addWidget(column, 0, added, Qt.AlignmentFlag.AlignTop)
             added += 1
 
-        self._packed.fill(plan, STACK_SPACING, _add_column)
+        self._packer.pack(self._sections, STACK_SPACING, _add_column)
         return added

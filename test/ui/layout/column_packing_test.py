@@ -1,7 +1,8 @@
-"""Tests the pure column packer and the column widgets that hold packed sections."""
-from PySide6.QtWidgets import QWidget
+"""Tests the pure column packer, the column widgets that hold packed sections, and the packer panels use."""
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
-from src.ui.layout.column_packing import PackedColumns, pack_columns
+from src.ui.layout.column_packing import PackedColumns, SectionPacker, pack_columns
+from src.ui.widget.panel_section import PanelSection
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -59,3 +60,84 @@ class ColumnPackingTest(IntraPaintTestCase):
         packed.release(widgets)
         self.assertEqual(packed.plan, [])
         self.assertEqual(columns[0].layout().count(), 1)
+
+
+class _PackingOwner(QWidget):
+    """A strip of three sections that packs them within `budget`, and counts the plans a toggle asks for."""
+
+    def __init__(self, budget: int) -> None:
+        super().__init__()
+        self.budget = budget
+        self.replans = 0
+        self.row = QHBoxLayout(self)
+        self.sections = [PanelSection(title, QLabel(title)) for title in ('First', 'Second', 'Third')]
+        self.packer = SectionPacker(self.column_budget, self.replan)
+        for section in self.sections:
+            self.row.addWidget(section)
+            self.packer.watch(section)
+
+    def column_budget(self) -> int:
+        """Returns the height a column has."""
+        return self.budget
+
+    def replan(self) -> None:
+        """Counts a plan the packer asked for."""
+        self.replans += 1
+
+    def pack(self) -> bool:
+        """Packs the sections into the row."""
+        def _clear() -> None:
+            for column in self.packer.columns:
+                self.row.removeWidget(column)
+        return self.packer.pack(self.sections, 4, self.row.addWidget, _clear)
+
+
+class SectionPackerTest(IntraPaintTestCase):
+    """Tests `SectionPacker`."""
+
+    def test_budget_decides_the_columns(self) -> None:
+        """Sections stack within the budget, and a zero budget gives each its own column."""
+        owner = _PackingOwner(10000)
+        self.assertTrue(owner.pack())
+        self.assertEqual(owner.packer.plan, [tuple(owner.sections)])
+        owner.budget = 0
+        self.assertTrue(owner.pack())
+        self.assertEqual(owner.packer.plan, [(section,) for section in owner.sections])
+
+    def test_unchanged_plan_leaves_the_columns(self) -> None:
+        """Packing again with the same plan changes nothing, until `invalidate`."""
+        owner = _PackingOwner(10000)
+        owner.pack()
+        self.assertFalse(owner.pack())
+        owner.packer.invalidate()
+        self.assertTrue(owner.pack())
+
+    def test_base_measurement_gives_every_section_a_column(self) -> None:
+        """Inside `base_measurement` the budget is zero, whatever the owner's is."""
+        owner = _PackingOwner(10000)
+        with owner.packer.base_measurement():
+            self.assertEqual(owner.packer.budget(), 0)
+            owner.pack()
+        self.assertEqual(len(owner.packer.plan), 3)
+        self.assertEqual(owner.packer.budget(), 10000)
+
+    def test_hidden_sections_take_no_column(self) -> None:
+        """A hidden section is left out of the plan."""
+        owner = _PackingOwner(0)
+        owner.sections[1].hide()
+        owner.pack()
+        self.assertEqual(owner.packer.plan, [(owner.sections[0],), (owner.sections[2],)])
+
+    def test_toggle_replans_only_while_packing(self) -> None:
+        """Opening or closing a section asks for a plan while packing, and not after `release`."""
+        owner = _PackingOwner(10000)
+        owner.sections[0].set_expanded(False)
+        self.assertEqual(owner.replans, 0)
+        owner.pack()
+        owner.sections[0].set_expanded(True)
+        self.assertEqual(owner.replans, 1)
+        released = owner.packer.release()
+        self.assertEqual(released, owner.sections)
+        self.assertFalse(owner.packer.packing)
+        owner.sections[0].set_expanded(False)
+        self.assertEqual(owner.replans, 1)
