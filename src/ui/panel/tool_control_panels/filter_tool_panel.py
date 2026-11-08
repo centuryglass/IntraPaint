@@ -2,7 +2,7 @@
 import json
 from typing import Any, Callable, Optional
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QGridLayout, QLabel, QWidget
 
 from src.config.cache import Cache
@@ -31,13 +31,11 @@ LABEL_TEXT_FILTER_TYPE = _tr('Filter')
 SECTION_TITLE = _tr('Filter')
 STRENGTH_LABEL = _tr('Strength')
 STRENGTH_TOOLTIP = _tr('How strongly the filter is applied where you paint')
-# Parameters wrap into this many columns in a strip:
-STRIP_PARAMETER_COLUMNS = 3
 
 
 class FilterToolPanel(StrokeToolPanel):
     """Control panel widget for the filter tool: the stroke block with Opacity read as Strength and a preview of
-    the filter, then the filter section."""
+    the filter, then the filter section, capped at the width of the stroke block's columns."""
 
     def __init__(self, filter_list: list[ImageFilter]) -> None:
         self._filters = filter_list
@@ -54,7 +52,6 @@ class FilterToolPanel(StrokeToolPanel):
                                                                  Cache.FILTER_TOOL_OPACITY,
                                                                  Cache.FILTER_TOOL_HARDNESS,
                                                                  Cache.FILTER_TOOL_ANTIALIAS)))
-        self._strip = False
         self._filter_dropdown = create_control_widget(Cache(), Cache.FILTER_TOOL_SELECTED_FILTER)
         self._filter_dropdown.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         for i in range(self._filter_dropdown.count()):
@@ -70,6 +67,7 @@ class FilterToolPanel(StrokeToolPanel):
         self._parameter_layout = QGridLayout(self._parameter_container)
         self._parameter_layout.setContentsMargins(0, 0, 0, 0)
         self._parameter_layout.setSpacing(4)
+        self._parameter_layout.setColumnStretch(0, 1)
         self._current_filter: Optional[ImageFilter] = None
         self._filter_params = json.loads(Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
         # One setter per parameter widget of the current filter, to apply cached values:
@@ -90,25 +88,6 @@ class FilterToolPanel(StrokeToolPanel):
         row_layout.addWidget(self._filter_dropdown, 0, 1)
         row_layout.setColumnStretch(1, 1)
         return row
-
-    def set_orientation(self, orientation: Qt.Orientation) -> None:
-        """Passes the dock's orientation to the block, and wraps parameters into extra columns in a strip."""
-        super().set_orientation(orientation)
-        strip = orientation == Qt.Orientation.Horizontal
-        if strip != self._strip:
-            self._strip = strip
-            # Wrapped parameters get a column width each:
-            self._section.setMaximumWidth(self._column_width * (STRIP_PARAMETER_COLUMNS if strip else 1))
-            self._arrange_parameters()
-
-    def _arrange_parameters(self) -> None:
-        for widget in self._parameter_widgets:
-            self._parameter_layout.removeWidget(widget)
-        columns = STRIP_PARAMETER_COLUMNS if self._strip else 1
-        for index in range(STRIP_PARAMETER_COLUMNS):
-            self._parameter_layout.setColumnStretch(index, 1 if index < columns else 0)
-        for index, widget in enumerate(self._parameter_widgets):
-            self._parameter_layout.addWidget(widget, index // columns, index % columns)
 
     def _filter_from_name(self, filter_name: str) -> ImageFilter:
         matching = [img_filter for img_filter in self._filters if img_filter.get_name() == filter_name]
@@ -190,5 +169,6 @@ class FilterToolPanel(StrokeToolPanel):
             value_signal.connect(_update_param_in_json)
             self._parameter_widgets.append(widget)
             self._parameter_setters.append(set_value)
-        self._arrange_parameters()
+        for row, widget in enumerate(self._parameter_widgets):
+            self._parameter_layout.addWidget(widget, row, 0)
         self._current_filter = img_filter
