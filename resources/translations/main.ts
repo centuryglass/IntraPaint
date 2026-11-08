@@ -9941,7 +9941,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/window/metadata_window.py"/>
-        <source>Remove the EXIF GPS tags. IPTC and XMP data, including any place names, are never saved.</source>
+        <source>Remove the EXIF GPS tags, and the city, state, country and location fields of IPTC and XMP data. Captions, keywords and other text may still name a place.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

@@ -77,8 +77,8 @@ REMOVE_LABEL = _tr('Remove')
 REMOVE_DISABLED_TOOLTIP = _tr('Select a text entry or EXIF tag to remove.')
 NEW_ENTRY_KEY = _tr('new_entry')
 REMOVE_LOCATION_LABEL = _tr('Remove location data')
-REMOVE_LOCATION_TOOLTIP = _tr('Remove the EXIF GPS tags. IPTC and XMP data, including any place names, are never'
-                              ' saved.')
+REMOVE_LOCATION_TOOLTIP = _tr('Remove the EXIF GPS tags, and the city, state, country and location fields of IPTC and'
+                              ' XMP data. Captions, keywords and other text may still name a place.')
 REMOVE_ALL_LABEL = _tr('Remove all metadata')
 REMOVE_ALL_TOOLTIP = _tr('Remove every text entry, EXIF tag and embedded data block.')
 APPLY_CHANGES_LABEL = _tr('Apply changes')
@@ -117,6 +117,7 @@ PART_IPTC = _tr('IPTC')
 
 _PNG_FORMATS = ('PNG', 'APNG')
 _ORA_FORMATS = ('ORA',)
+_JPEG_FORMATS = ('JPEG',)
 _COMMENT_ONLY_FORMATS = ('GIF',)
 _COMMENT_EXIF_FORMATS = ('JP2', 'JPX', 'J2C', 'JPC', 'JPM')
 _MAX_CELL_CHARS = 200
@@ -149,14 +150,14 @@ def save_format_note(metadata: ImageMetadata, file_path: str) -> str:
     file_format = _format_name(file_path)
     parameters = metadata.parameters
     has_comment = metadata.text.get(COMMENT_KEY, '') != ''
-    other_keys = [key for key in metadata.text if key not in (PARAMETERS_KEY, COMMENT_KEY)]
-    has_xmp_block = metadata.format_info.get(XMP_INFO_KEY) is not None and XMP_TEXT_KEY not in metadata.text
+    other_keys = [key for key in metadata.text if key not in (PARAMETERS_KEY, COMMENT_KEY, XMP_TEXT_KEY)]
+    has_xmp = metadata.xmp_packet is not None
     present: dict[str, bool] = {
         PART_PARAMETERS: parameters is not None,
         PART_COMMENT: has_comment and metadata.text.get(COMMENT_KEY) != parameters,
         PART_TEXT_ENTRIES.format(keys=', '.join(other_keys)): len(other_keys) > 0,
         PART_EXIF: len(metadata.exif_entries()) > 0,
-        PART_XMP: has_xmp_block,
+        PART_XMP: has_xmp,
         PART_IPTC: len(metadata.iptc_entries()) > 0,
     }
     present_parts = [part for part, is_present in present.items() if is_present]
@@ -166,15 +167,18 @@ def save_format_note(metadata: ImageMetadata, file_path: str) -> str:
         return NOTE_NONE_KEPT.format(file_format=file_format, formats=formats)
     text_parts = [part for part in present_parts if part not in (PART_EXIF, PART_XMP, PART_IPTC)]
     if file_format in _PNG_FORMATS:
-        kept = text_parts + [PART_EXIF]
+        kept = text_parts + [PART_EXIF, PART_XMP]
     elif file_format in _ORA_FORMATS:
-        kept = text_parts
+        # Only an XMP packet that is a text entry is kept, see `ImageMetadata.to_ora_json`:
+        kept = text_parts + ([PART_XMP] if XMP_TEXT_KEY in metadata.text else [])
     elif file_format in _COMMENT_ONLY_FORMATS:
         kept = [PART_PARAMETERS if parameters is not None else PART_COMMENT]
     elif file_format in _COMMENT_EXIF_FORMATS:
         kept = [PART_PARAMETERS if parameters is not None else PART_COMMENT, PART_EXIF]
+    elif file_format in _JPEG_FORMATS:
+        kept = [PART_PARAMETERS, PART_COMMENT, PART_EXIF, PART_XMP, PART_IPTC]
     else:
-        kept = [PART_PARAMETERS, PART_EXIF]
+        kept = [PART_PARAMETERS, PART_EXIF, PART_XMP]
     kept_parts = [part for part in present_parts if part in kept]
     dropped_parts = [part for part in present_parts if part not in kept]
     if len(dropped_parts) == 0:
@@ -767,8 +771,7 @@ class MetadataWindow(QDialog):
         finally:
             table.blockSignals(False)
         self._all_empty_label.setVisible(len(rows) == 0)
-        self._remove_location_button.setEnabled(any(row.exif is not None and row.exif.ifd == IFD.GPSInfo
-                                                    for row in rows))
+        self._remove_location_button.setEnabled(self._metadata.has_location_data)
         self._show_selected_row()
 
     def _selected_row(self) -> Optional[_MetadataRow]:
@@ -854,7 +857,7 @@ class MetadataWindow(QDialog):
         self._edited()
 
     def _remove_location(self) -> None:
-        self._metadata.remove_gps()
+        self._metadata.remove_location()
         self._edited()
 
     # Other tab:
