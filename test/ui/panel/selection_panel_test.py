@@ -161,6 +161,25 @@ class SelectionPanelsTest(IntraPaintTestCase):
         with patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
             press_key(self.panels['free'], key, modifiers)
 
+    def test_strip_packs_sections_and_side_restacks_them(self) -> None:
+        """A strip at its base height needs more than one column, a tall strip stacks every section in one, and a side
+        panel puts them back in the layout in order, shown. Closing a section in a strip plans again."""
+        # pylint: disable=protected-access
+        panel = self.panels['free']
+        base = panel.fit_base_size(Orientation.STRIP)
+        panel.set_fit_space(Orientation.STRIP, QSize(1200, base.height()))
+        self.assertGreater(len(panel._packer.plan), 1)
+        panel.set_fit_space(Orientation.STRIP, QSize(1200, 2000))
+        self.assertEqual([len(column) for column in panel._packer.plan], [3])
+        with patch.object(panel._planner, 'update', wraps=panel._planner.update) as update:
+            panel._sections[0].set_expanded(False)
+            update.assert_called_once()
+        panel._sections[0].set_expanded(True)
+        panel.set_fit_space(Orientation.SIDE, QSize(400, 2000))
+        sections = [item for item in layout_contents(panel._layout) if isinstance(item, PanelSection)]
+        self.assertEqual(sections, panel._sections)
+        self.assertTrue(all(not section.isHidden() for section in sections))
+
     def test_mode_section_comes_first(self) -> None:
         """Every panel starts with the Mode section, and ends with the Selection section."""
         for name, panel in self.panels.items():

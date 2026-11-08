@@ -15,8 +15,9 @@ The panel is a view over one `TextRect`, which it stores in `Cache.TEXT_TOOL_PAR
 
 The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
 - Side: one column, or two where they fit across, with the preview beside the text box. The panel scrolls.
-- Strip: columns of up to `strip_section_max_width()`: the text box over the preview, Font, Style, then Position and
-  size over Advanced. Section headers are optional.
+- Strip: columns of up to `strip_section_max_width()`: the text box over the preview, Font, then Style, Position and
+  size, and Advanced. Those three stack in a column while they fit the strip's height (`src.ui.layout.column_packing`).
+  Font takes the strip's height for its list, so it always has a column to itself. Section headers are optional.
 - Advanced is optional: a plan without room for it moves it to `overflow_content`, which the Tools panel shows in its
   More popover.
 """
@@ -220,11 +221,10 @@ class TextToolPanel(FitToolPanel):
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(SECTION_SPACING)
-        # The strip's last column, Position and size over Advanced:
-        self._strip_column = QVBoxLayout()
-        self._strip_column.setContentsMargins(0, 0, 0, 0)
         self._sections = (self._font_section, self._style_section, self._position_section, self._advanced_section,
                           self._preview_section)
+        for section in (self._font_section, self._style_section, self._position_section, self._advanced_section):
+            self._packer.watch(section)
 
         cache = Cache()
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._text_color_changed)
@@ -850,24 +850,21 @@ class TextToolPanel(FitToolPanel):
     def _arrange_sections(self, strip: bool, two_columns: bool, preview: bool, advanced: bool) -> None:
         """Places the text box and sections in strip columns, two side columns, or one, with spare room after them."""
         grid = self._grid
-        self._clear(grid, (self._text_box, *self._sections))
-        while self._strip_column.count() > 0:
-            self._strip_column.takeAt(0)
-        grid.removeItem(self._strip_column)
+        released = [] if strip else self._packer.release()
+        self._clear(grid, (self._text_box, *self._sections, *self._packer.columns))
+        self._packer.invalidate()
+        for widget in (self._text_box, *self._sections):
+            self._cap_width(widget)
         if strip:
             # Spare height goes to the preview, to the text box without one, and to the font list:
             grid.addWidget(self._text_box, 0, 0, 1 if preview else 2, 1)
             if preview:
                 grid.addWidget(self._preview_section, 1, 0)
-            grid.addWidget(self._font_section, 0, 1, 2, 1)
-            grid.addWidget(self._style_section, 0, 2, 2, 1, Qt.AlignmentFlag.AlignTop)
-            self._strip_column.addWidget(self._position_section)
+            packed = [self._font_section, self._style_section, self._position_section]
             if advanced:
-                self._strip_column.addWidget(self._advanced_section)
-            self._strip_column.addStretch(1)
-            grid.addLayout(self._strip_column, 0, 3, 2, 1)
+                packed.append(self._advanced_section)
+            used_columns = self._pack_grid_columns(grid, packed, 1, 2, (self._font_section,))
             grid.setRowStretch(1, 1)
-            used_columns = 4
         elif two_columns:
             top = Qt.AlignmentFlag.AlignTop
             grid.addWidget(self._text_box, 0, 0, 1, 1 if preview else 2)
@@ -890,12 +887,10 @@ class TextToolPanel(FitToolPanel):
                 grid.addWidget(widget, row, 0, Qt.AlignmentFlag.AlignTop)
             grid.setRowStretch(len(widgets), 1)
             used_columns = 1
-        if not strip:
-            # The emptied column stays in the grid, which owns it, and takes no space there:
-            grid.addLayout(self._strip_column, 0, used_columns)
-        for column in range(used_columns):
-            grid.setColumnStretch(column, 1)
-        grid.setColumnStretch(used_columns, 0)
+        # Leaving a packed column hid the sections that were shown:
+        for section in released:
+            section.show()
+        self._stretch_grid_columns(grid, used_columns, strip)
         frame = self._text_box.frameWidth() * 2 + int(self._text_box.document().documentMargin() * 2)
         self._text_box.setMinimumHeight(max(self._text_box.fontMetrics().lineSpacing() * TEXT_BOX_MIN_LINES + frame,
                                             self._text_box.minimumSizeHint().height()))
@@ -904,5 +899,3 @@ class TextToolPanel(FitToolPanel):
         self._text_box.setMaximumHeight(QWIDGETSIZE_MAX if strip
                                         else max(self._text_box.minimumHeight(), self._text_box.sizeHint().height()))
         self._font_list.setMaximumHeight(QWIDGETSIZE_MAX if strip else self._font_list.sizeHint().height())
-        for widget in (self._text_box, *self._sections):
-            self._cap_width(widget)

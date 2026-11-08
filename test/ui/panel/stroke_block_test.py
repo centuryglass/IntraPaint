@@ -310,7 +310,7 @@ class StrokeBlockTest(IntraPaintTestCase):
         base = self.panel.fit_base_size(STRIP)
         self.panel.set_fit_space(STRIP, QSize(base.width(), 120))
         self.assertEqual(forms[-1], (STRIP, None))
-        self.assertNotIn(section, [packed for column in self.block._packed.plan for packed in column])  # pylint: disable=protected-access
+        self.assertNotIn(section, [packed for column in self.block._packer.plan for packed in column])  # pylint: disable=protected-access
 
 
 class StrokeBlockPackingTest(IntraPaintTestCase):
@@ -324,7 +324,7 @@ class StrokeBlockPackingTest(IntraPaintTestCase):
 
     def _shape(self) -> list[int]:
         """Returns how many sections each column holds."""
-        return [len(column) for column in self.block._packed.plan]  # pylint: disable=protected-access
+        return [len(column) for column in self.block._packer.plan]  # pylint: disable=protected-access
 
     def _plan_strip(self, height: int) -> None:
         self.panel.set_fit_space(STRIP, QSize(1400, height))
@@ -528,6 +528,17 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         self.assertTrue(preview.is_current)
         panel.source_xy = QPoint(-40, 12)
         self.assertFalse(preview.is_current)
+
+    def test_fill_panel_strip_packs_its_sections(self) -> None:
+        """The fill panel's strip puts Paint and Region side by side at its base height and stacks them in a tall
+        strip."""
+        # pylint: disable=protected-access
+        panel = FillToolPanel()
+        base = panel.fit_base_size(Orientation.STRIP)
+        panel.set_fit_space(Orientation.STRIP, base)
+        self.assertEqual([len(column) for column in panel._packer.plan], [1, 1])
+        panel.set_fit_space(Orientation.STRIP, QSize(base.width(), 2000))
+        self.assertEqual([len(column) for column in panel._packer.plan], [2])
 
     def test_fill_threshold_is_an_integer_field_bound_to_cache(self) -> None:
         """The Color threshold field uses the Cache range as whole numbers and stores a float."""

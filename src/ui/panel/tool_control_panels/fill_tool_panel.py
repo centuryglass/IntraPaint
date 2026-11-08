@@ -1,14 +1,18 @@
-"""Control panel for the fill/paint bucket tool."""
+"""Control panel for the fill/paint bucket tool: a Paint section, then a Region section.
+
+The panel is a `FitToolPanel` with one arrangement per orientation. A side panel stacks the sections. A strip packs them
+into columns (`src.ui.layout.column_packing`), so a short strip puts them side by side and a tall one stacks them.
+"""
 from typing import Optional
 
-from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QCheckBox, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QBoxLayout, QCheckBox, QWidget
 
 from src.config.cache import Cache
 from src.ui.input_fields.number_field import MAX_WIDTH as NUMBER_FIELD_MAX_WIDTH
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.label_column_layout import normalize_row_label
-from src.ui.layout.panel_fit import Orientation, fresh_minimum_size
+from src.ui.layout.panel_fit import FitPlanner, Orientation, Placement
+from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.panel.tool_control_panels.stroke_block import (build_paint_row, build_selection_only_checkbox,
                                                            tool_section)
 from src.ui.input_fields.field_factory import create_control_widget
@@ -59,38 +63,32 @@ def build_sample_merged_checkbox() -> QCheckBox:
     return checkbox
 
 
-class FillToolPanel(QWidget):
-    """Control panel for the fill/paint bucket tool: a Paint section, then a Region section.
+class FillToolPanel(FitToolPanel):
+    """Control panel for the fill/paint bucket tool. Both sections always show, so `overflow_content` stays empty.
 
-    It is a `src.ui.layout.panel_fit.FitContent` with a single arrangement, so the Tools panel counts its minimum width
-    and scrolls instead of squeezing it.
+    Without a host that calls `set_fit_space`, the panel plans for its own size when resized.
     """
 
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout(self)
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, self)
         paint_row = build_paint_row(Cache.LAST_BRUSH_COLOR, Cache.FILL_TOOL_BRUSH_PATTERN, self)
         assert paint_row is not None
         # Keeps the Pattern dropdown's right edge level with the Color threshold slider's:
         paint_row.setMaximumWidth(NUMBER_FIELD_MAX_WIDTH)
-        layout.addWidget(tool_section(PAINT_SECTION_TITLE, paint_row, build_selection_only_checkbox()))
-
         self._threshold_field = build_threshold_field(self)
         sample_merged_checkbox = build_sample_merged_checkbox()
-        layout.addWidget(tool_section(REGION_SECTION_TITLE, self._threshold_field, sample_merged_checkbox))
-        layout.addStretch(1)
-        self._overflow = QWidget()
+        self._sections = (tool_section(PAINT_SECTION_TITLE, paint_row, build_selection_only_checkbox()),
+                          tool_section(REGION_SECTION_TITLE, self._threshold_field, sample_merged_checkbox))
+        for section in self._sections:
+            self._layout.addWidget(section)
+            self._packer.watch(section)
+        self._layout.addStretch(1)
+        self._planner = FitPlanner([], self._apply_fit, self._measure_fit)
 
-    def fit_base_size(self, _orientation: Orientation) -> QSize:
-        """Returns the panel's minimum size. Both sections always show."""
-        return fresh_minimum_size(self)
-
-    def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
-        """Does nothing, since the arrangement doesn't depend on the space."""
-
-    def overflow_content(self) -> QWidget:
-        """Returns an empty widget, since no control is ever left out."""
-        return self._overflow
+    def _apply_fit(self, orientation: Orientation, _placement: Placement) -> None:
+        self._orientation = orientation
+        self._arrange_box_sections(self._layout, self._sections, orientation)
 
     @property
     def threshold_field(self) -> SliderField:
