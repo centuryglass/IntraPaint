@@ -63,6 +63,17 @@ OBJECT_INFO = {
 }
 
 
+# The largest seed ComfyUI's samplers accept:
+MAX_COMFYUI_SEED = 2 ** 64 - 1
+
+
+def _sampler_seed(arguments: dict[str, Any]) -> int:
+    """Returns the seed of the one node in a queued workflow that has one."""
+    seeds = [node['inputs']['seed'] for node in arguments['body']['prompt'].values() if 'seed' in node['inputs']]
+    assert len(seeds) == 1, seeds
+    return seeds[0]
+
+
 class _CancelledWhileWaitingHandle(GenerationHandle):
     """A job that the generator cancels while waiting on it, reporting it as cancelled once it is."""
 
@@ -166,6 +177,17 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.BATCH_SIZE, 1)
         self.generator.upscale_image(self.image_stack.qimage(), UPSCALE_SIZE, self.status, self.status)
         self.assertEqual(self.status.emitted[-1].size(), UPSCALE_SIZE)
+
+    def test_batch_seeds_wrap_at_comfyui_seed_limit(self) -> None:
+        """Batches after one using the largest seed ComfyUI accepts continue from 0, and the first seed is reported."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
+        Cache().set(Cache.SEED, str(MAX_COMFYUI_SEED))
+        Cache().set(Cache.BATCH_COUNT, 3)
+        self.run_generate()
+        queued_seeds = [_sampler_seed(request.arguments) for request in self.backend.posts()
+                        if request.endpoint == ComfyEndpoints.PROMPT]
+        self.assertEqual(queued_seeds, [MAX_COMFYUI_SEED, 0, 1])
+        self.assertEqual(self.status.emitted[-1], {'seed': str(MAX_COMFYUI_SEED)})
 
     def test_txt2img(self) -> None:
         """Text to image queues one workflow per batch, with consecutive seeds and no uploads."""
