@@ -389,6 +389,30 @@ class MetadataFileTest(IntraPaintTestCase):
         save_image_with_metadata(self.image, self._path('saved.jpg'), metadata)
         self.assertNotIn(ExifTags.Base.ImageDescription, metadata.exif)
 
+    def test_parameters_written_to_ifd0_description_only(self) -> None:
+        """JPEG, WebP and TIFF saves write the parameters to the IFD0 ImageDescription, and drop a stale Exif IFD copy."""
+        for extension in ('jpg', 'webp', 'tiff'):
+            with self.subTest(extension=extension):
+                metadata = ImageMetadata({PARAMETERS_KEY: self.PARAMETERS},
+                                         _exif({IFD.Exif: {ExifTags.Base.ImageDescription: 'stale',
+                                                           ExifTags.Base.ExposureTime: 0.01}}))
+                path = self._path(f'description.{extension}')
+                save_image_with_metadata(self.image, path, metadata)
+                _, loaded = load_image(path)
+                self.assertEqual(self.PARAMETERS, loaded.exif[ExifTags.Base.ImageDescription])
+                self.assertNotIn(ExifTags.Base.ImageDescription, loaded.exif.get_ifd(IFD.Exif))
+                self.assertEqual(self.PARAMETERS, loaded.parameters)
+
+    def test_non_ascii_parameters_survive_exif_saves(self) -> None:
+        """JPEG, WebP and TIFF saves keep non-ASCII characters in the parameters."""
+        parameters = 'caf\u00e9, \u2605\nSteps: 20, Sampler: Euler a, Seed: 1'
+        for extension in ('jpg', 'webp', 'tiff'):
+            with self.subTest(extension=extension):
+                path = self._path(f'unicode.{extension}')
+                save_image_with_metadata(self.image, path, ImageMetadata({PARAMETERS_KEY: parameters}))
+                _, loaded = load_image(path)
+                self.assertEqual(parameters, loaded.parameters)
+
     def test_user_comment_parameters_load(self) -> None:
         """JPEG and WebP files with A1111's UserComment parameters load them."""
         for extension in ('jpg', 'webp'):
