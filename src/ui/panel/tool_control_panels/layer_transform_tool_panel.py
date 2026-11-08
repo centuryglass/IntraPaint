@@ -16,6 +16,8 @@ The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the To
 - Side: one column, with the buttons under the fields and the preview under them.
 - Strip: a geometry column, then the preview. The buttons go under the fields when the strip's height holds both, and
   in a column of their own beside them otherwise. A short strip puts the block's position and size rows on one line.
+  The panel has no sections to collapse, and the buttons' place is a planned form, so it doesn't use column packing
+  (`src.ui.layout.column_packing`).
 """
 from typing import Optional
 

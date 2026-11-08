@@ -4,8 +4,9 @@ The Mode section holds the shared `Cache.SELECTION_MODE` bar and one line naming
 panel registers `KeyConfig.TOOL_ACTION_HOTKEY` to cycle the mode while its tool is active. Subclasses add their
 sections with `insert_into_layout`, which places them between Mode and Selection.
 
-The panel is a `src.ui.layout.panel_fit.FitContent`. Sections stack in a side panel and stand in columns in a strip. The
-Selection buttons take a row, or a column when the row doesn't fit. The modifier hint is optional: a plan without room
+The panel is a `FitToolPanel`. Sections stack in a side panel. A strip packs them into columns
+(`src.ui.layout.column_packing`), stacking sections in a column while they fit the strip's height. The Selection
+buttons take a row, or a column when the row doesn't fit. The modifier hint is optional: a plan without room
 for it moves it to `overflow_content`, which the Tools panel shows in its More popover. The selection's bounds (two
 read-only lines under the Selection buttons) are optional too, and are left out before the hint is.
 """
@@ -14,7 +15,7 @@ from weakref import ref
 
 from PySide6.QtCore import Qt, QSize, QPoint, QEvent, QRect
 from PySide6.QtGui import QIcon, QPixmap, QPalette, QShowEvent
-from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QLayout, QLabel, QBoxLayout
+from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QLabel, QBoxLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -23,7 +24,8 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.input_fields.selection_mode_bar import SelectionModeBar, MODE_ORDER, MODE_LABELS, modifier_keys_text
-from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
+from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.panel.tool_control_panels.stroke_block import tool_section
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.panel_section import PanelSection
@@ -81,7 +83,7 @@ _HINT_ITEM = FitItem(1)
 _BOUNDS_ITEM = FitItem(2)
 
 
-class SelectionPanel(QWidget):
+class SelectionPanel(FitToolPanel):
     """Base control panel for selection editing tools.
 
     The line under the mode bar names the add and subtract modifiers, unless `set_mode_hint` replaces it. The Selection
@@ -97,12 +99,8 @@ class SelectionPanel(QWidget):
         self._selection_tool = ref(selection_tool)
         self._layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self._insert_index = 0
-        self._space: Optional[QSize] = None
-        self._planning = False
-        self._overflow = QWidget()
-        self._overflow_layout = QVBoxLayout(self._overflow)
-        self._overflow_layout.setContentsMargins(0, 0, 0, 0)
+        # Mode, the tool's sections, then Selection:
+        self._sections: list[PanelSection] = []
         cache = Cache()
 
         # Mode section:
@@ -117,8 +115,6 @@ class SelectionPanel(QWidget):
         self._mode_layout.addWidget(self._hint_label)
         self._mode_section = PanelSection(MODE_SECTION_TITLE, mode_body)
         self._mode_section.add_header_widget(KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self))
-        self._layout.addWidget(self._mode_section)
-        self._insert_index = 1
 
         def _update_mode_title(_=None) -> None:
             self._mode_section.set_title(MODE_SECTION_TITLE_WITH_MODE.format(
@@ -178,7 +174,9 @@ class SelectionPanel(QWidget):
         bounds_layout.addWidget(self._bounds_position_label)
         bounds_layout.addWidget(self._bounds_size_label)
         self._selection_section = tool_section(SELECTION_SECTION_TITLE, self._actions_layout, self._bounds_view)
-        self._layout.addWidget(self._selection_section)
+        for section in (self._mode_section, self._selection_section):
+            self._add_section(section, len(self._sections))
+        self._layout.addStretch(1)
         self._update_bounds_width()
         self._refresh_bounds()
         selection_layer.content_changed.connect(self._handle_content_changed)
@@ -232,9 +230,6 @@ class SelectionPanel(QWidget):
         if event.type() == QEvent.Type.FontChange:
             self._update_bounds_width()
 
-    def _measure_fit(self) -> QSize:
-        return fresh_minimum_size(self)
-
     @staticmethod
     def _action_button(label: str, icon_path: str, tooltip: str) -> QPushButton:
         button = QPushButton(label)
@@ -280,25 +275,10 @@ class SelectionPanel(QWidget):
             hint.setHeight(max(hint.height(), self._layout.totalHeightForWidth(hint.width())))
         return hint
 
-    def fit_base_size(self, orientation: Orientation) -> QSize:
-        """Returns the minimum size without the optional hint, and keeps that arrangement until the next
-        `set_fit_space`."""
-        return self._planner.base_size(orientation)
-
-    def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
-        """Plans for the space the Tools panel gives the panel."""
-        self._space = QSize(size)
-        self._planner.update(orientation, size)
-
-    def overflow_content(self) -> QWidget:
-        """Returns the widget holding the modifier hint and the bounds while the plan leaves them out."""
-        return self._overflow
-
     def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
+        self._orientation = orientation
         self._actions_layout.setDirection(QBoxLayout.Direction.LeftToRight if placement[0] == 0
                                           else QBoxLayout.Direction.TopToBottom)
-        self._layout.setDirection(QBoxLayout.Direction.TopToBottom if orientation == Orientation.SIDE
-                                  else QBoxLayout.Direction.LeftToRight)
         if placement[1] is None:
             self._overflow_layout.addWidget(self._hint_label)
         else:
@@ -309,31 +289,19 @@ class SelectionPanel(QWidget):
             self._selection_section.body.layout().addWidget(self._bounds_view)
         # Moving a widget to another parent hides it:
         self._bounds_view.show()
+        self._arrange_box_sections(self._layout, self._sections, orientation)
 
-    def event(self, event: QEvent) -> bool:
-        """Forgets the host's space when the panel moves to a new parent, and plans for its own size when resized
-        without a host."""
-        if event.type() == QEvent.Type.ParentChange:
-            self._space = None
-        handled = super().event(event)
-        # Trial placements can resize the panel and re-enter this handler:
-        if event.type() == QEvent.Type.Resize and self._space is None and not self._planning:
-            self._planning = True
-            try:
-                self._planner.update(Orientation.SIDE, self.size())
-            finally:
-                self._planning = False
-        return handled
+    def _add_section(self, section: PanelSection, index: int) -> None:
+        self._sections.insert(index, section)
+        self._packer.watch(section)
+        if not self._packer.packing:
+            self._layout.insertWidget(index, section)
 
-    def insert_into_layout(self, layout_item: QWidget | QLayout, stretch=0) -> None:
-        """Insert an item into the layout after the Mode section and previously inserted content, above the Selection
-           section."""
-        if isinstance(layout_item, QWidget):
-            self._layout.insertWidget(self._insert_index, layout_item, stretch=stretch)
-        else:
-            assert isinstance(layout_item, QLayout)
-            self._layout.insertLayout(self._insert_index, layout_item, stretch=stretch)
-        self._insert_index += 1
+    def insert_into_layout(self, section: PanelSection) -> None:
+        """Adds a tool's section after the Mode section and previously inserted sections, above the Selection
+        section."""
+        self._add_section(section, len(self._sections) - 1)
+        self._refit()
 
     @property
     def mode_bar(self) -> SelectionModeBar:

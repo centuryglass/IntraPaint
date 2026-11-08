@@ -199,10 +199,10 @@ class SectionPacker:
         return True
 
     def release(self) -> list[QWidget]:
-        """Leaves packing. Takes the packed sections out of their columns and hides the columns, and returns the
-        sections in their order. The owner removes `columns` from its layout, puts the sections back in it and shows
-        them, since reparenting hides a widget."""
-        released = [section for column in self._columns.plan for section in column]
+        """Leaves packing. Takes the sections still in a column out of it and hides the columns, and returns those
+        sections in order. The owner removes `columns` from its layout, puts the sections back in it and shows them,
+        since reparenting hides a widget. A section the owner moved elsewhere since the last `pack` stays there."""
+        released = [section for column in self._columns.plan for section in column if self.holds(section)]
         self._columns.release(released)
         self._packing = False
         self._placed = False

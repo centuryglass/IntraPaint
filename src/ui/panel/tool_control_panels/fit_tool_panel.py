@@ -8,12 +8,12 @@ A subclass whose strip stacks sections in columns (`src.ui.layout.column_packing
 sections to `_packer.watch` once, calls `_packer.pack` when it arranges a strip and `_packer.release` when it arranges a
 side panel. The column budget is the planned height, and `fit_base_size` measures with every section in its own column.
 """
-from typing import Optional
+from typing import Collection, Optional, Sequence
 
-from PySide6.QtCore import QEvent, QMargins, QSize
-from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
+from PySide6.QtCore import QEvent, QMargins, QSize, Qt
+from PySide6.QtWidgets import QBoxLayout, QGridLayout, QVBoxLayout, QWidget
 
-from src.ui.layout.column_packing import SectionPacker
+from src.ui.layout.column_packing import PackedColumns, SectionPacker
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
 from src.ui.layout.panel_fit import (strip_section_max_width, FitPlanner, Orientation, fresh_minimum_size,
                                      orientation_for_size)
@@ -94,6 +94,67 @@ class FitToolPanel(QWidget):
                 self._planner.update(orientation_for_size(self.size(), self._orientation), self.size(), force)
         finally:
             self._planning = False
+
+    def _arrange_box_sections(self, layout: QBoxLayout, sections: Sequence[QWidget], orientation: Orientation) -> None:
+        """Stacks sections top to bottom in a side panel, or packs a strip's into columns of up to
+        `strip_section_max_width()` each. Spare room goes after them. `layout` holds only the sections, in order, and
+        the spare room."""
+        if orientation == Orientation.STRIP:
+            layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            if not self._packer.packing:
+                self._take_items(layout)
+            for section in sections:
+                self._cap_width(section)
+
+            def _add_column(column: QWidget) -> None:
+                members = self._packer.plan[layout.count()]
+                column.setMaximumWidth(max(section.maximumWidth() for section in members))
+                layout.addWidget(column)
+
+            if self._packer.pack(sections, max(layout.spacing(), 0), _add_column, lambda: self._take_items(layout)):
+                layout.addStretch(1)
+            return
+        layout.setDirection(QBoxLayout.Direction.TopToBottom)
+        if not self._packer.packing:
+            return
+        released = self._packer.release()
+        self._take_items(layout)
+        for section in sections:
+            PackedColumns.detach(section)
+            section.setMaximumWidth(QWIDGETSIZE_MAX)
+            layout.addWidget(section)
+        layout.addStretch(1)
+        # Leaving a packed column hid the sections that were shown:
+        for section in released:
+            section.show()
+
+    @staticmethod
+    def _take_items(layout: QBoxLayout) -> None:
+        """Takes every item out of a layout, leaving its widgets where they are."""
+        while layout.count() > 0:
+            layout.takeAt(0)
+
+    def _pack_grid_columns(self, grid: QGridLayout, sections: Sequence[QWidget], first_column: int = 0,
+                           row_span: int = 1, alone: Collection[QWidget] = ()) -> int:
+        """Packs a strip's sections into columns in the grid's first row, from `first_column`, and returns the column
+        after the last. Each column spans `row_span` rows and is as wide as its widest section allows. A column holding
+        a section in `alone` takes the rows' height, and the others sit at the top.
+
+        The caller took `_packer.columns` out of the grid first, and calls `_packer.invalidate` when it did."""
+        added = first_column
+
+        def _add_column(column: QWidget) -> None:
+            nonlocal added
+            members = self._packer.plan[added - first_column]
+            column.setMaximumWidth(max(section.maximumWidth() for section in members))
+            if any(section in alone for section in members):
+                grid.addWidget(column, 0, added, row_span, 1)
+            else:
+                grid.addWidget(column, 0, added, row_span, 1, Qt.AlignmentFlag.AlignTop)
+            added += 1
+
+        self._packer.pack(sections, max(grid.verticalSpacing(), 0), _add_column, alone=alone)
+        return first_column + len(self._packer.plan)
 
     @staticmethod
     def _body_grid(body: QWidget) -> QGridLayout:

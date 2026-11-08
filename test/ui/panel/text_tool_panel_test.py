@@ -111,10 +111,10 @@ class TextToolPanelTest(IntraPaintTestCase):
         self.assertLess(_row(self.panel._font_section), _row(self.panel._style_section))
 
     def test_short_strip_uses_combo_and_overflow(self) -> None:
-        """A strip too short for the font list shows the font combo and icon-only box fit, moves Advanced to the
-        overflow content and hides the preview. A tall strip shows them all."""
+        """A strip at its base size shows the font combo and icon-only box fit, moves Advanced to the overflow content
+        and hides the preview. A tall strip shows them all."""
         base = self.panel.fit_base_size(Orientation.STRIP)
-        self._arrange(Orientation.STRIP, QSize(1400, base.height()))
+        self._arrange(Orientation.STRIP, base)
         self.assertTrue(self.panel.font_list.isHidden())
         self.assertFalse(self.panel.font_combo.isHidden())
         self.assertEqual(self.panel.box_fit_control.display_mode, DisplayMode.ICON)

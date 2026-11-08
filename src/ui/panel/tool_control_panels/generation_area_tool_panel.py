@@ -20,8 +20,9 @@ The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the To
 - Side: one column. The geometry block takes one row where that fits across. Presets keep a label column where the
   Fit buttons fit beside it, and otherwise put each label over its row. Buttons that don't fit in one row go in a
   two-column grid.
-- Strip: Position and size, Size presets and Sent to generator are columns. A short strip puts the geometry block on
-  one row, and section headers are optional.
+- Strip: Position and size, Size presets and Sent to generator fill columns in that order. A column stacks sections
+  while they fit the strip's height (`src.ui.layout.column_packing`). A short strip puts the geometry block on one
+  row, and section headers are optional.
 - Recent and Custom are optional, then Sent to generator: a plan without room for them moves them to
   `overflow_content`, which the Tools panel shows in its More popover.
 """
@@ -191,6 +192,8 @@ class GenerationAreaToolPanel(FitToolPanel):
         self._generator_section.bind_summary(self.resolution_summary, self._area_shown)
 
         self._sections = (self._position_section, self._presets_section, self._generator_section)
+        for section in self._sections:
+            self._packer.watch(section)
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setSpacing(SECTION_SPACING)
@@ -550,7 +553,11 @@ class GenerationAreaToolPanel(FitToolPanel):
         """Places the sections in strip columns or one side column, with spare room after them. The Sent to generator
         section goes to the overflow when the plan leaves it out while it is shown."""
         grid = self._grid
-        self._clear(grid, self._sections)
+        released = [] if strip else self._packer.release()
+        self._clear(grid, (*self._sections, *self._packer.columns))
+        self._packer.invalidate()
+        for section in self._sections:
+            self._cap_width(section)
         generator_in_panel = generator_placed or not self._resolution_shown
         if generator_in_panel:
             self._overflow_layout.removeWidget(self._generator_section)
@@ -559,22 +566,22 @@ class GenerationAreaToolPanel(FitToolPanel):
         shown = [self._position_section, self._presets_section]
         if generator_in_panel:
             shown.append(self._generator_section)
-        top = Qt.AlignmentFlag.AlignTop
-        for index, section in enumerate(shown):
-            if strip:
-                grid.addWidget(section, 0, index, top)
-            else:
-                grid.addWidget(section, index, 0, top)
+        # Moving between the panel and the overflow reparents the section, which hides it. Packing leaves out hidden
+        # sections, so this comes first:
+        self._generator_section.setVisible(self._resolution_shown)
         if strip:
+            used_columns = self._pack_grid_columns(grid, shown)
             grid.setRowStretch(1, 1)
-            used_columns = len(shown)
         else:
+            for index, section in enumerate(shown):
+                grid.addWidget(section, index, 0, Qt.AlignmentFlag.AlignTop)
             grid.setRowStretch(len(shown), 1)
             used_columns = 1
+            # Leaving a packed column hid the sections that were shown:
+            for section in released:
+                section.show()
         for column in range(used_columns):
             grid.setColumnStretch(column, 1)
-        grid.setColumnStretch(used_columns, 0)
-        # Moving between the panel and the overflow reparents the section, which hides it:
+        # Width past the strip columns' caps goes after them, or the grid would spread it between them:
+        grid.setColumnStretch(used_columns, 1 if strip else 0)
         self._generator_section.setVisible(self._resolution_shown)
-        for section in self._sections:
-            self._cap_width(section)

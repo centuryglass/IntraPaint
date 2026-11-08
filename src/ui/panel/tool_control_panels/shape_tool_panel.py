@@ -581,7 +581,7 @@ class ShapeToolPanel(FitToolPanel):
         for section in self._sections:
             self._cap_width(section)
         if strip:
-            columns = self._place_columns()
+            columns = self._pack_grid_columns(grid, self._sections)
             used_rows = 2
             if preview is not None:
                 grid.addWidget(self._preview, 0, columns, 2, 1)
@@ -619,18 +619,3 @@ class ShapeToolPanel(FitToolPanel):
         for row, widget in enumerate((*self._sections, self._antialias_checkbox)):
             grid.addWidget(widget, row, 0, top)
         return 1, 4
-
-    def _place_columns(self) -> int:
-        """Packs a strip's sections into columns that stack them within the column budget, and adds the columns to the
-        grid. Returns the number of columns."""
-        grid = self._grid
-        added = 0
-
-        def _add_column(column: QWidget) -> None:
-            nonlocal added
-            column.setMaximumWidth(max(section.maximumWidth() for section in self._packer.plan[added]))
-            grid.addWidget(column, 0, added, Qt.AlignmentFlag.AlignTop)
-            added += 1
-
-        self._packer.pack(self._sections, STACK_SPACING, _add_column)
-        return added
