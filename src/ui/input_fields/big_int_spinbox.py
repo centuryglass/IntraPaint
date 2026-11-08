@@ -11,7 +11,8 @@ from PySide6.QtGui import QRegularExpressionValidator
 class BigIntSpinbox(QAbstractSpinBox):
     """BigIntSpinbox is a QSpinBox supporting integers between -18446744073709551616 and 18446744073709551615."""
 
-    # Because Signal converts numeric values to C types, the signal needs to be a string to avoid overflow.
+    # Text, since Signal converts numeric values to C types that overflow. Config entries convert it back to int
+    # (`Parameter.normalize`).
     valueChanged = Signal(str)
 
     MINIMUM = -18446744073709551616

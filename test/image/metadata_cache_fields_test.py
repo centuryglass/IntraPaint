@@ -4,7 +4,7 @@ from PySide6.QtCore import QSize
 from src.config.cache import Cache
 from src.image.image_metadata import A1111Parameters
 from src.image.metadata_cache_fields import cache_field_keys, apply_to_cache, update_from_cache, PROMPT_FIELD, \
-    differs_from_editor, SEED_FIELD, \
+    differs_from_editor, read_field, SEED_FIELD, \
     NEGATIVE_PROMPT_FIELD, SAMPLER_FIELD, SCHEDULE_TYPE_FIELD, MODEL_FIELD, STEPS_FIELD
 from test.base_test_case import IntraPaintTestCase
 
@@ -92,8 +92,28 @@ class MetadataCacheFieldsTest(IntraPaintTestCase):
         update_from_cache(params, ('CFG scale',))
         self.assertEqual('p\nSteps: 20, Sampler: Euler a, CFG scale: 7', params.serialize())
 
+    def test_large_seed_applies_and_updates(self) -> None:
+        """A saved seed a C integer can't hold applies to the editor as an int, and writes back as the same text."""
+        cache = Cache()
+        seed = 2 ** 64 - 1
+        params = A1111Parameters.parse(f'p\nSteps: 20, Sampler: Euler a, Seed: {seed}')
+        self.assertEqual([], apply_to_cache(params, (SEED_FIELD,)))
+        self.assertEqual(seed, cache.get(Cache.SEED))
+        self.assertIs(type(cache.get(Cache.SEED)), int)
+        self.assertFalse(differs_from_editor(params, SEED_FIELD))
+        cache.set(Cache.SEED, str(seed - 1))
+        self.assertTrue(differs_from_editor(params, SEED_FIELD))
+        update_from_cache(params, (SEED_FIELD,))
+        self.assertEqual(str(seed - 1), read_field(params, SEED_FIELD))
+
+    def test_out_of_range_seed_is_rejected(self) -> None:
+        """A saved seed past the largest the seed field accepts is rejected, leaving the editor's seed unchanged."""
+        params = A1111Parameters.parse(f'p\nSteps: 20, Sampler: Euler a, Seed: {2 ** 64}')
+        self.assertEqual([SEED_FIELD], [rejected.field for rejected in apply_to_cache(params, (SEED_FIELD,))])
+        self.assertEqual(-1, Cache().get(Cache.SEED))
+
     def test_string_seed_matches_saved_seed(self) -> None:
-        """A seed the spinbox stored as a string compares equal to the same saved seed."""
+        """A seed the spinbox sets as text compares equal to the same saved seed."""
         Cache().set(Cache.SEED, '-1')
         params = A1111Parameters.parse('p\nSteps: 20, Sampler: Euler a, Seed: -1')
         self.assertFalse(differs_from_editor(params, SEED_FIELD))

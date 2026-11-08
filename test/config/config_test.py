@@ -36,9 +36,13 @@ TEST_KEY = 'test_flag'
 # The version `_ScratchConfig` writes: one migration, from unversioned files.
 CURRENT_VERSION = 1
 
+# The largest seed the seed fields accept, beyond the range of a signed 64-bit int:
+BIG_INT_MAX = 2 ** 64 - 1
+
 # Definitions for _ScratchConfig, one or more for each value type the definition format supports:
 BOOL_KEY = 'test_flag'
 INT_KEY = 'test_int'
+BIG_INT_KEY = 'test_big_int'
 FLOAT_KEY = 'test_float'
 STR_KEY = 'test_str'
 OPTION_KEY = 'test_option'
@@ -49,6 +53,7 @@ UNSAVED_KEY = 'test_unsaved'
 SCRATCH_DEFINITIONS: dict[str, dict[str, Any]] = {
     BOOL_KEY: {'type': 'bool', 'default': False},
     INT_KEY: {'type': 'int', 'default': 5, 'range_options': {'min': 1, 'max': 10, 'step': 1}},
+    BIG_INT_KEY: {'type': 'int', 'default': -1, 'range_options': {'min': -1, 'max': BIG_INT_MAX, 'step': 1}},
     FLOAT_KEY: {'type': 'float', 'default': 0.5, 'range_options': {'min': 0.0, 'max': 1.0, 'step': 0.1}},
     STR_KEY: {'type': 'string', 'default': 'text'},
     OPTION_KEY: {'type': 'string', 'default': 'first', 'options': ['first', 'second']},
@@ -60,6 +65,7 @@ SCRATCH_DEFINITIONS: dict[str, dict[str, Any]] = {
 DEFAULT_VALUES: dict[str, Any] = {
     BOOL_KEY: False,
     INT_KEY: 5,
+    BIG_INT_KEY: -1,
     FLOAT_KEY: 0.5,
     STR_KEY: 'text',
     OPTION_KEY: 'first',
@@ -72,6 +78,7 @@ DEFAULT_VALUES: dict[str, Any] = {
 CHANGED_VALUES: dict[str, Any] = {
     BOOL_KEY: True,
     INT_KEY: 10,
+    BIG_INT_KEY: BIG_INT_MAX,
     FLOAT_KEY: 0.25,
     STR_KEY: 'changed',
     OPTION_KEY: 'second',
@@ -84,6 +91,7 @@ CHANGED_VALUES: dict[str, Any] = {
 WRONG_TYPE_VALUES: dict[str, Any] = {
     BOOL_KEY: 1,
     INT_KEY: 2.0,
+    BIG_INT_KEY: 2.0,
     FLOAT_KEY: 1,
     STR_KEY: 3,
     OPTION_KEY: 3,
@@ -231,6 +239,7 @@ class ConfigTest(IntraPaintTestCase):
         """Numeric keys accept their range limits, reject values outside them, and report them through `get`."""
         config = self._config()
         for key, minimum, maximum, step, below, above in ((INT_KEY, 1, 10, 1, 0, 11),
+                                                          (BIG_INT_KEY, -1, BIG_INT_MAX, 1, -2, BIG_INT_MAX + 1),
                                                           (FLOAT_KEY, 0.0, 1.0, 0.1, -0.01, 1.01)):
             with self.subTest(key=key):
                 self.assertEqual(config.get(key, RangeKey.MIN), minimum)
@@ -243,6 +252,51 @@ class ConfigTest(IntraPaintTestCase):
                     with self.assertRaises(ValueError):
                         config.set(key, invalid_value, save_change=False)
                     self.assertEqual(config.get(key), maximum)
+
+    def test_big_int_key_stores_text_as_int(self) -> None:
+        """An int key whose range exceeds a C int stores decimal text as an int, and passes the int to callbacks, at
+        every magnitude a seed field accepts."""
+        config = self._config()
+        calls: list[Any] = []
+        config.connect(self, BIG_INT_KEY, calls.append)
+        for value in (5, -1, 2 ** 31, 2 ** 63, BIG_INT_MAX):
+            with self.subTest(value=value):
+                config.set(BIG_INT_KEY, str(value), save_change=False)
+                self.assertEqual(config.get(BIG_INT_KEY), value)
+                self.assertIs(type(config.get(BIG_INT_KEY)), int)
+                self.assertEqual(calls[-1], value)
+                self.assertIs(type(calls[-1]), int)
+
+    def test_big_int_key_rejects_invalid_text(self) -> None:
+        """Text that isn't an integer raises TypeError, and an integer outside the range raises ValueError. Neither
+        changes the value. Ordinary int keys still reject text."""
+        config = self._config()
+        for text in ('', '12.5', 'seed'):
+            with self.subTest(text=text):
+                with self.assertRaises(TypeError):
+                    config.set(BIG_INT_KEY, text, save_change=False)
+        with self.assertRaises(ValueError):
+            config.set(BIG_INT_KEY, str(BIG_INT_MAX + 1), save_change=False)
+        self.assertEqual(config.get(BIG_INT_KEY), DEFAULT_VALUES[BIG_INT_KEY])
+        with self.assertRaises(TypeError):
+            config.set(INT_KEY, '7', save_change=False)
+
+    def test_big_int_saved_as_text_loads_as_int(self) -> None:
+        """A big int key saved as text loads as an int, and a saved default in text form is dropped on the next
+        write."""
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION,
+                                  BIG_INT_KEY: {'min': -1, 'max': BIG_INT_MAX, 'step': 1, 'value': str(BIG_INT_MAX)},
+                                  INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 7}})
+        config = self._config()
+        self.assertEqual(config.get(BIG_INT_KEY), BIG_INT_MAX)
+        self.assertIs(type(config.get(BIG_INT_KEY)), int)
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION,
+                                  BIG_INT_KEY: {'min': -1, 'max': BIG_INT_MAX, 'step': 1, 'value': '-1'},
+                                  INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 7}})
+        config = self._config()
+        config.set(INT_KEY, 8, save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertNotIn(BIG_INT_KEY, self._read_saved_values())
 
     def test_options(self) -> None:
         """A key with an options list rejects other values, unless `add_missing_options` adds them to the list."""
@@ -415,6 +469,7 @@ class ConfigTest(IntraPaintTestCase):
             CONFIG_VERSION_KEY: CURRENT_VERSION,
             BOOL_KEY: True,
             INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 10},
+            BIG_INT_KEY: {'min': -1, 'max': BIG_INT_MAX, 'step': 1, 'value': BIG_INT_MAX},
             FLOAT_KEY: {'min': 0.0, 'max': 1.0, 'step': 0.1, 'value': 0.25},
             STR_KEY: 'changed',
             OPTION_KEY: 'second',

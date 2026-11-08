@@ -74,12 +74,27 @@ class TestParameter(IntraPaintTestCase):
         self.assertFalse(param.validate(QSize(7, 32)))
 
     def test_validate_big_int_accepts_strings(self) -> None:
-        """Int parameters with bounds beyond 32 bits convert values with int() first, and reject unparseable ones."""
-        param = Parameter('seed', TYPE_INT, 0, minimum=-1, maximum=INT_MAX * 4)
-        self.assertTrue(param.validate(str(INT_MAX * 2)))
-        self.assertFalse(param.validate('not a number'))
+        """Int parameters with bounds beyond 32 bits accept decimal text within range, and reject other text, floats
+        and text outside the range."""
+        param = Parameter('seed', TYPE_INT, 0, minimum=-1, maximum=2 ** 64 - 1)
+        for value in (str(INT_MAX * 2), str(2 ** 63), str(2 ** 64 - 1), 2 ** 64 - 1):
+            self.assertTrue(param.validate(value), value)
+        for value in ('not a number', '12.5', 2.0, str(2 ** 64), '-2'):
+            self.assertFalse(param.validate(value), repr(value))
         with self.assertRaises(TypeError):
             param.validate('not a number', raise_on_failure=True)
+        with self.assertRaises(ValueError):
+            param.validate(str(2 ** 64), raise_on_failure=True)
+
+    def test_normalize_converts_big_int_text_only(self) -> None:
+        """`normalize` converts decimal text to int for big int parameters, and returns anything else unchanged."""
+        big = Parameter('seed', TYPE_INT, 0, minimum=-1, maximum=2 ** 64 - 1)
+        self.assertEqual(big.normalize(str(2 ** 64 - 1)), 2 ** 64 - 1)
+        self.assertIs(type(big.normalize('-1')), int)
+        self.assertEqual(big.normalize('12.5'), '12.5')
+        self.assertEqual(big.normalize(2.0), 2.0)
+        self.assertEqual(Parameter('steps', TYPE_INT, 5, minimum=1, maximum=10).normalize('5'), '5')
+        self.assertEqual(Parameter('text', TYPE_STR, '').normalize('5'), '5')
 
     def test_valid_options(self) -> None:
         """Only listed options validate, and a default outside the list becomes the first option."""

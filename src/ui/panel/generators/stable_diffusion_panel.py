@@ -534,7 +534,7 @@ class StableDiffusionPanel(DockPanel):
     @staticmethod
     def _sampling_summary() -> str:
         cache = Cache()
-        seed = int(cache.get(Cache.SEED))
+        seed = cache.get(Cache.SEED)
         if seed != RANDOM_SEED:
             return SUMMARY_SAMPLING_FIXED_SEED.format(seed=seed, sampler=cache.get(Cache.SAMPLING_METHOD))
         return cache.get(Cache.SAMPLING_METHOD)

@@ -40,7 +40,7 @@ class ParamsAdapterTest(IntraPaintTestCase):
         cache.set(Cache.GENERATION_SIZE, GENERATION_SIZE)
         cache.set(Cache.PROMPT, 'a lighthouse')
         cache.set(Cache.NEGATIVE_PROMPT, 'blurry')
-        cache.set(Cache.SEED, '1234')
+        cache.set(Cache.SEED, 1234)
         cache.set(Cache.BATCH_SIZE, 2)
         cache.set(Cache.BATCH_COUNT, 3)
         cache.set(Cache.SAMPLING_STEPS, 20)
@@ -141,6 +141,29 @@ class ParamsAdapterTest(IntraPaintTestCase):
         self.assertIsNone(body.include_init_images)
         self.assertNotIn('denoising_strength', body.to_dict())
         self.assertEqual(body.to_dict()['scheduler'], 'Automatic', 'the server picks the sampler default scheduler')
+
+    def test_seeds_beyond_c_integers_reach_requests(self) -> None:
+        """Seeds a C integer can't hold, entered as the seed fields' text, reach both backends' requests as ints."""
+        cache = Cache()
+        for seed in (2 ** 31, 2 ** 63, 2 ** 64 - 1):
+            with self.subTest(seed=seed):
+                cache.set(Cache.SEED, str(seed))
+                cache.set(Cache.WEBUI_SUBSEED, str(seed - 1))
+                comfy_params = build_comfy_params(EDIT_MODE_TXT2IMG)
+                self.assertEqual(comfy_params.seed, seed)
+                self.assertIs(type(comfy_params.seed), int)
+                body = build_webui_body(EDIT_MODE_TXT2IMG)
+                self.assertEqual((body.to_dict()['seed'], body.to_dict()['subseed']), (seed, seed - 1))
+
+    def test_webui_random_subseed_from_text_is_omitted(self) -> None:
+        """A variation seed of -1 entered as the seed field's text sends no variation seed or strength."""
+        cache = Cache()
+        cache.set(Cache.WEBUI_SUBSEED, '5')
+        cache.set(Cache.WEBUI_SUBSEED_STRENGTH, 0.3)
+        cache.set(Cache.WEBUI_SUBSEED, '-1')
+        body = build_webui_body(EDIT_MODE_TXT2IMG)
+        self.assertIsNone(body.subseed)
+        self.assertIsNone(body.subseed_strength)
 
     def test_webui_inpaint(self) -> None:
         """WebUI inpainting sends the mask settings, with the server applying the configured mask blur."""
