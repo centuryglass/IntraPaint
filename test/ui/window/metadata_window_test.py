@@ -228,6 +228,28 @@ class MetadataWindowTest(IntraPaintTestCase):
         self.assertNotIn(IFD.GPSInfo, [entry.ifd for entry in self.metadata.exif_entries()])
         self.assertFalse(self.window._remove_location_button.isEnabled())
 
+    def test_save_note_for_jpeg_data(self) -> None:
+        """Only a JPEG save keeps the comment and IPTC data, and an XMP packet kept as a PNG text entry counts as XMP."""
+        metadata = ImageMetadata({'comment': 'a note', 'XML:com.adobe.xmp': '<x/>'},
+                                 format_info={'photoshop': {0x0404: _iptc_dataset(25, b'tag')}})
+        self.assertEqual('Saving as JPEG keeps all of this metadata.', save_format_note(metadata, 'a.jpg'))
+        self.assertEqual('Saving as TIFF keeps: XMP. It drops: comment, IPTC.', save_format_note(metadata, 'a.tiff'))
+        self.assertEqual('Saving as PNG keeps: comment, XMP. It drops: IPTC.', save_format_note(metadata, 'a.png'))
+        self.assertEqual('Saving as ORA keeps: comment, XMP. It drops: IPTC.', save_format_note(metadata, 'a.ora'))
+
+    def test_remove_location_covers_iptc_and_xmp(self) -> None:
+        """Remove location data is available for IPTC and XMP place fields alone, and clears them."""
+        iptc = _iptc_dataset(90, b'Anytown') + _iptc_dataset(25, b'tag')
+        xmp = b'<x xmlns:ps="http://ns.adobe.com/photoshop/1.0/"><ps:Country>USA</ps:Country></x>'
+        window = MetadataWindow(ImageMetadata(format_info={'photoshop': {0x0404: iptc}, 'xmp': xmp}))
+        self.assertTrue(window._remove_location_button.isEnabled())
+        window._remove_location()
+        self.assertFalse(window._remove_location_button.isEnabled())
+        self.assertEqual([(SOURCE_IPTC, 'Keywords', 'tag')],
+                         [(row.source, row.name, row.value) for row in window._metadata_rows
+                          if row.source == SOURCE_IPTC])
+        self.assertNotIn('Country', window._metadata.xmp or '')
+
     def test_iptc_and_xmp_rows_are_read_only(self) -> None:
         """IPTC datasets and the XMP packet are listed, and can't be edited or removed."""
         iptc = _iptc_dataset(90, b'Anytown') + _iptc_dataset(101, b'United States')
@@ -266,11 +288,13 @@ class MetadataWindowTest(IntraPaintTestCase):
         """The note names what a save to each format keeps and drops of this image's metadata."""
         metadata = ImageMetadata({'parameters': PARAMETERS, 'other': 'value'}, format_info={'xmp': b'<x/>'})
         metadata.set_exif_text(None, ExifTags.Base.Artist, 'someone')
-        self.assertEqual('Saving as PNG keeps: generation parameters, text entries (other), EXIF tags. It drops: XMP.',
-                         save_format_note(metadata, 'a.png'))
-        self.assertEqual('Saving as JPEG keeps: generation parameters, EXIF tags. It drops: text entries (other),'
-                         ' XMP.', save_format_note(metadata, 'a.jpg'))
+        self.assertEqual('Saving as PNG keeps all of this metadata.', save_format_note(metadata, 'a.png'))
+        self.assertEqual('Saving as JPEG keeps: generation parameters, EXIF tags, XMP. It drops: text entries (other).',
+                         save_format_note(metadata, 'a.jpg'))
+        self.assertEqual('Saving as WEBP keeps: generation parameters, EXIF tags, XMP. It drops: text entries (other).',
+                         save_format_note(metadata, 'a.webp'))
         self.assertIn('It drops: text entries (other), EXIF tags, XMP', save_format_note(metadata, 'a.gif'))
+        self.assertIn('It drops: text entries (other), XMP', save_format_note(metadata, 'a.jp2'))
         self.assertIn('keep no metadata', save_format_note(metadata, 'a.bmp'))
         self.assertIn('hasn\'t been saved', save_format_note(metadata, ''))
         self.assertEqual('This image has no metadata to save.', save_format_note(ImageMetadata(), 'a.png'))

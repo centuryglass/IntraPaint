@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication
 from src.image.image_metadata import A1111Parameters, ImageMetadata, PARAMETERS_KEY, COMMENT_KEY, \
     decode_user_comment, encode_user_comment, SOURCE_COMFYUI, SOURCE_NOVELAI, SOURCE_INVOKEAI, ComfyUINode
 from src.util.visual.image_format_utils import load_image, save_image_with_metadata
+from src.util.visual.image_utils import logger as image_utils_logger
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -159,6 +160,24 @@ def _reload_exif(exif: Image.Exif) -> Image.Exif:
     loaded = Image.Exif()
     loaded.load(exif.tobytes())
     return loaded
+
+
+PHOTO_XMP = (b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+             b'<rdf:Description xmlns:dc="http://purl.org/dc/elements/1.1/"'
+             b' xmlns:ps="http://ns.adobe.com/photoshop/1.0/" xmlns:geo="http://ns.adobe.com/exif/1.0/"'
+             b' xmlns:iptc="http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/"'
+             b' xmlns:ext="http://iptc.org/std/Iptc4xmpExt/2008-02-29/" ps:Country="USA" ps:Credit="Someone">'
+             b'<dc:description>Photographed in Paris</dc:description><ps:City>Springfield</ps:City>'
+             b'<geo:GPSLatitude>45,30N</geo:GPSLatitude><iptc:Location/>'
+             b'<ext:LocationShown><rdf:Bag><rdf:li rdf:parseType="Resource"><ps:City>Elsewhere</ps:City></rdf:li>'
+             b'</rdf:Bag></ext:LocationShown></rdf:Description></rdf:RDF></x:xmpmeta>')
+PHOTO_XMP_WITHOUT_LOCATION = (
+    b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+    b'<rdf:Description xmlns:dc="http://purl.org/dc/elements/1.1/"'
+    b' xmlns:ps="http://ns.adobe.com/photoshop/1.0/" xmlns:geo="http://ns.adobe.com/exif/1.0/"'
+    b' xmlns:iptc="http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/"'
+    b' xmlns:ext="http://iptc.org/std/Iptc4xmpExt/2008-02-29/" ps:Credit="Someone">'
+    b'<dc:description>Photographed in Paris</dc:description></rdf:Description></rdf:RDF></x:xmpmeta>')
 
 
 def _iptc_dataset(record: int, dataset: int, value: bytes) -> bytes:
@@ -435,6 +454,90 @@ class MetadataFileTest(IntraPaintTestCase):
         _, loaded = load_image(self._path('dpi.png'))
         self.assertEqual({PARAMETERS_KEY: 'p'}, loaded.text)
         self.assertIn('dpi', loaded.format_info)
+
+    def _photo_metadata(self) -> ImageMetadata:
+        """Returns the metadata of a JPEG with a comment, XMP, IPTC and GPS tags, as a photo tool writes them."""
+        iptc = _iptc_dataset(1, 90, b'\x1b%G') + _iptc_dataset(2, 0, b'\x00\x04') \
+            + _iptc_dataset(2, 25, b'market') + _iptc_dataset(2, 90, b'Springfield') \
+            + _iptc_dataset(2, 116, 'caf\u00e9'.encode())
+        return ImageMetadata({COMMENT_KEY: 'a camera note'},
+                             _exif({IFD.GPSInfo: {ExifTags.GPS.GPSLatitudeRef: 'N'}}),
+                             {'xmp': PHOTO_XMP, 'photoshop': {0x0404: iptc, 0x0409: b'thumbnail'}})
+
+    def test_jpeg_keeps_comment_xmp_and_iptc(self) -> None:
+        """A JPEG save writes the comment, the XMP packet and the IPTC datasets unchanged, with nothing else added."""
+        source = self._photo_metadata()
+        path = self._path('photo.jpg')
+        save_image_with_metadata(self.image, path, source)
+        _, loaded = load_image(path)
+        self.assertEqual({COMMENT_KEY: 'a camera note'}, loaded.text)
+        self.assertEqual(PHOTO_XMP, loaded.xmp_packet)
+        self.assertEqual(source.iptc_data, loaded.iptc_data)
+        self.assertEqual(source.iptc_entries(), loaded.iptc_entries())
+        self.assertEqual({0x0404}, set(loaded.format_info['photoshop']))
+        self.assertIn(IFD.GPSInfo, [entry.ifd for entry in loaded.exif_entries()])
+
+    def test_xmp_survives_every_format_that_holds_it(self) -> None:
+        """JPEG, WebP, TIFF and PNG saves write the XMP packet, and IPTC is written only to JPEG."""
+        for extension in ('jpg', 'webp', 'tiff', 'png'):
+            with self.subTest(extension=extension):
+                path = self._path(f'photo.{extension}')
+                save_image_with_metadata(self.image, path, self._photo_metadata())
+                _, loaded = load_image(path)
+                self.assertEqual(PHOTO_XMP.decode(), loaded.xmp)
+                self.assertEqual(extension == 'jpg', loaded.iptc_data is not None)
+
+    def test_xmp_from_a_png_chunk_is_written_to_jpeg(self) -> None:
+        """An XMP packet read from a PNG text chunk is saved to a JPEG as XMP."""
+        path = self._path('from_png.jpg')
+        save_image_with_metadata(self.image, path, ImageMetadata({'XML:com.adobe.xmp': PHOTO_XMP.decode()}))
+        _, loaded = load_image(path)
+        self.assertEqual(PHOTO_XMP.decode(), loaded.xmp)
+        self.assertEqual({}, loaded.text)
+
+    def test_oversized_iptc_is_skipped(self) -> None:
+        """IPTC data too long for one JPEG segment is left out, and the rest of the metadata is still saved."""
+        iptc = _iptc_dataset(2, 120, b'x' * 30000) * 3
+        path = self._path('large.jpg')
+        with self.assertLogs(image_utils_logger, 'WARNING'):
+            save_image_with_metadata(self.image, path, ImageMetadata({COMMENT_KEY: 'kept'},
+                                                                    format_info={'photoshop': {0x0404: iptc}}))
+        _, loaded = load_image(path)
+        self.assertEqual({COMMENT_KEY: 'kept'}, loaded.text)
+        self.assertIsNone(loaded.iptc_data)
+
+    def test_remove_location(self) -> None:
+        """Remove location clears GPS tags and IPTC and XMP place fields, keeping the rest byte for byte."""
+        metadata = self._photo_metadata()
+        self.assertTrue(metadata.has_location_data)
+        metadata.remove_location()
+        self.assertFalse(metadata.has_location_data)
+        self.assertEqual([('Keywords', 'market'), ('Copyright Notice', 'caf\u00e9')],
+                         [(entry.name, entry.value) for entry in metadata.iptc_entries()])
+        self.assertEqual(_iptc_dataset(1, 90, b'\x1b%G') + _iptc_dataset(2, 0, b'\x00\x04')
+                         + _iptc_dataset(2, 25, b'market') + _iptc_dataset(2, 116, 'caf\u00e9'.encode()),
+                         metadata.iptc_data)
+        self.assertNotIn(IFD.GPSInfo, [entry.ifd for entry in metadata.exif_entries()])
+        self.assertEqual(PHOTO_XMP_WITHOUT_LOCATION, metadata.xmp_packet)
+        self.assertEqual({COMMENT_KEY: 'a camera note'}, metadata.text)
+
+    def test_remove_location_from_a_png_xmp_chunk(self) -> None:
+        """An XMP packet kept as a text entry loses its place fields too."""
+        metadata = ImageMetadata({'XML:com.adobe.xmp': PHOTO_XMP.decode()})
+        self.assertTrue(metadata.has_location_data)
+        metadata.remove_location()
+        self.assertEqual(PHOTO_XMP_WITHOUT_LOCATION.decode(), metadata.text['XML:com.adobe.xmp'])
+        self.assertFalse(metadata.has_location_data)
+
+    def test_no_location_data(self) -> None:
+        """Metadata with no place fields reports none, and Remove location leaves it unchanged."""
+        metadata = ImageMetadata({COMMENT_KEY: 'Paris'}, format_info={
+            'xmp': b'<x:xmpmeta xmlns:x="adobe:ns:meta/"/>', 'photoshop': {0x0404: _iptc_dataset(2, 25, b'Paris')}})
+        self.assertFalse(metadata.has_location_data)
+        before = metadata.copy()
+        metadata.remove_location()
+        self.assertEqual(before.format_info, metadata.format_info)
+        self.assertEqual(before.text, metadata.text)
 
     def test_remove_all(self) -> None:
         """Remove all clears text, EXIF, XMP and ICC data and keeps other format info."""

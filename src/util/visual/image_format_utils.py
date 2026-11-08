@@ -7,7 +7,7 @@ from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImageReader, QImageWriter, QImage
 
-from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY, COMMENT_KEY
+from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY, COMMENT_KEY, XMP_TEXT_KEY, IPTC_RESOURCE_ID
 from src.util.visual.image_utils import logger, EXCLUDED_QIMAGE_FORMATS, read_qimage
 from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
     PIL_OPEN_FORMATS, convert_to_srgb
@@ -103,8 +103,11 @@ def _write_data_to_exif_description(exif: Optional[Image.Exif], data: Optional[s
 
 
 def _save_pil(image: Image.Image, file_path: str, file_format: Optional[str] = None,
-              exif: Optional[Image.Exif] = None) -> None:
-    """Save a PIL image, optionally with metadata, performing format conversions as necessary."""
+              exif: Optional[Image.Exif] = None, save_args: Optional[dict[str, Any]] = None) -> None:
+    """Save a PIL image, optionally with metadata, performing format conversions as necessary.
+
+    `save_args` are extra keyword arguments for `Image.save`, such as `xmp` or `comment`.
+    """
     if file_format is None:
         delimiter_index = file_path.rfind('.')
         if delimiter_index < 0:
@@ -121,16 +124,59 @@ def _save_pil(image: Image.Image, file_path: str, file_format: Optional[str] = N
         image = image.convert('RGB')
     elif file_format in BINARY_FORMATS:
         image = image.convert('1')
+    arguments = {} if save_args is None else dict(save_args)
     if exif is not None:
-        if file_format in OMITTED_FORMATS:
-            image.save(file_path, exif=exif)
-        else:
-            image.save(file_path, file_format, exif=exif)
+        arguments['exif'] = exif
+    if file_format in OMITTED_FORMATS:
+        image.save(file_path, **arguments)
     else:
-        if file_format in OMITTED_FORMATS:
-            image.save(file_path)
+        image.save(file_path, file_format, **arguments)
+
+
+# A JPEG segment holds at most this many bytes after its marker, counting its 2-byte length field:
+_JPEG_SEGMENT_MAX_SIZE = 0xFFFF
+_JPEG_APP13_MARKER = b'\xff\xed'
+_PHOTOSHOP_HEADER = b'Photoshop 3.0\0'
+_PHOTOSHOP_RESOURCE_SIGNATURE = b'8BIM'
+# Pillow's JPEG writer rejects an XMP packet longer than this, which is a segment minus its length field and header:
+_JPEG_XMP_MAX_SIZE = 65504
+# The XMP tag of a TIFF's first IFD:
+_TIFF_XMP_TAG = 700
+
+
+def _iptc_app13_segment(iptc: bytes) -> Optional[bytes]:
+    """Returns a JPEG APP13 segment holding IPTC datasets as a Photoshop resource, or None if it would be too long.
+
+    The resource has an empty name, and its data is padded to an even length, as Photoshop's format requires.
+    """
+    resource = _PHOTOSHOP_RESOURCE_SIGNATURE + IPTC_RESOURCE_ID.to_bytes(2, 'big') + b'\0\0' \
+        + len(iptc).to_bytes(4, 'big') + iptc + (b'\0' if len(iptc) % 2 else b'')
+    payload = _PHOTOSHOP_HEADER + resource
+    if 2 + len(payload) > _JPEG_SEGMENT_MAX_SIZE:
+        return None
+    return _JPEG_APP13_MARKER + (2 + len(payload)).to_bytes(2, 'big') + payload
+
+
+def _jpeg_save_args(metadata: ImageMetadata) -> dict[str, Any]:
+    """Returns the `Image.save` arguments that write a JPEG's comment, XMP packet and IPTC data."""
+    args: dict[str, Any] = {}
+    comment = metadata.text.get(COMMENT_KEY, '')
+    if comment != '':
+        args['comment'] = comment
+    xmp = metadata.xmp_packet
+    if xmp is not None:
+        if len(xmp) > _JPEG_XMP_MAX_SIZE:
+            logger.warning('XMP data is too long for a JPEG and was not saved')
         else:
-            image.save(file_path, file_format)
+            args['xmp'] = xmp
+    iptc = metadata.iptc_data
+    if iptc is not None and len(iptc) > 0:
+        segment = _iptc_app13_segment(iptc)
+        if segment is None:
+            logger.warning('IPTC data is too long for a JPEG and was not saved')
+        else:
+            args['extra'] = segment
+    return args
 
 
 def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
@@ -144,9 +190,10 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         Path where the file should be saved, including file extension. File format will be selected based on extension,
         and must be in IMAGE_FORMATS_SUPPORTING_METADATA.
     metadata: ImageMetadata, optional
-        Metadata to write, which isn't changed. PNG keeps every text entry and the EXIF data. GIF keeps only the
-        generation parameters, or the comment if there are none, as its comment. JPEG 2000 keeps the same comment,
-        plus EXIF data. JPEG, TIFF and WebP keep EXIF data, with the parameters as its ImageDescription.
+        Metadata to write, which isn't changed. PNG keeps every text entry, the EXIF data and the XMP packet. GIF keeps
+        only the generation parameters, or the comment if there are none, as its comment. JPEG 2000 keeps the same
+        comment, plus EXIF data. JPEG, TIFF and WebP keep EXIF data, with the parameters as its ImageDescription, and
+        the XMP packet. JPEG also keeps its comment and IPTC data, which no other format has a place for.
         `src/ui/window/metadata_window.py` describes these rules to the user, so a change here changes its note.
     """
     delimiter_index = file_path.rfind('.')
@@ -176,13 +223,24 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         case 'JPG' | 'JPEG' | 'TIFF' | 'WEBP':
             if parameter_text != '':
                 _write_data_to_exif_description(exif, parameter_text)
-            _save_pil(image, file_path, file_format, exif)
+            save_args: dict[str, Any] = {}
+            if file_format in ('JPG', 'JPEG'):
+                save_args = _jpeg_save_args(metadata)
+            elif file_format == 'WEBP':
+                if metadata.xmp_packet is not None:
+                    save_args['xmp'] = metadata.xmp_packet
+            elif metadata.xmp_packet is not None:  # Pillow's TIFF writer takes the XMP packet as a tag.
+                exif[_TIFF_XMP_TAG] = metadata.xmp_packet
+            _save_pil(image, file_path, file_format, exif, save_args)
         case _:
             raise ValueError(f'Unhandled format {file_format}')
 
 
 def _png_text_chunks(metadata: ImageMetadata) -> PngImagePlugin.PngInfo:
-    """Returns every text entry as a PNG text chunk, adding a `parameters` chunk if the parameters came from EXIF."""
+    """Returns every text entry as a PNG text chunk.
+
+    Adds a `parameters` chunk if the parameters came from EXIF, and an XMP chunk if the packet came from another format.
+    """
     info = PngImagePlugin.PngInfo()
     for key, value in metadata.text.items():
         try:
@@ -192,6 +250,9 @@ def _png_text_chunks(metadata: ImageMetadata) -> PngImagePlugin.PngInfo:
     parameters = metadata.parameters
     if parameters is not None and PARAMETERS_KEY not in metadata.text:
         info.add_itxt(PARAMETERS_KEY, parameters)
+    xmp = metadata.xmp
+    if xmp is not None and XMP_TEXT_KEY not in metadata.text:
+        info.add_itxt(XMP_TEXT_KEY, xmp)
     return info
 
 

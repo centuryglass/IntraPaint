@@ -19,6 +19,8 @@ from typing import Any, NamedTuple, Optional
 from PIL import Image, ExifTags
 from PIL.ExifTags import IFD
 
+from src.image.xmp_location import has_xmp_location, remove_xmp_location
+
 logger = logging.getLogger(__name__)
 
 PARAMETERS_KEY = 'parameters'
@@ -27,12 +29,13 @@ COMMENT_KEY = 'comment'
 """The text entry holding a GIF, JPEG or JPEG 2000 comment, the last place generation parameters are looked up."""
 XMP_TEXT_KEY = 'XML:com.adobe.xmp'
 
-# Format info keys holding raw blocks that the model shows but doesn't edit or write:
+# Format info keys holding raw blocks that the model shows and `ImageMetadata.remove_location` edits, but never
+# otherwise changes. `save_image_with_metadata` decides which formats write them:
 XMP_INFO_KEY = 'xmp'
 ICC_PROFILE_INFO_KEY = 'icc_profile'
 PHOTOSHOP_INFO_KEY = 'photoshop'
 """PIL's info key for a JPEG's Photoshop resources, a dict from resource id to bytes. One of them holds IPTC data."""
-_IPTC_RESOURCE_ID = 0x0404
+IPTC_RESOURCE_ID = 0x0404
 # An IPTC dataset starts with this tag marker, then its record number, dataset number and a 2-byte length:
 _IPTC_TAG_MARKER = 0x1C
 _IPTC_HEADER_SIZE = 5
@@ -44,10 +47,13 @@ IPTC_DATASET_NAMES = {
     5: 'Object Name', 7: 'Edit Status', 10: 'Urgency', 15: 'Category', 20: 'Supplemental Category',
     25: 'Keywords', 40: 'Special Instructions', 55: 'Date Created', 60: 'Time Created', 62: 'Digital Creation Date',
     63: 'Digital Creation Time', 65: 'Originating Program', 70: 'Program Version', 80: 'By-line',
-    85: 'By-line Title', 90: 'City', 92: 'Sub-location', 95: 'Province/State', 100: 'Country Code',
-    101: 'Country', 103: 'Original Transmission Reference', 105: 'Headline', 110: 'Credit', 115: 'Source',
-    116: 'Copyright Notice', 118: 'Contact', 120: 'Caption/Abstract', 122: 'Writer/Editor'
+    26: 'Content Location Code', 27: 'Content Location Name', 85: 'By-line Title', 90: 'City', 92: 'Sub-location',
+    95: 'Province/State', 100: 'Country Code', 101: 'Country', 103: 'Original Transmission Reference',
+    105: 'Headline', 110: 'Credit', 115: 'Source', 116: 'Copyright Notice', 118: 'Contact',
+    120: 'Caption/Abstract', 122: 'Writer/Editor'
 }
+# Application record datasets that name a place: content location, city, sub-location, state, country code and country.
+_IPTC_LOCATION_DATASETS = frozenset({26, 27, 90, 92, 95, 100, 101})
 # PIL's info key for encoded EXIF data, which loads into `ImageMetadata.exif`:
 _EXIF_INFO_KEY = 'exif'
 # Format info keys that `ImageMetadata.remove_all` removes:
@@ -172,21 +178,31 @@ class ExifEntry(NamedTuple):
 
 
 class IptcEntry(NamedTuple):
-    """One IPTC (IIM) dataset, which the model shows but doesn't edit or write."""
+    """One IPTC (IIM) dataset, as the metadata window shows it."""
     record: int
     dataset: int
     name: str
     value: str
 
 
-def parse_iptc(data: bytes) -> list[IptcEntry]:
-    """Parses IPTC (IIM) datasets, stopping at the first byte that doesn't start one.
+class _IptcDataset(NamedTuple):
+    """One IPTC dataset's numbers and value, with the bytes it was read from."""
+    record: int
+    dataset: int
+    value: bytes
+    raw: bytes
 
-    Application record datasets get readable names. Values decode as UTF-8, or Latin-1 if they aren't valid UTF-8.
+
+def _split_iptc(data: bytes) -> tuple[list[_IptcDataset], bytes]:
+    """Splits IPTC data into datasets, stopping at the first byte that doesn't start one.
+
+    Returns the datasets and the unread remainder, so a caller that drops datasets can keep everything else byte for
+    byte.
     """
-    entries: list[IptcEntry] = []
+    datasets: list[_IptcDataset] = []
     offset = 0
     while offset + _IPTC_HEADER_SIZE <= len(data) and data[offset] == _IPTC_TAG_MARKER:
+        start = offset
         record = data[offset + 1]
         dataset = data[offset + 2]
         length = int.from_bytes(data[offset + 3:offset + 5], 'big')
@@ -197,9 +213,25 @@ def parse_iptc(data: bytes) -> list[IptcEntry]:
             offset += length_size
         value = data[offset:offset + length]
         offset += length
-        name = IPTC_DATASET_NAMES.get(dataset) if record == _IPTC_APPLICATION_RECORD else None
-        entries.append(IptcEntry(record, dataset, name or f'{record}:{dataset}', _decode_text(value) or ''))
+        datasets.append(_IptcDataset(record, dataset, value, data[start:offset]))
+    return datasets, data[offset:]
+
+
+def parse_iptc(data: bytes) -> list[IptcEntry]:
+    """Parses IPTC (IIM) datasets, stopping at the first byte that doesn't start one.
+
+    Application record datasets get readable names. Values decode as UTF-8, or Latin-1 if they aren't valid UTF-8.
+    """
+    entries: list[IptcEntry] = []
+    for dataset in _split_iptc(data)[0]:
+        name = IPTC_DATASET_NAMES.get(dataset.dataset) if dataset.record == _IPTC_APPLICATION_RECORD else None
+        entries.append(IptcEntry(dataset.record, dataset.dataset, name or f'{dataset.record}:{dataset.dataset}',
+                                 _decode_text(dataset.value) or ''))
     return entries
+
+
+def _is_iptc_location(dataset: _IptcDataset) -> bool:
+    return dataset.record == _IPTC_APPLICATION_RECORD and dataset.dataset in _IPTC_LOCATION_DATASETS
 
 
 class StructuredData(NamedTuple):
@@ -225,8 +257,9 @@ class ImageMetadata:
       keep only the generation parameters, see `save_image_with_metadata`.
     - `exif` holds EXIF data, including the Exif and GPS sub-IFDs. `Image.Exif.get_ifd` adds an empty IFD for a missing
       one, which a save then writes, so code reading `exif` goes through `exif_entries` or `_read_ifd`.
-    - `format_info` holds PIL's other info entries: animation loop counts, DPI, raw XMP and ICC profile data. Nothing
-      in it is written back as metadata.
+    - `format_info` holds PIL's other info entries: animation loop counts, DPI, raw XMP and ICC profile data, and a
+      JPEG's Photoshop resources, which hold IPTC data. `save_image_with_metadata` writes the XMP and IPTC blocks
+      back for the formats that can hold them, and nothing else in it.
     """
 
     def __init__(self, text: Optional[dict[str, str]] = None, exif: Optional[Image.Exif] = None,
@@ -368,7 +401,7 @@ class ImageMetadata:
         parameters = self.parameters
         return None if parameters is None else A1111Parameters.parse(parameters)
 
-    # Read-only raw data:
+    # Raw data:
 
     @property
     def xmp(self) -> Optional[str]:
@@ -377,16 +410,30 @@ class ImageMetadata:
             return self.text[XMP_TEXT_KEY]
         return _decode_text(self.format_info.get(XMP_INFO_KEY))
 
+    @property
+    def xmp_packet(self) -> Optional[bytes]:
+        """Returns the XMP packet as the bytes a file holds, or None if there is none. Text is encoded as UTF-8."""
+        xmp = self.text.get(XMP_TEXT_KEY, self.format_info.get(XMP_INFO_KEY))
+        if isinstance(xmp, str):
+            return xmp.encode('utf-8')
+        return xmp if isinstance(xmp, bytes) else None
+
+    @property
+    def iptc_data(self) -> Optional[bytes]:
+        """Returns the raw IPTC datasets of a JPEG's Photoshop resources, or None if there are none."""
+        resources = self.format_info.get(PHOTOSHOP_INFO_KEY)
+        if not isinstance(resources, dict):
+            return None
+        data = resources.get(IPTC_RESOURCE_ID)
+        return data if isinstance(data, bytes) else None
+
     def iptc_entries(self) -> list[IptcEntry]:
         """Returns the IPTC application record datasets of a JPEG's Photoshop resources, in file order.
 
         Envelope records and the record version dataset describe the encoding, not the image, and are left out.
         """
-        resources = self.format_info.get(PHOTOSHOP_INFO_KEY)
-        if not isinstance(resources, dict):
-            return []
-        data = resources.get(_IPTC_RESOURCE_ID)
-        if not isinstance(data, bytes):
+        data = self.iptc_data
+        if data is None:
             return []
         return [entry for entry in parse_iptc(data)
                 if entry.record == _IPTC_APPLICATION_RECORD and entry.dataset != _IPTC_RECORD_VERSION_DATASET]
@@ -506,6 +553,36 @@ class ImageMetadata:
     def remove_gps(self) -> None:
         """Removes the GPS IFD, and with it every location tag."""
         self._remove_ifd(IFD.GPSInfo)
+
+    # Location:
+
+    @property
+    def has_location_data(self) -> bool:
+        """Whether `remove_location` would remove anything: GPS tags, IPTC place datasets or XMP place properties."""
+        if len(self._read_ifd(IFD.GPSInfo)) > 0:
+            return True
+        iptc = self.iptc_data
+        if iptc is not None and any(_is_iptc_location(dataset) for dataset in _split_iptc(iptc)[0]):
+            return True
+        packet = self.xmp_packet
+        return packet is not None and has_xmp_location(packet)
+
+    def remove_location(self) -> None:
+        """Removes the EXIF GPS tags, and the place fields of the IPTC and XMP data.
+
+        IPTC and XMP place fields are the city, state, country and named location datasets and properties, see
+        `LOCATION_PROPERTIES`. Text that happens to name a place, such as a caption or keyword, is kept.
+        """
+        self.remove_gps()
+        iptc = self.iptc_data
+        if iptc is not None:
+            datasets, remainder = _split_iptc(iptc)
+            kept = b''.join(dataset.raw for dataset in datasets if not _is_iptc_location(dataset)) + remainder
+            self.format_info[PHOTOSHOP_INFO_KEY][IPTC_RESOURCE_ID] = kept
+        if XMP_TEXT_KEY in self.text:
+            self.text[XMP_TEXT_KEY] = str(remove_xmp_location(self.text[XMP_TEXT_KEY]))
+        elif isinstance(self.format_info.get(XMP_INFO_KEY), (str, bytes)):
+            self.format_info[XMP_INFO_KEY] = remove_xmp_location(self.format_info[XMP_INFO_KEY])
 
     def _remove_ifd(self, ifd: int) -> None:
         """Removes a sub-IFD and its pointer from IFD0.
