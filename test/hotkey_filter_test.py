@@ -189,3 +189,42 @@ class HotkeyFilterHeldKeyTest(IntraPaintTestCase):
         press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier)
         self.assertFalse(self.filter.eventFilter(self.window, press))
         self.assertEqual([True], self.changes)
+
+
+class HotkeyFilterConfigRebindTest(IntraPaintTestCase):
+    """Tests that config keybindings follow their config key only while registered."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.filter = HotkeyFilter.instance()
+
+    def tearDown(self) -> None:
+        self.filter.remove_keybinding('rebind_test')
+        super().tearDown()
+
+    def _bindings_for_id(self) -> list[HotkeyFilter.KeyBinding]:
+        return [binding for bindings in self.filter._bindings.values()  # pylint: disable=protected-access
+                for binding in bindings if binding.str_id == 'rebind_test']
+
+    def test_removed_keybinding_stays_removed(self) -> None:
+        """Changing a config key doesn't bring back a binding removed under its ID."""
+        self.filter.register_config_keybinding('rebind_test', MagicMock(), KeyConfig.ERASER_TOOL_KEY)
+        self.filter.remove_keybinding('rebind_test')
+        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, 'Ctrl+F9')
+        self.assertEqual([], self._bindings_for_id())
+
+    def test_removed_held_key_stays_removed(self) -> None:
+        """Changing a config key doesn't bring back a held-key binding removed under its ID."""
+        self.filter.register_held_key('rebind_test', MagicMock(), KeyConfig.PAN_VIEW_KEY)
+        self.filter.remove_keybinding('rebind_test')
+        KeyConfig().set(KeyConfig.PAN_VIEW_KEY, 'Ctrl+F9')
+        self.assertEqual([], [b for b in self.filter._held_bindings  # pylint: disable=protected-access
+                              if b.str_id == 'rebind_test'])
+
+    def test_registered_keybinding_follows_key_change(self) -> None:
+        """A binding that wasn't removed is re-registered under the new key."""
+        self.filter.register_config_keybinding('rebind_test', MagicMock(), KeyConfig.ERASER_TOOL_KEY)
+        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, 'Ctrl+F9')
+        matches = self._bindings_for_id()
+        self.assertEqual(1, len(matches))
+        self.assertEqual(Qt.Key.Key_F9, matches[0].key)
