@@ -176,7 +176,11 @@ class HotkeyFilter(QObject):
         return new_bindings
 
     def remove_keybinding(self, str_id: str) -> None:
-        """Finds and removes all keybindings with the given ID string, releasing held keys among them."""
+        """Removes all keybindings with the given ID string, releasing held keys among them.
+
+        Also ends the ID's `KeyConfig` connections, so a later change to the config key doesn't re-register them.
+        """
+        KeyConfig().disconnect_all(str_id)
         for held_binding in [binding for binding in self._held_bindings if binding.str_id == str_id]:
             self._held_bindings.remove(held_binding)
             if held_binding.held:
@@ -219,7 +223,6 @@ class HotkeyFilter(QObject):
         def _update_config(_) -> None:
             # Remove and replace bindings when the config key changes:
             self.remove_keybinding(_id)
-            KeyConfig().disconnect(_id, _config_key)
             self.register_config_keybinding(str_id, _action, _config_key)
         KeyConfig().connect(str_id, config_key, _update_config)
 
@@ -265,7 +268,6 @@ class HotkeyFilter(QObject):
         def _update_config(_) -> None:
             # Remove and replace bindings when the config key changes:
             self.remove_keybinding(_id)
-            KeyConfig().disconnect(_id, _config_key)
             self.register_held_key(_id, _on_change, _config_key, _predicate)
         KeyConfig().connect(str_id, config_key, _update_config)
 
