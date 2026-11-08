@@ -257,12 +257,31 @@ class Parameter:
             raise TypeError(f'Param {self.name}: invalid step value {single_step} for type {self.type_name}')
         self._step = single_step
 
+    def accepts_int_text(self) -> bool:
+        """Returns whether this is an int parameter whose range exceeds a C int, so it also accepts decimal text.
+
+        `BigIntSpinbox` handles these parameters and emits its value as text, since Qt signals convert ints to C types
+        that overflow.
+        """
+        return self.type_name == TYPE_INT and ((self.minimum is not None and self.minimum < INT_MIN) or
+                                               (self.maximum is not None and self.maximum > INT_MAX))
+
+    def normalize(self, value: Any) -> Any:
+        """Returns `value` as this parameter's type: text converts to int where `accepts_int_text` allows it.
+
+        Any other value, including text that isn't an integer, comes back unchanged for `validate` to judge.
+        """
+        if isinstance(value, str) and self.accepts_int_text():
+            try:
+                return int(value)
+            except ValueError:
+                return value
+        return value
+
     def validate(self, test_value: Any, raise_on_failure=False) -> bool:
-        """Returns whether a test value is acceptable for this parameter"""
+        """Returns whether a test value is acceptable for this parameter, after `normalize` converts it."""
         try:
-            if self.type_name == TYPE_INT and ((self.minimum is not None and self.minimum < INT_MIN) or
-                                               (self.maximum is not None and self.maximum > INT_MAX)):
-                test_value = int(test_value)  # BigIntSpinbox needs to emit as str, so convert before validating.
+            test_value = self.normalize(test_value)
             test_type = get_parameter_type(test_value)
             if test_type != self._type:
                 if raise_on_failure:

@@ -153,6 +153,7 @@ class ConfigEntry(Parameter):
             self.set_valid_options(valid_options)
 
         # Validate type, range, accepted options:
+        value = self.normalize(value)
         self.validate(value, True)
         value_changed = self._value != value
         self._value = value
@@ -296,6 +297,7 @@ class ConfigEntry(Parameter):
 
         if self.type_name == TYPE_QSIZE:
             json_value = _apply_type(json_value, TYPE_QSIZE)
+        json_value = self.normalize(json_value)
         if self.options is not None and len(self.options) == 0:
             self.set_valid_options([json_value])
         if not self.validate(json_value):

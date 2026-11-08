@@ -467,7 +467,8 @@ class Config:
             A key tracked by this config file.
         value : int or float or str or bool or list or dict or QSize or None
             The new value to assign to the key. Unless inner_key is not None, this must have the same type as the
-            previous value.
+            previous value. An int key whose range exceeds a C int also accepts decimal text, which it stores as an
+            int (`Parameter.accepts_int_text`).
         save_change: bool, default=True
             If true, save the change to the underlying JSON file. Otherwise, the change will be saved the next time
             any value is set with save_change=True
@@ -491,10 +492,11 @@ class Config:
         assert_main_thread('Config.set')
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        new_value = value
         # Update existing value:
         with self._lock:
             value_changed = self._entries[key].set_value(value, add_missing_options, inner_key)
+            # The entry can store a converted value, such as a seed spinbox's text as an int:
+            new_value = self._entries[key].get_value(inner_key)
         if not value_changed:
             return
         # Schedule save to JSON file:

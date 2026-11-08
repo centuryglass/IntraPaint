@@ -55,7 +55,7 @@ def _shared_params(params: DiffusionParams, edit_mode: str, source_image: Option
     params.height = generation_resolution.height()
     params.prompt = cache.get(Cache.PROMPT)
     params.negative_prompt = cache.get(Cache.NEGATIVE_PROMPT)
-    params.seed = int(cache.get(Cache.SEED))
+    params.seed = cache.get(Cache.SEED)
     sampler = cache.get(Cache.SAMPLING_METHOD)
     if sampler != '':
         params.sampler = sampler
