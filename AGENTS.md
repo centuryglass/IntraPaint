@@ -44,9 +44,8 @@ In priority order:
 3. **Other users.** It has downloads but no reported feedback. Keep it usable for them: every manual editing tool must
    work with no Stable Diffusion backend, and setup errors must say what to do.
 
-- **Before answering a question about user experience, feature design or user workflows,** read
-  [`doc/agents/user_workflows.md`](doc/agents/user_workflows.md). It covers how IntraPaint is used and where it
-  departs from a conventional editor.
+- **[`doc/agents/user_workflows.md`](doc/agents/user_workflows.md) covers product scope and where IntraPaint departs
+  from a conventional editor.** It is background for feature design and workflow questions.
 - When a change trades one audience against another, flag the tension to the maintainer. Don't quietly resolve it
   in either direction.
 - A process or documentation gap that matters only for portfolio value gets its own GitHub issue, not bundled
