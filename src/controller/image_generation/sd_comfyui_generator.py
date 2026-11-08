@@ -147,6 +147,9 @@ SD_COMFYUI_GENERATOR_SETUP = SD_COMFYUI_GENERATOR_SETUP_OPTIONS + SD_COMFYUI_GEN
 
 DEFAULT_COMFYUI_URL = 'http://localhost:8188'
 
+# ComfyUI rejects seeds at or above this, so batch seeds wrap back to 0 past the largest one:
+COMFYUI_SEED_LIMIT = 2 ** 64
+
 
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache()
@@ -478,7 +481,7 @@ class SDComfyUIGenerator(SDGenerator):
         for batch_num in range(num_batches):
             try:
                 # Later batches continue from the first batch's seed, which the library picks when Cache.SEED is -1:
-                sequence_seed = None if seed is None else seed + batch_num
+                sequence_seed = None if seed is None else (seed + batch_num) % COMFYUI_SEED_LIMIT
                 diffusion_params = build_comfy_params(edit_mode, source_image, mask_image, sequence_seed)
                 result = self._wait_for_job(submit(diffusion_params), status_signal, batch_num, num_batches)
                 if result is None:
