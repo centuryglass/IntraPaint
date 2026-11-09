@@ -241,6 +241,8 @@ class CacheKeys:
 class KeyConfigKeys:
     """Key constants for the definitions in `resources/config/key_config_definitions.json`."""
 
+    ABOUT_QT_SHORTCUT: Final = 'about_qt_shortcut'
+    ABOUT_SHORTCUT: Final = 'about_shortcut'
     BLUR_SHORTCUT: Final = 'blur_shortcut'
     BRIGHTNESS_CONTRAST_SHORTCUT: Final = 'brightness_contrast_shortcut'
     BRUSH_HARDNESS_DECREASE: Final = 'brush_hardness_decrease'
@@ -292,6 +294,7 @@ class KeyConfigKeys:
     IMAGE_TO_LAYERS_SHORTCUT: Final = 'image_to_layers_shortcut'
     INVERT_SELECTION_SHORTCUT: Final = 'invert_selection_shortcut'
     INVERT_SHORTCUT: Final = 'invert_shortcut'
+    KEYBOARD_SHORTCUTS_SHORTCUT: Final = 'keyboard_shortcuts_shortcut'
     LAYER_MIRROR_HORIZONTAL_SHORTCUT: Final = 'layer_mirror_horizontal_shortcut'
     LAYER_MIRROR_VERTICAL_SHORTCUT: Final = 'layer_mirror_vertical_shortcut'
     LAYER_ROTATE_CCW_SHORTCUT: Final = 'layer_rotate_ccw_shortcut'
@@ -333,8 +336,10 @@ class KeyConfigKeys:
     PROMPT_STYLE_SHORTCUT: Final = 'prompt_style_shortcut'
     QUIT_SHORTCUT: Final = 'quit_shortcut'
     REDO_SHORTCUT: Final = 'redo_shortcut'
+    RELEASE_NOTES_SHORTCUT: Final = 'release_notes_shortcut'
     RELOAD_SHORTCUT: Final = 'reload_shortcut'
     RENAME_LAYER_SHORTCUT: Final = 'rename_layer_shortcut'
+    REPORT_BUG_SHORTCUT: Final = 'report_bug_shortcut'
     RESET_COLORS_SHORTCUT: Final = 'reset_colors_shortcut'
     RESET_DOCK_LAYOUT_SHORTCUT: Final = 'reset_dock_layout_shortcut'
     RESET_VIEW_SHORTCUT: Final = 'reset_view_shortcut'

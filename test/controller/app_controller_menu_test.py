@@ -1,12 +1,15 @@
 """Pins the main menu bar's structure and checks that each menu action's key config subcategory matches its menu."""
 import sys
 from typing import Any
+from unittest.mock import patch
 
-from PySide6.QtWidgets import QApplication, QMenu
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox
 
 from src.config.key_config import KeyConfig
 from src.controller.app_controller import AppController, MENU_FILE, MENU_EDIT, MENU_VIEW, MENU_IMAGE, MENU_LAYER, \
-    MENU_SELECT, MENU_FILTERS, MENU_GENERATION, MENU_WINDOW, MENU_HELP
+    MENU_SELECT, MENU_FILTERS, MENU_GENERATION, MENU_WINDOW, MENU_HELP, KEYBINDINGS_CATEGORY, ISSUES_LINK, \
+    RELEASES_LINK, LICENSE_LINK, APP_VERSION
+from src.ui.modal.settings_modal import SettingsModal
 from src.util.arg_parser import build_arg_parser
 from src.util.menu_builder import MENU_DATA_ATTR, IS_MENU_ACTION_ATTR
 from test.base_test_case import IntraPaintTestCase
@@ -100,3 +103,30 @@ class TestAppControllerMenus(IntraPaintTestCase):
             self.assertEqual(title.count('&'), 1, title)
             letters.append(title[title.index('&') + 1].lower())
         self.assertEqual(len(set(letters)), len(letters))
+
+    def test_keyboard_shortcuts_opens_keybinding_settings(self):
+        """Edit > Keyboard shortcuts opens the settings window at the Keybindings category."""
+        with patch.object(SettingsModal, 'show_modal') as show_modal:
+            self.controller.show_keyboard_shortcuts()
+        show_modal.assert_called_once_with(KEYBINDINGS_CATEGORY)
+        modal = self.controller._settings_modal
+        assert modal is not None
+        self.assertIn(KEYBINDINGS_CATEGORY, modal.categories())
+
+    def test_help_links_open_project_pages(self):
+        """Help > Report a bug and Release notes open the issue tracker and the releases page."""
+        with patch('src.controller.app_controller.webbrowser.open') as open_url:
+            self.controller.open_issue_tracker()
+            self.controller.open_release_notes()
+        self.assertEqual([call.args[0] for call in open_url.call_args_list], [ISSUES_LINK, RELEASES_LINK])
+
+    def test_about_dialogs(self):
+        """Help > About IntraPaint shows the app version and links, and About Qt shows Qt's dialog."""
+        with patch.object(QMessageBox, 'about') as about, patch.object(QMessageBox, 'aboutQt') as about_qt:
+            self.controller.show_about()
+            self.controller.show_about_qt()
+        about.assert_called_once()
+        text = about.call_args.args[2]
+        for expected in (APP_VERSION, LICENSE_LINK, ISSUES_LINK):
+            self.assertIn(expected, text)
+        about_qt.assert_called_once()

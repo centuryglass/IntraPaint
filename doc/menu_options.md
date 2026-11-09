@@ -24,6 +24,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Copy (Ctrl+C)](#copy-ctrlc)
    - [Paste (Ctrl+V)](#paste-ctrlv)
    - [Clear (Delete)](#clear-delete)
+   - [Keyboard shortcuts (Ctrl+Alt+Shift+K)](#keyboard-shortcuts-ctrlaltshiftk)
    - [Preferences (Ctrl+K)](#preferences-ctrlk)
      - [Preferences window](#preferences-window)
    - [Swap and reset colors](#swap-and-reset-colors)
@@ -99,6 +100,10 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Move all panels to edge](#move-all-panels-to-edge)
 10. [Help menu](#help-menu)
     - [IntraPaint help (F1)](#intrapaint-help-f1)
+    - [Report a bug](#report-a-bug)
+    - [Release notes](#release-notes)
+    - [About IntraPaint](#about-intrapaint)
+    - [About Qt](#about-qt)
 
 ---
 
@@ -193,6 +198,10 @@ If a text field is focused and the system clipboard is not empty, this will inst
 ### Clear (Delete)
 
 Behaves identically to [cut](#cut-ctrlx), except that cut image data can't be pasted, and cut text isn't saved in the system clipboard.
+
+### Keyboard shortcuts (Ctrl+Alt+Shift+K)
+
+Opens the [Preferences window](#preferences-window) at the **"Keybindings"** tab. The **"Menu Shortcuts"** tab beside it holds the keys for menu entries.
 
 ### Preferences (Ctrl+K)
 
@@ -704,5 +713,21 @@ This menu provides resources to help you use IntraPaint.
 ### IntraPaint help (F1)
 
 Opens the [IntraPaint documentation index page](./help_index.md) in a web browser.
+
+### Report a bug
+
+Opens IntraPaint's [GitHub issue tracker](https://github.com/centuryglass/IntraPaint/issues) in a web browser, where you can report a problem or suggest a feature.
+
+### Release notes
+
+Opens the [list of IntraPaint releases](https://github.com/centuryglass/IntraPaint/releases) in a web browser. Each release lists its changes and has download links.
+
+### About IntraPaint
+
+Shows IntraPaint's version, its license, and links to the project page and the issue tracker.
+
+### About Qt
+
+Shows the version and license of Qt, the user interface toolkit IntraPaint is built on.
 
 ---
