@@ -40,19 +40,3 @@ def get_screen_bounds(window: Optional[QWidget] = None, default_to_primary: bool
 def get_screen_size(window: Optional[QWidget] = None, default_to_primary: bool = True) -> QSize:
     """Returns the size of the display a window is in, or the size of the primary display if window is None."""
     return get_screen_bounds(window, default_to_primary).size()
-
-
-def get_window_size() -> QSize:
-    """Returns the size of the largest open window."""
-    app = cast(QApplication, QApplication.instance())
-    assert app is not None, 'Application instance must be created to get window size'
-    max_area = 0
-    largest = None
-    for window in app.topLevelWidgets():
-        area = window.width() * window.height()
-        if area > max_area:
-            max_area = area
-            largest = window
-    if largest is None:
-        return QSize()
-    return largest.size()

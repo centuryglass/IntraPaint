@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QBoxLayout, QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout, QHBoxLayout
+from PySide6.QtWidgets import QBoxLayout, QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout
 
 
 def layout_contents(layout: QLayout) -> list[QWidget | QLayout | None]:
@@ -108,22 +108,3 @@ def synchronize_row_widths(rows: list[list[Optional[QWidget]]]) -> None:
             columns[i].append(widget)
     for column in columns:
         synchronize_widths(column)
-
-
-def wrap_widget_with_key_hints(widget: QWidget, left_hint: Optional[QWidget] = None,
-                               right_hint: Optional[QWidget] = None, parent: Optional[QWidget] = None,
-                               alignment=Qt.AlignmentFlag.AlignCenter) -> QWidget:
-    """Wraps a widget in a small container widget, with key hints on one or both sides."""
-    if left_hint is None and right_hint is None:
-        raise RuntimeError('At least one key hint label should be non-null')
-    container = QWidget(parent=parent)
-    layout = QHBoxLayout(container)
-    layout.setAlignment(alignment)
-    layout.setSpacing(1)
-    layout.setContentsMargins(1, 1, 1, 1)
-    if left_hint is not None:
-        layout.addWidget(left_hint)
-    layout.addWidget(widget)
-    if right_hint is not None:
-        layout.addWidget(right_hint)
-    return container

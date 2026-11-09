@@ -62,14 +62,6 @@ class Label(QLabel):
         self.set_orientation(orientation)
         self.setText(text)
 
-    def set_scale_to_bounds(self, should_scale: bool) -> None:
-        """Sets whether text to be scaled to fit available bounds."""
-        if should_scale != self._scale_text_to_bounds:
-            self._scale_text_to_bounds = should_scale
-            text = self._text
-            self.setText('')
-            self.setText(text)
-
     @property
     def orientation(self) -> Qt.Orientation:
         """Returns the label's orientation."""
