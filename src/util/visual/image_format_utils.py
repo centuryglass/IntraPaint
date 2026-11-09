@@ -194,8 +194,8 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         only the generation parameters, or the comment if there are none, as its comment. JPEG 2000 keeps the same
         comment, plus EXIF data. JPEG, TIFF and WebP keep EXIF data, with the parameters as its ImageDescription, and
         the XMP packet. JPEG also keeps its comment and IPTC data, which no other format has a place for.
-        `kept_kinds` in `src/image/metadata_save_rules.py` states these rules for the metadata window's note and the pre-save
-        warning, so a change here changes it too.
+        `kept_kinds` in `src/image/metadata_save_rules.py` states these rules for the metadata window's note and the
+        pre-save warning, so a change here changes it too.
     """
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:
