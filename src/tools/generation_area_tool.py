@@ -11,6 +11,7 @@ from src.config.key_config import KeyConfig
 from src.controller.generation_area_controller import record_generation_area_size
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool, ToolGroup
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.area_resize_handle import AreaResizeHandle
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel
@@ -91,13 +92,11 @@ class GenerationAreaTool(BaseTool):
 
         self._handles: dict[str, AreaResizeHandle] = {}
         if show_handles:
-            scene = image_viewer.scene()
-            assert scene is not None
             for handle_id in (*CORNER_HANDLES, *EDGE_HANDLES):
                 handle = AreaResizeHandle()
                 handle.setZValue(HANDLE_Z_VALUE)
                 handle.setVisible(False)
-                scene.addItem(handle)
+                image_viewer.canvas_extras.register(handle, CanvasExtraCategory.TOOL)
                 self._handles[handle_id] = handle
             image_stack.generation_area_bounds_changed.connect(self._update_handle_positions)
             self._update_handle_positions()

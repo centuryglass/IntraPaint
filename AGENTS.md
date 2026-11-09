@@ -82,6 +82,8 @@ pip install -r requirements-dev.txt   # for development: adds the test, lint and
   bindings), `filter/`, `brush/`.
 - **`src/tools/`:** the editing tools (brush, selection, text, shapes, fill, etc.).
 - **`src/ui/`:** Qt UI: `window/`, `panel/`, `modal/`, `widget/`, `input_fields/`, `layout/`, `graphics_items/`.
+- **On-canvas markers register with `ImageViewer.canvas_extras`** (`src/ui/canvas_extras.py`), which groups them by
+  category so each category can be hidden. A tool that adds a marker to the viewer's scene registers it there.
 - **`src/util/`:** helpers, including `visual/image_fill` (Cython-compiled).
 
 ## Config system (important)
