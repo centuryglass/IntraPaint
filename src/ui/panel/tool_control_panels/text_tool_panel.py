@@ -49,6 +49,7 @@ from src.ui.panel.tool_control_panels.text_preview import TextPreview, text_over
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
+from src.util.layout import add_layout
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.image_utils import get_color_icon
@@ -841,11 +842,11 @@ class TextToolPanel(FitToolPanel):
 
     def _add_row(self, row_layout: QHBoxLayout, row: int, column: int, column_span: int,
                  widgets: tuple[QWidget, ...]) -> None:
-        """Adds widgets side by side in one Style grid cell, followed by spare room."""
+        """Adds widgets side by side in one Style grid cell, followed by spare room. `row_layout` must be empty."""
+        add_layout(self._style_layout, row_layout, row, column, 1, column_span)
         for widget in widgets:
             row_layout.addWidget(widget)
         row_layout.addStretch(1)
-        self._style_layout.addLayout(row_layout, row, column, 1, column_span)
 
     def _arrange_sections(self, strip: bool, two_columns: bool, preview: bool, advanced: bool) -> None:
         """Places the text box and sections in strip columns, two side columns, or one, with spare room after them."""

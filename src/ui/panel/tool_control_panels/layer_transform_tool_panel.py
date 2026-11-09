@@ -35,6 +35,7 @@ from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y,
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.undo_stack import UndoStack
+from src.util.layout import add_layout
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 
@@ -139,7 +140,7 @@ class LayerTransformToolPanel(FitToolPanel):
         preview_layout = QVBoxLayout(self._preview_box)
         preview_layout.setContentsMargins(0, 0, 0, 0)
         preview_layout.addWidget(self._preview, stretch=1)
-        preview_layout.addLayout(self._build_legend())
+        self._build_legend(preview_layout)
         # Height past the preview's cap goes below the legend:
         preview_layout.addStretch(0)
 
@@ -150,11 +151,12 @@ class LayerTransformToolPanel(FitToolPanel):
         self._planner = FitPlanner([GEOMETRY_ITEM, ACTIONS_ITEM, PREVIEW_ITEM], self._apply_fit, self._measure_fit)
         self._apply_fit(Orientation.SIDE, (STACKED, UNDER, 0))
 
-    def _build_legend(self) -> QHBoxLayout:
-        """Returns a row naming the preview's image bounds and layer, each beside a swatch drawn as the preview draws
+    def _build_legend(self, parent: QVBoxLayout) -> None:
+        """Adds a row naming the preview's image bounds and layer, each beside a swatch drawn as the preview draws
         it."""
         legend = QHBoxLayout()
         legend.setContentsMargins(0, 0, 0, 0)
+        add_layout(parent, legend)
         dim_palette = QPalette(self.palette())
         dim_palette.setColor(QPalette.ColorRole.WindowText, self.palette().color(QPalette.ColorRole.PlaceholderText))
         for text, fill, outline in ((LEGEND_IMAGE, _image_bounds_color(), None),
@@ -174,7 +176,6 @@ class LayerTransformToolPanel(FitToolPanel):
             legend.addWidget(swatch_label)
             legend.addWidget(text_label)
         legend.addStretch(1)
-        return legend
 
     # -----------------------------------------------------------------------------------------------------------------
     # Values

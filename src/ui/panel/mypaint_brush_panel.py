@@ -25,6 +25,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.layout.flow_layout import FlowWidget
 from src.ui.widget.panel_header import PanelPopover
+from src.util.layout import add_layout
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_utils import temp_image_path
 from src.util.visual.text_drawing_utils import max_font_size, create_text_path, draw_text_path
@@ -567,14 +568,14 @@ class CurrentBrushChip(QFrame):
         self._arrow = QLabel('▾', self)
         self._arrow.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self._arrow.hide()
-        text_column = QVBoxLayout()
-        text_column.setSpacing(0)
-        text_column.addWidget(self._name_label)
-        text_column.addWidget(self._category_label)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(6, 4, 6, 4)
         layout.addWidget(self._icon_label)
-        layout.addLayout(text_column, stretch=1)
+        text_column = QVBoxLayout()
+        text_column.setSpacing(0)
+        add_layout(layout, text_column, 1)
+        text_column.addWidget(self._name_label)
+        text_column.addWidget(self._category_label)
         layout.addWidget(self._star)
         layout.addWidget(self._arrow)
         self._star.clicked.connect(self.favoriteToggled)
@@ -690,8 +691,11 @@ class MypaintBrushPanel(QWidget):
         self._chip.favoriteToggled.connect(self._toggle_active_favorite)
         self._chip.clicked.connect(self._show_popover)
         self._favorites_row = FavoritesRow(self)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         self._top_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom)
         self._top_layout.setContentsMargins(0, 0, 0, 0)
+        add_layout(layout, self._top_layout)
         self._top_layout.addWidget(self._chip)
         self._top_layout.addWidget(self._favorites_row)
 
@@ -702,9 +706,6 @@ class MypaintBrushPanel(QWidget):
         self._grid.customContextMenuRequested.connect(self._menu)
         self._grid.favoriteToggled.connect(self.toggle_favorite)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self._top_layout)
         layout.addWidget(self._category_widget)
         layout.addWidget(self._grid, stretch=1)
 

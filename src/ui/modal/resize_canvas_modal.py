@@ -21,6 +21,7 @@ from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.anchor_grid import AnchorGrid, GRID_SIDE
 from src.ui.widget.canvas_change_preview_widget import CanvasChangePreviewWidget
 from src.ui.widget.panel_section import PanelSection
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -85,13 +86,13 @@ class ResizeCanvasModal(QDialog):
         size_layout.setContentsMargins(0, 0, 0, 0)
         size_layout.addWidget(self._geometry)
         anchor_row = QHBoxLayout()
+        add_layout(size_layout, anchor_row)
         anchor_row.addWidget(self._anchor_grid, alignment=Qt.AlignmentFlag.AlignTop)
         text_column = QVBoxLayout()
+        add_layout(anchor_row, text_column, stretch=1)
         text_column.addWidget(self._size_label)
         text_column.addWidget(offset_hint)
         text_column.addStretch(1)
-        anchor_row.addLayout(text_column, stretch=1)
-        size_layout.addLayout(anchor_row)
 
         cache = Cache()
         layer_mode_label = QLabel(cache.get_label(Cache.CANVAS_RESIZE_LAYER_MODE))
@@ -129,11 +130,11 @@ class ResizeCanvasModal(QDialog):
         self._footer.accepted.connect(self._confirm)
         self._footer.rejected.connect(self._cancel)
 
+        self._layout = QVBoxLayout(self)
         self._body = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        add_layout(self._layout, self._body, stretch=1)
         self._body.addWidget(scroll)
         self._body.addWidget(self._preview, stretch=1)
-        self._layout = QVBoxLayout(self)
-        self._layout.addLayout(self._body, stretch=1)
         self._layout.addWidget(self._footer)
 
         self.setMinimumSize(MIN_WINDOW_SIZE)

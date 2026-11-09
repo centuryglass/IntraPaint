@@ -24,6 +24,7 @@ from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.panel_section import PanelSection
 from src.util.async_task import AsyncTask
+from src.util.layout import add_layout
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.geometry_utils import get_scaled_placement
@@ -265,11 +266,11 @@ class ImageFilterModal(QDialog):
         assert self._footer.cancel_button is not None
         self._cancel_button = self._footer.cancel_button
 
+        self._layout = QVBoxLayout(self)
         self._body = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        add_layout(self._layout, self._body, stretch=1)
         self._body.addWidget(self._preview, stretch=1)
         self._body.addWidget(scroll)
-        self._layout = QVBoxLayout(self)
-        self._layout.addLayout(self._body, stretch=1)
         self._layout.addWidget(self._footer)
 
         self._update_compare_hint()

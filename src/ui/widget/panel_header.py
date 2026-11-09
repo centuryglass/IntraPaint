@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QStyle
 from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
+from src.util.layout import add_layout
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.panel_header'
@@ -217,6 +218,7 @@ class PanelHeader(QWidget):
         layout.setSpacing(LINE_SPACING)
         self._first_line = QHBoxLayout()
         self._first_line.setSpacing(HEADER_SPACING)
+        add_layout(layout, self._first_line)
         self._first_line.addWidget(self._icon_label)
         self._first_line.addWidget(self._name_label)
         self._first_line.addWidget(self._details, stretch=1)
@@ -224,8 +226,7 @@ class PanelHeader(QWidget):
         self._first_line.addWidget(self._more_button)
         self._second_line = QHBoxLayout()
         self._second_line.setSpacing(HEADER_SPACING)
-        layout.addLayout(self._first_line)
-        layout.addLayout(self._second_line)
+        add_layout(layout, self._second_line)
         self._reset_button.clicked.connect(self.reset_requested)
         self._more_button.clicked.connect(self.show_popover)
         self._icon = icon if icon is not None else QIcon()

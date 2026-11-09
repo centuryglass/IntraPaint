@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QGridLayout, QHBoxLayout
 # The private `_PATTERNS` dict is the thing this tool edits, so it reads the PLAIN pattern it seeds the grid with:
 from src.ui.brush_crosshair import (CROSSHAIR_GRID_SIZE, CROSSHAIR_SIZE, CrosshairVariant, _PATTERNS,
                                     crosshair_pattern_image, crosshair_pixel_scale)
+from src.util.layout import add_layout
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 
 GRID_SIZE = CROSSHAIR_GRID_SIZE
@@ -172,6 +173,7 @@ class CrosshairBuilderWindow(QMainWindow):
             self._boxes.append(row)
         panel_layout.addWidget(grid_widget)
         buttons = QHBoxLayout()
+        add_layout(panel_layout, buttons)
         copy_button = QPushButton('copy', panel)
         paste_button = QPushButton('paste', panel)
         copy_button.clicked.connect(self._copy_pattern)
@@ -183,7 +185,6 @@ class CrosshairBuilderWindow(QMainWindow):
         buttons.addWidget(paste_button)
         buttons.addWidget(self._actual_size_toggle)
         buttons.addStretch(1)
-        panel_layout.addLayout(buttons)
         return panel
 
     def _current_pattern(self) -> tuple[str, ...]:

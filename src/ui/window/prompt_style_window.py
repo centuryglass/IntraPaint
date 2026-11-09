@@ -12,6 +12,7 @@ from src.config.cache import Cache
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.modal.dialog_footer import DialogFooter
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 
 logger = logging.getLogger(__name__)
@@ -98,10 +99,10 @@ class PromptStyleWindow(QDialog):
             QListWidgetItem(style[NAME_KEY], self._style_list)
 
         list_row = QHBoxLayout()
-        self._layout.addLayout(list_row)
+        add_layout(self._layout, list_row)
         list_row.addWidget(self._style_list, stretch=1)
         action_column = QVBoxLayout()
-        list_row.addLayout(action_column)
+        add_layout(list_row, action_column)
         self._append_button = QPushButton(ADD_BUTTON_LABEL)
         self._append_button.clicked.connect(self._append_prompt)
         self._append_button.setEnabled(False)
@@ -113,7 +114,7 @@ class PromptStyleWindow(QDialog):
         action_column.addStretch(1)
 
         name_row = QHBoxLayout()
-        self._layout.addLayout(name_row)
+        add_layout(self._layout, name_row)
         name_row.addWidget(QLabel(NAME_LABEL), stretch=0)
         self._name_box = LineEdit()
         self._name_box.setReadOnly(not save_enabled)
