@@ -2,7 +2,7 @@
   {
     "body": {
       "subfolder": "sd_backend_client",
-      "type": "input"
+      "type": "temp"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
@@ -71,9 +71,8 @@
           }
         },
         "13": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "sd_backend_client",
             "images": [
               "12",
               0
@@ -163,7 +162,7 @@
   {
     "body": {
       "subfolder": "sd_backend_client",
-      "type": "input"
+      "type": "temp"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
@@ -232,9 +231,8 @@
           }
         },
         "13": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "sd_backend_client",
             "images": [
               "12",
               0
