@@ -56,6 +56,7 @@ from src.ui.layout.panel_fit import (REQUIRED, strip_section_max_width, strip_se
                                      held_weakly, scroll_extent)
 from src.ui.widget.panel_header import PanelHeader, PanelPopover
 from src.ui.widget.panel_section import PanelSection
+from src.util.layout import add_layout
 
 QWIDGETSIZE_MAX = 16777215
 
@@ -304,10 +305,10 @@ class DockPanel(QWidget):
         self._trailing_scrolls = True
         self._scroll_row = QHBoxLayout()
         self._scroll_row.setContentsMargins(0, 0, 0, 0)
+        add_layout(outer, self._scroll_row)
         self._scroll_row.addWidget(self._pinned.column)
         self._scroll_row.addWidget(self._pinned_divider)
         self._scroll_row.addWidget(self._scroll, stretch=1)
-        outer.addLayout(self._scroll_row)
 
         self._body = QWidget()
         self._body_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, self._body)

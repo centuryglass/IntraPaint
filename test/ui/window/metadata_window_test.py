@@ -2,7 +2,7 @@
 the editor buttons read and write the editor's settings."""
 import sys
 
-from PIL import ExifTags
+from PIL import ExifTags, Image
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
@@ -229,13 +229,22 @@ class MetadataWindowTest(IntraPaintTestCase):
         self.assertFalse(self.window._remove_location_button.isEnabled())
 
     def test_save_note_for_jpeg_data(self) -> None:
-        """Only a JPEG save keeps the comment and IPTC data, and an XMP packet kept as a PNG text entry counts as XMP."""
+        """Only JPEG and .ora saves keep the comment and IPTC data, and an XMP packet kept as a PNG text entry counts as
+        XMP."""
         metadata = ImageMetadata({'comment': 'a note', 'XML:com.adobe.xmp': '<x/>'},
                                  format_info={'photoshop': {0x0404: _iptc_dataset(25, b'tag')}})
         self.assertEqual('Saving as JPEG keeps all of this metadata.', save_format_note(metadata, 'a.jpg'))
         self.assertEqual('Saving as TIFF keeps: XMP. It drops: comment, IPTC.', save_format_note(metadata, 'a.tiff'))
         self.assertEqual('Saving as PNG keeps: comment, XMP. It drops: IPTC.', save_format_note(metadata, 'a.png'))
-        self.assertEqual('Saving as ORA keeps: comment, XMP. It drops: IPTC.', save_format_note(metadata, 'a.ora'))
+        self.assertEqual('Saving as ORA keeps all of this metadata.', save_format_note(metadata, 'a.ora'))
+
+    def test_save_note_for_ora_keeps_jpeg_data(self) -> None:
+        """An .ora save keeps a JPEG's EXIF tags, XMP packet and IPTC data."""
+        exif = Image.Exif()
+        exif[ExifTags.Base.Make] = 'Camera Co'
+        metadata = ImageMetadata({'comment': 'a note'}, exif,
+                                 {'xmp': b'<x/>', 'photoshop': {0x0404: _iptc_dataset(25, b'tag')}})
+        self.assertEqual('Saving as ORA keeps all of this metadata.', save_format_note(metadata, 'a.ora'))
 
     def test_remove_location_covers_iptc_and_xmp(self) -> None:
         """Remove location data is available for IPTC and XMP place fields alone, and clears them."""

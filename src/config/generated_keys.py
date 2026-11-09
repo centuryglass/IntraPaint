@@ -68,6 +68,7 @@ class AppConfigKeys:
     WARN_BEFORE_COLOR_LOSS: Final = 'warn_before_color_loss'
     WARN_BEFORE_FIXED_SIZE_SAVE: Final = 'warn_before_fixed_size_save'
     WARN_BEFORE_LAYERLESS_SAVE: Final = 'warn_before_layerless_save'
+    WARN_BEFORE_METADATA_LOSS: Final = 'warn_before_metadata_loss'
     WARN_BEFORE_RGB_SAVE: Final = 'warn_before_rgb_save'
     WARN_BEFORE_SAVE_WITHOUT_METADATA: Final = 'warn_before_save_without_metadata'
     WARN_BEFORE_WRITE_ONLY_SAVE: Final = 'warn_before_write_only_save'

@@ -26,6 +26,7 @@ from src.image.image_metadata import ImageMetadata, A1111Parameters
 from src.image.layers.image_stack import ImageStack
 from src.image.metadata_cache_fields import LOAD_APPLIED_FIELDS, METADATA_UPDATE_FIELDS, apply_to_cache, \
     update_from_cache
+from src.image.metadata_save_rules import MetadataKind, format_name, split_metadata
 from src.image.open_raster import capture_ora_image, write_ora_snapshot, read_ora_image, ORA_FILE_EXTENSION
 from src.image.recovery_files import RestoredDocument
 from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
@@ -104,6 +105,17 @@ METADATA_NOT_SAVED_TITLE = _tr('Image generation metadata will not be saved')
 METADATA_NOT_SAVED_MESSAGE = _tr('To preserve image generation metadata, save using one of the following file formats:'
                                  ' {metadata_formats}')
 
+OTHER_METADATA_NOT_SAVED_TITLE = _tr('Some metadata will not be saved')
+OTHER_METADATA_NOT_SAVED_MESSAGE = _tr('Saving as {file_format} drops: {dropped}. The .ora format keeps all of it.')
+OTHER_METADATA_PART_LABELS = {
+    MetadataKind.COMMENT: _tr('comment'),
+    MetadataKind.TEXT_ENTRIES: _tr('text entries'),
+    MetadataKind.EXIF: _tr('EXIF tags'),
+    MetadataKind.XMP: _tr('XMP'),
+    MetadataKind.IPTC: _tr('IPTC'),
+}
+OTHER_METADATA_DETAIL_LINE = _tr('{part}: {items}')
+
 WRITE_ONLY_SAVE_TITLE = _tr('This format cannot be opened again')
 WRITE_ONLY_SAVE_MESSAGE = _tr('IntraPaint can write images in the {file_format} format, but cannot load them. Use '
                               'another file format if you want to be able to load this image in IntraPaint again.')
@@ -120,6 +132,23 @@ NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without co
 
 def _extension_str(extensions: tuple[str, ...]) -> str:
     return ', '.join((f'.{ext.lower()}' for ext in extensions))
+
+
+def _other_metadata_loss(metadata: ImageMetadata, file_format: str, is_animation: bool) -> Optional[SaveLoss]:
+    """Returns the loss for everything but generation parameters that a save drops, or None if it drops nothing.
+
+    Generation parameters have their own warning, see `METADATA_NOT_SAVED_TITLE`. The item names go in the loss's
+    details, because an image can carry hundreds of EXIF tags.
+    """
+    dropped = split_metadata(metadata, file_format, is_animation, frozenset({MetadataKind.PARAMETERS})).dropped
+    if len(dropped) == 0:
+        return None
+    labels = ', '.join(OTHER_METADATA_PART_LABELS[part.kind] for part in dropped)
+    details = '\n'.join(OTHER_METADATA_DETAIL_LINE.format(
+        part=OTHER_METADATA_PART_LABELS[part.kind], items=', '.join(part.details)) for part in dropped
+                        if len(part.details) > 0)
+    return SaveLoss(OTHER_METADATA_NOT_SAVED_TITLE, OTHER_METADATA_NOT_SAVED_MESSAGE.format(
+        file_format=format_name(file_format), dropped=labels), AppConfig.WARN_BEFORE_METADATA_LOSS, details)
 
 
 def _metadata_loss_message() -> str:
@@ -173,20 +202,12 @@ class ImageIO:
         """Forgets the metadata of the previously open file."""
         self.metadata = ImageMetadata()
 
-    def metadata_json(self) -> Optional[str]:
-        """Returns the metadata's text entries as the JSON that .ora files store, or None if there are none."""
-        return self.metadata.to_ora_json()
-
-    def exif_bytes(self) -> bytes:
-        """Returns the EXIF data of the open file, encoded."""
-        return self.metadata.exif.tobytes()
-
     def apply_restored_document(self, restored: RestoredDocument) -> None:
-        """Takes the metadata, EXIF data and file path of a document restored from a recovery copy.
+        """Takes the metadata and file path of a document restored from a recovery copy.
 
         Save then writes to the path the document came from.
         """
-        self.metadata = ImageMetadata.from_ora_json(restored.metadata, restored.exif)
+        self.metadata = restored.metadata
         Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -319,6 +340,10 @@ class ImageIO:
                 and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA):
             losses.append(SaveLoss(METADATA_NOT_SAVED_TITLE, _metadata_loss_message(),
                                    AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA))
+        if config.get(AppConfig.WARN_BEFORE_METADATA_LOSS):
+            metadata_loss = _other_metadata_loss(self.metadata, file_format, is_animation)
+            if metadata_loss is not None:
+                losses.append(metadata_loss)
         if (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE) and file_format in IMAGE_WRITE_FORMATS
                 and file_format not in IMAGE_READ_FORMATS):
             losses.append(SaveLoss(WRITE_ONLY_SAVE_TITLE, WRITE_ONLY_SAVE_MESSAGE.format(file_format=format_str),
@@ -417,7 +442,7 @@ class ImageIO:
             on_saved = self._save_started(keeps_layers=is_ora or animation_options is not None
                                           or self._image_stack.layer_stack.count <= 1)
             if is_ora:
-                snapshot = capture_ora_image(self._image_stack, file_path, self.metadata_json())
+                snapshot = capture_ora_image(self._image_stack, file_path, self.metadata)
                 self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot), on_saved)
                 error_handled = True  # The write's own handler reports any failure.
                 return
@@ -483,7 +508,7 @@ class ImageIO:
         try:
             assert file_path is not None
             if file_path.lower().endswith('.ora'):
-                self.metadata = ImageMetadata.from_ora_json(read_ora_image(self._image_stack, file_path))
+                self.metadata = read_ora_image(self._image_stack, file_path)
             else:
                 image, self.metadata = load_image(file_path)
                 if self._should_load_frames(file_path, image.size()):

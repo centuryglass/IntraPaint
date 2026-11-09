@@ -28,6 +28,7 @@ from src.ui.layout.panel_fit import FitItem, FitPlanner, Orientation, Placement,
 from src.ui.widget.image_graphics_view import MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM, ZOOM_FACTOR
 from src.ui.widget.panel_header import BUTTON_SIZE, GlyphButton, PanelPopover
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
+from src.util.layout import add_layout
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -154,7 +155,7 @@ class CanvasBar(QWidget):
         self._hint_layout.setContentsMargins(0, 0, 0, 0)
         self._hint_layout.setSpacing(HINT_SPACING)
         self._hint_labels: list[QLabel] = []
-        row_layout.addLayout(self._hint_layout)
+        add_layout(row_layout, self._hint_layout)
         self._hint_button = self._tool_button('?', HINTS_TOOLTIP)
         self._hint_button.clicked.connect(self._show_hint_popover)
         row_layout.addWidget(self._hint_button)

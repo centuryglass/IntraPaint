@@ -127,13 +127,14 @@ def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
 
 
 def panel_position(rect: QRect | QRectF, transform: QTransform) -> QPointF:
-    """Returns the X/Y position the text tool panel shows for a transformed rectangle: the top-left of its
-       transformed bounding box.
+    """Returns the X/Y position the text tool panel shows for a transformed rectangle: the scene position of the
+       rectangle's local top-left corner.
 
-    The text tool reads and writes position through this function and transform_at_panel_position. The layer
-    transform tool's panel shows the transformation origin instead (TransformOutline.origin_scene_pos).
+    The corner is the same point the layer transform tool's panel shows with its origin snapped to the top-left
+    corner (TransformOutline.origin_scene_pos). For a flipped rectangle it is not the top-left of the bounding box.
+    The text tool reads and writes position through this function and transform_at_panel_position.
     """
-    return map_rect_precise(rect, transform).topLeft()
+    return transform.map(QPointF(rect.topLeft()))
 
 
 def transform_at_panel_position(rect: QRect | QRectF, transform: QTransform, position: QPointF) -> QTransform:

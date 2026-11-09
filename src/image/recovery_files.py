@@ -6,7 +6,8 @@ Each running instance owns one session folder under `recovery_root()`:
 - `files/` holds one PNG per layer image, named by layer id, role and the generation that wrote it, plus
   content-addressed copies of extension and foreign files and the thumbnail.
 - `manifest.json` holds everything else: the `stack.xml` and `extended_data.xml` that `open_raster` would write, the
-  generation area, the original file path, metadata and EXIF data, and which file holds each archive path.
+  generation area, the original file path, and which file holds each archive path. Metadata is in the XML and
+  archive files, as in an .ora save. Manifests from older versions also hold EXIF data under `KEY_EXIF`.
 
 The manifest is the commit point. `write_recovery` writes every new file first, then replaces the manifest through a
 temporary file and `os.replace`, then deletes files the new manifest doesn't name. A crash at any point leaves the
@@ -30,9 +31,11 @@ from typing import Any, Optional
 from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QImage
 
+from src.image.image_metadata import ImageMetadata
 from src.image.layers.image_stack import ImageStack
 from src.image.open_raster import (OraSnapshot, ora_xml_files, read_ora_image, MIMETYPE_FILE_NAME,
                                    MIMETYPE_FILE_CONTENT, IMAGE_TAG_WIDTH, IMAGE_TAG_HEIGHT)
+from src.image.ora_metadata import load_exif
 from src.util.shared_constants import DATA_DIR
 from src.util.visual.image_utils import read_qimage
 
@@ -57,7 +60,7 @@ KEY_SAVED_AT = 'saved_at'
 KEY_ORIGINAL_PATH = 'original_path'
 KEY_IMAGE_SIZE = 'image_size'
 KEY_GENERATION_AREA = 'generation_area'
-KEY_EXIF = 'exif'
+KEY_EXIF = 'exif'  # Read only, from manifests written before EXIF data was stored in the archive files.
 KEY_XML_FILES = 'xml_files'
 KEY_ARCHIVE_FILES = 'archive_files'
 KEY_FOREIGN_FILES = 'foreign_files'
@@ -153,8 +156,7 @@ class RecoveryWrite:
 
 def plan_recovery_write(snapshot: OraSnapshot, session_dir: str, generation: int,
                         previous_layer_files: dict[tuple[int, str], str], original_path: str,
-                        generation_area: QRect, exif: Optional[bytes],
-                        thumbnail: Optional[QImage]) -> tuple[RecoveryWrite, set[int]]:
+                        generation_area: QRect, thumbnail: Optional[QImage]) -> tuple[RecoveryWrite, set[int]]:
     """Builds an autosave from a snapshot, reusing `previous_layer_files` for layers the snapshot skipped.
 
     Returns the write and the ids of skipped layers with no previous file. When that set isn't empty, the write is
@@ -196,7 +198,6 @@ def plan_recovery_write(snapshot: OraSnapshot, session_dir: str, generation: int
         KEY_IMAGE_SIZE: [size.width(), size.height()],
         KEY_GENERATION_AREA: [generation_area.x(), generation_area.y(), generation_area.width(),
                               generation_area.height()],
-        KEY_EXIF: None if exif is None else base64.b64encode(exif).decode('ascii'),
         KEY_XML_FILES: xml_files,
         KEY_ARCHIVE_FILES: archive_files,
         KEY_FOREIGN_FILES: foreign_files,
@@ -337,9 +338,7 @@ def _has_other_version_manifest(session_dir: str) -> bool:
 class RestoredDocument:
     """What a restore returns besides the layers it loads into the image stack."""
     original_path: str
-    metadata: Optional[str]
-    """The metadata JSON that `ImageIO` saves in .ora files, if any."""
-    exif: Optional[bytes]
+    metadata: ImageMetadata
 
 
 def restore_session(image_stack: ImageStack, session: RecoverableSession) -> RestoredDocument:
@@ -368,5 +367,7 @@ def restore_session(image_stack: ImageStack, session: RecoverableSession) -> Res
         shutil.rmtree(tmpdir, ignore_errors=True)
     x, y, width, height = (int(value) for value in manifest[KEY_GENERATION_AREA])
     image_stack.generation_area = QRect(x, y, width, height)
-    exif = manifest.get(KEY_EXIF)
-    return RestoredDocument(session.original_path, metadata, None if exif is None else base64.b64decode(exif))
+    legacy_exif = manifest.get(KEY_EXIF)
+    if isinstance(legacy_exif, str) and len(metadata.exif_entries()) == 0:
+        load_exif(metadata, base64.b64decode(legacy_exif))
+    return RestoredDocument(session.original_path, metadata)

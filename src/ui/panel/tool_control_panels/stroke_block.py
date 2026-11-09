@@ -51,7 +51,7 @@ from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, 
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
-from src.util.layout import layout_contents
+from src.util.layout import layout_contents, add_layout
 from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -144,14 +144,16 @@ def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent
 
 def tool_section(title: str, *items: QWidget | QLayout) -> PanelSection:
     """Returns a titled section holding `items` in a column, for a tool panel's sections after the stroke block."""
-    body = QWidget()
-    body_layout = QVBoxLayout(body)
+    body_layout = QVBoxLayout()
     body_layout.setContentsMargins(0, 0, 0, 0)
     for item in items:
         if isinstance(item, QLayout):
-            body_layout.addLayout(item)
+            # body_layout has no widget until setLayout below, so it can take a filled layout (see add_layout):
+            add_layout(body_layout, item)
         else:
             body_layout.addWidget(item)
+    body = QWidget()
+    body.setLayout(body_layout)
     return PanelSection(title, body)
 
 

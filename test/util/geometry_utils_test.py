@@ -61,16 +61,24 @@ class TestGeometryUtils(unittest.TestCase):
             extract_transform_parameters(QTransform.fromScale(0.0, 1.0))
 
     def test_panel_position(self):
-        """panel_position is the top-left of the transformed bounding box."""
+        """panel_position is the scene position of the rectangle's local top-left corner."""
         rect = QRectF(0, 0, 200, 100)
         self.assertEqual(panel_position(rect, QTransform.fromTranslate(10, 20)), QPointF(10, 20))
         rotated = QTransform().rotate(90) * QTransform.fromTranslate(300, 50)
-        self.assertEqual(panel_position(rect, rotated), QPointF(200, 50))
+        self.assertEqual(panel_position(rect, rotated), QPointF(300, 50))
         flipped = QTransform.fromScale(-1, 1) * QTransform.fromTranslate(300, 50)
-        self.assertEqual(panel_position(rect, flipped), QPointF(100, 50))
+        self.assertEqual(panel_position(rect, flipped), QPointF(300, 50))
+        offset_rect = QRectF(5, 7, 200, 100)
+        self.assertEqual(panel_position(offset_rect, rotated), rotated.map(QPointF(5, 7)))
+
+    def test_panel_position_stable_under_rotation_about_corner(self):
+        """Rotating about the top-left corner leaves panel_position unchanged."""
+        rect = QRectF(0, 0, 200, 100)
+        base = QTransform.fromTranslate(40, 60)
+        self.assertEqual(panel_position(rect, QTransform().rotate(30) * base), panel_position(rect, base))
 
     def test_transform_at_panel_position(self):
-        """transform_at_panel_position moves the bounding box to the position and keeps rotation and scale."""
+        """transform_at_panel_position moves the top-left corner to the position and keeps rotation and scale."""
         rect = QRectF(0, 0, 200, 100)
         source = QTransform().rotate(30) * QTransform.fromScale(1.5, 0.5) * QTransform.fromTranslate(300, 50)
         moved = transform_at_panel_position(rect, source, QPointF(12.5, -4.0))

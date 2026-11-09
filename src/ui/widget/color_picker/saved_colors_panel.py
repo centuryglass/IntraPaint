@@ -17,6 +17,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller import color_controller
 from src.ui.widget.color_picker.color_swatch_grid import ColorSwatchGrid, SWATCH_SIZE, SWATCH_SPACING
+from src.util.layout import add_layout
 
 # The saved colors scroll once they need more rows than MAX_VISIBLE_ROWS, and the layout may shrink the grid's visible
 # area to MIN_VISIBLE_ROWS.
@@ -105,6 +106,7 @@ class SavedColorsPanel(QWidget):
         layout.addWidget(self._scroll_area)
 
         button_row = QHBoxLayout()
+        add_layout(layout, button_row)
         self._save_button = QPushButton(SAVE_BUTTON_LABEL)
         self._save_button.clicked.connect(lambda: color_controller.save_color(self._color))
         button_row.addWidget(self._save_button, stretch=1)
@@ -112,7 +114,6 @@ class SavedColorsPanel(QWidget):
         self._remove_button.setToolTip(REMOVE_BUTTON_TOOLTIP)
         self._remove_button.clicked.connect(self._remove_current_color)
         button_row.addWidget(self._remove_button)
-        layout.addLayout(button_row)
         layout.addStretch(1)
         self._update_colors()
         AppConfig().connect(self, AppConfig.SAVED_COLORS, lambda _: self._update_colors())

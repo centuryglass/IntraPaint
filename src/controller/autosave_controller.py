@@ -82,7 +82,7 @@ def _layer_key(layer: TransformLayer) -> _LayerKey:
 class _DocumentState:
     """What an autosave compares to decide whether the document changed since the copy it last wrote.
 
-    Leaves out the metadata, EXIF data and original path, which `ImageIO` sets after a load replaces the document.
+    Leaves out the metadata and original path, which `ImageIO` sets after a load replaces the document.
     Every copy still holds their current values.
     """
     layer_keys: dict[int, _LayerKey]
@@ -311,7 +311,7 @@ class AutosaveController(QObject):
                 if isinstance(layer, TransformLayer) and not isinstance(layer, LayerGroup)}
 
     def _capture_snapshot(self, capture_pixels: Callable[[Layer], bool]) -> OraSnapshot:
-        return capture_ora_image(self._image_stack, 'recovered.ora', self._image_io.metadata_json(),
+        return capture_ora_image(self._image_stack, 'recovered.ora', self._image_io.metadata,
                                  capture_pixels=capture_pixels, include_merged_image=False)
 
     def _current_state(self, snapshot: OraSnapshot) -> _DocumentState:
@@ -339,8 +339,7 @@ class AutosaveController(QObject):
             snapshot = self._capture_snapshot(_capture_pixels)
             write, missing = plan_recovery_write(snapshot, self._session_dir, self._generation, self._layer_files,
                                                  Cache().get(Cache.LAST_FILE_PATH),
-                                                 self._image_stack.generation_area, self._image_io.exif_bytes(),
-                                                 thumbnail)
+                                                 self._image_stack.generation_area, thumbnail)
             if len(missing) == 0:
                 self._generation += 1
                 return write, self._current_state(snapshot)

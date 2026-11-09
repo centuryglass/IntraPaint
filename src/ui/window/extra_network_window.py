@@ -17,6 +17,7 @@ from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.flow_layout import FlowWidget
 from src.ui.widget.image_widget import ImageWidget
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -136,7 +137,7 @@ class ExtraNetworkWindow(QDialog):
             self._grid.flow.addWidget(card)
 
         footer = QHBoxLayout()
-        layout.addLayout(footer)
+        add_layout(layout, footer)
         self._weight = SliderField(WEIGHT_LABEL, DEFAULT_WEIGHT, MIN_WEIGHT, MAX_WEIGHT, step=WEIGHT_STEP)
         self._weight.setToolTip(WEIGHT_TOOLTIP)
         self._weight.setEnabled(False)

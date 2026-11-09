@@ -39,7 +39,7 @@ class OpenRasterGroupTest(GroupRenderTestCase):
         """Saves the image stack to a temporary .ora file and loads it into self.loaded_stack."""
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, ORA_FILE_NAME)
-            save_ora_image(self.image_stack, ora_path, '')
+            save_ora_image(self.image_stack, ora_path, None)
             read_ora_image(self.loaded_stack, ora_path)
 
     def assert_layers_match(self, expected: Layer, actual: Layer) -> None:
@@ -139,7 +139,7 @@ class OpenRasterGroupTest(GroupRenderTestCase):
         self.add_layer('upper', QPoint(14, 10), group, CompositeMode.SCREEN, 0.8)
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, ORA_FILE_NAME)
-            save_ora_image(self.image_stack, ora_path, '')
+            save_ora_image(self.image_stack, ora_path, None)
             with zipfile.ZipFile(ora_path) as zip_file:
                 self.assertEqual('mergedimage.png', MERGED_IMAGE_FILE_NAME, 'the ORA spec names this file')
                 merged = QImage.fromData(zip_file.read(MERGED_IMAGE_FILE_NAME))

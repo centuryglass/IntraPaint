@@ -27,6 +27,8 @@ EXTENSION_ELEMENT = 'extension'
 EXTENSION_TAG_NAME = 'name'
 LAYER_FILE_DIRECTORY = 'data'
 EXTENSION_DIRECTORY = 'data/extensions'
+METADATA_EXTENSION_NAME = 'metadata'
+"""The extension name `src/image/ora_metadata.py` stores image metadata under, which no registered extension can use."""
 
 
 def safe_relative_path(path: str) -> str:
@@ -124,8 +126,13 @@ def layer_loaders() -> dict[str, LayerLoader]:
 
 
 def register_document_extension(extension: DocumentExtension) -> None:
-    """Registers a document-level extension, replacing any with the same name."""
+    """Registers a document-level extension, replacing any with the same name.
+
+    Raises ValueError if the name isn't a safe file name or is `METADATA_EXTENSION_NAME`.
+    """
     safe_relative_path(extension.name)
+    if extension.name == METADATA_EXTENSION_NAME:
+        raise ValueError(f'Extension name "{METADATA_EXTENSION_NAME}" is reserved for image metadata')
     _document_extensions[extension.name] = extension
 
 

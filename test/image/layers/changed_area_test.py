@@ -25,7 +25,7 @@ from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from test.base_test_case import IntraPaintTestCase
 from test.image.layers.image_stack_state import select_rect
-from test.render_assertions import full_render
+from test.render_assertions import clear_area, full_render
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -227,9 +227,7 @@ class LayerPropertyTest(ChangedAreaTestCase):
         def _change() -> None:
             with self.image_stack.layer_stack.all_signals_delayed():
                 self.translated.set_transform(QTransform.fromTranslate(75, 2))
-                with self.rotated.borrow_image(QRect(0, 0, 8, 8)) as image:
-                    assert image is not None
-                    image.fill(0)
+                clear_area(self.rotated, QRect(0, 0, 8, 8))
                 self.grouped.set_opacity(0.5)
         self.assert_change_covered(_change)
 

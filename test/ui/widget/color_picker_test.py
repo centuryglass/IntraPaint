@@ -14,7 +14,7 @@ from src.ui.widget.color_picker.color_comparison import ColorComparison
 from src.ui.widget.color_picker.color_slider_block import MODE_RGB
 from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker, ColorPickerLayout, WHEEL_TAB_TITLE, \
     SLIDERS_TAB_TITLE, PALETTES_TAB_TITLE, ALPHA_TAB_TITLE
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, layout_item_wrapper_count
 from test.ui.widget.color_picker_test_utils import press, move, release, SignalRecorder
 
 WIDGET_SIZE = 200
@@ -207,6 +207,13 @@ class ColorPickerLayoutTest(IntraPaintTestCase):
             self.picker.set_picker_layout(picker_layout)
             self.picker.set_picker_layout(ColorPickerLayout.SIDE_TALL)
         self.assertEqual(len(self.picker.findChildren(QWidget)), widget_count)
+
+    def test_building_and_switching_layouts_wraps_no_layout_items(self) -> None:
+        """Building every layout and moving the parts between them leaves no layout item wrappers (see add_layout)."""
+        wrappers = layout_item_wrapper_count()
+        for picker_layout in list(ColorPickerLayout) * 2:
+            self.picker.set_picker_layout(picker_layout)
+        self.assertEqual(layout_item_wrapper_count(), wrappers)
 
     def test_parts_are_back_in_place_after_visiting_other_layouts(self) -> None:
         """Returning to a layout shows the same parts, tabs and part order as its first visit."""

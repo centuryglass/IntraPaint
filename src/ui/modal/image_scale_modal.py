@@ -34,6 +34,7 @@ from src.ui.panel.controlnet_panel import CONTROL_END_PARAM, CONTROL_END_FIELD, 
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter
+from src.util.layout import add_layout
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.shared_text import PIL_SCALING_MODES, UPSCALE_OPTION_NONE
@@ -455,7 +456,7 @@ class ImageScaleModal(QDialog):
             self._tile_model_dropdown.currentTextChanged.connect(self._tile_model_update)
             self._ai_layout.addWidget(_labeled_row(CONTROLNET_TILE_MODEL_LABEL, self._tile_model_dropdown,
                                                    self._ai_body, match_fields=True))
-            self._ai_layout.addLayout(self._tile_layout)
+            add_layout(self._ai_layout, self._tile_layout)
             self._tile_model_update(self._tile_model_dropdown.currentText())
         self._ult_upscale_limit_changed()
 

@@ -230,12 +230,12 @@ class TextTool(BaseTool):
 
     @staticmethod
     def _layer_panel_position(layer: TextLayer) -> QPoint:
-        """Returns the layer position the panel's X/Y fields show, matching the layer transform tool."""
+        """Returns the layer position the panel's X/Y fields show, the layer's top-left corner in the scene."""
         return panel_position(layer.bounds, layer.transform).toPoint()
 
     def _control_offset_changed_slot(self, offset: QPoint) -> None:
-        """Moves the layer to the panel's X/Y the way the layer transform tool does, changing only the axes that
-           differ from the rounded values the panel shows."""
+        """Moves the layer's top-left corner to the panel's X/Y, changing only the axes that differ from the
+           rounded values the panel shows."""
         if self._text_layer is not None and self.is_active:
             self._disconnect_signals()
             layer = self._text_layer

@@ -1,5 +1,4 @@
 """Tests for ImageIO: opening and saving image files, animations and the open file's metadata."""
-import json
 import os
 import sys
 import tempfile
@@ -66,6 +65,7 @@ class TestImageIO(ImageIOTestCase):
         AppConfig().set(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE, False)
         AppConfig().set(AppConfig.WARN_BEFORE_COLOR_LOSS, False)
         AppConfig().set(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE, False)
+        AppConfig().set(AppConfig.WARN_BEFORE_METADATA_LOSS, False)
         self.image_io.load(LAYER_IMAGE)
         self.assertTrue(self.image_stack.has_image)
 
@@ -122,14 +122,28 @@ class TestImageIO(ImageIOTestCase):
             self.assertTrue(os.path.isfile(save_path))
             self.assertEqual(save_path, Cache().get(Cache.LAST_FILE_PATH))
 
-    def test_metadata_json_holds_only_text_entries(self):
-        """The .ora metadata JSON holds the text entries, leaving out binary format info such as an ICC profile."""
-        self.image_io.metadata = ImageMetadata({'text': 'plain'}, format_info={
-            'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'dpi': (96.0, 96.0)})
-        metadata_json = self.image_io.metadata_json()
-        assert metadata_json is not None
-        self.assertEqual({'text': 'plain'}, json.loads(metadata_json))
-
+    def test_ora_save_keeps_metadata(self):
+        """An .ora save and load keeps the text entries, EXIF, XMP, IPTC and DPI, and leaves out the ICC profile."""
+        self.image_io.load(LAYER_IMAGE)
+        exif = Image.Exif()
+        exif[ExifTags.Base.Artist] = 'Someone'
+        iptc = b'\x1c\x02\x19\x00\x03tag'
+        self.image_io.metadata = ImageMetadata({'text': 'plain'}, exif, {
+            'xmp': b'<x:xmpmeta xmlns:x="adobe:ns:meta/"/>', 'photoshop': {0x0404: iptc},
+            'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'dpi': (96, 96)})
+        with tempfile.TemporaryDirectory() as save_dir:
+            save_path = os.path.join(save_dir, 'saved.ora')
+            self.image_io.save_as(save_path)
+            self.image_io.wait_for_pending_save()
+            self.image_io.clear_metadata()
+            self.image_io.load(save_path)
+        metadata = self.image_io.metadata
+        self.assertEqual({'text': 'plain'}, metadata.text)
+        self.assertEqual('Someone', metadata.exif[ExifTags.Base.Artist])
+        self.assertEqual(b'<x:xmpmeta xmlns:x="adobe:ns:meta/"/>', metadata.xmp_packet)
+        self.assertEqual(iptc, metadata.iptc_data)
+        self.assertEqual((96, 96), metadata.format_info['dpi'])
+        self.assertFalse(metadata.has_icc_profile)
 
 A1111_TEXT = ('a red fox\nNegative prompt: blurry\nSteps: 25, Sampler: Euler a, Schedule type: Karras, CFG scale: 6.5, '
               'Seed: 1234, Size: 512x768, Model hash: 6ce0161689, Model: v1-5-pruned, Denoising strength: 0.6, '
@@ -311,6 +325,73 @@ class TestSaveLossWarning(ImageIOTestCase):
             self.image_io.save_as(os.path.join(self.temp_dir.name, 'out.ora'))
             self.image_io.wait_for_pending_save()
         dialog.assert_not_called()
+
+
+class TestMetadataLossWarning(ImageIOTestCase):
+    """Tests the pre-save entry that lists EXIF, XMP, IPTC and comment data a format can't keep."""
+
+    IPTC = b'\x1c\x02\x19\x00\x03tag' + b'\x1c\x02\x78\x00\x02hi'  # Keywords, Caption/Abstract
+
+    def setUp(self) -> None:
+        super().setUp()
+        AppConfig()._reset()
+        AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
+        self.image_io.load(LAYER_IMAGE)
+        self.image_io.metadata = ImageMetadata({'comment': 'a note', 'Author': 'me'},
+                                               format_info={'photoshop': {0x0404: self.IPTC}, 'xmp': b'<x/>'})
+
+    def _losses_for(self, extension: str) -> list:
+        calls: list = []
+
+        def _answer(_parent, losses, offer_ora):
+            calls.append(losses)
+            return SAVE_ANYWAY
+
+        with patch('src.controller.image_io.request_save_loss_choice', side_effect=_answer):
+            self.image_io.save_as(os.path.join(self.temp_dir.name, f'out.{extension}'))
+            self.image_io.wait_for_pending_save()
+        self.assertEqual(1, len(calls))
+        return [loss for loss in calls[0] if loss.config_key == AppConfig.WARN_BEFORE_METADATA_LOSS]
+
+    def test_png_warns_about_iptc(self) -> None:
+        """A PNG save names the IPTC datasets it drops, and nothing it keeps."""
+        losses = self._losses_for('png')
+        self.assertEqual(1, len(losses))
+        self.assertIn('IPTC', losses[0].message)
+        self.assertNotIn('XMP', losses[0].message)
+        self.assertNotIn('comment', losses[0].message)
+        self.assertIn('Keywords', losses[0].details)
+        self.assertIn('Caption/Abstract', losses[0].details)
+
+    def test_tiff_warns_about_comment_text_and_iptc(self) -> None:
+        """A format that keeps only EXIF and XMP also drops comments and text entries."""
+        losses = self._losses_for('tiff')
+        self.assertEqual(1, len(losses))
+        for dropped in ('comment', 'text entries', 'IPTC'):
+            self.assertIn(dropped, losses[0].message)
+        self.assertIn('Author', losses[0].details)
+
+    def test_jpeg_keeps_iptc_without_warning(self) -> None:
+        """JPEG keeps IPTC, XMP and the comment, and only drops the text entries."""
+        losses = self._losses_for('jpg')
+        self.assertEqual(1, len(losses))
+        self.assertNotIn('IPTC', losses[0].message)
+        self.assertIn('text entries', losses[0].message)
+
+    def test_nothing_dropped_has_no_entry(self) -> None:
+        """No entry is listed when the format keeps everything the image carries."""
+        self.image_io.metadata = ImageMetadata(format_info={'photoshop': {0x0404: self.IPTC}})
+        self.assertEqual([], self._losses_for('jpg'))
+
+    def test_removed_metadata_is_not_reported(self) -> None:
+        """Metadata removed before the save isn't listed as lost."""
+        self.image_io.metadata.remove_all()
+        self.assertEqual([], self._losses_for('png'))
+
+    def test_disabled_key_has_no_entry(self) -> None:
+        """The entry is left out once its warning is turned off."""
+        AppConfig().set(AppConfig.WARN_BEFORE_METADATA_LOSS, False)
+        self.assertEqual([], self._losses_for('png'))
 
 
 class TestUnsavedChanges(ImageIOTestCase):
@@ -496,6 +577,17 @@ class TestSaveAnimation(ImageIOTestCase):
                 self.image_io.load(path)
                 self.assertEqual(self._layer_names_bottom_up(),
                                  ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
+
+    def test_animation_save_without_metadata_writes_no_exif(self) -> None:
+        """A WebP animation saved from an image with no metadata reloads with no EXIF tags."""
+        self.image_io.load(self.gif_path)
+        path = os.path.join(self.temp_dir.name, 'plain.webp')
+        with patch(self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))), \
+                patch('src.controller.image_io.open_image_file', return_value=path):
+            self.image_io.save_as()
+            self.image_io.wait_for_pending_save()
+        self.image_io.load(path)
+        self.assertEqual([], self.image_io.metadata.exif_entries())
 
     def test_save_flattened(self) -> None:
         """Choosing a flattened save in the modal writes a single frame."""

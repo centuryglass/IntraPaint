@@ -30,6 +30,7 @@ from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.settings_controls import OPTION_LABELS, create_setting_control
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.setting_row_markers import ModifiedLabel, ResetButton
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 from src.ui.input_fields.field_factory import DynamicFieldWidget
 
@@ -209,6 +210,7 @@ class SettingsModal(QDialog):
         layout.addWidget(self._search)
 
         content = QHBoxLayout()
+        add_layout(layout, content, stretch=1)
         self._sidebar = QListWidget(self)
         self._sidebar.setMinimumWidth(SIDEBAR_MIN_WIDTH)
         self._sidebar.setMaximumWidth(SIDEBAR_MAX_WIDTH)
@@ -220,7 +222,6 @@ class SettingsModal(QDialog):
         self._no_results.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._stack.addWidget(self._no_results)
         content.addWidget(self._stack, stretch=1)
-        layout.addLayout(content, stretch=1)
 
         self._footer = DialogFooter(SAVE_BUTTON_LABEL, self)
         self._footer.accepted.connect(self._save)

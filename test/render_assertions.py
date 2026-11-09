@@ -6,6 +6,7 @@
 - `assert_region_renders_match` and `assert_tiled_render_matches` compare region renders with the same region of the
   full render.
 - `displayed_image` reads back what an ImageViewer paints for the layer stack.
+- `clear_area` clears part of a layer, changing nothing outside the area it reports.
 
 Comparisons are exact: the tiled compositor planned in https://github.com/centuryglass/IntraPaint/issues/25 needs
 region renders to match full renders bit for bit. Call `ImageStack.flush_render` before reading a cached image or the
@@ -17,6 +18,7 @@ import numpy as np
 from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, QSizeF
 from PySide6.QtGui import QImage, QPainter, QTransform
 
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
@@ -110,6 +112,20 @@ def assert_tiled_render_matches(image_stack: ImageStack, tile_size: int, msg: Op
     painter.end()
     if mismatched:
         assert_images_equal(tiled, full, _mismatch_message(mismatched, len(regions), msg))
+
+
+def clear_area(layer: ImageLayer, area: QRect) -> None:
+    """Clears area of a layer's image through `borrow_image`, which reports only area as changed.
+
+    `borrow_image` yields the whole image, and caches keep showing old content outside the area it reports, so filling
+    the yielded image would leave them stale.
+    """
+    with layer.borrow_image(area) as image:
+        assert image is not None
+        painter = QPainter(image)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.fillRect(area, 0)
+        painter.end()
 
 
 def displayed_image(viewer: ImageViewer, image_stack: ImageStack) -> QImage:

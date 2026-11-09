@@ -16,14 +16,16 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QHBox
     QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget, QAbstractItemView, QHeaderView
 
 from src.config.cache import Cache
-from src.image.image_metadata import A1111Parameters, ImageMetadata, ExifEntry, PARAMETERS_KEY, COMMENT_KEY, \
-    XMP_TEXT_KEY, XMP_INFO_KEY
+from src.image.image_metadata import A1111Parameters, ImageMetadata, ExifEntry, XMP_INFO_KEY
+from src.image.metadata_save_rules import MetadataKind, MetadataPart, format_keeps_metadata, format_name, \
+    metadata_parts, split_metadata
 from src.image.metadata_cache_fields import PROMPT_FIELD, NEGATIVE_PROMPT_FIELD, apply_to_cache, update_from_cache, \
     cache_field_keys, read_field, write_field, differs_from_editor, editor_field_text
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.modal.dialog_footer import DialogFooter
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
-from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, RENAMED_FORMATS
+from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA
 
 logger = logging.getLogger(__name__)
 
@@ -114,12 +116,9 @@ PART_TEXT_ENTRIES = _tr('text entries ({keys})')
 PART_EXIF = _tr('EXIF tags')
 PART_XMP = _tr('XMP')
 PART_IPTC = _tr('IPTC')
+_PART_LABELS = {MetadataKind.PARAMETERS: PART_PARAMETERS, MetadataKind.COMMENT: PART_COMMENT,
+                MetadataKind.EXIF: PART_EXIF, MetadataKind.XMP: PART_XMP, MetadataKind.IPTC: PART_IPTC}
 
-_PNG_FORMATS = ('PNG', 'APNG')
-_ORA_FORMATS = ('ORA',)
-_JPEG_FORMATS = ('JPEG',)
-_COMMENT_ONLY_FORMATS = ('GIF',)
-_COMMENT_EXIF_FORMATS = ('JP2', 'JPX', 'J2C', 'JPC', 'JPM')
 _MAX_CELL_CHARS = 200
 _MIN_A1111_FIELDS = 3  # Matches `_MIN_PARAMETER_LINE_FIELDS` in src/image/image_metadata.py.
 DEFAULT_SIZE = QSize(720, 680)
@@ -133,60 +132,34 @@ _FIELD_COLUMN, _VALUE_COLUMN, _EDITOR_COLUMN, _BUTTON_COLUMN = range(4)
 _SOURCE_COLUMN, _NAME_COLUMN, _ALL_VALUE_COLUMN = range(3)
 
 
-def _format_name(file_path: str) -> str:
-    extension = os.path.splitext(file_path)[1].lstrip('.').upper()
-    return RENAMED_FORMATS.get(extension, extension)
-
-
 def save_format_note(metadata: ImageMetadata, file_path: str) -> str:
     """Returns a sentence saying which of `metadata` a save to `file_path` keeps and drops.
 
-    Follows the rules in `save_image_with_metadata` and `capture_ora_image`. An empty path means the image hasn't been
-    saved.
+    Follows `src/image/metadata_save_rules.py`. An empty path means the image hasn't been saved.
     """
     formats = ', '.join(sorted(IMAGE_FORMATS_SUPPORTING_METADATA))
     if file_path == '':
         return NOTE_NOT_SAVED.format(formats=formats)
-    file_format = _format_name(file_path)
-    parameters = metadata.parameters
-    has_comment = metadata.text.get(COMMENT_KEY, '') != ''
-    other_keys = [key for key in metadata.text if key not in (PARAMETERS_KEY, COMMENT_KEY, XMP_TEXT_KEY)]
-    has_xmp = metadata.xmp_packet is not None
-    present: dict[str, bool] = {
-        PART_PARAMETERS: parameters is not None,
-        PART_COMMENT: has_comment and metadata.text.get(COMMENT_KEY) != parameters,
-        PART_TEXT_ENTRIES.format(keys=', '.join(other_keys)): len(other_keys) > 0,
-        PART_EXIF: len(metadata.exif_entries()) > 0,
-        PART_XMP: has_xmp,
-        PART_IPTC: len(metadata.iptc_entries()) > 0,
-    }
-    present_parts = [part for part, is_present in present.items() if is_present]
-    if len(present_parts) == 0:
+    file_format = format_name(os.path.splitext(file_path)[1].lstrip('.'))
+    if len(metadata_parts(metadata)) == 0:
         return NOTE_NOTHING_TO_SAVE
-    if file_format not in IMAGE_FORMATS_SUPPORTING_METADATA:
+    if not format_keeps_metadata(file_format):
         return NOTE_NONE_KEPT.format(file_format=file_format, formats=formats)
-    text_parts = [part for part in present_parts if part not in (PART_EXIF, PART_XMP, PART_IPTC)]
-    if file_format in _PNG_FORMATS:
-        kept = text_parts + [PART_EXIF, PART_XMP]
-    elif file_format in _ORA_FORMATS:
-        # Only an XMP packet that is a text entry is kept, see `ImageMetadata.to_ora_json`:
-        kept = text_parts + ([PART_XMP] if XMP_TEXT_KEY in metadata.text else [])
-    elif file_format in _COMMENT_ONLY_FORMATS:
-        kept = [PART_PARAMETERS if parameters is not None else PART_COMMENT]
-    elif file_format in _COMMENT_EXIF_FORMATS:
-        kept = [PART_PARAMETERS if parameters is not None else PART_COMMENT, PART_EXIF]
-    elif file_format in _JPEG_FORMATS:
-        kept = [PART_PARAMETERS, PART_COMMENT, PART_EXIF, PART_XMP, PART_IPTC]
-    else:
-        kept = [PART_PARAMETERS, PART_EXIF, PART_XMP]
-    kept_parts = [part for part in present_parts if part in kept]
-    dropped_parts = [part for part in present_parts if part not in kept]
-    if len(dropped_parts) == 0:
+    split = split_metadata(metadata, file_format)
+    if len(split.dropped) == 0:
         return NOTE_ALL_KEPT.format(file_format=file_format)
-    if len(kept_parts) == 0:
-        return NOTE_NONE_OF_IT_KEPT.format(file_format=file_format, dropped=', '.join(dropped_parts))
-    return NOTE_KEPT_AND_DROPPED.format(file_format=file_format, kept=', '.join(kept_parts),
-                                        dropped=', '.join(dropped_parts))
+    dropped = ', '.join(_part_label(part) for part in split.dropped)
+    if len(split.kept) == 0:
+        return NOTE_NONE_OF_IT_KEPT.format(file_format=file_format, dropped=dropped)
+    kept = ', '.join(_part_label(part) for part in split.kept)
+    return NOTE_KEPT_AND_DROPPED.format(file_format=file_format, kept=kept, dropped=dropped)
+
+
+def _part_label(part: MetadataPart) -> str:
+    """Returns the short name of a kind of metadata, as the save note lists it."""
+    if part.kind == MetadataKind.TEXT_ENTRIES:
+        return PART_TEXT_ENTRIES.format(keys=', '.join(part.details))
+    return _PART_LABELS[part.kind]
 
 
 def _cell_text(value: Any) -> str:
@@ -401,7 +374,7 @@ class MetadataWindow(QDialog):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         top_row = QHBoxLayout()
-        layout.addLayout(top_row)
+        add_layout(layout, top_row)
         self._raw_toggle = QCheckBox(RAW_TEXT_LABEL)
         self._raw_toggle.setToolTip(RAW_TEXT_TOOLTIP)
         self._raw_toggle.toggled.connect(self._update_raw_mode)
@@ -455,7 +428,7 @@ class MetadataWindow(QDialog):
         self._field_value_box.valueChanged.connect(self._field_value_changed)
         structured_layout.addWidget(self._field_value_box, stretch=1)
         field_buttons = QHBoxLayout()
-        structured_layout.addLayout(field_buttons)
+        add_layout(structured_layout, field_buttons)
         self._add_field_button = QPushButton(ADD_FIELD_LABEL)
         self._add_field_button.clicked.connect(self._add_field)
         self._remove_field_button = QPushButton(REMOVE_FIELD_LABEL)
@@ -475,13 +448,13 @@ class MetadataWindow(QDialog):
     def _build_prompt_row(self, layout: QVBoxLayout, field: str, label_text: str) -> PlainTextEdit:
         row = QHBoxLayout()
         layout.addWidget(QLabel(label_text))
-        layout.addLayout(row)
+        add_layout(layout, row)
         box = PlainTextEdit()
         box.setMaximumHeight(self.fontMetrics().lineSpacing() * _PROMPT_LINES)
         box.valueChanged.connect(lambda text, name=field: self._prompt_changed(name, text))
         row.addWidget(box, stretch=1)
         buttons = QVBoxLayout()
-        row.addLayout(buttons)
+        add_layout(row, buttons)
         apply_button, update_button = self._field_buttons(field)
         buttons.addWidget(apply_button)
         buttons.addWidget(update_button)
@@ -717,7 +690,7 @@ class MetadataWindow(QDialog):
         self._row_value_box.valueChanged.connect(self._row_value_changed)
         layout.addWidget(self._row_value_box, stretch=1)
         row = QHBoxLayout()
-        layout.addLayout(row)
+        add_layout(layout, row)
         add_button = QPushButton(ADD_ENTRY_LABEL)
         add_button.setToolTip(SOURCE_TEXT_TOOLTIP)
         add_button.clicked.connect(self._add_text_entry)
