@@ -15,6 +15,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.transform_layer import TransformLayer
+from src.ui.canvas_extras import CanvasExtras, CanvasExtraCategory, CATEGORY_Z_VALUES
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_for_view, DEFAULT_MARKER_SIZE
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
@@ -34,6 +35,16 @@ GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
 # The veil drawn over everything outside the image. The canvas surround theme color is the color that shows through it:
 IMAGE_BORDER_COLOR = GENERATION_AREA_BORDER_COLOR
 MIN_OUTLINE_PIXEL_SIZE = 8.0
+# Above the image veil and below every other marker. The pixel outline reads as part of the cursor, so it is never a
+# registered canvas extra:
+PIXEL_OUTLINE_Z_VALUE = CATEGORY_Z_VALUES[CanvasExtraCategory.CANVAS] + 0.25
+# Above every layer and the image veil, below the selection outline, generation area outlines and context pins:
+VIEWPORT_HIGHLIGHT_Z_VALUE = CATEGORY_Z_VALUES[CanvasExtraCategory.SELECTION] - 0.5
+# Z-values within the generation area category. The manual resolution label sets its own lower value.
+GENERATION_AREA_OUTLINE_Z_VALUE = 2.0
+CONTEXT_PIN_Z_VALUE = GENERATION_AREA_OUTLINE_Z_VALUE + 1
+# Z-value of the active layer outline within the canvas category, above the image outline and veil:
+ACTIVE_LAYER_OUTLINE_Z_VALUE = 1.0
 
 
 def _disconnect_layer_items(layer_items: dict[int, LayerGraphicsItem]) -> None:
@@ -76,23 +87,31 @@ class ImageViewer(ImageGraphicsView):
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self._follow_generation_area = False
+        # Whether the generation area is enabled. Its outline's isVisible() is False while hidden as a canvas extra.
+        self._generation_area_shown = True
         self._hidden: set[int] = set()
-        self._selection_poly_outline = SelectionOutline(self)
-
-        # Generation area and border rectangle setup:
         scene = self.scene()
         assert scene is not None
+        self._canvas_extras = CanvasExtras(scene)
+        self._selection_poly_outline = SelectionOutline(self)
+        self._canvas_extras.register(self._selection_poly_outline, CanvasExtraCategory.SELECTION)
+
+        # Generation area and border rectangle setup:
         self._image_outline = Outline(scene, self)
         self._image_border = Border(scene, self)
+        self._canvas_extras.register(self._image_outline, CanvasExtraCategory.CANVAS)
+        self._canvas_extras.register(self._image_border, CanvasExtraCategory.CANVAS)
         self._image_border.windowed_area = image_stack.bounds
         self._image_border.color = QColor(IMAGE_BORDER_COLOR)
         self._image_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(scene, self)
+        self._generation_area_outline.setZValue(GENERATION_AREA_OUTLINE_Z_VALUE)
+        self._canvas_extras.register(self._generation_area_outline, CanvasExtraCategory.GENERATION_AREA)
         self._manual_resolution_label = ManualResolutionLabel()
         self._manual_resolution_label.setVisible(False)
-        scene.addItem(self._manual_resolution_label)
+        self._canvas_extras.register(self._manual_resolution_label, CanvasExtraCategory.GENERATION_AREA)
         for resolution_key in (Cache.GENERATION_SIZE, Cache.GENERATION_RESOLUTION_RULE):
             Cache().connect(self, resolution_key, self._update_manual_resolution_label)
         config.connect(self, AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, self._update_manual_resolution_label)
@@ -101,6 +120,8 @@ class ImageViewer(ImageGraphicsView):
         # "inpaint selected only" generation area outline:
         self._generation_area_selection_outline = Outline(scene, self)
         self._generation_area_selection_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
+        self._generation_area_selection_outline.setZValue(GENERATION_AREA_OUTLINE_Z_VALUE)
+        self._canvas_extras.register(self._generation_area_selection_outline, CanvasExtraCategory.GENERATION_AREA)
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._selection_content_change_slot)
         self._context_pin_items: list[ContextPinItem] = []
@@ -113,6 +134,7 @@ class ImageViewer(ImageGraphicsView):
         # pixel outline
         self._pixel_outline = Outline(scene, self, cosmetic_line_draw=True)
         self._pixel_outline.setVisible(False)
+        self._pixel_outline.setZValue(PIXEL_OUTLINE_Z_VALUE)
         self.scale_changed.connect(self._scale_change_slot)
 
         # animate gen area/selected content borders based on config:
@@ -127,6 +149,8 @@ class ImageViewer(ImageGraphicsView):
         self._active_layer_id = -1
         self._active_layer_outline = Outline(scene, self)
         self._active_layer_outline.dash_pattern = [5, 1]  # nearly solid line
+        self._active_layer_outline.setZValue(ACTIVE_LAYER_OUTLINE_Z_VALUE)
+        self._canvas_extras.register(self._active_layer_outline, CanvasExtraCategory.CANVAS)
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
 
         # border drawn when zoomed to generation area:
@@ -134,6 +158,8 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
         self._generation_area_border.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         self._generation_area_border.setVisible(False)
+        self._generation_area_border.setZValue(GENERATION_AREA_OUTLINE_Z_VALUE)
+        self._canvas_extras.register(self._generation_area_border, CanvasExtraCategory.GENERATION_AREA)
         self._viewport_highlight: Optional[ViewportHighlight] = None
 
         # Connect image stack event handlers:
@@ -152,8 +178,15 @@ class ImageViewer(ImageGraphicsView):
         self._context_pins_change_slot(selection_layer.context_pins)
         self.resizeEvent(None)
 
+    @property
+    def canvas_extras(self) -> CanvasExtras:
+        """Returns the groups of on-canvas markers drawn over the image. Code that adds a marker to this view's scene
+        registers it here."""
+        return self._canvas_extras
+
     def set_generation_area_visible(self, visible: bool) -> None:
         """Set whether the generation area will be visible as an outline within the view."""
+        self._generation_area_shown = visible
         self._generation_area_outline.setVisible(visible)
         self._update_manual_resolution_label()
         selection_layer = self._image_stack.selection_layer
@@ -165,7 +198,7 @@ class ImageViewer(ImageGraphicsView):
     def zoom_to_generation_area(self) -> None:
         """Adjust viewport scale and offset to center the selected editing area in the view. Does nothing if the
            generation area is hidden."""
-        if self._generation_area_outline.isVisible():
+        if self._generation_area_shown:
             self.zoom_to_bounds(self._image_stack.generation_area)
 
     def toggle_zoom(self) -> None:
@@ -177,14 +210,14 @@ class ImageViewer(ImageGraphicsView):
     @property
     def follow_generation_area(self) -> bool:
         """Returns whether the view is tracking the generation area."""
-        return self._follow_generation_area and self._generation_area_outline.isVisible()
+        return self._follow_generation_area and self._generation_area_shown
 
     @follow_generation_area.setter
     def follow_generation_area(self, should_follow) -> None:
         """Sets whether the view should follow the generation area. The view updates in response only when it is
            set to true and the generation area is not hidden."""
         self._follow_generation_area = should_follow
-        if self._generation_area_outline.isVisible():
+        if self._generation_area_shown:
             self._generation_area_outline.animated = not should_follow and AppConfig().get(
                 AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS)
             self._generation_area_border.setVisible(should_follow)
@@ -247,13 +280,13 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_selection_outline.setVisible(
             image_loaded and Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE) and Cache().limited_context_in_effect()
-            and self._generation_area_outline.isVisible())
+            and self._generation_area_shown)
         self._active_layer_outline.setVisible(True)
         self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
         selection_layer = self._image_stack.selection_layer
         bounds = selection_layer.get_selection_gen_area()
         if bounds is not None:
-            self._generation_area_selection_outline.setVisible(self._generation_area_outline.isVisible()
+            self._generation_area_selection_outline.setVisible(self._generation_area_shown
                                                                and selection_layer.visible)
             self._generation_area_selection_outline.outlined_region = QRectF(bounds)
         else:
@@ -271,7 +304,7 @@ class ImageViewer(ImageGraphicsView):
         cache = Cache()
         label = self._manual_resolution_label
         shown = (AppConfig().get(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL) and self._image_stack.has_image
-                 and self._generation_area_outline.isVisible()
+                 and self._generation_area_shown
                  and cache.get(Cache.GENERATION_RESOLUTION_RULE) == RESOLUTION_RULE_MANUAL)
         label.setVisible(shown)
         if not shown:
@@ -319,12 +352,11 @@ class ImageViewer(ImageGraphicsView):
         selection_layer = self._image_stack.selection_layer
         bounds = selection_layer.get_selection_gen_area()
         if bounds is not None:
-            self._generation_area_selection_outline.setVisible(self._generation_area_outline.isVisible()
+            self._generation_area_selection_outline.setVisible(self._generation_area_shown
                                                                and selection_layer.visible)
             self._generation_area_selection_outline.outlined_region = QRectF(bounds)
         else:
             self._generation_area_selection_outline.setVisible(False)
-        self._selection_poly_outline.setZValue(2)
         self._selection_poly_outline.load_polygons(selection_layer.outline)
 
     def _context_pins_change_slot(self, _pins: list[QPoint]) -> None:
@@ -336,8 +368,8 @@ class ImageViewer(ImageGraphicsView):
         self._context_pin_items.clear()
         for pin in self._image_stack.selection_layer.context_pins:
             pin_item = ContextPinItem(pin, self._context_pin_marker_size)
-            pin_item.setZValue(self._generation_area_outline.zValue() + 1)
-            scene.addItem(pin_item)
+            pin_item.setZValue(CONTEXT_PIN_Z_VALUE)
+            self._canvas_extras.register(pin_item, CanvasExtraCategory.GENERATION_AREA)
             self._context_pin_items.append(pin_item)
         self._selection_content_change_slot()
 
@@ -396,11 +428,6 @@ class ImageViewer(ImageGraphicsView):
         if layer_item.isVisible():
             self.resetCachedContent()
             self.update()
-        for outline in (self._generation_area_outline, self._generation_area_selection_outline,
-                        self._active_layer_outline, self._generation_area_border):
-            assert isinstance(outline, (Outline, Border))
-            outline.setZValue(max(self._generation_area_outline.zValue(), new_layer.z_value + 1))
-        self._update_viewport_highlight_z()
 
     def set_viewport_highlight(self, region: Optional[QRectF]) -> None:
         """Dims everything outside a scene region and outlines it in the accent color, or removes the highlight with
@@ -413,7 +440,7 @@ class ImageViewer(ImageGraphicsView):
             scene = self.scene()
             assert scene is not None
             self._viewport_highlight = ViewportHighlight(scene, self)
-            self._update_viewport_highlight_z()
+            self._viewport_highlight.setZValue(VIEWPORT_HIGHLIGHT_Z_VALUE)
         self._viewport_highlight.region = region
         self._viewport_highlight.setVisible(True)
 
@@ -423,11 +450,6 @@ class ImageViewer(ImageGraphicsView):
         if self._viewport_highlight is None or not self._viewport_highlight.isVisible():
             return None
         return self._viewport_highlight.region
-
-    def _update_viewport_highlight_z(self) -> None:
-        # Outlines sit at least one above every layer, so half a step below them is still above every layer:
-        if self._viewport_highlight is not None:
-            self._viewport_highlight.setZValue(self._generation_area_outline.zValue() - 0.5)
 
     def _layer_removed_slot(self, removed_layer: Layer) -> None:
         """Removes an image layer from the view."""

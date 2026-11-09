@@ -16,6 +16,7 @@ from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool, ToolGroup
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
@@ -64,9 +65,7 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.angle_changed.connect(self._angle_change_slot)
         self._transform_outline.transform_changed.connect(self._transform_change_slot)
         self._transform_outline.setVisible(False)
-        scene = image_viewer.scene()
-        assert scene is not None
-        scene.addItem(self._transform_outline)
+        image_viewer.canvas_extras.register(self._transform_outline, CanvasExtraCategory.TOOL)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         self._layer_menu: Optional[QMenu] = None
         self._mouse_dragging = False

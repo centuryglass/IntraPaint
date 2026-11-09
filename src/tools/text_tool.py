@@ -15,6 +15,7 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
 from src.tools.base_tool import BaseTool, ToolGroup
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.placement_outline import PlacementOutline
@@ -58,7 +59,7 @@ class TextTool(BaseTool):
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._placement_outline = PlacementOutline(QPointF(), QSizeF())
-        scene.addItem(self._placement_outline)
+        image_viewer.canvas_extras.register(self._placement_outline, CanvasExtraCategory.TOOL)
         self._placement_outline.setVisible(False)
         self._text_layer: Optional[TextLayer] = None
         self._selection_handler = ClickAndDragSelection(scene)

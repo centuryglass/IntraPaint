@@ -10,6 +10,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
@@ -55,6 +56,8 @@ class FreeSelectionTool(BaseTool):
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._path_item = PathCreationItem(self._scene)
         self._preview_line = TempDashedLineItem(scene)
+        image_viewer.canvas_extras.register(self._path_item, CanvasExtraCategory.TOOL)
+        image_viewer.canvas_extras.register(self._preview_line, CanvasExtraCategory.TOOL)
 
         def _close_on_enter() -> bool:
             if not self.is_active or self._path_item.count < 3:
