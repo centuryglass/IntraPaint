@@ -290,11 +290,13 @@ class ToggledSliderField(SliderField):
 
 class HonestSizeHints(QWidget):
     """Holds a widget whose own size hints understate what its layout needs, such as `SizeField`, and reports its
-    layout's size hints instead."""
+    layout's size hints instead. It never takes spare height: `SizeField`'s row stretch would otherwise make every
+    section and panel above it claim spare height, and open gaps inside the section."""
 
     def __init__(self, content: QWidget, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._content = content
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(content)
