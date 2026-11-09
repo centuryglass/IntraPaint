@@ -164,12 +164,16 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.offset = offset
 
     def set_x(self, x_pos: float | int) -> None:
-        """Sets the post-transformation horizontal position of the layer in pixels."""
-        self._transform_outline.x_pos = float(x_pos)
+        """Sets the horizontal scene position of the transformation origin, moving the layer."""
+        origin = self._transform_outline.origin_scene_pos
+        origin.setX(float(x_pos))
+        self._transform_outline.origin_scene_pos = origin
 
     def set_y(self, y_pos: float | int) -> None:
-        """Sets the post-transformation vertical position of the layer in pixels."""
-        self._transform_outline.y_pos = float(y_pos)
+        """Sets the vertical scene position of the transformation origin, moving the layer."""
+        origin = self._transform_outline.origin_scene_pos
+        origin.setY(float(y_pos))
+        self._transform_outline.origin_scene_pos = origin
 
     def set_x_scale(self, x_scale: float) -> None:
         """Sets the x-scale of the layer transformation."""
@@ -283,7 +287,8 @@ class LayerTransformTool(BaseTool):
         self.set_layer(active_layer)
 
     def _update_transform_group_bounds(self, bounds: QRect) -> None:
-        preview_bounds = QRect(round(self._transform_outline.x_pos), round(self._transform_outline.y_pos),
+        top_left = self._transform_outline.bounding_box_top_left
+        preview_bounds = QRect(round(top_left.x()), round(top_left.y()),
                                round(self._transform_outline.width), round(self._transform_outline.height))
         if preview_bounds != bounds:
             self._reload_scene_item(keep_relative_origin=True)
@@ -377,8 +382,9 @@ class LayerTransformTool(BaseTool):
 
     # noinspection PyUnusedLocal
     def _pos_change_slot(self, *unused_args) -> None:
-        self._control_panel.x_position = self._transform_outline.x_pos
-        self._control_panel.y_position = self._transform_outline.y_pos
+        origin = self._transform_outline.origin_scene_pos
+        self._control_panel.x_position = origin.x()
+        self._control_panel.y_position = origin.y()
 
     def _scale_change_slot(self, x_scale: float, y_scale: float) -> None:
         self._control_panel.layer_width = self._transform_outline.width

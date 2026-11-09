@@ -2,7 +2,7 @@
 import math
 from typing import Optional, Iterable
 
-from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
+from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, Signal, QSizeF
 from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath, QImage
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
@@ -13,8 +13,7 @@ from src.undo_stack import UndoStack
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked
-from src.util.visual.geometry_utils import (extract_transform_parameters, combine_transform_parameters, panel_position,
-                                            transform_at_panel_position)
+from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, panel_position
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
                                                   get_scene_item_bounds_of_view_rect, get_view,
@@ -24,6 +23,8 @@ from src.util.visual.image_utils import create_transparent_image
 MIN_SCENE_DIM = 5
 
 ORIGIN_HANDLE_ID = 'transformation origin'
+# Dragging the origin handle within this many view pixels of a corner, edge midpoint or the center snaps to it:
+ORIGIN_SNAP_DISTANCE = 10
 TL_HANDLE_ID = 'top left'
 TR_HANDLE_ID = 'top right'
 BL_HANDLE_ID = 'bottom left'
@@ -132,19 +133,17 @@ class TransformOutline(QGraphicsObject):
         self._x_scale = sx
         self._y_scale = sy
         self._degrees = angle
-        x0 = self.x_pos
-        y0 = self.y_pos
+        origin_before = self.origin_scene_pos
         if precalculated_matrix is None:
             precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, angle, self.transformation_origin)
         super().setTransform(precalculated_matrix, False)
 
-        x1 = self.x_pos
-        y1 = self.y_pos
-        offset_changed = x0 != x1 or y0 != y1
+        origin_after = self.origin_scene_pos
+        offset_changed = origin_before != origin_after
         if offset_changed or scale_changed or angle_changed:
             self.transform_changed.emit(self.transform())
         if offset_changed:
-            self.pos_changed.emit(x1, y1)
+            self.pos_changed.emit(origin_after.x(), origin_after.y())
         if scale_changed:
             self.scale_changed.emit(sx, sy)
         if angle_changed:
@@ -182,24 +181,21 @@ class TransformOutline(QGraphicsObject):
             self._fixed_ratio = abs(x_scale / y_scale)
 
     @property
-    def x_pos(self) -> float:
-        """The x-position shown in the panel, from panel_position."""
-        return panel_position(self.rect(), self.transform()).x()
+    def origin_scene_pos(self) -> QPointF:
+        """The transformation origin's position in the scene, as shown in the panel's X/Y fields."""
+        return self.mapToScene(self.transformation_origin)
 
-    @x_pos.setter
-    def x_pos(self, new_x: float) -> None:
-        """Set the panel x-position, without changing rotation or scale."""
-        self.setTransform(transform_at_panel_position(self.rect(), self.transform(), QPointF(new_x, self.y_pos)))
+    @origin_scene_pos.setter
+    def origin_scene_pos(self, pos: QPointF) -> None:
+        """Move the layer so the transformation origin lands on pos, without changing rotation or scale."""
+        offset = pos - self.origin_scene_pos
+        if offset != QPointF():
+            self.setTransform(self.transform() * QTransform.fromTranslate(offset.x(), offset.y()))
 
     @property
-    def y_pos(self) -> float:
-        """The y-position shown in the panel, from panel_position."""
-        return panel_position(self.rect(), self.transform()).y()
-
-    @y_pos.setter
-    def y_pos(self, new_y: float) -> None:
-        """Set the panel y-position, without changing rotation or scale."""
-        self.setTransform(transform_at_panel_position(self.rect(), self.transform(), QPointF(self.x_pos, new_y)))
+    def bounding_box_top_left(self) -> QPointF:
+        """The top-left of the transformed rectangle's scene bounding box, from panel_position."""
+        return panel_position(self.rect(), self.transform())
 
     @property
     def width(self) -> float:
@@ -293,9 +289,14 @@ class TransformOutline(QGraphicsObject):
                                             (pos.y() - bounds.y()) / bounds.height())
         if pos != self._origin:
             if ORIGIN_HANDLE_ID in self._handles:
+                scene_pos_before = self.origin_scene_pos
                 origin_handle = self._handles[ORIGIN_HANDLE_ID]
                 origin_handle.move_rect_center(pos)
                 self._origin = pos
+                # The layer stays put, so only the origin's scene position changes:
+                scene_pos_after = self.origin_scene_pos
+                if scene_pos_before != scene_pos_after:
+                    self.pos_changed.emit(scene_pos_after.x(), scene_pos_after.y())
             self.setTransform(self.transform())
 
     def render(self) -> QImage:
@@ -395,11 +396,26 @@ class TransformOutline(QGraphicsObject):
         pos = self.mapFromScene(pos)
         assert isinstance(pos, QPointF)
         if handle_id == ORIGIN_HANDLE_ID:
-            self.transformation_origin = pos
+            self.transformation_origin = self._snapped_origin(pos)
         elif handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID):
             self.move_corner(handle_id, pos)
         else:
             raise RuntimeError(f'Invalid handle id {handle_id}')
+
+    def _snapped_origin(self, pos: QPointF) -> QPointF:
+        """Returns the nearest of the four corners, four edge midpoints and the center if it is within
+           ORIGIN_SNAP_DISTANCE view pixels of pos (in local coordinates), otherwise pos."""
+        rect = self.rect()
+        cursor = map_scene_item_point_to_view_point(pos, self)
+        best = pos
+        best_distance = float(ORIGIN_SNAP_DISTANCE)
+        for x in (rect.left(), rect.center().x(), rect.right()):
+            for y in (rect.top(), rect.center().y(), rect.bottom()):
+                target = QPointF(x, y)
+                distance = QLineF(cursor, map_scene_item_point_to_view_point(target, self)).length()
+                if distance <= best_distance:
+                    best, best_distance = target, distance
+        return best
 
     def move_corner(self, corner_id: str, corner_pos: QPointF, _=None) -> None:
         """Move one of the corners, leaving the position of the opposite corner unchanged. If enabled, also
