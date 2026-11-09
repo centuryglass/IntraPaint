@@ -306,6 +306,35 @@ class BuildTranslationsTest(IntraPaintTestCase):
         self.assertEqual(1, len(problems), problems)
         self.assertIn('not in the form', problems[0])
 
+    def test_reports_style_problems(self) -> None:
+        """A Chinese translation uses full-width punctuation, spaces Latin text, and keeps a label's colon."""
+        self._write('src/ui/labels.py', """
+            from PySide6.QtWidgets import QApplication
+            TR_ID = 'ui.labels'
+            def _tr(key):
+                return QApplication.translate(TR_ID, key)
+            OPACITY = _tr('&Opacity:')
+            STEPS = _tr('Steps: {steps}')
+            SENTENCE = _tr('Saved. Use VAE 2, then retry.')
+            OPEN = _tr('Open...')
+            WIDTH = _tr('Width')
+        """)
+        good = [('ui.labels', '&Opacity:', '不透明度(&O)：'), ('ui.labels', 'Steps: {steps}', '步数：{steps}'),
+                ('ui.labels', 'Saved. Use VAE 2, then retry.', '已保存。使用 VAE 2，然后重试。'),
+                ('ui.labels', 'Open...', '打开...'), ('ui.labels', 'Width', '宽度')]
+        self.assertEqual([], self._check_problems('zh_CN', good))
+
+        problems = self._check_problems('zh_CN', [('ui.labels', '&Opacity:', '不透明度(&O):'),
+                                                 ('ui.labels', 'Saved. Use VAE 2, then retry.',
+                                                  '已保存.使用VAE 2,然后重试。')])
+        self.assertEqual(3, len(problems), problems)
+        self.assertIn("'&Opacity:': the translation does not end with '：'", problems[0])
+        self.assertIn("half-width punctuation after Chinese text at '存.'", problems[1])
+        self.assertIn("no space between Chinese text and Latin letters or digits at '用V'", problems[2])
+
+        german = [('ui.labels', '&Opacity:', '&Deckkraft:'), ('ui.labels', 'Width', 'Breite')]
+        self.assertEqual([], self._check_problems('de_DE', german))
+
     def test_unfinished_drafts_are_not_compiled(self) -> None:
         """An unfinished entry that holds draft text falls back to English in the .qm file."""
         self._write_translation('de_DE', [('ui.example', 'Open', 'Entwurf')], ' type="unfinished"')

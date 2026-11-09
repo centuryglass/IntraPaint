@@ -28,9 +28,10 @@ finished translation:
   glossary style section doesn't allow (`ACCELERATOR_FORMS`).
 - shares an accelerator with another translation in the same context. Which strings share a menu isn't in the
   catalog, so a context is the closest approximation. Contexts that mix menus are not caught.
-
-- lacks the chosen rendering of a glossary term its source contains. The glossaries are `doc/translation/glossary.md` and
-  the translation's language's file there (`glossary_problems`). A `glossary: not "Term"` line in the entry's
+- breaks a punctuation or spacing rule of its language's style section that can be checked mechanically
+  (`STYLE_RULES`), or ends without its language's colon when its source ends with `:` (`LABEL_COLONS`).
+- lacks the chosen rendering of a glossary term its source contains. The glossaries are `doc/translation/glossary.md`
+  and the translation's language's file there (`glossary_problems`). A `glossary: not "Term"` line in the entry's
   translator comment exempts that spelling, and fails once the source no longer contains it. A translation with no
   glossary fails.
 
@@ -57,7 +58,7 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, TypeVar
 from xml.sax.saxutils import escape, quoteattr
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -388,6 +389,14 @@ def _placeholders(text: str) -> Optional[list[str]]:
     return sorted(found)
 
 
+_LanguageValue = TypeVar('_LanguageValue')
+
+
+def _for_language(table: dict[str, _LanguageValue], language: str) -> Optional[_LanguageValue]:
+    """Returns the value of the first key of `table` that prefixes `language`, ignoring case."""
+    return next((value for prefix, value in table.items() if language.lower().startswith(prefix)), None)
+
+
 def _finished(catalog: Catalog) -> list[Message]:
     """Returns the messages the checks apply to: those with a translation that is not vanished."""
     return [message for message in catalog.all_messages()
@@ -430,7 +439,7 @@ def _accelerators(text: str) -> list[str]:
 
 def accelerator_problems(file_name: str, language: str, catalog: Catalog) -> list[str]:
     """Reports translations that lose, add, misplace or duplicate a `&` accelerator."""
-    form = next((pattern for prefix, pattern in ACCELERATOR_FORMS.items() if language.lower().startswith(prefix)), None)
+    form = _for_language(ACCELERATOR_FORMS, language)
     problems = []
     used: dict[tuple[str, str], str] = {}
     for message in _finished(catalog):
@@ -449,6 +458,60 @@ def accelerator_problems(file_name: str, language: str, catalog: Catalog) -> lis
             if other != message.source:
                 problems.append(f'{file_name}: [{message.context}] {message.source!r}: the accelerator &{letter} is '
                                 f'also used by {other!r}.')
+    return problems
+
+
+# CJK ideographs. Full-width punctuation is not included, so `：80` needs no space.
+_CJK = '\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff'
+
+
+@dataclass(frozen=True)
+class StyleRule:
+    """A mechanical style rule: `pattern` matches where a translation breaks it.
+
+    `problem` describes the match and `fix` says what to do.
+    """
+    pattern: re.Pattern[str]
+    problem: str
+    fix: str
+
+
+# Mechanical rules from each language's style section in `doc/translation/`, keyed by language code prefix.
+STYLE_RULES: dict[str, tuple[StyleRule, ...]] = {
+    # Chinese: full-width punctuation in sentences, and a half-width space between Chinese and Latin letters or digits.
+    # A `...` ellipsis stays half-width, as in the accelerator form.
+    'zh': (
+        StyleRule(re.compile(rf'[{_CJK}](?:[,;:!?]|\.(?!\.))'),
+                  'has half-width punctuation after Chinese text', 'Use full-width punctuation (，；：！？。).'),
+        StyleRule(re.compile(rf'[{_CJK}][A-Za-z0-9]|[A-Za-z0-9][{_CJK}]'),
+                  'has no space between Chinese text and Latin letters or digits', 'Add a half-width space.'),
+    ),
+}
+
+# The colon a translation ends with when its source ends with `:`, keyed by language code prefix. A language not
+# listed is not checked. The colons come from each language's style section in `doc/translation/`.
+LABEL_COLONS: dict[str, str] = {
+    'zh': '\uff1a',
+}
+
+
+def style_problems(file_name: str, language: str, catalog: Catalog) -> list[str]:
+    """Reports translations that break a mechanical rule of their language's style section.
+
+    The rules are `STYLE_RULES` and `LABEL_COLONS`. Each rule reports its first match in a translation only.
+    """
+    rules = _for_language(STYLE_RULES, language) or ()
+    colon = _for_language(LABEL_COLONS, language)
+    problems = []
+    for message in _finished(catalog):
+        prefix = f'{file_name}: [{message.context}] {message.source!r}: the translation'
+        for rule in rules:
+            found = rule.pattern.search(message.translation)
+            if found is not None:
+                problems.append(f'{prefix} {rule.problem} at {found.group()!r}. {rule.fix}')
+        if colon is not None and message.source.rstrip().endswith(':') \
+                and not message.translation.rstrip().endswith(colon):
+            problems.append(f'{prefix} does not end with {colon!r}, as a label ending in \':\' must.')
     return problems
 
 
@@ -889,6 +952,7 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
         problems.extend(placeholder_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
         problems.extend(markup_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
         problems.extend(accelerator_problems(f'{TRANSLATION_DIR}/{file_name}', language, merged))
+        problems.extend(style_problems(f'{TRANSLATION_DIR}/{file_name}', language, merged))
         glossary_path = find_language_glossary(glossary_dir, language)
         if glossary_path is None:
             problems.append(f'{TRANSLATION_DIR}/{file_name}: no glossary {GLOSSARY_DIR}/{language}.md for {language}.')

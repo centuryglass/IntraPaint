@@ -42,6 +42,8 @@ build fails on a translation that drops or adds one. It also fails on a translat
 differ from the English text, or that loses an `&` accelerator or reuses a letter another entry in the same context
 has. It also fails when a translation lacks the chosen rendering of a glossary term its English text contains (the
 glossaries are in `doc/translation/`); a translator comment `glossary: not "Term"` exempts a term, with a reason.
+Where a language's glossary style section has punctuation or spacing rules that can be checked mechanically, such as
+Chinese full-width punctuation, the build fails on a translation that breaks them.
 Entries still marked unfinished are not compiled, so they show English.
 
 Option names in the settings and tool panels (for example the edit modes) are shown translated, but IntraPaint always
