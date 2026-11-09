@@ -25,7 +25,7 @@ from src.ui.panel.layer_ui.layer_row import LayerThumbnail
 from src.util.visual.image_utils import create_transparent_image, crop_to_content
 from test.image.layers.layer_group_render_test import CANVAS_SIZE, HSL_MODES, QT_MODES, \
     GroupRenderTestCase, _composite
-from test.render_assertions import full_render
+from test.render_assertions import clear_area, full_render
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -171,8 +171,7 @@ class LayerPanelGroupPreviewTest(GroupRenderTestCase):
         """After a child's pixels change and renders flush, the group schedules a preview update that shows them."""
         self.open_panel()
         self.preview(self.group)
-        with self.lower.borrow_image(QRect(2, 2, 9, 7)) as image:
-            image.fill(0)
+        clear_area(self.lower, QRect(2, 2, 9, 7))
         self.image_stack.flush_render()
         widget = self.widget_for(self.group)
         self.assertTrue(widget._preview_render_timer.isActive())  # pylint: disable=protected-access

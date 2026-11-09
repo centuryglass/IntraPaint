@@ -16,8 +16,8 @@ from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase, assert_images_equal
-from test.render_assertions import (assert_region_renders_match, assert_tiled_render_matches, displayed_image,
-                                    full_render)
+from test.render_assertions import (assert_region_renders_match, assert_tiled_render_matches, clear_area,
+                                    displayed_image, full_render)
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -72,8 +72,7 @@ class FlushRenderTest(RenderTestCase):
         layer_stack = self.image_stack.layer_stack
         self.image_stack.flush_render()
         before = layer_stack.get_qimage().copy()
-        with self.background.borrow_image(QRect(10, 10, 4, 4)) as image:
-            image.fill(0)
+        clear_area(self.background, QRect(10, 10, 4, 4))
         self.assert_images_equal(layer_stack.get_qimage(), before)
         self.image_stack.flush_render()
         self.assert_images_equal(layer_stack.get_qimage(), full_render(self.image_stack))
@@ -84,8 +83,7 @@ class FlushRenderTest(RenderTestCase):
         inner = self.image_stack.create_layer_group('inner', layer_parent=outer)
         layer = self.add_layer('nested', QTransform.fromTranslate(20, 10), parent=inner)
         self.image_stack.flush_render()
-        with layer.borrow_image(QRect(0, 0, 8, 8)) as image:
-            image.fill(0)
+        clear_area(layer, QRect(0, 0, 8, 8))
         self.image_stack.flush_render()
         self.assert_images_equal(self.image_stack.layer_stack.get_qimage(), full_render(self.image_stack))
 
@@ -94,8 +92,7 @@ class FlushRenderTest(RenderTestCase):
         self.image_stack.flush_render()
         emitted: list[None] = []
         self.image_stack.content_changed.connect(lambda: emitted.append(None))
-        with self.background.borrow_image(QRect(0, 0, 4, 4)) as image:
-            image.fill(0)
+        clear_area(self.background, QRect(0, 0, 4, 4))
         self.image_stack.flush_render()
         self.assertEqual(len(emitted), 1)
         self.image_stack.flush_render()
@@ -122,8 +119,7 @@ class DisplayedImageTest(RenderTestCase):
     def test_view_follows_edits(self) -> None:
         """After an edit is flushed, the view shows the edited composite."""
         self.assert_view_matches_render()
-        with self.background.borrow_image(QRect(5, 5, 20, 20)) as image:
-            image.fill(0)
+        clear_area(self.background, QRect(5, 5, 20, 20))
         self.assert_view_matches_render()
 
     def test_view_with_layer_stack_offset(self) -> None:

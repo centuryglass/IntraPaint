@@ -45,5 +45,12 @@ class PixmapItem(QGraphicsPixmapItem):
             self.setTransformationMode(Qt.TransformationMode.FastTransformation)
         else:
             self.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
-        super().paint(painter, option, widget)
+        self._paint_pixmap(painter, option, widget)
         painter.restore()
+
+    def _paint_pixmap(self,
+                      painter: QPainter,
+                      option: Optional[QStyleOptionGraphicsItem],
+                      widget: Optional[QWidget]) -> None:
+        """Draws the pixmap once paint has set up the painter's composition mode and the transformation mode."""
+        super().paint(painter, option, widget)

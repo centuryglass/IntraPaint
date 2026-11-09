@@ -23,7 +23,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.ui.image_viewer import ImageViewer
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase
-from test.render_assertions import assert_tiled_render_matches, displayed_image, full_render
+from test.render_assertions import assert_tiled_render_matches, clear_area, displayed_image, full_render
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -536,8 +536,7 @@ class CachedCompositeTest(GroupRenderTestCase):
     def test_cache_after_child_edit(self) -> None:
         """After an edit to a child is flushed, the group's cached image and pixmap show it."""
         self.assert_cache_current()
-        with self.lower.borrow_image(QRect(2, 2, 9, 7)) as image:
-            image.fill(0)
+        clear_area(self.lower, QRect(2, 2, 9, 7))
         self.assert_cache_current()
 
     def test_cache_after_child_property_changes(self) -> None:
@@ -572,8 +571,7 @@ class CachedCompositeTest(GroupRenderTestCase):
         viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
         self.image_stack.flush_render()
         self.assert_images_equal(displayed_image(viewer, self.image_stack), full_render(self.image_stack))
-        with self.upper.borrow_image(QRect(0, 0, 12, 12)) as image:
-            image.fill(0)
+        clear_area(self.upper, QRect(0, 0, 12, 12))
         self.image_stack.flush_render()
         self.assert_images_equal(displayed_image(viewer, self.image_stack), full_render(self.image_stack))
 
@@ -598,8 +596,7 @@ class ImageStackQImageTest(GroupRenderTestCase):
     def test_qimage(self) -> None:
         """qimage() is the canvas composite, and follows edits once they're flushed."""
         self.assert_images_equal(self.image_stack.qimage(), self.expected_canvas())
-        with self.upper.borrow_image(QRect(0, 0, 12, 12)) as image:
-            image.fill(0)
+        clear_area(self.upper, QRect(0, 0, 12, 12))
         self.image_stack.flush_render()
         self.assert_images_equal(self.image_stack.qimage(), self.expected_canvas())
 
