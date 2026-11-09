@@ -26,6 +26,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QTransform, QImage
 
 from src.image.composite_mode import CompositeMode
+from src.image.image_metadata import ImageMetadata
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -35,9 +36,11 @@ from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.text_layer import TextLayer, ORA_TEXT_DATA_TAG
 from src.image.ora_extensions import (OraWriteContext, OraReadContext, layer_loaders, document_extensions,
                                       register_layer_loader, EXTENSION_ELEMENT, EXTENSION_TAG_NAME,
-                                      EXTENSION_DIRECTORY, safe_relative_path)
+                                      EXTENSION_DIRECTORY, METADATA_EXTENSION_NAME, safe_relative_path)
 from src.image.ora_foreign_data import (OraArchiveFile, OraForeignDocumentData, OraForeignLayerData,
                                         pixel_fingerprint)
+from src.image.ora_metadata import (XMP_ARCHIVE_PATH, metadata_archive_files, metadata_extension_payload, encode_dpi,
+                                    decode_dpi, read_metadata)
 from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import read_qimage
@@ -71,8 +74,8 @@ IMAGE_ELEMENT = 'image'
 IMAGE_TAG_VERSION = 'version'
 IMAGE_TAG_WIDTH = 'w'  # int
 IMAGE_TAG_HEIGHT = 'h'  # int
-# IMAGE_TAG_XRES = 'xres'  # int, optional (pixels per inch)
-# IMAGE_TAG_YRES = 'yres'  # int, optional (pixels per inch)
+IMAGE_TAG_XRES = 'xres'  # int, optional (pixels per inch), written from `ImageMetadata` DPI
+IMAGE_TAG_YRES = 'yres'  # int, optional (pixels per inch), written from `ImageMetadata` DPI
 IMAGE_TAG_NAME = 'name'  # str
 
 # layerCommonAttributes XML tags:
@@ -129,22 +132,23 @@ TEXT_DATA_TAG = ORA_TEXT_DATA_TAG
 RESERVED_EXTENDED_TAGS = frozenset({LAYER_TAG_SRC, TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED})
 
 # Metadata support:
-# The top-level 'metadata' tag can be used to store arbitrary additional string-encoded data, usually image generation
-# parameters.
+# The extended data root's 'metadata' attribute holds the `ImageMetadata` text entries as JSON. The other parts go where
+# `src/image/ora_metadata.py` describes.
 METADATA_TAG = 'metadata'
 
 # Attributes IntraPaint reads on each element. Any other attribute is foreign data, kept by `OraForeignLayerData`:
-IMAGE_KNOWN_ATTRIBUTES = frozenset({IMAGE_TAG_VERSION, IMAGE_TAG_WIDTH, IMAGE_TAG_HEIGHT, IMAGE_TAG_NAME})
+IMAGE_KNOWN_ATTRIBUTES = frozenset({IMAGE_TAG_VERSION, IMAGE_TAG_WIDTH, IMAGE_TAG_HEIGHT, IMAGE_TAG_NAME,
+                                    IMAGE_TAG_XRES, IMAGE_TAG_YRES})
 _COMMON_KNOWN_ATTRIBUTES = frozenset({ATTR_TAG_NAME, ATTR_TAG_COMPOSITE, ATTR_TAG_OPACITY, ATTR_TAG_VISIBILITY,
                                       ATTR_TAG_EDIT_LOCKED, ATTR_TAG_SELECTED})
 STACK_KNOWN_ATTRIBUTES = _COMMON_KNOWN_ATTRIBUTES | {STACK_TAG_ISOLATION}
 LAYER_KNOWN_ATTRIBUTES = _COMMON_KNOWN_ATTRIBUTES | {ATTR_TAG_X_POS, ATTR_TAG_Y_POS, LAYER_TAG_SRC}
 
 # Archive members IntraPaint rebuilds on every save, which are never kept as foreign files. 'mergedimage' is the merged
-# image's name in files from IntraPaint v1.4.0 and earlier.
+# image's name in files from IntraPaint v1.4.0 and earlier. Another program's XMP packet loads into the metadata.
 _REBUILT_ARCHIVE_FILES = frozenset({MIMETYPE_FILE_NAME, XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME,
                                     MERGED_IMAGE_FILE_NAME, 'mergedimage', 'mergedimage.png',
-                                    f'{THUMBNAIL_DIRECTORY_NAME}/{THUMBNAIL_FILE_NAME}'})
+                                    f'{THUMBNAIL_DIRECTORY_NAME}/{THUMBNAIL_FILE_NAME}', XMP_ARCHIVE_PATH})
 _PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
 # `OraSnapshot.layer_image_owners` roles: a layer's flattened image, and its untransformed image when it has one.
@@ -264,11 +268,14 @@ class OraSnapshot:
     file_path: str
     image_data: dict[str, Any]
     extended_data: dict[str, dict[str, str]]
-    metadata: Optional[str]
+    metadata: Optional[ImageMetadata]
+    """A copy of the image metadata, or None to write none. `ora_xml_files` writes it into both XML files, and its
+    archive files are in `extension_files`."""
     layer_images: dict[str, QImage]
     """Layer PNGs by archive path. A path in `layer_image_owners` is missing when `capture_pixels` skipped it."""
     extension_payloads: dict[str, str]
     extension_files: dict[str, bytes]
+    """Files that IntraPaint writes besides layer images: document extension and metadata files, by archive path."""
     merged_image: Optional[QImage]
     """None when captured without it, which `write_ora_snapshot` can't write."""
     foreign_files: dict[str, OraArchiveFile]
@@ -283,7 +290,7 @@ def _get_transform_str(transform: QTransform) -> str:
             f'{transform.m31()},{transform.m32()},{transform.m33()}')
 
 
-def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optional[str],
+def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optional[ImageMetadata],
                       capture_pixels: Optional[Callable[[Layer], bool]] = None,
                       include_merged_image: bool = True) -> OraSnapshot:
     """Reads everything an .ora file needs from the image stack, for `write_ora_snapshot`.
@@ -439,8 +446,12 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
         if payload is not None:
             extension_payloads[extension_name] = payload
     merged_image = image_stack.qimage(True).copy() if include_merged_image else None
-    return OraSnapshot(file_path, image_data, extended_data, metadata, layer_images, extension_payloads,
-                       dict(write_context.files), merged_image, foreign_files, layer_image_owners)
+    extension_files = dict(write_context.files)
+    metadata_copy = None if metadata is None else metadata.copy()
+    if metadata_copy is not None:
+        extension_files.update(metadata_archive_files(metadata_copy))
+    return OraSnapshot(file_path, image_data, extended_data, metadata_copy, layer_images, extension_payloads,
+                       extension_files, merged_image, foreign_files, layer_image_owners)
 
 
 def _create_element(data_dict: dict[str, Any]) -> Element:
@@ -473,15 +484,26 @@ def ora_xml_files(snapshot: OraSnapshot) -> dict[str, bytes]:
         for extension_tag, extension_value in layer_extended_data.items():
             extended_layer.set(extension_tag, extension_value)
         extended_xml_root.append(extended_layer)
+    image_root = _create_element(snapshot.image_data)
+    extension_payloads = dict(snapshot.extension_payloads)
     if snapshot.metadata is not None:
-        extended_xml_root.set(METADATA_TAG, snapshot.metadata)
-    for extension_name, payload in snapshot.extension_payloads.items():
+        metadata_json = snapshot.metadata.to_ora_json()
+        if metadata_json is not None:
+            extended_xml_root.set(METADATA_TAG, metadata_json)
+        metadata_payload = metadata_extension_payload(snapshot.metadata)
+        if metadata_payload is not None:
+            extension_payloads[METADATA_EXTENSION_NAME] = metadata_payload
+        dpi = encode_dpi(snapshot.metadata)
+        if dpi is not None:
+            image_root.set(IMAGE_TAG_XRES, str(dpi[0]))
+            image_root.set(IMAGE_TAG_YRES, str(dpi[1]))
+    for extension_name, payload in extension_payloads.items():
         extension_element = Element(EXTENSION_ELEMENT)
         extension_element.set(EXTENSION_TAG_NAME, extension_name)
         extension_element.text = payload
         extended_xml_root.append(extension_element)
     xml_files: dict[str, bytes] = {}
-    for archive_path, root in ((XML_FILE_NAME, _create_element(snapshot.image_data)),
+    for archive_path, root in ((XML_FILE_NAME, image_root),
                                (EXTENDED_DATA_XML_FILE_NAME, extended_xml_root)):
         buffer = io.BytesIO()
         ElementTree(root).write(buffer)
@@ -545,13 +567,13 @@ def write_ora_snapshot(snapshot: OraSnapshot) -> None:
             os.remove(tmp_save_path)
 
 
-def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: Optional[str]) -> None:
+def save_ora_image(image_stack: ImageStack, file_path: str, metadata: Optional[ImageMetadata]) -> None:
     """Save image layers in an editable state using the Open Raster specification, on the calling thread."""
     write_ora_snapshot(capture_ora_image(image_stack, file_path, metadata))
 
 
-def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
-    """Read a .ora file into the image stack, returning metadata."""
+def read_ora_image(image_stack: ImageStack, file_path: str) -> ImageMetadata:
+    """Read a .ora file into the image stack, returning its metadata."""
     tmpdir = tempfile.mkdtemp()
     try:
         return _read_ora_image(image_stack, file_path, tmpdir)
@@ -559,7 +581,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Optional[str]:
+def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> ImageMetadata:
     """Extracts a .ora file into `tmpdir` and loads it. Nothing may read from `tmpdir` after this returns."""
     with zipfile.ZipFile(file_path) as zip_file:
         zip_file.extractall(tmpdir)
@@ -587,12 +609,12 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Opt
         return record
 
     extended_xml_path = os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME)
-    metadata = None
+    metadata_json = None
     extended_data: dict[str, dict[str, Any]] = {}
     document_payloads: dict[str, str] = {}
     if os.path.isfile(extended_xml_path):
         extended_xml_root = ElementTree().parse(extended_xml_path)
-        metadata = extended_xml_root.get(METADATA_TAG)
+        metadata_json = extended_xml_root.get(METADATA_TAG)
         for extended_layer in extended_xml_root:
             if extended_layer.tag == EXTENSION_ELEMENT:
                 extension_name = extended_layer.get(EXTENSION_TAG_NAME)
@@ -787,4 +809,5 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Opt
     for extension_name, extension in document_extensions().items():
         if extension_name in document_payloads:
             extension.load(image_stack, document_payloads[extension_name], read_context)
-    return metadata
+    return read_metadata(metadata_json, document_payloads.get(METADATA_EXTENSION_NAME),
+                         decode_dpi(xml_root.get(IMAGE_TAG_XRES), xml_root.get(IMAGE_TAG_YRES)), read_context)

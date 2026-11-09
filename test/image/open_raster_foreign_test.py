@@ -18,6 +18,7 @@ from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.image.composite_mode import CompositeMode
+from src.image.image_metadata import ImageMetadata
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -92,9 +93,10 @@ class OpenRasterForeignDataTest(IntraPaintTestCase):
         self._temp_dir.cleanup()
         super().tearDown()
 
-    def _save(self) -> str:
+    def _save(self, metadata: Optional[ImageMetadata] = None) -> str:
         saved_path = os.path.join(self._temp_dir.name, 'saved.ora')
-        save_ora_image(self.image_stack, saved_path, 'metadata')
+        save_ora_image(self.image_stack, saved_path, ImageMetadata({'comment': 'metadata'}) if metadata is None
+                       else metadata)
         return saved_path
 
     def _layer(self, name: str) -> Layer:
@@ -159,9 +161,11 @@ class OpenRasterForeignDataTest(IntraPaintTestCase):
             self.assertEqual(element.attrib, _layer_elements(second_save[XML_FILE_NAME])[name].attrib, name)
 
     def test_krita_round_trip_keeps_foreign_data(self) -> None:
-        """Krita's resolution, stack offsets and unsupported composite op are kept."""
-        read_ora_image(self.image_stack, KRITA_ORA)
-        saved = _archive_files(self._save())
+        """Krita's resolution, stack offsets and unsupported composite op are kept. The resolution goes through the
+        metadata, as DPI."""
+        metadata = read_ora_image(self.image_stack, KRITA_ORA)
+        self.assertEqual((300, 300), metadata.format_info['dpi'])
+        saved = _archive_files(self._save(metadata))
         saved_root = fromstring(saved[XML_FILE_NAME])
         self.assertEqual('300', saved_root.get('xres'))
         self.assertEqual('300', saved_root.get('yres'))

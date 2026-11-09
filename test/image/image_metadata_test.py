@@ -11,7 +11,7 @@ from PySide6.QtGui import QImage, QColor
 from PySide6.QtWidgets import QApplication
 
 from src.image.image_metadata import A1111Parameters, ImageMetadata, PARAMETERS_KEY, COMMENT_KEY, \
-    decode_user_comment, encode_user_comment, SOURCE_COMFYUI, SOURCE_NOVELAI, SOURCE_INVOKEAI, ComfyUINode
+    XMP_TEXT_KEY, XMP_INFO_KEY, PHOTOSHOP_INFO_KEY, IPTC_RESOURCE_ID, decode_user_comment, encode_user_comment, SOURCE_COMFYUI, SOURCE_NOVELAI, SOURCE_INVOKEAI, ComfyUINode
 from src.util.visual.image_format_utils import load_image, save_image_with_metadata
 from src.util.visual.image_utils import logger as image_utils_logger
 from test.base_test_case import IntraPaintTestCase
@@ -196,6 +196,16 @@ def _photoshop_iptc_segment(iptc: bytes) -> bytes:
         + len(iptc).to_bytes(4, 'big') + padded
 
 
+def photo_metadata() -> ImageMetadata:
+    """Returns the metadata of a JPEG with a comment, XMP, IPTC and GPS tags, as a photo tool writes them."""
+    iptc = _iptc_dataset(1, 90, b'\x1b%G') + _iptc_dataset(2, 0, b'\x00\x04') \
+        + _iptc_dataset(2, 25, b'market') + _iptc_dataset(2, 90, b'Springfield') \
+        + _iptc_dataset(2, 116, 'caf\u00e9'.encode())
+    return ImageMetadata({COMMENT_KEY: 'a camera note'},
+                         _exif({IFD.GPSInfo: {ExifTags.GPS.GPSLatitudeRef: 'N'}}),
+                         {'xmp': PHOTO_XMP, 'photoshop': {0x0404: iptc, 0x0409: b'thumbnail'}})
+
+
 def _metadata_with_exif() -> ImageMetadata:
     exif = _exif({None: {ExifTags.Base.Make: 'Camera Co', ExifTags.Base.Artist: 'Someone'},
                   IFD.Exif: {ExifTags.Base.ExposureTime: 0.01},
@@ -315,10 +325,35 @@ class ImageMetadataTest(IntraPaintTestCase):
         self.assertNotIn(ExifTags.Base.Make, metadata.exif)
 
     def test_ora_json_round_trip(self) -> None:
+        """The .ora JSON holds the text entries only, and none when there are no text entries."""
         metadata = ImageMetadata({PARAMETERS_KEY: 'p', 'Software': 'IntraPaint'}, format_info={'dpi': (72, 72)})
-        restored = ImageMetadata.from_ora_json(metadata.to_ora_json(), metadata.exif.tobytes())
+        restored = ImageMetadata.from_ora_json(metadata.to_ora_json())
         self.assertEqual(metadata.text, restored.text)
+        self.assertEqual({}, restored.format_info)
         self.assertIsNone(ImageMetadata().to_ora_json())
+
+    def test_set_xmp_packet_keeps_its_source(self) -> None:
+        """A packet replaces an XMP text entry's value, or else becomes format info, and only UTF-8 can be text."""
+        from_png = ImageMetadata({COMMENT_KEY: 'c', XMP_TEXT_KEY: '<old/>'})
+        from_png.set_xmp_packet(PHOTO_XMP)
+        self.assertEqual([COMMENT_KEY, XMP_TEXT_KEY], list(from_png.text))
+        self.assertEqual(PHOTO_XMP, from_png.xmp_packet)
+        self.assertNotIn(XMP_INFO_KEY, from_png.format_info)
+        not_utf8 = ImageMetadata({XMP_TEXT_KEY: '<old/>'})
+        not_utf8.set_xmp_packet(b'<x>\xff</x>')
+        self.assertNotIn(XMP_TEXT_KEY, not_utf8.text)
+        self.assertEqual(b'<x>\xff</x>', not_utf8.xmp_packet)
+        from_jpeg = ImageMetadata()
+        from_jpeg.set_xmp_packet(PHOTO_XMP)
+        self.assertEqual(PHOTO_XMP, from_jpeg.format_info[XMP_INFO_KEY])
+
+    def test_set_iptc_data(self) -> None:
+        """Setting IPTC data replaces the Photoshop resources with a single IPTC resource."""
+        metadata = photo_metadata()
+        iptc = _iptc_dataset(2, 25, b'tag')
+        metadata.set_iptc_data(iptc)
+        self.assertEqual({IPTC_RESOURCE_ID: iptc}, metadata.format_info[PHOTOSHOP_INFO_KEY])
+        self.assertEqual(['tag'], [entry.value for entry in metadata.iptc_entries()])
 
     def test_ora_json_from_info_dict(self) -> None:
         """An .ora file holding a whole PIL info dict keeps its text, and binary or non-text values as format info."""
@@ -455,18 +490,9 @@ class MetadataFileTest(IntraPaintTestCase):
         self.assertEqual({PARAMETERS_KEY: 'p'}, loaded.text)
         self.assertIn('dpi', loaded.format_info)
 
-    def _photo_metadata(self) -> ImageMetadata:
-        """Returns the metadata of a JPEG with a comment, XMP, IPTC and GPS tags, as a photo tool writes them."""
-        iptc = _iptc_dataset(1, 90, b'\x1b%G') + _iptc_dataset(2, 0, b'\x00\x04') \
-            + _iptc_dataset(2, 25, b'market') + _iptc_dataset(2, 90, b'Springfield') \
-            + _iptc_dataset(2, 116, 'caf\u00e9'.encode())
-        return ImageMetadata({COMMENT_KEY: 'a camera note'},
-                             _exif({IFD.GPSInfo: {ExifTags.GPS.GPSLatitudeRef: 'N'}}),
-                             {'xmp': PHOTO_XMP, 'photoshop': {0x0404: iptc, 0x0409: b'thumbnail'}})
-
     def test_jpeg_keeps_comment_xmp_and_iptc(self) -> None:
         """A JPEG save writes the comment, the XMP packet and the IPTC datasets unchanged, with nothing else added."""
-        source = self._photo_metadata()
+        source = photo_metadata()
         path = self._path('photo.jpg')
         save_image_with_metadata(self.image, path, source)
         _, loaded = load_image(path)
@@ -482,7 +508,7 @@ class MetadataFileTest(IntraPaintTestCase):
         for extension in ('jpg', 'webp', 'tiff', 'png'):
             with self.subTest(extension=extension):
                 path = self._path(f'photo.{extension}')
-                save_image_with_metadata(self.image, path, self._photo_metadata())
+                save_image_with_metadata(self.image, path, photo_metadata())
                 _, loaded = load_image(path)
                 self.assertEqual(PHOTO_XMP.decode(), loaded.xmp)
                 self.assertEqual(extension == 'jpg', loaded.iptc_data is not None)
@@ -508,7 +534,7 @@ class MetadataFileTest(IntraPaintTestCase):
 
     def test_remove_location(self) -> None:
         """Remove location clears GPS tags and IPTC and XMP place fields, keeping the rest byte for byte."""
-        metadata = self._photo_metadata()
+        metadata = photo_metadata()
         self.assertTrue(metadata.has_location_data)
         metadata.remove_location()
         self.assertFalse(metadata.has_location_data)

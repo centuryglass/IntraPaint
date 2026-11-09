@@ -10,6 +10,7 @@ from PySide6.QtCore import QRect, QSize, QPoint
 from PySide6.QtGui import QColor, QImage, QTransform
 
 from src.image.filter.invert import InvertFilter
+from src.image.image_metadata import ImageMetadata
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import crop_layer_to_selection
@@ -167,7 +168,7 @@ class OraExtensionTest(IntraPaintTestCase):
         listing of archive entries joined by newlines."""
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, 'extension.ora')
-            save_ora_image(self.image_stack, ora_path, 'metadata')
+            save_ora_image(self.image_stack, ora_path, ImageMetadata({'comment': 'metadata'}))
             read_ora_image(self.loaded_stack, ora_path)
             with zipfile.ZipFile(ora_path) as archive:
                 return '\n'.join(archive.namelist())
@@ -228,7 +229,7 @@ class OraExtensionTest(IntraPaintTestCase):
                 self.image_stack.layer_stack.insert_layer(layer, 0)
                 with patch.object(StubLayer, 'ora_extension_data', return_value={tag: 'x'}):
                     with tempfile.TemporaryDirectory() as temp_dir, self.assertRaises(ValueError):
-                        save_ora_image(self.image_stack, os.path.join(temp_dir, 'reserved.ora'), 'metadata')
+                        save_ora_image(self.image_stack, os.path.join(temp_dir, 'reserved.ora'), ImageMetadata({'comment': 'metadata'}))
                 self.image_stack.layer_stack.remove_layer(layer)
 
     def test_document_extension_round_trip(self) -> None:

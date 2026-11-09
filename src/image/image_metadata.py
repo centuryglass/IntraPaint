@@ -35,6 +35,8 @@ XMP_INFO_KEY = 'xmp'
 ICC_PROFILE_INFO_KEY = 'icc_profile'
 PHOTOSHOP_INFO_KEY = 'photoshop'
 """PIL's info key for a JPEG's Photoshop resources, a dict from resource id to bytes. One of them holds IPTC data."""
+DPI_INFO_KEY = 'dpi'
+"""PIL's info key for horizontal and vertical resolution in pixels per inch. Only .ora saves write it back."""
 IPTC_RESOURCE_ID = 0x0404
 # An IPTC dataset starts with this tag marker, then its record number, dataset number and a 2-byte length:
 _IPTC_TAG_MARKER = 0x1C
@@ -260,6 +262,9 @@ class ImageMetadata:
     - `format_info` holds PIL's other info entries: animation loop counts, DPI, raw XMP and ICC profile data, and a
       JPEG's Photoshop resources, which hold IPTC data. `save_image_with_metadata` writes the XMP and IPTC blocks
       back for the formats that can hold them, and nothing else in it.
+
+    .ora saves keep every text entry, the EXIF data, the XMP packet, the IPTC datasets and the DPI, see
+    `src/image/ora_metadata.py`.
     """
 
     def __init__(self, text: Optional[dict[str, str]] = None, exif: Optional[Image.Exif] = None,
@@ -290,15 +295,13 @@ class ImageMetadata:
         return ImageMetadata(text, image.getexif(), format_info)
 
     @classmethod
-    def from_ora_json(cls, metadata_json: Optional[str], exif_bytes: Optional[bytes] = None) -> 'ImageMetadata':
-        """Reads the text entries an .ora file's metadata attribute holds, with optional encoded EXIF data.
+    def from_ora_json(cls, metadata_json: Optional[str]) -> 'ImageMetadata':
+        """Reads the text entries an .ora file's metadata attribute holds.
 
         Files written before this model hold the whole PIL info dict, so string values become text entries and
         anything else becomes format info.
         """
         metadata = ImageMetadata()
-        if exif_bytes is not None:
-            metadata.exif.load(exif_bytes)
         if metadata_json is None or metadata_json == '':
             return metadata
         try:
@@ -426,6 +429,25 @@ class ImageMetadata:
             return None
         data = resources.get(IPTC_RESOURCE_ID)
         return data if isinstance(data, bytes) else None
+
+    def set_xmp_packet(self, packet: bytes) -> None:
+        """Replaces the XMP packet, keeping it as a text entry if the current one is.
+
+        A packet that isn't valid UTF-8 can't be a text entry without changing its bytes, so it replaces the text
+        entry as format info instead.
+        """
+        if XMP_TEXT_KEY in self.text:
+            try:
+                self.text[XMP_TEXT_KEY] = packet.decode('utf-8')
+                self.format_info.pop(XMP_INFO_KEY, None)
+                return
+            except UnicodeDecodeError:
+                del self.text[XMP_TEXT_KEY]
+        self.format_info[XMP_INFO_KEY] = packet
+
+    def set_iptc_data(self, data: bytes) -> None:
+        """Replaces the Photoshop resources with one IPTC resource holding `data`, the only resource saves write."""
+        self.format_info[PHOTOSHOP_INFO_KEY] = {IPTC_RESOURCE_ID: data}
 
     def iptc_entries(self) -> list[IptcEntry]:
         """Returns the IPTC application record datasets of a JPEG's Photoshop resources, in file order.

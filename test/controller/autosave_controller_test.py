@@ -1,4 +1,6 @@
 """Tests crash recovery autosaves: what they write, when they skip work, and restoring them after a crash."""
+import base64
+import json
 import os
 import shutil
 import subprocess
@@ -6,6 +8,7 @@ import sys
 import tempfile
 from unittest.mock import patch, MagicMock
 
+from PIL import ExifTags, Image
 from PySide6.QtCore import QSize, QRect, Qt
 from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication, QWidget
@@ -22,7 +25,8 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import save_ora_image, read_ora_image
 from src.image.recovery_files import (find_recoverable_sessions, read_manifest, LOCK_FILE_NAME, MANIFEST_FILE_NAME,
-                                      MANIFEST_TMP_FILE_NAME, FILES_DIR_NAME, KEY_GENERATION, KEY_ARCHIVE_FILES)
+                                      MANIFEST_TMP_FILE_NAME, FILES_DIR_NAME, KEY_GENERATION, KEY_ARCHIVE_FILES,
+                                      KEY_EXIF)
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import RECOVERY_RESTORE, RECOVERY_DISCARD, RECOVERY_LATER
 from test.base_test_case import IntraPaintTestCase
@@ -154,6 +158,47 @@ class AutosaveControllerTest(IntraPaintTestCase):
         # The restored document is this session's first autosave, so the crashed copy is gone:
         self.assertFalse(os.path.exists(crashed_dir))
         self.assertIsNotNone(read_manifest(str(self.controller.session_dir)))
+
+    def _restore_crashed_copy(self) -> None:
+        """Clears the open document's metadata, then restores the crashed copy that `_simulate_crash` made."""
+        self.image_io.clear_metadata()
+        self.assertTrue(self.controller.offer_recovery(MagicMock(return_value=RECOVERY_RESTORE)))
+
+    def test_restored_document_keeps_every_metadata_part(self) -> None:
+        """A restored copy keeps the EXIF tags, XMP packet, IPTC datasets and DPI, as an .ora save does."""
+        self._build_document()
+        exif = Image.Exif()
+        exif[ExifTags.Base.Artist] = 'Someone'
+        iptc = b'\x1c\x02\x19\x00\x03tag'
+        xmp = 'caf\u00e9 <x:xmpmeta xmlns:x="adobe:ns:meta/"/>'.encode()
+        self.image_io.metadata = ImageMetadata(dict(METADATA), exif,
+                                               {'xmp': xmp, 'photoshop': {0x0404: iptc}, 'dpi': (300, 300)})
+        self.assertTrue(self.controller.autosave_now(synchronous=True))
+        self._simulate_crash()
+        self._restore_crashed_copy()
+        restored = self.image_io.metadata
+        self.assertEqual(METADATA, restored.text)
+        self.assertEqual('Someone', restored.exif[ExifTags.Base.Artist])
+        self.assertEqual(xmp, restored.xmp_packet)
+        self.assertEqual(iptc, restored.iptc_data)
+        self.assertEqual((300, 300), restored.format_info['dpi'])
+
+    def test_older_manifest_exif_is_restored(self) -> None:
+        """EXIF data that an older version stored in the manifest, not the archive files, is restored."""
+        self._build_document()
+        self.assertTrue(self.controller.autosave_now(synchronous=True))
+        crashed_dir = self._simulate_crash()
+        exif = Image.Exif()
+        exif[ExifTags.Base.Artist] = 'Someone'
+        manifest_path = os.path.join(crashed_dir, MANIFEST_FILE_NAME)
+        with open(manifest_path, encoding='utf-8') as manifest_file:
+            manifest = json.load(manifest_file)
+        manifest[KEY_EXIF] = base64.b64encode(exif.tobytes()).decode('ascii')
+        with open(manifest_path, 'w', encoding='utf-8') as manifest_file:
+            json.dump(manifest, manifest_file)
+        self._restore_crashed_copy()
+        self.assertEqual('Someone', self.image_io.metadata.exif[ExifTags.Base.Artist])
+        self.assertEqual(METADATA, self.image_io.metadata.text)
 
     def test_unchanged_layer_is_not_rewritten(self) -> None:
         """An autosave writes only the layers whose content changed since the last one."""
