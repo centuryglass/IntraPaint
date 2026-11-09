@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QApplication
 from sd_backend_client import A1111Webservice
 
 from src.config.config import Config
+from src.config.generated_keys import A1111ConfigKeys
 from src.util.shared_constants import PROJECT_DIR
 from src.util.singleton import Singleton
 
@@ -25,11 +26,11 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 WEB_CONFIG_TYPE_ERROR = _tr('key "{key}" had unexpected type {value_type}, value {value}')
 
 
-class A1111Config(Config, metaclass=Singleton):
+class A1111Config(A1111ConfigKeys, Config, metaclass=Singleton):
     """Provides access to configurable options for the Automatic1111 or Forge Stable Diffusion WebUI."""
 
     def __init__(self) -> None:
-        super().__init__(CONFIG_DEFINITIONS, None, A1111Config)
+        super().__init__(CONFIG_DEFINITIONS, None)
 
     def load_all(self, webservice: A1111Webservice) -> None:
         """Populate options and load values from the remote webservice."""
@@ -85,13 +86,3 @@ class A1111Config(Config, metaclass=Singleton):
             for key in self.get_category_keys(category):
                 settings[key] = self.get(key)
         webservice.set_config(settings)
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python scripts/dynamic_import_typing.py src/config/a1111_config.py`
-
-    CLIP_STOP_AT_LAST_LAYERS: str
-    SD_CHECKPOINTS_KEEP_IN_CPU: str
-    SD_CHECKPOINTS_LIMIT: str
-    SD_MODEL_CHECKPOINT: str
-    SD_VAE: str
-    SD_VAE_CHECKPOINT_CACHE: str

@@ -114,7 +114,7 @@ class _ScratchConfig(Config):
     """A `Config` that isn't one of the shared singletons, backed by files in a temporary directory."""
 
     def __init__(self, definition_path: str, json_path: str) -> None:
-        super().__init__(definition_path, json_path, _ScratchConfig)
+        super().__init__(definition_path, json_path)
 
 
 class ConfigTest(IntraPaintTestCase):

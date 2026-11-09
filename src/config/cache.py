@@ -6,6 +6,7 @@ from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.config import Config
+from src.config.generated_keys import CacheKeys
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 from src.util.visual.display_size import get_screen_bounds
@@ -26,12 +27,12 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 SCALING_OPTION_NONE = _tr('None')
 
 
-class Cache(Config, metaclass=Singleton):
+class Cache(CacheKeys, Config, metaclass=Singleton):
     """Use the Config module's data sharing capabilities to cache temporary values."""
 
     def __init__(self, json_path: str = DEFAULT_FILE_PATH) -> None:
         """Initialize the cache, registering expected value types."""
-        super().__init__(CONFIG_DEFINITIONS, json_path, Cache)
+        super().__init__(CONFIG_DEFINITIONS, json_path)
         self._geometry_timer = QTimer()
         self._geometry_timer.setInterval(GEOMETRY_CHECK_INTERVAL)
         self._geometry_timer.timeout.connect(self._check_bounds)
@@ -113,162 +114,3 @@ class Cache(Config, metaclass=Singleton):
             self._last_bounds[widget] = QRect(widget.geometry())
         if len(self._last_bounds) == 0:
             self._geometry_timer.stop()
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python scripts/dynamic_import_typing.py src/config/cache.py`
-
-    ANIMATION_FRAME_DURATION: str
-    ANIMATION_LOOP_COUNT: str
-    ANIMATION_LOOP_FOREVER: str
-    ANIMATION_SAVE_AS_ANIMATION: str
-    BACKGROUND_COLOR: str
-    BATCH_COUNT: str
-    BATCH_SIZE: str
-    CANVAS_RESIZE_CROP_LAYERS: str
-    CANVAS_RESIZE_LAYER_MODE: str
-    CLIP_SKIP: str
-    CLONE_STAMP_TOOL_ANTIALIAS: str
-    CLONE_STAMP_TOOL_BRUSH_SIZE: str
-    CLONE_STAMP_TOOL_HARDNESS: str
-    CLONE_STAMP_TOOL_OPACITY: str
-    CLONE_STAMP_TOOL_PRESSURE_HARDNESS: str
-    CLONE_STAMP_TOOL_PRESSURE_OPACITY: str
-    CLONE_STAMP_TOOL_PRESSURE_SIZE: str
-    CLONE_STAMP_TOOL_SOURCE_MODE: str
-    COLOR_SLIDER_MODE: str
-    COLOR_SLIDER_MODE_SECONDARY: str
-    COMFYUI_CACHED_SCALING_MODE: str
-    COMFYUI_INPAINTING_MODEL: str
-    COMFYUI_MODEL_CONFIG: str
-    COMFYUI_TILED_VAE: str
-    COMFYUI_TILED_VAE_TILE_SIZE: str
-    CONTROLNET_ARGS_0_COMFYUI: str
-    CONTROLNET_ARGS_0_WEBUI: str
-    CONTROLNET_ARGS_1_COMFYUI: str
-    CONTROLNET_ARGS_1_WEBUI: str
-    CONTROLNET_ARGS_2_COMFYUI: str
-    CONTROLNET_ARGS_2_WEBUI: str
-    CUTN: str
-    DENOISING_STRENGTH: str
-    DRAW_TOOL_ANTIALIAS: str
-    DRAW_TOOL_BRUSH_PATTERN: str
-    DRAW_TOOL_BRUSH_SIZE: str
-    DRAW_TOOL_HARDNESS: str
-    DRAW_TOOL_OPACITY: str
-    DRAW_TOOL_PRESSURE_HARDNESS: str
-    DRAW_TOOL_PRESSURE_OPACITY: str
-    DRAW_TOOL_PRESSURE_SIZE: str
-    EDIT_MODE: str
-    EDIT_SIZE: str
-    ERASER_TOOL_ANTIALIAS: str
-    ERASER_TOOL_HARDNESS: str
-    ERASER_TOOL_OPACITY: str
-    ERASER_TOOL_PRESSURE_HARDNESS: str
-    ERASER_TOOL_PRESSURE_OPACITY: str
-    ERASER_TOOL_PRESSURE_SIZE: str
-    ERASER_TOOL_SIZE: str
-    EXPECT_TABLET_INPUT: str
-    FILL_THRESHOLD: str
-    FILL_TOOL_BRUSH_PATTERN: str
-    FILTER_TOOL_ANTIALIAS: str
-    FILTER_TOOL_BRUSH_SIZE: str
-    FILTER_TOOL_CACHED_PARAMETERS: str
-    FILTER_TOOL_HARDNESS: str
-    FILTER_TOOL_OPACITY: str
-    FILTER_TOOL_PRESSURE_HARDNESS: str
-    FILTER_TOOL_PRESSURE_OPACITY: str
-    FILTER_TOOL_PRESSURE_SIZE: str
-    FILTER_TOOL_SELECTED_FILTER: str
-    GENERATION_RESOLUTION_RULE: str
-    GENERATION_SIZE: str
-    GENERATOR_SCALING_MODES: str
-    GLID_SERVER_URL: str
-    GUIDANCE_SCALE: str
-    HYPERNETWORK_MODELS: str
-    IMAGE_LAYER_SCALING_BEHAVIOR: str
-    INPAINT_FULL_RES: str
-    INPAINT_FULL_RES_PADDING: str
-    INPAINT_OPTIONS_AVAILABLE: str
-    LAST_ACTIVE_TOOL: str
-    LAST_BRUSH_COLOR: str
-    LAST_FILE_PATH: str
-    LAST_NAV_PANEL_TOOL: str
-    LAYER_THUMBNAIL_SIZE: str
-    LAST_SEED: str
-    LORA_MODELS: str
-    MASKED_CONTENT: str
-    MYPAINT_BRUSH: str
-    NEGATIVE_PROMPT: str
-    NEW_IMAGE_BACKGROUND_COLOR: str
-    NEW_IMAGE_USES_BACKGROUND_COLOR: bool
-    PAINT_SELECTION_ONLY: str
-    PAINT_TOOL_BRUSH_SIZE: str
-    PROMPT: str
-    RECENT_COLORS: str
-    RECENT_GENERATION_AREA_SIZES: str
-    RECENT_FILES: str
-    RECENT_TOOLS: str
-    SAMPLE_MERGED: str
-    SAMPLING_METHOD: str
-    SAMPLING_STEPS: str
-    SAVED_LAYOUTS: str
-    SAVED_MAIN_WINDOW_GEOMETRY: str
-    SAVED_MAIN_WINDOW_STATE: str
-    SCALING_MODE: str
-    SCHEDULER: str
-    SCRIPTS_IMG2IMG: str
-    SCRIPTS_TXT2IMG: str
-    SD_COMFYUI_SERVER_URL: str
-    SD_MODEL: str
-    SD_UPSCALING_AVAILABLE: str
-    SD_UPSCALING_CONTROLNET_TILE_MODELS: str
-    SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS: str
-    SD_UPSCALING_CONTROLNET_TILE_SETTINGS: str
-    SD_UPSCALING_DENOISING_STRENGTH: str
-    SD_UPSCALING_STEP_COUNT: str
-    SD_WEBUI_SERVER_URL: str
-    SEED: str
-    SELECTION_BRUSH_SIZE: str
-    SELECTION_FILL_AREA: str
-    SELECTION_MODE: str
-    SHAPE_SELECTION_FIXED_ASPECT: str
-    SHAPE_TOOL_ANTIALIAS: str
-    SHAPE_TOOL_DASH_PATTERN: str
-    SHAPE_TOOL_FILL_COLOR: str
-    SHAPE_TOOL_FILL_PATTERN: str
-    SHAPE_TOOL_FILL_SOURCE: str
-    SHAPE_TOOL_LINE_COLOR: str
-    SHAPE_TOOL_LINE_JOIN_STYLE: str
-    SHAPE_TOOL_LINE_SOURCE: str
-    SHAPE_TOOL_LINE_STYLE: str
-    SHAPE_TOOL_LINE_WIDTH: str
-    SHAPE_TOOL_MODE: str
-    SHAPE_TOOL_STAR_INNER_POINT_FRACTION: str
-    SHAPE_TOOL_VERTEX_COUNT: str
-    SKIP_STEPS: str
-    SMUDGE_TOOL_ANTIALIAS: str
-    SMUDGE_TOOL_BRUSH_SIZE: str
-    SMUDGE_TOOL_HARDNESS: str
-    SMUDGE_TOOL_OPACITY: str
-    SMUDGE_TOOL_PRESSURE_HARDNESS: str
-    SMUDGE_TOOL_PRESSURE_OPACITY: str
-    SMUDGE_TOOL_PRESSURE_SIZE: str
-    SOFT_INPAINTING: str
-    SOFT_INPAINTING_AVAILABLE: str
-    SOFT_INPAINTING_PARAMETERS: str
-    SOFT_INPAINTING_VALUES: str
-    STYLES: str
-    TEXT_BACKGROUND_COLOR: str
-    TEXT_TOOL_PARAMS: str
-    ULTIMATE_UPSCALE_SCRIPT_AVAILABLE: str
-    USE_STABLE_DIFFUSION_UPSCALING: str
-    USE_ULTIMATE_UPSCALE_SCRIPT: str
-    WEBUI_CACHED_SCALING_MODE: str
-    WEBUI_LAST_SUBSEED: str
-    WEBUI_RESTORE_FACES: str
-    WEBUI_SEED_RESIZE: str
-    WEBUI_SEED_RESIZE_ENABLED: str
-    WEBUI_SUBSEED: str
-    WEBUI_SUBSEED_STRENGTH: str
-    WEBUI_TILING: str
-    WEBUI_TILING_AVAILABLE: str

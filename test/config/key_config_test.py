@@ -37,7 +37,7 @@ class _ScratchKeyConfig(Config):
     PREVIOUS_DEFAULTS = KeyConfig.PREVIOUS_DEFAULTS
 
     def __init__(self, json_path: str) -> None:
-        super().__init__(CONFIG_DEFINITIONS, json_path, _ScratchKeyConfig)
+        super().__init__(CONFIG_DEFINITIONS, json_path)
 
 
 class KeyConfigMigrationTest(IntraPaintTestCase):
