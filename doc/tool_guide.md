@@ -369,7 +369,7 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 - **Left-click and drag within the active layer**: Move the layer within the image.
 - **Double-click the active layer**: Switch between scaling and rotation modes.
 - **Left-click and drag layer corners**: Either scale or rotate the layer, depending on whether you're in scaling mode or rotation mode.
-- **Left-click and drag the center origin point**: Adjusts the point within the layer that the layer will rotate around.
+- **Left-click and drag the center origin point**: Adjusts the point within the layer that the layer will rotate around and scale from. It snaps to the layer's corners, edge midpoints and center when dragged near them.
 - **Arrow keys**: Move the layer within the image. **Shift + arrow keys** move it ten pixels at a time.
 - **Ctrl + arrow keys**: Resize the layer.
 - **"O", "P" keys**: Rotate the layer counter-clockwise or clockwise.
@@ -379,7 +379,7 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 
 <img src="./labeled_screenshots/tools/transform.png" alt="Screenshot of the layer transformation tool controls, with specific elements numbered."/>
 
-1. **X and Y position inputs**: Sets the position of the layer within the image, after applying scale and rotation.
+1. **X and Y position inputs**: Show where the transformation origin is within the image, and move the layer so the origin lands on the value you type. Rotating or scaling about the origin leaves them unchanged. To place a rotated layer exactly, snap the origin to a corner, then type where that corner should go.
 2. **Width and height inputs**: Sets the layer's width and height in pixels, as measured before layer rotation is applied.
 3. **X-Scale and Y-Scale inputs**: Also sets the width and height, but as multiples of the initial width and height instead of as absolute measurements.
 4. **Angle input**: Sets the layer's angle of rotation.

@@ -228,24 +228,17 @@ class TextToolTest(ToolTestCase):
             layers.append((label, layer))
         return layers
 
-    def test_position_matches_transform_tool(self) -> None:
-        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the transform tool's,
-           rounded to whole pixels."""
+    def test_position_matches_transform_outline_bounds(self) -> None:
+        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the top-left of the
+           transform outline's bounding box, rounded to whole pixels. The transform tool's panel shows its
+           transformation origin instead."""
         for label, layer in self._transformed_layers():
             with self.subTest(label):
                 self.image_stack.active_layer = layer
                 self.activate_tool(self.tool)
                 text_tool_position = self.panel.offset
-                transform_panel = self._activate_transform_tool()._control_panel
-                self.assertEqual(text_tool_position,
-                                 QPointF(transform_panel.x_position, transform_panel.y_position).toPoint())
-
-    def test_unrotated_position_matches_transform_tool(self) -> None:
-        """For a text layer that is only translated, the text tool's X and Y are exactly the transform tool's."""
-        self._drag_new_layer()
-        text_tool_position = self.panel.offset
-        transform_panel = self._activate_transform_tool()._control_panel
-        self.assertEqual(QPointF(text_tool_position), QPointF(transform_panel.x_position, transform_panel.y_position))
+                outline = self._activate_transform_tool()._transform_outline
+                self.assertEqual(text_tool_position, outline.bounding_box_top_left.toPoint())
 
     def test_rotated_position_set_in_text_tool(self) -> None:
         """Setting X and Y in the text tool on a rotated layer moves it without rotating it, and the transform tool
@@ -259,16 +252,5 @@ class TextToolTest(ToolTestCase):
         self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
         self.assertEqual((layer.transform.m11(), layer.transform.m12(), layer.transform.m21(),
                           layer.transform.m22()), rotation)
-        transform_panel = self._activate_transform_tool()._control_panel
-        self.assertEqual(QPointF(transform_panel.x_position, transform_panel.y_position), QPointF(30, 40))
-
-    def test_rotated_position_set_in_transform_tool(self) -> None:
-        """Setting X and Y in the transform tool on a rotated layer shows the same values in the text tool."""
-        layer = self._drag_new_layer()
-        layer.rotate(90)
-        transform_tool = self._activate_transform_tool()
-        transform_tool._control_panel.geometry_block.field(X).set_value(30.0)
-        transform_tool._control_panel.geometry_block.field(Y).set_value(40.0)
-        self.activate_tool(self.tool)
-        self.assertEqual(self.panel.offset, QPoint(30, 40))
-        self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
+        outline = self._activate_transform_tool()._transform_outline
+        self.assertEqual(outline.bounding_box_top_left, QPointF(30, 40))
