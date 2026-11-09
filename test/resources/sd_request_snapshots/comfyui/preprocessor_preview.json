@@ -2,7 +2,7 @@
   {
     "body": {
       "subfolder": "sd_backend_client",
-      "type": "input"
+      "type": "temp"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
@@ -40,9 +40,8 @@
           }
         },
         "5": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "CannyEdgePreprocessor_preview",
             "images": [
               "4",
               0
