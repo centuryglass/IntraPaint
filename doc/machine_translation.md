@@ -220,8 +220,8 @@ Automated checks run on every translation file after every batch:
 - no two translations in one context share an accelerator (the same script; a context stands in for a menu);
 - glossary terms are used wherever the English term appears (the same script; it needs a glossary for the language in
   `doc/translation/`);
-- punctuation and spacing follow the language's style section, where a rule can be checked mechanically (not yet
-  automated).
+- punctuation and spacing follow the language's style section, where a rule can be checked mechanically (the same
+  script; the rules are `STYLE_RULES` and `LABEL_COLONS` in it, so a new language's checkable rules are added there).
 
 Then run `python scripts/capture_ui.py --sheet` in the language for the batch's panels and windows, and look for
 clipped or overflowing text, which needs no knowledge of the language to spot. The batch PR names the sheets checked.
