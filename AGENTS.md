@@ -105,9 +105,9 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   - Changing a default needs no migration. If a release may have written the old default, add it to the config class's
     `PREVIOUS_DEFAULTS` (`Config`'s docstring). Anything else that rewrites saved data is a new entry in
     `Config._migrations`, which bumps the version. A file with a newer version loads as-is and isn't rewritten.
-- **Key constants like `Cache.BACKGROUND_COLOR` exist only after the class's first construction,** which sets them
-  from the definition file. Code that runs at import time (default arguments, class bodies, module constants) can't
-  use them. Tests can't catch this because `conftest.py` constructs every config first; CI's `bundle` smoke test can.
+- **Key constants like `Cache.BACKGROUND_COLOR` come from `src/config/generated_keys.py`.** After adding, renaming
+  or removing a definition, run `python scripts/generate_config_keys.py` and commit the result;
+  `test/config/generated_keys_test.py` fails until you do.
 
 ## Conventions
 

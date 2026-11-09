@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.config import Config
+from src.config.generated_keys import KeyConfigKeys
 from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.key_code_utils import get_modifiers, get_key_with_modifiers, key_alternatives
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
@@ -45,7 +46,7 @@ BRUSH_OPACITY_PRESETS = {f'brush_opacity_{percent}': percent / 100 for percent i
 OPTIONAL_KEYS = ('toggle_sample_merged_hotkey', 'toggle_selection_shape_hotkey')
 
 
-class KeyConfig(Config, metaclass=Singleton):
+class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
     """Provides access to the user-editable application keybinding config."""
 
     # Defaults from released versions, so installs that never changed them follow the current default:
@@ -115,7 +116,7 @@ class KeyConfig(Config, metaclass=Singleton):
             default values. Any expected keys not found in the file load with their current default. Any unexpected
             keys will be discarded.
         """
-        super().__init__(CONFIG_DEFINITIONS, json_path, KeyConfig)
+        super().__init__(CONFIG_DEFINITIONS, json_path)
         self.validate_keybindings()
 
     @staticmethod
@@ -235,151 +236,3 @@ class KeyConfig(Config, metaclass=Singleton):
             lines = ['<li>' + err + '</li>\n' for err in errors]
             error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python scripts/dynamic_import_typing.py src/config/key_config.py`
-
-    BLUR_SHORTCUT: str
-    BRIGHTNESS_CONTRAST_SHORTCUT: str
-    BRUSH_HARDNESS_DECREASE: str
-    BRUSH_HARDNESS_INCREASE: str
-    BRUSH_OPACITY_10: str
-    BRUSH_OPACITY_100: str
-    BRUSH_OPACITY_20: str
-    BRUSH_OPACITY_30: str
-    BRUSH_OPACITY_40: str
-    BRUSH_OPACITY_50: str
-    BRUSH_OPACITY_60: str
-    BRUSH_OPACITY_70: str
-    BRUSH_OPACITY_80: str
-    BRUSH_OPACITY_90: str
-    BRUSH_OPACITY_DECREASE: str
-    BRUSH_OPACITY_INCREASE: str
-    BRUSH_SIZE_DECREASE: str
-    BRUSH_SIZE_INCREASE: str
-    BRUSH_TOOL_KEY: str
-    CLEAR_CONTEXT_PINS_SHORTCUT: str
-    CLEAR_MEMORY_SHORTCUT: str
-    CLEAR_SHORTCUT: str
-    CLONE_STAMP_TOOL_KEY: str
-    COLOR_BALANCE_SHORTCUT: str
-    COMPARE_ORIGINAL_MODIFIER: str
-    COPY_LAYER_SHORTCUT: str
-    COPY_SHORTCUT: str
-    CROP_IMAGE_SHORTCUT: str
-    CROP_IMAGE_TO_GEN_SHORTCUT: str
-    CROP_LAYER_TO_SELECTION_SHORTCUT: str
-    CROP_TO_CONTENT_SHORTCUT: str
-    CUT_SHORTCUT: str
-    DELETE_LAYER_SHORTCUT: str
-    DRAW_TOOL_KEY: str
-    ERASER_TOOL_KEY: str
-    EYEDROPPER_OVERRIDE_MODIFIER: str
-    EYEDROPPER_TOOL_KEY: str
-    FILL_TOOL_KEY: str
-    FILTER_TOOL_KEY: str
-    FIXED_ANGLE_MODIFIER: str
-    FIXED_ASPECT_MODIFIER: str
-    FLATTEN_LAYER_SHORTCUT: str
-    FREE_SELECTION_TOOL_KEY: str
-    GENERATE_SHORTCUT: str
-    GENERATION_AREA_TOOL_KEY: str
-    GENERATOR_SELECT_SHORTCUT: str
-    GROW_SELECTION_SHORTCUT: str
-    HELP_INDEX_SHORTCUT: str
-    IMAGE_TO_LAYERS_SHORTCUT: str
-    INVERT_SELECTION_SHORTCUT: str
-    INVERT_SHORTCUT: str
-    LAYER_MIRROR_HORIZONTAL_SHORTCUT: str
-    LAYER_MIRROR_VERTICAL_SHORTCUT: str
-    LAYER_ROTATE_CCW_SHORTCUT: str
-    LAYER_ROTATE_CW_SHORTCUT: str
-    LAYER_TO_IMAGE_SIZE_SHORTCUT: str
-    LCM_MODE_SHORTCUT: str
-    LINE_MODIFIER: str
-    LOAD_LAYERS_SHORTCUT: str
-    LOAD_SHORTCUT: str
-    LORA_SHORTCUT: str
-    MANAGE_DOCK_LAYOUTS_SHORTCUT: str
-    MERGE_ALL_VISIBLE_SHORTCUT: str
-    MERGE_GROUP_SHORTCUT: str
-    MERGE_LAYER_DOWN_SHORTCUT: str
-    MOVE_DOWN: str
-    MOVE_DOWN_MORE: str
-    MOVE_LAYER_DOWN_SHORTCUT: str
-    MOVE_LAYER_TO_TOP_SHORTCUT: str
-    MOVE_LAYER_UP_SHORTCUT: str
-    MOVE_LEFT: str
-    MOVE_LEFT_MORE: str
-    MOVE_RIGHT: str
-    MOVE_RIGHT_MORE: str
-    MOVE_UP: str
-    MOVE_UP_MORE: str
-    NAVIGATION_WINDOW_SHORTCUT: str
-    NEW_IMAGE_SHORTCUT: str
-    NEW_LAYER_GROUP_SHORTCUT: str
-    NEW_LAYER_SHORTCUT: str
-    PADDING_SCROLL_MODIFIER: str
-    PAN_DOWN: str
-    PAN_LEFT: str
-    PAN_RIGHT: str
-    PAN_UP: str
-    PAN_VIEW_KEY: str
-    PASTE_SHORTCUT: str
-    POSTERIZE_SHORTCUT: str
-    PREVIOUS_GENERATION_FRAME_KEY: str
-    PROMPT_STYLE_SHORTCUT: str
-    QUIT_SHORTCUT: str
-    REDO_SHORTCUT: str
-    RELOAD_SHORTCUT: str
-    RENAME_LAYER_SHORTCUT: str
-    RESET_COLORS_SHORTCUT: str
-    RESET_DOCK_LAYOUT_SHORTCUT: str
-    RESET_VIEW_SHORTCUT: str
-    RESIZE_CANVAS_SHORTCUT: str
-    RESTORE_CHOICES_SHORTCUT: str
-    ROTATE_CCW_KEY: str
-    ROTATE_CW_KEY: str
-    SATURATION_SHORTCUT: str
-    SAVE_AS_SHORTCUT: str
-    SAVE_DOCK_LAYOUT_SHORTCUT: str
-    SAVE_SHORTCUT: str
-    SCALE_IMAGE_SHORTCUT: str
-    SELECTION_ADD_MODIFIER: str
-    SELECTION_BRUSH_TOOL_KEY: str
-    SELECTION_FILL_TOOL_KEY: str
-    SELECTION_REPLACE_MODIFIER: str
-    SELECTION_SUBTRACT_MODIFIER: str
-    SELECT_ALL_SHORTCUT: str
-    SELECT_CONTROLNET_TAB: str
-    SELECT_GENERATOR_TAB: str
-    SELECT_LAYER_CONTENT_SHORTCUT: str
-    SELECT_NEXT_LAYER_SHORTCUT: str
-    SELECT_NONE_SHORTCUT: str
-    SELECT_PREVIOUS_LAYER_SHORTCUT: str
-    SELECT_TOOL_TAB: str
-    SETTINGS_SHORTCUT: str
-    SHAPE_SELECTION_TOOL_KEY: str
-    SHAPE_TOOL_KEY: str
-    SHARPEN_SHORTCUT: str
-    SHOW_LAYER_MENU_SHORTCUT: str
-    SHRINK_SELECTION_SHORTCUT: str
-    SMUDGE_TOOL_KEY: str
-    SWAP_COLORS_SHORTCUT: str
-    TEXT_TOOL_KEY: str
-    TOGGLE_CONTROL_HINTS_SHORTCUT: str
-    TOGGLE_RULERS_SHORTCUT: str
-    TOGGLE_SAMPLE_MERGED_HOTKEY: str
-    TOGGLE_SELECTION_OVERLAY_SHORTCUT: str
-    TOGGLE_SELECTION_SHAPE_HOTKEY: str
-    TOOL_ACTION_HOTKEY: str
-    TRANSFORM_TOOL_KEY: str
-    UNDO_SHORTCUT: str
-    UPDATE_METADATA_SHORTCUT: str
-    ZOOM_ACTUAL_SIZE_SHORTCUT: str
-    ZOOM_IN: str
-    ZOOM_IN_SHORTCUT: str
-    ZOOM_OUT: str
-    ZOOM_OUT_SHORTCUT: str
-    ZOOM_TOGGLE: str
-    ZOOM_TO_GEN_AREA_SHORTCUT: str

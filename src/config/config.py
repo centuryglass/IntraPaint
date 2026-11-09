@@ -144,7 +144,7 @@ class Config:
     PREVIOUS_DEFAULTS: dict[str, list[Any]] = {}
     RESET_KEYS: tuple[str, ...] = ()
 
-    def __init__(self, definition_path: str, saved_value_path: Optional[str], child_class: type) -> None:
+    def __init__(self, definition_path: str, saved_value_path: Optional[str]) -> None:
         """Load existing config, or initialize from defaults.
 
         Parameters
@@ -156,10 +156,6 @@ class Config:
             default values. Only values that differ from their definition's default are saved (plus entries
             defined with `"pinned": true`), and any expected key not found in the file loads with its current default.
             Any unexpected values will be removed. If not provided, the Config object won't allow file IO.
-        child_class: class
-            Child class where definition keys should be written as properties when first initialized. Reading one of
-            those properties before the first construction raises `AttributeError`. `conftest.py` constructs every
-            config up front, so tests don't catch this.
         """
         self._entries: dict[str, ConfigEntry] = {}
         self._newer_file = False
@@ -187,9 +183,6 @@ class Config:
                 json_data = json.load(file)
                 for key, definition in json_data.items():
                     assert isinstance(definition, dict)
-                    init_attr_name = key.upper()
-                    if not hasattr(child_class, init_attr_name):
-                        setattr(child_class, init_attr_name, key)
                     try:
                         if DefinitionKey.DEFAULT in definition:
                             initial_value = definition[DefinitionKey.DEFAULT]

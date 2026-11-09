@@ -505,7 +505,7 @@ def bind_step_keys(block: GeometryBlock, hotkey_filter, key_config, predicate: C
     hotkey_filter: HotkeyFilter
         The application's key filter.
     key_config: type[KeyConfig]
-        `KeyConfig`, whose key constants exist only after its first construction.
+        `KeyConfig`, passed in so this module imports no config.
     predicate: Callable[[], bool]
         Whether a key press should step the field.
     """
