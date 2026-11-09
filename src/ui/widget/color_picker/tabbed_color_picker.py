@@ -20,6 +20,7 @@ from src.ui.widget.color_picker.color_slider_block import ColorSliderBlock
 from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare
 from src.ui.widget.color_picker.saved_colors_panel import SavedColorsPanel, RecentColorsRow
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
+from src.util.layout import add_layout
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_picker'
@@ -403,14 +404,17 @@ class TabbedColorPicker(ScreenColorWidget):
             layout.addStretch(1)
         return page
 
-    def _column(self, *widgets: QWidget, stretch: bool = True) -> QVBoxLayout:
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
+    def _column(self, parent: QBoxLayout, *widgets: QWidget, parent_stretch: int = 0) -> None:
+        """Adds a column of parts to a layout of the layout being built, stacked at the top."""
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 0, 0, 0)
+        add_layout(parent, column, parent_stretch)
+        self._fill_column(column, *widgets)
+
+    def _fill_column(self, column: QVBoxLayout, *widgets: QWidget) -> None:
         for widget in widgets:
-            self._add(layout, widget)
-        if stretch:
-            layout.addStretch(1)
-        return layout
+            self._add(column, widget)
+        column.addStretch(1)
 
     def _build_side_layout(self, container: QWidget, compact: bool = False) -> None:
         layout = QVBoxLayout(container)
@@ -427,35 +431,37 @@ class TabbedColorPicker(ScreenColorWidget):
             self._add(layout, self._recent_row)
 
     def _build_side_tall_layout(self, container: QWidget) -> None:
-        container.setLayout(self._column(self._header, self._ring_square, self._alpha_hex_row, self._slider_block,
-                                         self._saved_panel, self._recent_row))
+        column = QVBoxLayout(container)
+        column.setContentsMargins(0, 0, 0, 0)
+        self._fill_column(column, self._header, self._ring_square, self._alpha_hex_row, self._slider_block,
+                          self._saved_panel, self._recent_row)
 
     def _build_bottom_wide_layout(self, container: QWidget) -> None:
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self._column(self._header, self._alpha_hex_row, self._recent_row), stretch=1)
+        self._column(layout, self._header, self._alpha_hex_row, self._recent_row, parent_stretch=1)
         self._add(layout, self._ring_square)
-        layout.addLayout(self._column(self._slider_block, self._secondary_slider_block), stretch=2)
-        layout.addLayout(self._column(self._saved_panel), stretch=1)
+        self._column(layout, self._slider_block, self._secondary_slider_block, parent_stretch=2)
+        self._column(layout, self._saved_panel, parent_stretch=1)
 
     def _build_bottom_medium_layout(self, container: QWidget) -> None:
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self._column(self._header, self._recent_row))
+        self._column(layout, self._header, self._recent_row)
         self._add(layout, self._ring_square)
         tabs = self._new_tabs(container, [
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
             (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
         ], icon_only=False)
         right_column = QVBoxLayout()
+        add_layout(layout, right_column, 1)
         right_column.addWidget(tabs, stretch=1)
         self._add(right_column, self._alpha_hex_row)
-        layout.addLayout(right_column, stretch=1)
 
     def _build_bottom_short_layout(self, container: QWidget) -> None:
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self._column(self._header))
+        self._column(layout, self._header)
         self._add(layout, self._ring_square)
         tabs = self._new_tabs(container, [
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
@@ -469,12 +475,12 @@ class TabbedColorPicker(ScreenColorWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self._add(layout, self._header)
         row = QHBoxLayout()
+        add_layout(layout, row, 1)
         self._add(row, self._ring_square, stretch=1)
         tabs = self._new_tabs(container, [
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
             (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
         ], icon_only=False)
         row.addWidget(tabs, stretch=1)
-        layout.addLayout(row, stretch=1)
         self._add(layout, self._alpha_hex_row)
         self._add(layout, self._recent_row)

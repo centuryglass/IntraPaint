@@ -26,7 +26,7 @@ from typing import Any, Callable, Optional
 from unittest.mock import MagicMock
 
 import numpy as np
-from PySide6.QtCore import QCoreApplication, QEvent, Qt, SignalInstance
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, Qt, SignalInstance
 from PySide6.QtGui import QImage, QKeyEvent, QPalette
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
@@ -332,11 +332,12 @@ def assert_json_matches_snapshot(actual: Any, snapshot_path: str, msg: Optional[
 def layout_item_wrapper_count() -> int:
     """Returns the number of live Python wrappers of layout items (`QWidgetItem`, `QSpacerItem` and the like).
 
-    Only `QLayout.itemAt`, `itemAtPosition` and `takeAt` create these. A test that leaves some behind ran code that
-    wraps items it should not keep. See `test/layout_item_calls_test.py`.
+    Layouts are layout items too, and are not counted. Wrappers come from Python code that constructs an item, from
+    `QLayout.itemAt`, `itemAtPosition` and `takeAt`, and from `addLayout` given a filled child. A test that leaves
+    some behind ran code that wraps items it should not keep. See `test/layout_item_calls_test.py`.
     """
     return sum(1 for wrapper in getAllValidWrappers() if isinstance(wrapper, QLayoutItem)
-               and not isinstance(wrapper, QWidget))
+               and not isinstance(wrapper, QObject))
 
 
 class IntraPaintTestCase(unittest.TestCase):

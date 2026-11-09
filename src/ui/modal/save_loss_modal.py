@@ -11,6 +11,7 @@ from src.config.application_config import AppConfig
 from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_parent import modal_parent
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -74,6 +75,7 @@ class SaveLossModal(QDialog):
             layout.addWidget(checkbox)
 
         button_row = QHBoxLayout()
+        add_layout(layout, button_row)
         button_row.addStretch(1)
         cancel_button = QPushButton(BUTTON_CANCEL, self)
         cancel_button.clicked.connect(self.reject)
@@ -87,7 +89,6 @@ class SaveLossModal(QDialog):
         set_signal(anyway_button)
         anyway_button.clicked.connect(lambda: self._finish(SAVE_ANYWAY))
         button_row.addWidget(anyway_button)
-        layout.addLayout(button_row)
 
     def _finish(self, choice: str) -> None:
         self.choice = choice

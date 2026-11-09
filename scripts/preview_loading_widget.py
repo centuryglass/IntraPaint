@@ -26,6 +26,7 @@ from src.ui.loading.diffusion_ring import DiffusionRing
 from src.ui.loading.loading_design import LoadingDesign
 from src.ui.loading.loading_designs import load_loading_designs
 from src.ui.widget.loading_widget import LoadingWidget
+from src.util.layout import add_layout
 
 BACKDROPS = {'Dark': QColor('#1e2128'), 'Light': QColor('#eef0f3')}
 SLIDER_STEPS = 1000
@@ -78,11 +79,13 @@ class LoadingPreviewWindow(QWidget):
         phase_row = QHBoxLayout()
         phase_row.addWidget(QLabel('Phase'))
         phase_row.addWidget(self._phase_slider)
-        layout = QVBoxLayout(self)
-        layout.addLayout(choice_row)
-        layout.addLayout(control_row)
-        layout.addLayout(phase_row)
+        # The layout gets its widget last, so it can take filled rows (see add_layout):
+        layout = QVBoxLayout()
+        add_layout(layout, choice_row)
+        add_layout(layout, control_row)
+        add_layout(layout, phase_row)
         layout.addWidget(self._backdrop, stretch=1)
+        self.setLayout(layout)
 
         self._design_box.currentTextChanged.connect(self._design_name_changed)
         self._variant_box.currentIndexChanged.connect(self._variant_changed)

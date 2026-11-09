@@ -38,6 +38,7 @@ from src.ui.panel.layer_ui.layer_list import LayerList
 from src.ui.panel.layer_ui.layer_properties import LayerProperties
 from src.ui.panel.layer_ui.layer_row import LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNAIL_SIZE, SMALL_THUMBNAIL_SIZE
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.visual.palette_icon import palette_icon
 from src.util.visual.key_hint_text import key_hint_text
@@ -237,6 +238,7 @@ class LayerPanel(DockPanel):
         layout.setContentsMargins(0, 0, 0, 0)
         cache = Cache()
         size_row = QHBoxLayout()
+        add_layout(layout, size_row)
         size_row.addWidget(QLabel(THUMBNAIL_SIZE_LABEL))
         self._thumbnail_size_box = QComboBox()
         for option in cache.get_options(Cache.LAYER_THUMBNAIL_SIZE):
@@ -244,7 +246,6 @@ class LayerPanel(DockPanel):
         self._thumbnail_size_box.setCurrentIndex(cache.get_option_index(Cache.LAYER_THUMBNAIL_SIZE))
         self._thumbnail_size_box.activated.connect(self._thumbnail_size_chosen_slot)
         size_row.addWidget(self._thumbnail_size_box)
-        layout.addLayout(size_row)
         self._select_previous_button = self._add_more_button(
             SELECT_PREVIOUS_LABEL, KeyConfig.SELECT_PREVIOUS_LAYER_SHORTCUT, lambda: self._select_offset(-1), layout)
         self._select_next_button = self._add_more_button(

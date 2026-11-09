@@ -22,6 +22,7 @@ from src.image.metadata_cache_fields import PROMPT_FIELD, NEGATIVE_PROMPT_FIELD,
     cache_field_keys, read_field, write_field, differs_from_editor, editor_field_text
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.modal.dialog_footer import DialogFooter
+from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, RENAMED_FORMATS
 
@@ -400,7 +401,7 @@ class MetadataWindow(QDialog):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         top_row = QHBoxLayout()
-        layout.addLayout(top_row)
+        add_layout(layout, top_row)
         self._raw_toggle = QCheckBox(RAW_TEXT_LABEL)
         self._raw_toggle.setToolTip(RAW_TEXT_TOOLTIP)
         self._raw_toggle.toggled.connect(self._update_raw_mode)
@@ -454,7 +455,7 @@ class MetadataWindow(QDialog):
         self._field_value_box.valueChanged.connect(self._field_value_changed)
         structured_layout.addWidget(self._field_value_box, stretch=1)
         field_buttons = QHBoxLayout()
-        structured_layout.addLayout(field_buttons)
+        add_layout(structured_layout, field_buttons)
         self._add_field_button = QPushButton(ADD_FIELD_LABEL)
         self._add_field_button.clicked.connect(self._add_field)
         self._remove_field_button = QPushButton(REMOVE_FIELD_LABEL)
@@ -474,13 +475,13 @@ class MetadataWindow(QDialog):
     def _build_prompt_row(self, layout: QVBoxLayout, field: str, label_text: str) -> PlainTextEdit:
         row = QHBoxLayout()
         layout.addWidget(QLabel(label_text))
-        layout.addLayout(row)
+        add_layout(layout, row)
         box = PlainTextEdit()
         box.setMaximumHeight(self.fontMetrics().lineSpacing() * _PROMPT_LINES)
         box.valueChanged.connect(lambda text, name=field: self._prompt_changed(name, text))
         row.addWidget(box, stretch=1)
         buttons = QVBoxLayout()
-        row.addLayout(buttons)
+        add_layout(row, buttons)
         apply_button, update_button = self._field_buttons(field)
         buttons.addWidget(apply_button)
         buttons.addWidget(update_button)
@@ -716,7 +717,7 @@ class MetadataWindow(QDialog):
         self._row_value_box.valueChanged.connect(self._row_value_changed)
         layout.addWidget(self._row_value_box, stretch=1)
         row = QHBoxLayout()
-        layout.addLayout(row)
+        add_layout(layout, row)
         add_button = QPushButton(ADD_ENTRY_LABEL)
         add_button.setToolTip(SOURCE_TEXT_TOOLTIP)
         add_button.clicked.connect(self._add_text_entry)

@@ -10,6 +10,7 @@ from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QBoxLayout, QLabel, QToolButton, QApplication
 
 from src.ui.widget.color_picker.alpha_hex_row import format_hex_color
+from src.util.layout import add_layout
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -37,7 +38,7 @@ class ColorPickerHeader(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self._row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
-        layout.addLayout(self._row)
+        add_layout(layout, self._row)
         self._swatch_widget = swatch_widget
         if swatch_widget is not None:
             swatch_widget.setParent(self)

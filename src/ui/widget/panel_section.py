@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLa
 from src.ui.ink_style import caution_color
 from src.ui.layout.panel_fit import held_weakly
 from src.ui.widget.keycap_badge import KeycapBadge
+from src.util.layout import add_layout
 
 HEADER_HEIGHT = 26
 CHEVRON_SIZE = 8.0
@@ -209,15 +210,15 @@ class PanelSection(QWidget):
         self._action_widgets: list[QWidget] = []
         self._actions.setContentsMargins(0, 0, CHEVRON_MARGIN, 0)
         self._actions.setSpacing(ACTION_SPACING)
-        header = self._header_layout = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.setSpacing(0)
-        header.addWidget(self._header_button, stretch=1)
-        header.addLayout(self._actions)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        layout.addLayout(header)
+        header = self._header_layout = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(0)
+        add_layout(layout, header)
+        header.addWidget(self._header_button, stretch=1)
+        add_layout(header, self._actions)
         layout.addWidget(body)
         self._apply_state()
 
