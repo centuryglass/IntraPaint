@@ -522,6 +522,14 @@
         "default": true,
         "saved": true
     },
+    "warn_before_metadata_loss": {
+        "label": "Warn when saving drops EXIF, XMP, IPTC or comments:",
+        "category": "Alerts",
+        "description": "Show a warning popup, listing what would be lost, when saving an image in a format that can't keep all of its metadata.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "warn_before_write_only_save": {
         "label": "Warn when saving in a format that cannot be loaded:",
         "category": "Alerts",

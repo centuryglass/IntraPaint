@@ -228,29 +228,40 @@ class TextToolTest(ToolTestCase):
             layers.append((label, layer))
         return layers
 
-    def test_position_matches_transform_outline_bounds(self) -> None:
-        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the top-left of the
-           transform outline's bounding box, rounded to whole pixels. The transform tool's panel shows its
-           transformation origin instead."""
+    def test_position_matches_transform_tool_at_corner(self) -> None:
+        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the transform
+           tool's with its origin snapped to the layer's top-left corner, rounded to whole pixels."""
         for label, layer in self._transformed_layers():
             with self.subTest(label):
                 self.image_stack.active_layer = layer
                 self.activate_tool(self.tool)
                 text_tool_position = self.panel.offset
-                outline = self._activate_transform_tool()._transform_outline
-                self.assertEqual(text_tool_position, outline.bounding_box_top_left.toPoint())
+                transform_tool = self._activate_transform_tool()
+                transform_tool._transform_outline.transformation_origin = QPointF(layer.bounds.topLeft())
+                panel = transform_tool._control_panel
+                self.assertEqual(text_tool_position, QPointF(panel.x_position, panel.y_position).toPoint())
+
+    def test_position_stable_under_rotation(self) -> None:
+        """Rotating a text layer about its top-left corner leaves the text tool's X and Y unchanged."""
+        layer = self._drag_new_layer()
+        before = self.panel.offset
+        layer.set_transform(QTransform.fromTranslate(before.x(), before.y()).rotate(30))
+        self.activate_tool(self.tool)
+        self.assertEqual(self.panel.offset, before)
 
     def test_rotated_position_set_in_text_tool(self) -> None:
-        """Setting X and Y in the text tool on a rotated layer moves it without rotating it, and the transform tool
-           reads the same values back."""
+        """Setting X and Y in the text tool on a rotated layer moves its top-left corner there without rotating it,
+           and the transform tool reads the same values back at that corner."""
         layer = self._drag_new_layer()
         layer.rotate(90)
         rotation = (layer.transform.m11(), layer.transform.m12(), layer.transform.m21(), layer.transform.m22())
         self.panel.geometry_block.field(X).set_value(30)
         self.panel.geometry_block.field(Y).set_value(40)
         self.assertEqual(self.panel.offset, QPoint(30, 40))
-        self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
+        self.assertEqual(layer.transform.map(QPointF(layer.bounds.topLeft())), QPointF(30, 40))
         self.assertEqual((layer.transform.m11(), layer.transform.m12(), layer.transform.m21(),
                           layer.transform.m22()), rotation)
-        outline = self._activate_transform_tool()._transform_outline
-        self.assertEqual(outline.bounding_box_top_left, QPointF(30, 40))
+        transform_tool = self._activate_transform_tool()
+        transform_tool._transform_outline.transformation_origin = QPointF(layer.bounds.topLeft())
+        panel = transform_tool._control_panel
+        self.assertEqual(QPointF(panel.x_position, panel.y_position), QPointF(30, 40))

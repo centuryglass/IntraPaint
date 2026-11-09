@@ -194,7 +194,8 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         only the generation parameters, or the comment if there are none, as its comment. JPEG 2000 keeps the same
         comment, plus EXIF data. JPEG, TIFF and WebP keep EXIF data, with the parameters as its ImageDescription, and
         the XMP packet. JPEG also keeps its comment and IPTC data, which no other format has a place for.
-        `src/ui/window/metadata_window.py` describes these rules to the user, so a change here changes its note.
+        `kept_kinds` in `src/image/metadata_save_rules.py` states these rules for the metadata window's note and the
+        pre-save warning, so a change here changes it too.
     """
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:
@@ -378,7 +379,8 @@ def save_animation(frames: list[ImageFrame], file_path: str, options: AnimationS
                 png_info.add_itxt(PARAMETERS_KEY, parameter_text)
                 save_args['pnginfo'] = png_info
         case 'WEBP':
-            if parameter_text != '' or exif is not None:
-                save_args['exif'] = _write_data_to_exif_description(exif, parameter_text)
+            # An empty description would reload as an EXIF tag the image never had:
+            if parameter_text != '' or (exif is not None and len(exif) > 0):
+                save_args['exif'] = _write_data_to_exif_description(exif, parameter_text or None)
     pil_frames = [qimage_to_pil_image(frame.image) for frame in frames]
     pil_frames[0].save(file_path, file_format, append_images=pil_frames[1:], **save_args)
