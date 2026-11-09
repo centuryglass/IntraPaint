@@ -29,22 +29,9 @@ def layout_contents(layout: QLayout) -> list[QWidget | QLayout | None]:
 def add_layout(parent: QBoxLayout | QGridLayout, child: QLayout, *args, **kwargs) -> None:
     """Adds a child layout to a parent layout, forwarding the rest of the arguments to `addLayout`.
 
-    Add a child layout before adding anything to it, or build both before the parent has a widget. When the parent
-    layout has a parent widget, PySide's `addLayout` wraps every item already in the child and keeps those wrappers
-    alive with the parent layout, as `QLayout.itemAt` does (see `layout_contents`). A wrapper outlives its item once
-    the item's widget moves to another layout, is reparented or is deleted, and PySide later hands it back for a new
-    object at the same address or frees the item a second time. `QWidget.setLayout` wraps no items, so a layout built
-    without a widget can hold filled children. `test/layout_item_calls_test.py` fails on `addLayout`, `insertLayout`
-    and `addChildLayout` calls outside this module.
-
-    PySide 6.12.0 stops wrapping the child's items (PYSIDE-3469). `test/util/layout_test.py` pins the behavior of the
-    installed PySide, so it fails once this check is no longer needed.
-
-    Raises ValueError if `child` already holds items and `parent` has a parent widget.
+    The child may already hold items. PySide 6.12.0 and later leave no wrappers for them (PYSIDE-3469), so this is
+    `addLayout` under a name the call sites share.
     """
-    if child.count() > 0 and parent.parentWidget() is not None:
-        raise ValueError(f'{type(child).__name__} already holds {child.count()} items. Add it to its parent before'
-                         ' filling it')
     parent.addLayout(child, *args, **kwargs)
 
 

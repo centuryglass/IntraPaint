@@ -1,7 +1,7 @@
 # Runtime dependencies, pinned to exact versions so an upstream release can't break fresh installs or CI without
 # warning. Dependabot (.github/dependabot.yml) proposes bumps as PRs, and CI checks each one before it lands.
 # Test and packaging tools are in requirements-dev.txt; optional extras are in optional-requirements.txt.
-PySide6==6.11.2
+PySide6==6.12.0
 numpy==2.4.6
 opencv-python-headless==4.10.0.84
 pillow==12.3.0

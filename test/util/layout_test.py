@@ -1,4 +1,4 @@
-"""Tests src.util.layout.add_layout, and the PySide behavior it works around."""
+"""Tests src.util.layout.add_layout."""
 import sys
 
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
@@ -10,7 +10,7 @@ app = QApplication.instance() or QApplication(sys.argv)
 
 
 class AddLayoutTest(IntraPaintTestCase):
-    """Tests adding child layouts without wrapping their items."""
+    """Tests adding child layouts without leaving item wrappers."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -21,13 +21,14 @@ class AddLayoutTest(IntraPaintTestCase):
         for _ in range(3):
             layout.addWidget(QLabel('label'))
 
-    def test_filled_child_is_refused(self) -> None:
-        """A child layout that already holds items raises ValueError when the parent has a widget, and isn't added."""
+    def test_filled_child_wraps_no_items(self) -> None:
+        """A child layout that already holds items is added without PySide wrapping its items (PYSIDE-3469)."""
+        wrappers = layout_item_wrapper_count()
         row = QHBoxLayout()
         self._fill(row)
-        with self.assertRaises(ValueError):
-            add_layout(self.outer, row)
-        self.assertEqual(self.outer.indexOf(row), -1)
+        add_layout(self.outer, row)
+        self.assertEqual(self.outer.indexOf(row), 0)
+        self.assertEqual(layout_item_wrapper_count(), wrappers)
 
     def test_filled_child_of_a_layout_without_a_widget_wraps_no_items(self) -> None:
         """A layout with no widget yet takes a filled child, and setting it on a widget wraps no items."""
@@ -50,19 +51,4 @@ class AddLayoutTest(IntraPaintTestCase):
         self._fill(row)
         self.assertEqual(self.outer.indexOf(row), 0)
         self.assertEqual(self.outer.stretch(0), 1)
-        self.assertEqual(layout_item_wrapper_count(), wrappers)
-
-    def test_pyside_wraps_a_filled_childs_items(self) -> None:
-        """PySide's addLayout wraps each item already in the child, which is why add_layout refuses filled children.
-
-        PySide 6.12.0 stops wrapping them (PYSIDE-3469). If this fails after a PySide upgrade, `add_layout` can accept
-        filled children.
-        """
-        wrappers = layout_item_wrapper_count()
-        row = QHBoxLayout()
-        self._fill(row)
-        self.outer.addLayout(row)
-        self.assertEqual(layout_item_wrapper_count(), wrappers + 3)
-        for label in self.host.findChildren(QLabel):
-            row.removeWidget(label)  # Invalidates each item's wrapper, so none outlives its item.
         self.assertEqual(layout_item_wrapper_count(), wrappers)
