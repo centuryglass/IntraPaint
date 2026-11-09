@@ -173,6 +173,20 @@ def _is_popup(widget: object) -> bool:
     return isinstance(widget, QLabel) and widget.metaObject().className() == 'QTipLabel'
 
 
+def _live_widget(widget: object, caller: str) -> Optional[QWidget]:
+    """Returns `widget` if it is a QWidget, otherwise logs and returns None.
+
+    A `widget` that isn't a QWidget is a stale Python wrapper: Qt passes a QWidget pointer, and PySide returned a
+    wrapper left at that address by a freed object, such as a QLayoutItem. The object it describes no longer
+    exists, so calling its methods reads freed memory. Every override that forwards `widget` to `super()` calls this
+    first, because Qt can reach any of them from inside another override's `super()` call.
+    """
+    if widget is not None and not isinstance(widget, QWidget):
+        logger.warning(f'InkStyle.{caller} got a stale {type(widget).__name__} wrapper as its widget')
+        return None
+    return widget
+
+
 def _is_primary(widget: Optional[QWidget]) -> bool:
     return isinstance(widget, QPushButton) and bool(widget.property(PRIMARY_BUTTON_PROPERTY))
 
@@ -349,20 +363,20 @@ class InkStyle(QProxyStyle):
                   widget: Optional[QWidget] = None, return_data: Optional[object] = None) -> int:
         """Makes scroll bars overlay their content when overlay_scroll_bars is set.
 
-        A `widget` that isn't a QWidget is a stale Python wrapper: Qt passes a QWidget pointer, and PySide returned a
-        wrapper left at that address by a freed object, such as a QLayoutItem. The object it describes no longer
-        exists, so calling its methods reads freed memory. It is logged and replaced by None.
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
         """
         if hint == QStyle.StyleHint.SH_ScrollBar_Transient:
             return int(self._overlay_scroll_bars)
-        if widget is not None and not isinstance(widget, QWidget):
-            logger.warning(f'InkStyle.styleHint got a stale {type(widget).__name__} wrapper as its widget')
-            widget = None
+        widget = _live_widget(widget, 'styleHint')
         return super().styleHint(hint, option, widget, return_data)
 
     def sizeFromContents(self, content_type: QStyle.ContentsType, option: Optional[QStyleOption],
                          contents_size: QSize, widget: Optional[QWidget] = None) -> QSize:
-        """Makes room for a primary button's raised offset and bolder label."""
+        """Makes room for a primary button's raised offset and bolder label.
+
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
+        """
+        widget = _live_widget(widget, 'sizeFromContents')
         size = super().sizeFromContents(content_type, option, contents_size, widget)
         if (content_type == QStyle.ContentsType.CT_PushButton and _is_primary(widget)
                 and isinstance(option, QStyleOptionButton)):
