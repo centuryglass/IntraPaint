@@ -746,6 +746,15 @@
         "default": "D",
         "saved": true
     },
+    "keyboard_shortcuts_shortcut": {
+        "label": "Keyboard shortcuts...",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Open the settings window at the keybinding settings.",
+        "type": "string",
+        "default": "Ctrl+Alt+Shift+K",
+        "saved": true
+    },
     "settings_shortcut": {
         "label": "Preferences...",
         "category": "Menu Shortcuts",
@@ -1293,6 +1302,42 @@
         "description": "Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.",
         "type": "string",
         "default": "F1",
+        "saved": true
+    },
+    "report_bug_shortcut": {
+        "label": "Report a bug",
+        "category": "Menu Shortcuts",
+        "subcategory": "Help Menu",
+        "description": "Open IntraPaint's GitHub issue tracker in a web browser.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "release_notes_shortcut": {
+        "label": "Release notes",
+        "category": "Menu Shortcuts",
+        "subcategory": "Help Menu",
+        "description": "Open the list of IntraPaint releases and their changes in a web browser.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "about_shortcut": {
+        "label": "About IntraPaint...",
+        "category": "Menu Shortcuts",
+        "subcategory": "Help Menu",
+        "description": "Show IntraPaint's version, license and project links.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "about_qt_shortcut": {
+        "label": "About Qt...",
+        "category": "Menu Shortcuts",
+        "subcategory": "Help Menu",
+        "description": "Show the version and license of the Qt toolkit IntraPaint is built on.",
+        "type": "string",
+        "default": "",
         "saved": true
     }
 }

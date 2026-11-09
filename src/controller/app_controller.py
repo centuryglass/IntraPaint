@@ -44,7 +44,7 @@ from weakref import WeakSet
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, QTransform
-from PySide6.QtWidgets import QApplication, QMenu, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -175,7 +175,18 @@ MENU_ACTION_CLEAR_RECENT = _tr('Clear recent files')
 SUBMENU_STACK = _tr('Stack')
 SUBMENU_TRANSFORM = _tr('Transform')
 
-HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/help_index.md'
+PROJECT_LINK = 'https://github.com/centuryglass/IntraPaint'
+HELP_INDEX_LINK = f'{PROJECT_LINK}/blob/master/doc/help_index.md'
+ISSUES_LINK = f'{PROJECT_LINK}/issues'
+RELEASES_LINK = f'{PROJECT_LINK}/releases'
+LICENSE_LINK = f'{PROJECT_LINK}/blob/master/LICENSE'
+ABOUT_TITLE = _tr('About IntraPaint')
+ABOUT_TEXT = _tr('<h3>IntraPaint {version}</h3>'
+                 '<p>An image editor that combines digital painting tools with AI image generation and inpainting.</p>'
+                 '<p>Free software, released under the <a href="{license_link}">GNU General Public License v3</a>.</p>'
+                 '<p><a href="{project_link}">Project page</a> - <a href="{issues_link}">Report a bug</a></p>')
+# The settings window category holding the editing, navigation and tool keys:
+KEYBINDINGS_CATEGORY = QApplication.translate('config.key_config', 'Keybindings')
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -1029,7 +1040,12 @@ class AppController(MenuBuilder):
         """Set the foreground color to black and the background color to white."""
         color_controller.reset()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 121, separator_before=True)
+    @menu_action(MENU_EDIT, 'keyboard_shortcuts_shortcut', 120, separator_before=True)
+    def show_keyboard_shortcuts(self) -> None:
+        """Show the settings window at the keybinding settings."""
+        self.show_settings(KEYBINDINGS_CATEGORY)
+
+    @menu_action(MENU_EDIT, 'settings_shortcut', 121)
     def show_settings(self, category: Optional[str] = None) -> None:
         """Show the settings window, on the tab named `category` if one is given."""
         if self._settings_modal is None:
@@ -1419,6 +1435,28 @@ class AppController(MenuBuilder):
     def open_help_index(self) -> None:
         """Open the IntraPaint documentation index in a browser window."""
         webbrowser.open(HELP_INDEX_LINK)
+
+    @menu_action(MENU_HELP, 'report_bug_shortcut', 610, separator_before=True)
+    def open_issue_tracker(self) -> None:
+        """Open the GitHub issue tracker in a browser window."""
+        webbrowser.open(ISSUES_LINK)
+
+    @menu_action(MENU_HELP, 'release_notes_shortcut', 611)
+    def open_release_notes(self) -> None:
+        """Open the GitHub releases page in a browser window."""
+        webbrowser.open(RELEASES_LINK)
+
+    @menu_action(MENU_HELP, 'about_shortcut', 620, separator_before=True)
+    def show_about(self) -> None:
+        """Show IntraPaint's version, license and project links."""
+        QMessageBox.about(self._window, ABOUT_TITLE, ABOUT_TEXT.format(version=APP_VERSION, license_link=LICENSE_LINK,
+                                                                       project_link=PROJECT_LINK,
+                                                                       issues_link=ISSUES_LINK))
+
+    @menu_action(MENU_HELP, 'about_qt_shortcut', 621)
+    def show_about_qt(self) -> None:
+        """Show Qt's version and license."""
+        QMessageBox.aboutQt(self._window)
 
     # Internal/protected:
 

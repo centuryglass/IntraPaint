@@ -21,6 +21,7 @@
       "Paste",
       "Clear",
       "----",
+      "Keyboard shortcuts...",
       "Preferences..."
     ],
     "&File": [
@@ -44,7 +45,13 @@
       "Select image generator..."
     ],
     "&Help": [
-      "IntraPaint help"
+      "IntraPaint help",
+      "----",
+      "Report a bug",
+      "Release notes",
+      "----",
+      "About IntraPaint...",
+      "About Qt..."
     ],
     "&Image": [
       "Canvas size...",

@@ -2252,6 +2252,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Keybindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Line drawing modifier:</source>
         <translation type="unfinished"></translation>
@@ -2259,11 +2265,6 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>When held, drawing tools will draw a line from the last point.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Keybindings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3123,6 +3124,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Keyboard shortcuts...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open the settings window at the keybinding settings.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Preferences...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3771,6 +3782,46 @@
         <source>Help Menu</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Report a bug</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open IntraPaint's GitHub issue tracker in a web browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Release notes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open the list of IntraPaint releases and their changes in a web browser.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>About IntraPaint...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show IntraPaint's version, license and project links.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>About Qt...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show the version and license of the Qt toolkit IntraPaint is built on.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>controller.app_controller</name>
@@ -3880,6 +3931,16 @@
     <message>
         <location filename="../../src/controller/app_controller.py"/>
         <source>Transform</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>About IntraPaint</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>&lt;h3&gt;IntraPaint {version}&lt;/h3&gt;&lt;p&gt;An image editor that combines digital painting tools with AI image generation and inpainting.&lt;/p&gt;&lt;p&gt;Free software, released under the &lt;a href="{license_link}"&gt;GNU General Public License v3&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;&lt;a href="{project_link}"&gt;Project page&lt;/a&gt; - &lt;a href="{issues_link}"&gt;Report a bug&lt;/a&gt;&lt;/p&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
