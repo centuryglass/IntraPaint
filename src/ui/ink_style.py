@@ -187,6 +187,18 @@ def _live_widget(widget: object, caller: str) -> Optional[QWidget]:
     return widget
 
 
+def _is_stale_polish_target(target: object, caller: str) -> bool:
+    """Returns whether `target` is a stale wrapper rather than one of the types `polish` accepts.
+
+    `polish` and `unpolish` take a QWidget, QApplication or QPalette, so `_live_widget` can't be used. The widget
+    Qt meant is unrecoverable, so the caller skips it.
+    """
+    if isinstance(target, (QWidget, QApplication, QPalette, QColor, Qt.GlobalColor)):
+        return False
+    logger.warning(f'InkStyle.{caller} got a stale {type(target).__name__} wrapper as its target')
+    return True
+
+
 def _is_primary(widget: Optional[QWidget]) -> bool:
     return isinstance(widget, QPushButton) and bool(widget.property(PRIMARY_BUTTON_PROPERTY))
 
@@ -302,8 +314,11 @@ class InkStyle(QProxyStyle):
     def polish(self, widget) -> None:  # type: ignore[override]
         """Makes menus and tooltips translucent, with a margin at the right and bottom for their shadow.
 
-        `polish` also receives QApplication and QPalette, which pass through to the base style.
+        `polish` also receives QApplication and QPalette, which pass through to the base style. Anything else is a
+        stale wrapper (`_live_widget`) and is skipped, which leaves that widget unpolished.
         """
+        if _is_stale_polish_target(widget, 'polish'):
+            return
         super().polish(widget)
         if self._rounded_popups and _is_popup(widget):
             widget.setWindowFlag(Qt.WindowType.FramelessWindowHint)
@@ -312,7 +327,9 @@ class InkStyle(QProxyStyle):
             widget.setContentsMargins(0, 0, POPUP_SHADOW_OFFSET, POPUP_SHADOW_OFFSET)
 
     def unpolish(self, widget) -> None:  # type: ignore[override]
-        """Restores a menu or tooltip that polish made translucent."""
+        """Restores a menu or tooltip that polish made translucent. A stale wrapper is skipped like in `polish`."""
+        if _is_stale_polish_target(widget, 'unpolish'):
+            return
         if self._rounded_popups and _is_popup(widget):
             widget.setContentsMargins(0, 0, 0, 0)
             widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
@@ -338,7 +355,11 @@ class InkStyle(QProxyStyle):
 
     def pixelMetric(self, metric: Metric, option: Optional[QStyleOption] = None,
                     widget: Optional[QWidget] = None) -> int:
-        """Sizes indicators, slider handles and scroll bars for the Ink look."""
+        """Sizes indicators, slider handles and scroll bars for the Ink look.
+
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
+        """
+        widget = _live_widget(widget, 'pixelMetric')
         if metric in (Metric.PM_IndicatorWidth, Metric.PM_ExclusiveIndicatorWidth):
             return INDICATOR_SIZE
         if metric in (Metric.PM_IndicatorHeight, Metric.PM_ExclusiveIndicatorHeight):
@@ -389,7 +410,11 @@ class InkStyle(QProxyStyle):
 
     def subControlRect(self, control: Complex, option: QStyleOption, sub_control: SubControl,
                        widget: Optional[QWidget] = None) -> QRect:
-        """Removes scroll bar arrow buttons, and sizes slider handles to include their raised offset."""
+        """Removes scroll bar arrow buttons, and sizes slider handles to include their raised offset.
+
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
+        """
+        widget = _live_widget(widget, 'subControlRect')
         if control == Complex.CC_ScrollBar and isinstance(option, QStyleOptionSlider):
             return self._scroll_bar_rect(option, sub_control)
         rect = super().subControlRect(control, option, sub_control, widget)
@@ -442,7 +467,11 @@ class InkStyle(QProxyStyle):
 
     def drawPrimitive(self, element: Primitive, option: QStyleOption, painter: QPainter,
                       widget: Optional[QWidget] = None) -> None:
-        """Draws button panels, fields, indicators, menus, tooltips and item view rows."""
+        """Draws button panels, fields, indicators, menus, tooltips and item view rows.
+
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
+        """
+        widget = _live_widget(widget, 'drawPrimitive')
         if element in (Primitive.PE_PanelButtonCommand, Primitive.PE_PanelButtonTool,
                        Primitive.PE_IndicatorButtonDropDown):
             self._draw_bevel(painter, option, widget)
@@ -618,7 +647,11 @@ class InkStyle(QProxyStyle):
 
     def drawControl(self, element: Control, option: QStyleOption, painter: QPainter,
                     widget: Optional[QWidget] = None) -> None:
-        """Draws primary and signal buttons, progress bars, tabs, menu items and item view text in the Ink look."""
+        """Draws primary and signal buttons, progress bars, tabs, menu items and item view text in the Ink look.
+
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
+        """
+        widget = _live_widget(widget, 'drawControl')
         if element == Control.CE_PushButtonBevel and _is_primary(widget):
             self._draw_primary_bevel(painter, option)
         elif element == Control.CE_PushButtonLabel and _is_primary(widget) and isinstance(option,
@@ -836,7 +869,11 @@ class InkStyle(QProxyStyle):
 
     def drawComplexControl(self, control: Complex, option: QStyleOption, painter: QPainter,
                            widget: Optional[QWidget] = None) -> None:
-        """Draws sliders, scroll bars, spin boxes and combo boxes in the Ink look."""
+        """Draws sliders, scroll bars, spin boxes and combo boxes in the Ink look.
+
+        A stale `widget` wrapper is replaced by None (`_live_widget`).
+        """
+        widget = _live_widget(widget, 'drawComplexControl')
         if control == Complex.CC_Slider and isinstance(option, QStyleOptionSlider):
             self._draw_slider(painter, option, widget)
         elif control == Complex.CC_ScrollBar and isinstance(option, QStyleOptionSlider):
