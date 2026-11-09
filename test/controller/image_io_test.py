@@ -1,5 +1,4 @@
 """Tests for ImageIO: opening and saving image files, animations and the open file's metadata."""
-import json
 import os
 import sys
 import tempfile
@@ -122,14 +121,28 @@ class TestImageIO(ImageIOTestCase):
             self.assertTrue(os.path.isfile(save_path))
             self.assertEqual(save_path, Cache().get(Cache.LAST_FILE_PATH))
 
-    def test_metadata_json_holds_only_text_entries(self):
-        """The .ora metadata JSON holds the text entries, leaving out binary format info such as an ICC profile."""
-        self.image_io.metadata = ImageMetadata({'text': 'plain'}, format_info={
-            'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'dpi': (96.0, 96.0)})
-        metadata_json = self.image_io.metadata_json()
-        assert metadata_json is not None
-        self.assertEqual({'text': 'plain'}, json.loads(metadata_json))
-
+    def test_ora_save_keeps_metadata(self):
+        """An .ora save and load keeps the text entries, EXIF, XMP, IPTC and DPI, and leaves out the ICC profile."""
+        self.image_io.load(LAYER_IMAGE)
+        exif = Image.Exif()
+        exif[ExifTags.Base.Artist] = 'Someone'
+        iptc = b'\x1c\x02\x19\x00\x03tag'
+        self.image_io.metadata = ImageMetadata({'text': 'plain'}, exif, {
+            'xmp': b'<x:xmpmeta xmlns:x="adobe:ns:meta/"/>', 'photoshop': {0x0404: iptc},
+            'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'dpi': (96, 96)})
+        with tempfile.TemporaryDirectory() as save_dir:
+            save_path = os.path.join(save_dir, 'saved.ora')
+            self.image_io.save_as(save_path)
+            self.image_io.wait_for_pending_save()
+            self.image_io.clear_metadata()
+            self.image_io.load(save_path)
+        metadata = self.image_io.metadata
+        self.assertEqual({'text': 'plain'}, metadata.text)
+        self.assertEqual('Someone', metadata.exif[ExifTags.Base.Artist])
+        self.assertEqual(b'<x:xmpmeta xmlns:x="adobe:ns:meta/"/>', metadata.xmp_packet)
+        self.assertEqual(iptc, metadata.iptc_data)
+        self.assertEqual((96, 96), metadata.format_info['dpi'])
+        self.assertFalse(metadata.has_icc_profile)
 
 A1111_TEXT = ('a red fox\nNegative prompt: blurry\nSteps: 25, Sampler: Euler a, Schedule type: Karras, CFG scale: 6.5, '
               'Seed: 1234, Size: 512x768, Model hash: 6ce0161689, Model: v1-5-pruned, Denoising strength: 0.6, '

@@ -141,8 +141,8 @@ def _format_name(file_path: str) -> str:
 def save_format_note(metadata: ImageMetadata, file_path: str) -> str:
     """Returns a sentence saying which of `metadata` a save to `file_path` keeps and drops.
 
-    Follows the rules in `save_image_with_metadata` and `capture_ora_image`. An empty path means the image hasn't been
-    saved.
+    Follows the rules in `save_image_with_metadata` and `src/image/ora_metadata.py`. An empty path means the image
+    hasn't been saved.
     """
     formats = ', '.join(sorted(IMAGE_FORMATS_SUPPORTING_METADATA))
     if file_path == '':
@@ -169,8 +169,7 @@ def save_format_note(metadata: ImageMetadata, file_path: str) -> str:
     if file_format in _PNG_FORMATS:
         kept = text_parts + [PART_EXIF, PART_XMP]
     elif file_format in _ORA_FORMATS:
-        # Only an XMP packet that is a text entry is kept, see `ImageMetadata.to_ora_json`:
-        kept = text_parts + ([PART_XMP] if XMP_TEXT_KEY in metadata.text else [])
+        kept = text_parts + [PART_EXIF, PART_XMP, PART_IPTC]
     elif file_format in _COMMENT_ONLY_FORMATS:
         kept = [PART_PARAMETERS if parameters is not None else PART_COMMENT]
     elif file_format in _COMMENT_EXIF_FORMATS:

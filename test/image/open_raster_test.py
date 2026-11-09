@@ -12,6 +12,7 @@ from PySide6.QtCore import QPointF, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.image.image_metadata import ImageMetadata
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -29,7 +30,7 @@ GEN_AREA_SIZE = QSize(8, 8)
 MIN_GEN_AREA = QSize(8, 8)
 MAX_GEN_AREA = QSize(32, 32)
 
-METADATA = 'test metadata'
+METADATA = ImageMetadata({'comment': 'test metadata'})
 
 AWKWARD_NAMES = [
     '',
@@ -95,7 +96,7 @@ class OpenRasterTest(IntraPaintTestCase):
                                              layer_index=parent.count if parent is not None else
                                              self.image_stack.layer_stack.count)
 
-    def _round_trip(self) -> Optional[str]:
+    def _round_trip(self) -> ImageMetadata:
         """Saves the image stack to a temporary .ora file and loads it into self.loaded_stack."""
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, 'round_trip.ora')
@@ -128,7 +129,7 @@ class OpenRasterTest(IntraPaintTestCase):
 
     def _assert_round_trip_matches(self) -> None:
         metadata = self._round_trip()
-        self.assertEqual(METADATA, metadata)
+        self.assertEqual(METADATA.text, metadata.text)
         self.assertEqual(self.image_stack.size, self.loaded_stack.size)
         self.assertEqual(len(self.image_stack.layers), len(self.loaded_stack.layers))
         self._assert_layers_match(self.image_stack.layer_stack, self.loaded_stack.layer_stack)
@@ -433,7 +434,7 @@ class OpenRasterTest(IntraPaintTestCase):
                                          two_phase.read(name).replace(b'two_phase', b'x'), name)
                     else:
                         self.assertEqual(single.read(name), two_phase.read(name), name)
-            self.assertEqual(METADATA, read_ora_image(self.loaded_stack, two_phase_path))
+            self.assertEqual(METADATA.text, read_ora_image(self.loaded_stack, two_phase_path).text)
 
     def test_editing_after_capture_does_not_change_saved_file(self) -> None:
         """The written file reflects the document when it was captured."""

@@ -173,20 +173,12 @@ class ImageIO:
         """Forgets the metadata of the previously open file."""
         self.metadata = ImageMetadata()
 
-    def metadata_json(self) -> Optional[str]:
-        """Returns the metadata's text entries as the JSON that .ora files store, or None if there are none."""
-        return self.metadata.to_ora_json()
-
-    def exif_bytes(self) -> bytes:
-        """Returns the EXIF data of the open file, encoded."""
-        return self.metadata.exif.tobytes()
-
     def apply_restored_document(self, restored: RestoredDocument) -> None:
-        """Takes the metadata, EXIF data and file path of a document restored from a recovery copy.
+        """Takes the metadata and file path of a document restored from a recovery copy.
 
         Save then writes to the path the document came from.
         """
-        self.metadata = ImageMetadata.from_ora_json(restored.metadata, restored.exif)
+        self.metadata = restored.metadata
         Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -417,7 +409,7 @@ class ImageIO:
             on_saved = self._save_started(keeps_layers=is_ora or animation_options is not None
                                           or self._image_stack.layer_stack.count <= 1)
             if is_ora:
-                snapshot = capture_ora_image(self._image_stack, file_path, self.metadata_json())
+                snapshot = capture_ora_image(self._image_stack, file_path, self.metadata)
                 self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot), on_saved)
                 error_handled = True  # The write's own handler reports any failure.
                 return
@@ -483,7 +475,7 @@ class ImageIO:
         try:
             assert file_path is not None
             if file_path.lower().endswith('.ora'):
-                self.metadata = ImageMetadata.from_ora_json(read_ora_image(self._image_stack, file_path))
+                self.metadata = read_ora_image(self._image_stack, file_path)
             else:
                 image, self.metadata = load_image(file_path)
                 if self._should_load_frames(file_path, image.size()):
