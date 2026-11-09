@@ -715,6 +715,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving drops EXIF, XMP, IPTC or comments:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup, listing what would be lost, when saving an image in a format that can't keep all of its metadata.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Warn when saving in a format that cannot be loaded:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4821,6 +4831,46 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
+        <source>Some metadata will not be saved</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Saving as {file_format} drops: {dropped}. The .ora format keeps all of it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>comment</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>text entries</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>EXIF tags</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>XMP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>IPTC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>{part}: {items}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
         <source>This format cannot be opened again</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7022,6 +7072,11 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/modal/save_loss_modal.py"/>
         <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Details</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

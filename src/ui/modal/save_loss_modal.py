@@ -5,12 +5,14 @@ from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, \
+    QVBoxLayout, QWidget
 
 from src.config.application_config import AppConfig
 from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_parent import modal_parent
+from src.ui.widget.panel_section import PanelSection
 from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 
@@ -29,6 +31,10 @@ CHECKBOX_LABEL = _tr('Don\'t warn about this again')
 BUTTON_SAVE_ORA = _tr('Save as .ora')
 BUTTON_SAVE_ANYWAY = _tr('Save anyway')
 BUTTON_CANCEL = _tr('Cancel')
+DETAILS_TITLE = _tr('Details')
+
+# Height of the expanded details box, in lines of text:
+DETAILS_VISIBLE_LINES = 8
 
 SAVE_ORA = 'save_ora'
 SAVE_ANYWAY = 'save_anyway'
@@ -40,10 +46,12 @@ class SaveLoss:
     """One kind of data a save would lose.
 
     `config_key` is the `AppConfig` boolean that, once false, stops this warning. The dialog's checkbox sets it.
+    `details` is optional multi-line text that can run long. The dialog shows it in a collapsed, scrolling box.
     """
     title: str
     message: str
     config_key: str
+    details: str = ''
 
 
 class SaveLossModal(QDialog):
@@ -67,11 +75,14 @@ class SaveLossModal(QDialog):
             title_label.setTextFormat(Qt.TextFormat.RichText)
             message_label = QLabel(loss.message, self)
             message_label.setWordWrap(True)
+            details_section = self._details_section(loss.details)
             checkbox = CheckBox()
             checkbox.setText(CHECKBOX_LABEL)
             self._checkboxes.append((loss, checkbox))
             layout.addWidget(title_label)
             layout.addWidget(message_label)
+            if details_section is not None:
+                layout.addWidget(details_section)
             layout.addWidget(checkbox)
 
         button_row = QHBoxLayout()
@@ -89,6 +100,15 @@ class SaveLossModal(QDialog):
         set_signal(anyway_button)
         anyway_button.clicked.connect(lambda: self._finish(SAVE_ANYWAY))
         button_row.addWidget(anyway_button)
+
+    def _details_section(self, details: str) -> Optional[PanelSection]:
+        """Returns a collapsed section holding `details` in a read-only scrolling box, or None if there are none."""
+        if details == '':
+            return None
+        box = QPlainTextEdit(details, self)
+        box.setReadOnly(True)
+        box.setMaximumHeight(box.fontMetrics().lineSpacing() * DETAILS_VISIBLE_LINES)
+        return PanelSection(DETAILS_TITLE, box, expanded=False, parent=self)
 
     def _finish(self, choice: str) -> None:
         self.choice = choice
