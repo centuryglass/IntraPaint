@@ -176,11 +176,6 @@ def vertical_scroll_hint_text() -> str:
     return palette_rich_text_image(ICON_V_SCROLL, _keycap_height())
 
 
-def horizontal_scroll_hint_text() -> str:
-    """Returns a rich-text inline image representing scroll wheel horizontal scrolling."""
-    return palette_rich_text_image(ICON_H_SCROLL, _keycap_height())
-
-
 # Characters that separate key and modifier names in key text:
 _KEY_NAME_SEPARATORS = '+, '
 

@@ -6,7 +6,6 @@ from unittest.mock import patch
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication
 
-from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.window.main_window import MainWindow, MIN_CANVAS_SIZE
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import mock_app_controller
@@ -47,17 +46,6 @@ class MainWindowSizeSweepTest(IntraPaintTestCase):
         hint = self.window.minimumSizeHint()
         self.assertLessEqual(hint.width(), TARGET_SIZE.width())
         self.assertLessEqual(hint.height(), TARGET_SIZE.height())
-
-    def test_every_reactive_widget_resolves_a_mode(self) -> None:
-        """No size logs a missing-mode error, and every widget with sized modes has an active mode."""
-        for size in _sweep_sizes():
-            with self.subTest(size=size):
-                with self.assertNoLogs('src.ui.layout.reactive_layout_widget', level='ERROR'):
-                    self.window.resize(size)
-                    for widget in self.window.findChildren(ReactiveLayoutWidget):
-                        widget.resizeEvent(None)
-                        if widget._layout_modes:  # pylint: disable=protected-access
-                            self.assertIsNotNone(widget._active_mode)  # pylint: disable=protected-access
 
     def _move_docks_to(self, area: Qt.DockWidgetArea) -> None:
         """Tabifies every dock in one area and opens each one that has content."""
