@@ -70,6 +70,7 @@ RELOAD_ERROR_TITLE = _tr('Reload failed')
 RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid image file.')
 RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
 RELOAD_CONFIRMATION_BUTTON = _tr('Reload without saving')
+OPEN_CONFIRMATION_BUTTON = _tr('Open without saving')
 UNTITLED_FILE_NAME = _tr('Untitled')
 METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
@@ -493,8 +494,12 @@ class ImageIO:
             self._window.update()
             self._window.repaint()
 
-    def load(self, file_path: Optional[str | list[str]] = None) -> None:
-        """Open a loading dialog, then load the selected image for editing."""
+    def load(self, file_path: Optional[str | list[str]] = None, confirm_unsaved: bool = True) -> None:
+        """Open a loading dialog, then load the selected image for editing.
+
+        Once a file is chosen, unsaved changes to the open image are offered a save unless `confirm_unsaved` is False.
+        `reload` passes False because it asks before calling.
+        """
         self.wait_for_pending_save()
         cache = Cache()
         if file_path is None:
@@ -511,6 +516,8 @@ class ImageIO:
                 logger.warning(f'Expected single image, got list with length {len(file_path)}')
             file_path = file_path[0]
         assert isinstance(file_path, str)
+        if confirm_unsaved and not self.confirm_unsaved_changes(OPEN_CONFIRMATION_BUTTON):
+            return
         self.metadata = ImageMetadata()
         try:
             assert file_path is not None
@@ -623,7 +630,7 @@ class ImageIO:
                               RELOAD_ERROR_MESSAGE_INVALID_FILE.format(file_path=file_path))
             return
         if self.confirm_unsaved_changes(RELOAD_CONFIRMATION_BUTTON):
-            self.load(file_path=file_path)
+            self.load(file_path=file_path, confirm_unsaved=False)
 
     def _metadata_will_be_saved(self) -> bool:
         return self.metadata.parameters is not None

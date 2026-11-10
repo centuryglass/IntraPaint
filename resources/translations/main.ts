@@ -4800,6 +4800,11 @@
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
+        <source>Open without saving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
         <source>Untitled</source>
         <translation type="unfinished"></translation>
     </message>

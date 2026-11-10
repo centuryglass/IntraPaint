@@ -13,7 +13,8 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME, RELOAD_CONFIRMATION_BUTTON
+from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME, RELOAD_CONFIRMATION_BUTTON, \
+    OPEN_CONFIRMATION_BUTTON
 from src.image.image_metadata import ImageMetadata, encode_user_comment
 from src.ui.modal.save_loss_modal import SAVE_ANYWAY, SAVE_ORA, CANCEL
 from src.image.layers.image_layer import ImageLayer
@@ -57,7 +58,8 @@ class ImageIOTestCase(IntraPaintTestCase):
 class TestImageIO(ImageIOTestCase):
     """Tests saving and loading across formats, and the background write."""
 
-    def test_image_save_and_load(self):
+    @patch('src.controller.image_io.request_unsaved_changes_choice', return_value=UNSAVED_DISCARD)
+    def test_image_save_and_load(self, _choice):
         AppConfig()._reset()
         AppConfig().set(AppConfig.WARN_BEFORE_RGB_SAVE, False)
         AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
@@ -525,6 +527,34 @@ class TestUnsavedChanges(ImageIOTestCase):
             self.image_io.reload()
             choice.assert_called_once_with(self.window, 'layer_move_test.ora', RELOAD_CONFIRMATION_BUTTON)
         self.assertEqual(self.image_stack.layer_stack.count, layer_count + 1)
+
+    def test_open_prompts_only_when_modified(self) -> None:
+        """Opening a file asks once it is chosen and the open image is modified, and not otherwise."""
+        self.image_io.load(LAYER_IMAGE)
+        with patch(self.CHOICE, return_value=UNSAVED_CANCEL) as choice:
+            self.image_io.load(self.gif_path)
+            choice.assert_not_called()
+            self.image_stack.create_layer('edit')
+            layer_count = self.image_stack.layer_stack.count
+            self.image_io.load(self.gif_path)
+            choice.assert_called_once_with(self.window, 'anim.gif', OPEN_CONFIRMATION_BUTTON)
+        self.assertEqual(self.image_stack.layer_stack.count, layer_count)
+
+    def test_open_discard_replaces_image(self) -> None:
+        """Discarding the unsaved changes opens the chosen file."""
+        self.image_io.load(LAYER_IMAGE)
+        self.image_stack.create_layer('edit')
+        with patch(self.CHOICE, return_value=UNSAVED_DISCARD):
+            self.image_io.load(self.gif_path)
+        self.assertEqual(self.image_stack.size, QSize(16, 16))
+
+    def test_open_dialog_cancel_does_not_prompt(self) -> None:
+        """Cancelling the file dialog leaves the modified image alone without asking."""
+        self.image_io.load(LAYER_IMAGE)
+        self.image_stack.create_layer('edit')
+        with patch(self.CHOICE) as choice, patch('src.controller.image_io.open_image_file', return_value=None):
+            self.image_io.load()
+        choice.assert_not_called()
 
 
 class TestOpenAnimation(ImageIOTestCase):
