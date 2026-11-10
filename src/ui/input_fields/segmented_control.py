@@ -1,7 +1,5 @@
 """A row of 2-5 mutually exclusive segments, for short choices that change often, drawn in the Ink style.
 
-`SegmentedControl` replaces `DualToggle` and `SelectionModeToggle` (`option_toggle.py`).
-
 - Each `Segment` pairs a raw option string with the label shown for it. `value()` and `valueChanged` carry the raw
   option string, so translating or renaming a label never changes what is stored or compared.
 - `DisplayMode` picks icon plus label, label only, or icon only. Icon-only segments show their label as the tooltip.
@@ -211,6 +209,10 @@ class SegmentedControl(QWidget):
             If no segment has the value.
         """
         self._select(self._index_of(value))
+
+    def setValue(self, value: str) -> None:  # pylint: disable=invalid-name
+        """Calls `set_value`, under the name every `DynamicFieldWidget` in `field_factory.py` shares."""
+        self.set_value(value)
 
     def set_segment_tooltip(self, value: str, tooltip: Optional[str]) -> None:
         """Replaces the tooltip of the segment with an option string. None restores its label."""

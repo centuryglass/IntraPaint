@@ -11,7 +11,7 @@ from unittest.mock import patch
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.ui.input_fields.dual_toggle import DualToggle
+from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.field_factory import create_control_widget
 from test.base_test_case import IntraPaintTestCase, PROJECT_ROOT
 
@@ -98,9 +98,9 @@ class OptionDisplayTest(IntraPaintTestCase):
         cache.set(Cache.EDIT_MODE, 'Image to Image')
         self.assertEqual('IMAGE TO IMAGE', combo_box.currentText())
 
-    def test_dual_toggle_displays_translation(self) -> None:
-        """A dual toggle shows the display names but reports the option strings."""
-        toggle = DualToggle(None, ['Add', 'Subtract'], display_names=['AGREGAR', 'RESTAR'])
-        toggle.setValue('Subtract')
-        self.assertEqual('Subtract', toggle.value())
-        self.assertEqual('RESTAR', toggle.option_label('Subtract').text())
+    def test_segmented_control_displays_translation(self) -> None:
+        """A segmented control shows the display names but reports the option strings."""
+        control = SegmentedControl([Segment('Add', 'AGREGAR'), Segment('Subtract', 'RESTAR')], DisplayMode.LABEL)
+        control.setValue('Subtract')
+        self.assertEqual('Subtract', control.value())
+        self.assertEqual(['AGREGAR', 'RESTAR'], [segment.label for segment in control.segments])

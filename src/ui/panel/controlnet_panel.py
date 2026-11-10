@@ -391,6 +391,7 @@ class ControlNetPanel(DockPanel):
         self._browse_button.setAccessibleName(BUTTON_TOOLTIP_BROWSE)
         self._browse_button.setFixedWidth(self._browse_button.minimumSizeHint().height())
         self._image_path_row = _row(self._image_path_edit, self._browse_button)
+        limit_field_width(self._image_path_row)
         self._image_block, _ = _column(self._image_source, self._image_path_row)
         section.add(self._image_block, REQUIRED)
         section.widget.bind_summary(self._control_image_summary, self._image_source.valueChanged,

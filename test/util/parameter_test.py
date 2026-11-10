@@ -7,9 +7,9 @@ from PySide6.QtCore import QSize
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
-from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
+from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.util.parameter import Parameter, get_parameter_type, TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STR, \
@@ -182,8 +182,8 @@ class TestParameter(IntraPaintTestCase):
             (Parameter('prompt', TYPE_STR, 'text'), {'multi_line': True}, PlainTextEdit, 'text'),
             (Parameter('flag', TYPE_BOOL, True), {}, CheckBox, True),
             (Parameter('size', TYPE_QSIZE, QSize(5, 6)), {}, SizeField, QSize(5, 6)),
-            (two_options, {}, DualToggle, 'b'),
-            (two_options, {'allow_dual_toggle': False}, ComboBox, 'b'),
+            (two_options, {}, SegmentedControl, 'b'),
+            (two_options, {'allow_segmented_control': False}, ComboBox, 'b'),
             (three_options, {}, ComboBox, 'b'),
         )
         for param, kwargs, widget_type, expected_value in cases:
