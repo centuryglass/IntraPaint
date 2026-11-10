@@ -10,6 +10,8 @@
 - A floating dock dragged over a rail, whether handed off from a rail or dragged by its own title bar, shows the same
   marker there. Released over the rail, Qt finishes its own drag first, then the dock is placed as a rail drop would
   place it.
+- Where `uses_platform_dock_drag` is true, floating docks aren't followed, since the events they get would place them
+  where nobody aimed. Rail drops there are #708.
 """
 from dataclasses import dataclass
 from typing import Callable, Optional
@@ -22,7 +24,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 from src.ui.window.dock_placement import SplitSide, reorder_in_group, split_beside, tab_with
 from src.ui.window.dock_rail import RAIL_SPACING, DockRail, DockRails, RailButton
 from src.ui.window.panel_dock import PanelDock
-from src.ui.window.qt_dock_drag import start_qt_dock_drag
+from src.ui.window.qt_dock_drag import start_qt_dock_drag, uses_platform_dock_drag
 
 DRAG_DISTANCE = 6
 # How far the pointer may stray past a rail's edges before the drag leaves the rail:
@@ -103,6 +105,7 @@ class RailDrag(QObject):
         # A floating dock without native decorations gets Qt's resize handler as an event filter, which takes mouse
         # moves first. Installing this filter again puts it back in front:
         dock.topLevelChanged.connect(lambda _floating, watched=dock: watched.installEventFilter(self))
+        dock.topLevelChanged.connect(self._dock_floating_changed)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
         """Starts, follows and ends drags of watched buttons, leaving clicks to the buttons, and follows floating
@@ -241,7 +244,7 @@ class RailDrag(QObject):
 
     def _floating_dock_event(self, dock: PanelDock, event: QEvent) -> bool:
         """Shows the marker while a floating dock is dragged over a rail, and places it there when released."""
-        if not dock.isFloating():
+        if not dock.isFloating() or uses_platform_dock_drag():
             return False
         moves = (QEvent.Type.MouseMove, QEvent.Type.NonClientAreaMouseMove)
         releases = (QEvent.Type.MouseButtonRelease, QEvent.Type.NonClientAreaMouseButtonRelease)
@@ -259,6 +262,12 @@ class RailDrag(QObject):
             self._apply(dock, drop)
             return True
         return False
+
+    def _dock_floating_changed(self, floating: bool) -> None:
+        """Drops a pending floating-dock drop once a dock docks, so a later release can't apply it."""
+        if not floating and self._floating_drop is not None:
+            self._floating_drop = None
+            self._marker.hide()
 
     def _hover_floating(self, dock: PanelDock, global_pos: QPoint) -> None:
         rail = self._rail_at(global_pos)
