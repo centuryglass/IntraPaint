@@ -304,6 +304,18 @@ class TestSaveLossWarning(ImageIOTestCase):
         self.assertIn(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, [loss.config_key for loss in losses])
         self.assertEqual(path, Cache().get(Cache.LAST_FILE_PATH))
 
+    def test_lone_layer_group_warns_about_layers(self) -> None:
+        """A root holding only a layer group still lists the layers loss on a flat save."""
+        stack = self.image_stack
+        group = stack.create_layer_group('group', None, stack.layer_stack.count)
+        for layer in [child for child in stack.layer_stack.child_layers if child is not group]:
+            stack.layer_stack.remove_layer(layer)
+            group.insert_layer(layer, group.count)
+        self.assertEqual(1, stack.layer_stack.count)
+        _, calls = self._save_png(SAVE_ANYWAY)
+        losses, _ = calls[0]
+        self.assertIn(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, [loss.config_key for loss in losses])
+
     def test_save_as_ora_writes_ora(self) -> None:
         """Save as .ora writes an .ora beside the chosen path, and no flat file."""
         path, _ = self._save_png(SAVE_ORA)
