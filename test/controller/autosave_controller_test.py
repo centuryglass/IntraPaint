@@ -305,6 +305,28 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.image_stack.create_layer('after quit')
         self.assertFalse(self.controller.dirty)
 
+    def test_keep_for_recovery_survives_shutdown(self) -> None:
+        """After keep_for_recovery, shutdown leaves a copy of the unsaved work that offer_recovery finds."""
+        self.image_stack.create_layer('unsaved work')
+        self.assertTrue(self.controller.keep_for_recovery())  # Writes synchronously, the document is dirty.
+        session_dir = str(self.controller.session_dir)
+        self.controller.shutdown()
+        self.assertTrue(os.path.isdir(session_dir))
+        with open(os.path.join(session_dir, LOCK_FILE_NAME), 'w', encoding='utf-8') as lock_file:
+            lock_file.write(str(_dead_pid()))  # The quit process has exited.
+        sessions = find_recoverable_sessions(self.root)
+        self.assertEqual([session_dir], [session.session_dir for session in sessions])
+
+    def test_keep_for_recovery_without_autosave(self) -> None:
+        """With autosave off nothing is kept, so shutdown still deletes the folder."""
+        self.image_stack.create_layer('layer')
+        self.assertTrue(self.controller.autosave_now(synchronous=True))
+        session_dir = str(self.controller.session_dir)
+        AppConfig().set(AppConfig.AUTOSAVE_ENABLED, False)
+        self.assertFalse(self.controller.keep_for_recovery())
+        self.controller.shutdown()
+        self.assertFalse(os.path.exists(session_dir))
+
     def test_new_document_removes_folder(self) -> None:
         """Replacing the document deletes the copy of the old one."""
         self.image_stack.create_layer('layer')

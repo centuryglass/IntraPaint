@@ -5010,12 +5010,27 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Quit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/qtexcepthook.py"/>
         <source>Traceback Copied</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
         <source>The traceback has now been copied to the clipboard.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Quit (your work can be recovered next launch)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Quit (unsaved changes will be lost)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

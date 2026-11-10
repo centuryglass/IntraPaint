@@ -123,9 +123,14 @@ class QtExceptHook():
 
     :param reporting_cb: If provided, a :guilabel:`Report bug...` button will
         be added which will call ``reporting_cb`` when clicked.
+    :param recovery_cb: If provided, called before the :guilabel:`Quit` button quits. It should preserve the
+        user's work for the next launch and return whether it did. The quit button's label says which.
+    :param recovery_enabled_cb: Returns whether ``recovery_cb`` can preserve work, for the quit button's label.
     """
 
-    def __init__(self, reporting_cb: Optional[Callable[[str], None]]=None): # type: ignore
+    def __init__(self, reporting_cb: Optional[Callable[[str], None]]=None, # type: ignore
+                 recovery_cb: Optional[Callable[[], bool]] = None,
+                 recovery_enabled_cb: Optional[Callable[[], bool]] = None):
         """Initialize as much as possible on application startup.
 
         (Maximize the chance that a bug in the exception handling system will
@@ -134,6 +139,8 @@ class QtExceptHook():
         self._extra_info = ''
         self._showing = False
         self._reporting_cb = reporting_cb
+        self._recovery_cb = recovery_cb
+        self._recovery_enabled_cb = recovery_enabled_cb
 
         self._dialog = ResizableMessageBox(QMessageBox.Icon.Warning,
             _tr('Bug Detected'),
@@ -163,7 +170,7 @@ class QtExceptHook():
         btn_close = self._dialog.addButton(QMessageBox.StandardButton.Close)
         self._dialog.setEscapeButton(btn_close)
 
-        self.b_quit = self._dialog.addButton(_('Quit'), QMessageBox.ButtonRole.RejectRole)
+        self.b_quit = self._dialog.addButton(_tr('Quit'), QMessageBox.ButtonRole.RejectRole)
 
 
     def _cb_copy_to_clipboard(self):
@@ -206,6 +213,11 @@ class QtExceptHook():
         # Store it in the dialog where *everything* will retrieve it from
         self._dialog.setDetailedText(traceback_text)
 
+        if self._recovery_cb is not None:
+            recoverable = self._recovery_enabled_cb is None or self._recovery_enabled_cb()
+            self.b_quit.setText(_tr('Quit (your work can be recovered next launch)') if recoverable
+                                else _tr('Quit (unsaved changes will be lost)'))
+
         # Show the dialog
         self._showing = True
         try:
@@ -213,6 +225,11 @@ class QtExceptHook():
         finally:
             self._showing = False
         if self._dialog.clickedButton() == self.b_quit:
+            if self._recovery_cb is not None:
+                try:
+                    self._recovery_cb()
+                except Exception as err:  # pylint: disable=broad-exception-caught
+                    print(f'Failed to keep the recovery copy: {err}', file=sys.stderr)
             QApplication.instance().quit()
 
     def enable(self):
