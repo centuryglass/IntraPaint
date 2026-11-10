@@ -77,9 +77,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    # A job takes 5-9 minutes including setup. Anything much longer is a hang, like a modal dialog conftest.py failed to
-    # catch.
-    timeout-minutes: 15
+    # A job takes 10-15 minutes including setup, and a slow runner adds a few more. Anything much longer is a hang, like
+    # a modal dialog conftest.py failed to catch; pytest.ini's faulthandler_timeout dumps the hung test's stack first.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -130,10 +130,11 @@ jobs:
           sudo sysctl -w kernel.core_pattern="$CORE_DIR/core.%p"
 
       - name: Run tests
-        # The panel sweep runs in the `sweep` job.
+        # The panel sweep runs in the `sweep` job. --durations lists the slowest tests, so a change that slows the
+        # suite shows up in its own run.
         run: |
           ulimit -c unlimited
-          python -m pytest --ignore=test/ui/panel_sweep_test.py
+          python -m pytest --ignore=test/ui/panel_sweep_test.py --durations=25
 
       # When a test crashes the interpreter, faulthandler prints only the Python stack (plus unnamed native frames on
       # 3.14). gdb names the native function in every thread, with file and line where a library ships symbols, and
