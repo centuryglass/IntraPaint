@@ -505,7 +505,8 @@ class AppController(MenuBuilder):
         """Start the application."""
         app = QApplication.instance() or QApplication(sys.argv)
         if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
-            QtExceptHook().enable()
+            QtExceptHook(recovery_cb=self._autosave.keep_for_recovery,
+                         recovery_enabled_cb=lambda: self._autosave.enabled).enable()
         self._window.show()
         self._update_enabled_actions()
         restored = self._autosave.offer_recovery()

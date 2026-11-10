@@ -34,6 +34,29 @@ class QtExceptHookTest(IntraPaintTestCase):
         self.assertEqual(len(exec_calls), 1)
         self.assertEqual(logged.call_count, 2)
 
+    def test_quit_keeps_recovery_copy(self) -> None:
+        """Clicking Quit asks the recovery callback to keep the work before quitting."""
+        calls: list[str] = []
+        hook = QtExceptHook(recovery_cb=lambda: calls.append('recover') or True, recovery_enabled_cb=lambda: True)
+
+        def _click_quit() -> int:
+            hook.b_quit.click()
+            return 0
+
+        with patch.object(hook._dialog, 'exec', _click_quit), \
+                patch('src.util.qtexcepthook.QApplication.quit', lambda *_: calls.append('quit')), \
+                patch('sys.__excepthook__'):
+            hook._excepthook(*_exc_info())  # pylint: disable=protected-access
+        self.assertEqual(['recover', 'quit'], calls)
+        self.assertIn('recovered', hook.b_quit.text())
+
+    def test_quit_label_without_recovery(self) -> None:
+        """The Quit button warns about lost changes when recovery is unavailable."""
+        hook = QtExceptHook(recovery_cb=lambda: False, recovery_enabled_cb=lambda: False)
+        with patch.object(hook._dialog, 'exec', return_value=0), patch('sys.__excepthook__'):
+            hook._excepthook(*_exc_info())  # pylint: disable=protected-access
+        self.assertIn('lost', hook.b_quit.text())
+
     def test_dialog_available_after_close(self) -> None:
         """A new exception after the dialog closes shows it again."""
         hook = QtExceptHook()

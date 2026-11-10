@@ -32,7 +32,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import OraSnapshot, capture_ora_image, ora_xml_files
 from src.image.recovery_files import (RecoveryWrite, RecoverableSession, plan_recovery_write, write_recovery,
                                       create_session_dir, delete_session, clear_manifest, find_recoverable_sessions,
-                                      restore_session)
+                                      restore_session, read_manifest)
 from src.ui.modal.modal_utils import (request_recovery_choice, show_error_dialog, RECOVERY_RESTORE,
                                       RECOVERY_DISCARD)
 from src.undo_stack import UndoStack
@@ -131,6 +131,7 @@ class AutosaveController(QObject):
         self._running_tasks: set[AsyncTask] = set()
         self._clear_after_write = False
         self._shut_down = False
+        self._keep_session = False
 
         self._idle_timer = QTimer(self)
         self._idle_timer.setSingleShot(True)
@@ -225,10 +226,34 @@ class AutosaveController(QObject):
         return False
 
     def shutdown(self) -> None:
-        """Deletes this session's recovery folder after any write finishes, for a normal quit."""
+        """Deletes this session's recovery folder after any write finishes, for a normal quit.
+
+        After `keep_for_recovery` succeeds the folder stays, so `offer_recovery` offers it on the next launch.
+        """
         AppConfig().disconnect(self, AppConfig.AUTOSAVE_ENABLED)
-        self._discard_session()
+        if self._keep_session:
+            self._idle_timer.stop()
+            self._max_timer.stop()
+            self._wait_for_write()
+        else:
+            self._discard_session()
         self._shut_down = True
+
+    def keep_for_recovery(self) -> bool:
+        """Makes the next `shutdown` keep the recovery folder, returning whether it holds the current document.
+
+        Writes a copy first if the document changed since the last one. Returns False, and leaves `shutdown`
+        deleting the folder, when autosave is off or no copy could be written.
+        """
+        if not self.enabled or self._shut_down:
+            return False
+        if self._dirty and not self.autosave_now(synchronous=True):
+            return False
+        self._wait_for_write()
+        if self._session_dir is None or read_manifest(self._session_dir) is None:
+            return False
+        self._keep_session = True
+        return True
 
     def _busy(self) -> bool:
         return (LayerBrush.any_stroke_in_progress()
