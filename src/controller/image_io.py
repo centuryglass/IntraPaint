@@ -24,6 +24,7 @@ from src.controller.image_generation.null_generator import NullGenerator
 from src.image.animation import load_frames_as_image, add_frame_layers, render_frames
 from src.image.image_metadata import ImageMetadata, A1111Parameters
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.metadata_cache_fields import LOAD_APPLIED_FIELDS, METADATA_UPDATE_FIELDS, apply_to_cache, \
     update_from_cache
 from src.image.metadata_save_rules import MetadataKind, format_name, split_metadata
@@ -318,6 +319,12 @@ class ImageIO:
         selected_path = open_image_file(self._window, mode='save', selected_file=ora_path)
         return selected_path if isinstance(selected_path, str) else None
 
+    def _has_layers_to_lose(self) -> bool:
+        """Returns whether a flat save would discard layer structure: several root layers, or a lone layer group."""
+        layer_stack = self._image_stack.layer_stack
+        return layer_stack.count > 1 or (layer_stack.count == 1
+                                         and isinstance(layer_stack.get_layer_by_index(0), LayerGroup))
+
     def _save_losses(self, file_format: str, image: QImage, saved_images: list[QImage],
                      is_animation: bool) -> list[SaveLoss]:
         """Lists what saving as `file_format` loses, for the losses whose warning is enabled."""
@@ -325,7 +332,7 @@ class ImageIO:
         format_str = f'.{file_format.lower()}'
         losses: list[SaveLoss] = []
         if (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE) and not is_animation
-                and self._image_stack.layer_stack.count > 1):
+                and self._has_layers_to_lose()):
             losses.append(SaveLoss(LAYERS_NOT_SAVED_TITLE, LAYERS_NOT_SAVED_MESSAGE.format(
                 animation_formats=_extension_str(tuple(sorted(ANIMATION_WRITE_FORMATS)))),
                 AppConfig.WARN_BEFORE_LAYERLESS_SAVE))
@@ -440,7 +447,7 @@ class ImageIO:
                     return
 
             on_saved = self._save_started(keeps_layers=is_ora or animation_options is not None
-                                          or self._image_stack.layer_stack.count <= 1)
+                                          or not self._has_layers_to_lose())
             if is_ora:
                 snapshot = capture_ora_image(self._image_stack, file_path, self.metadata)
                 self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot), on_saved)
