@@ -201,10 +201,12 @@ class ImageGraphicsView(QGraphicsView):
         return final_coordinates
 
     def center_on_point(self, scene_pt: QPointF) -> None:
-        """Scroll content to center scene point pos within the view."""
+        """Scroll content to center scene point pos within the view.
+
+        The offset setter moves the view relative to the stored center, so it keeps full precision: rounding it would
+        add the rounding error to every pan step."""
         super().centerOn(scene_pt)
-        self._centered_on.setX(int(scene_pt.x()))
-        self._centered_on.setY(int(scene_pt.y()))
+        self._centered_on = QPointF(scene_pt)
 
     def set_cursor(self, new_cursor: Optional[QCursor]) -> None:
         """Sets the cursor over the scene, or restores the default cursor if None. While the pan key is held, the hand
@@ -358,12 +360,14 @@ class ImageGraphicsView(QGraphicsView):
 
     @offset.setter
     def offset(self, new_offset: QPoint | QPointF) -> None:
-        """Updates the image offset."""
+        """Updates the image offset, moving the view center by the change.
+
+        The change applies to the stored center, not one read back from the view, which would add up to a widget pixel
+        of rounding to each call and send slow pan drags in the wrong direction."""
         change = (QPointF(new_offset) if isinstance(new_offset, QPoint) else new_offset) - self._offset
         self._offset.setX(float(new_offset.x()))
         self._offset.setY(float(new_offset.y()))
-        centered_scene_pt = self.widget_point_to_scene(self.rect().center())
-        self.center_on_point(centered_scene_pt + change)
+        self.center_on_point(self._centered_on + change)
         self.offset_changed.emit(self._offset.toPoint())
         self._update_scale_and_transform()
 
