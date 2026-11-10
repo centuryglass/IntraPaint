@@ -22,8 +22,8 @@ from src.util.parameter import (Parameter, ParamType, ParamTypeList, TYPE_BOOL, 
 from src.util.shared_constants import INT_MIN, INT_MAX, FLOAT_MIN, FLOAT_MAX
 from src.util.signals_blocked import signals_blocked
 
-DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | LineEdit | PlainTextEdit |
-                                 SegmentedControl | SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
+DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | LineEdit | PlainTextEdit | SegmentedControl |
+                                 SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
 
 
 def create_input_widget(param: Parameter,
@@ -33,7 +33,7 @@ def create_input_widget(param: Parameter,
     """Creates a widget that can be used to set a parameter.
 
     `option_display` maps an option to the text shown for it. The widget's value is always the option itself. A
-    parameter with exactly two options gets a `SegmentedControl` unless `allow_segmented_control` is false, and any other
+    parameter with exactly two options gets a `SegmentedControl` unless `allow_segmented_control` is false. Any other
     option list gets a `ComboBox`.
     """
     display = option_display if option_display is not None else str
