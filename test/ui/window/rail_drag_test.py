@@ -358,3 +358,54 @@ class RailDragTest(IntraPaintTestCase):
         self.assertFalse(window.rail_drag.marker.isVisible())
         _send(dock, QEvent.Type.MouseButtonRelease, away, LEFT, NO_BUTTON)
         self.assertTrue(dock.isFloating())
+
+    def test_drop_pending_when_a_dock_docks_is_not_applied_later(self) -> None:
+        """A floating dock docked while over a rail drops that rail placement, so its next release leaves it
+        floating."""
+        window = self.window
+        dock = window.navigation_dock
+        dock.open_in_group()
+        dock.setFloating(True)
+        target = self._center(self._button(window.tools_dock))
+        _send(dock, QEvent.Type.MouseMove, target, NO_BUTTON, LEFT)
+        self.assertTrue(window.rail_drag.marker.isVisible())
+        dock.setFloating(False)
+        self.assertFalse(window.rail_drag.marker.isVisible())
+        dock.setFloating(True)
+        _send(dock, QEvent.Type.MouseButtonRelease, target, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertTrue(dock.isFloating())
+
+    def test_platform_dock_drag_events_do_not_place_a_floating_dock(self) -> None:
+        """Where Qt's dock drag is a platform drag, the mouse and move events a floating dock gets over a rail leave it
+        floating."""
+        window = self.window
+        dock = window.navigation_dock
+        dock.open_in_group()
+        dock.setFloating(True)
+        target = self._center(self._button(window.tools_dock))
+        with patch('src.ui.window.rail_drag.uses_platform_dock_drag', return_value=True):
+            _send(dock, QEvent.Type.MouseMove, target, NO_BUTTON, LEFT)
+            self.assertFalse(window.rail_drag.marker.isVisible())
+            _send(dock, QEvent.Type.MouseButtonRelease, target, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertTrue(dock.isFloating())
+
+    def test_platform_dock_drag_hand_off_sends_no_move_after_the_drag(self) -> None:
+        """Where the move that starts Qt's dock drag returns after the drop, the hand-off sends the dock nothing
+        more."""
+        dock = self.window.layers_dock
+        sent: list[QEvent.Type] = []
+
+        def record(widget: QWidget, event: QEvent) -> bool:
+            if widget is dock and isinstance(event, QMouseEvent):
+                sent.append(event.type())
+            return send_event(widget, event)
+        send_event = QApplication.sendEvent
+        start = dock.notch.mapToGlobal(QPoint(2, 2))
+        with patch('src.ui.window.qt_dock_drag.uses_platform_dock_drag', return_value=True), \
+                patch('src.ui.window.qt_dock_drag.QApplication.sendEvent', side_effect=record):
+            _send(dock.notch, QEvent.Type.MouseButtonPress, start, LEFT, LEFT)
+            _send(dock.notch, QEvent.Type.MouseMove, start + QPoint(DRAG_DISTANCE, DRAG_DISTANCE), NO_BUTTON, LEFT)
+        self.assertEqual(sent, [QEvent.Type.MouseButtonPress, QEvent.Type.MouseMove])
+        _send(dock, QEvent.Type.MouseButtonRelease, start, LEFT, NO_BUTTON)
