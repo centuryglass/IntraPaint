@@ -11,10 +11,10 @@ from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
-from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
+from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.util.parameter import (Parameter, ParamType, ParamTypeList, TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_QSIZE,
@@ -22,17 +22,19 @@ from src.util.parameter import (Parameter, ParamType, ParamTypeList, TYPE_BOOL, 
 from src.util.shared_constants import INT_MIN, INT_MAX, FLOAT_MIN, FLOAT_MAX
 from src.util.signals_blocked import signals_blocked
 
-DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | DualToggle | LineEdit | PlainTextEdit |
+DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | LineEdit | PlainTextEdit | SegmentedControl |
                                  SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
 
 
 def create_input_widget(param: Parameter,
                         multi_line=False,
-                        allow_dual_toggle=True,
+                        allow_segmented_control=True,
                         option_display: Optional[Callable[[ParamType], str]] = None) -> DynamicFieldWidget:
     """Creates a widget that can be used to set a parameter.
 
-    `option_display` maps an option to the text shown for it. The widget's value is always the option itself.
+    `option_display` maps an option to the text shown for it. The widget's value is always the option itself. A
+    parameter with exactly two options gets a `SegmentedControl` unless `allow_segmented_control` is false. Any other
+    option list gets a `ComboBox`.
     """
     display = option_display if option_display is not None else str
     if multi_line and param.type_name != TYPE_STR:
@@ -42,12 +44,13 @@ def create_input_widget(param: Parameter,
         if multi_line:
             raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
         assert param.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
-        if len(param.options) == 2 and allow_dual_toggle:
-            toggle = DualToggle(parent=None, options=cast(list[str], param.options),
-                                display_names=[display(option) for option in param.options])
+        if len(param.options) == 2 and allow_segmented_control:
+            segmented = SegmentedControl([Segment(str(option), display(option)) for option in param.options],
+                                         DisplayMode.LABEL, combo_fallback=True)
             assert param.default_value is None or isinstance(param.default_value, str)
-            toggle.setValue(param.default_value)
-            input_field = cast(DynamicFieldWidget, toggle)
+            if param.default_value is not None:
+                segmented.setValue(param.default_value)
+            input_field = cast(DynamicFieldWidget, segmented)
         else:
             combo_box = ComboBox()
             for option in param.options:

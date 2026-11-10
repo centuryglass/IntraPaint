@@ -245,13 +245,8 @@ class SliderSettingField(SliderField):
 
 
 class OptionSegmentsField(SegmentedControl):
-    """A `SegmentedControl` over string options, with the shared `setValue` interface. It falls back to a combo box
-    when too narrow for its segments."""
+    """A `SegmentedControl` over string options. It falls back to a combo box when too narrow for its segments."""
 
     def __init__(self, options: dict[str, str], parent: Optional[QWidget] = None) -> None:
         super().__init__([Segment(value, label) for value, label in options.items()], DisplayMode.LABEL,
                          combo_fallback=True, parent=parent)
-
-    def setValue(self, new_value: str) -> None:  # pylint: disable=invalid-name
-        """Selects the option with this value."""
-        self.set_value(new_value)

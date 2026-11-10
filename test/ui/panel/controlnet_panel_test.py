@@ -169,6 +169,19 @@ class ControlNetPanelTest(IntraPaintTestCase):
         panel._save_data_to_cache()
         self.assertEqual(self._saved().image_string, 'control.png')
 
+    def test_image_path_row_ends_with_the_other_fields(self) -> None:
+        """In a wide dock, the image path row stops at the same right edge as the control image choice."""
+        panel = self._panel()
+        panel._enabled_checkbox.setChecked(True)
+        panel._image_source.set_value(SOURCE_IMAGE_FILE_VALUE)
+        host = PanelHost(panel)
+        host.capture(QSize(700, 700), Orientation.SIDE)
+        right_edge = panel._image_source.mapTo(panel, QPoint(panel._image_source.width(), 0)).x()
+        row_right_edge = panel._image_path_row.mapTo(panel, QPoint(panel._image_path_row.width(), 0)).x()
+        self.assertTrue(panel._image_path_row.isVisible())
+        self.assertEqual(row_right_edge, right_edge)
+        host.release()
+
     def test_saved_image_file_loads_as_image_file(self) -> None:
         """A unit saved with an image path opens with Image file chosen and the path shown."""
         self._save_off_depth_unit(0)
