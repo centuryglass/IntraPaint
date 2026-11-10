@@ -50,7 +50,8 @@ class SelectionOutlineTest(IntraPaintTestCase):
     def test_outline_strokes_closing_edge(self) -> None:
         """An open polygon's edge from its last point back to its first is stroked like the others."""
         stroke = QPainterPathStroker().createStroke(self.outline.path())
-        for start, end in zip(POLYGON, [*POLYGON[1:], POLYGON[0]]):
+        points = list(POLYGON)
+        for start, end in zip(points, [*points[1:], points[0]]):
             self.assertTrue(stroke.contains((start + end) / 2), f'Edge {start} -> {end} is not stroked')
 
     def test_overlay_shows_by_default(self) -> None:
