@@ -9,12 +9,13 @@ step keys with `bind_step_keys`.
   the X/Y row keeps an empty slot of the lock's width so the columns line up.
 - Each field fills over a "scrub range" (X and Y from minus one image width to two, W and H from 0 to two) but accepts
   any typed value within its limits.
+- `field_text` replaces a field's label and tooltip, for a dialog where X and Y mean something other than position.
 - `show_position=False` leaves out X and Y. `unit_switch=True` adds Scale X and Scale Y in place of W and H while
   `set_percent_mode(True)`, shown as percentages, for a dialog that sizes by pixels or by percent.
 - The lock keeps W:H, and Scale X:Scale Y, at the ratio they had when the lock engaged or when the owner last set a
   value. Holding the fixed-aspect modifier engages it temporarily without changing the stored setting.
 """
-from typing import Callable, Optional
+from typing import Callable, Mapping, Optional
 
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QPainter, QPaintEvent, QPalette, QPen
@@ -177,6 +178,9 @@ class GeometryBlock(QWidget):
     unit_switch: bool
         Creates Scale X and Scale Y for `set_percent_mode`, which shows them in place of W and H. The scale rows of
         `show_scale` are separate and may not be combined with this.
+    field_text: Optional[Mapping[str, tuple[str, str]]]
+        Replaces a field's label and tooltip, as `{field name: (label, tooltip)}`. Fields not listed keep the
+        defaults.
     parent: Optional[QWidget]
         Optional parent widget.
     """
@@ -186,7 +190,8 @@ class GeometryBlock(QWidget):
     temporaryLockToggled = Signal(bool)
 
     def __init__(self, show_scale: bool = False, show_angle: bool = False, integer: bool = True,
-                 show_position: bool = True, unit_switch: bool = False, parent: Optional[QWidget] = None) -> None:
+                 show_position: bool = True, unit_switch: bool = False,
+                 field_text: Optional[Mapping[str, tuple[str, str]]] = None, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         if unit_switch and show_scale:
             raise ValueError('unit_switch replaces the size row and cannot be combined with show_scale')
@@ -200,6 +205,8 @@ class GeometryBlock(QWidget):
         self._ratios: dict[str, float] = {}
         self._key_steps: dict[str, int | float] = {}
         self._fields: dict[str, NumberField] = {}
+        self._field_text = dict(field_text or {})
+        self._tooltips: dict[str, str] = {}
         self._lock = RatioLockButton(self)
         self._lock.setToolTip(LOCK_TOOLTIP)
         self._lock.toggled.connect(self._lock_toggled)
@@ -241,6 +248,8 @@ class GeometryBlock(QWidget):
     def _add_field(self, name: str, label: str, tooltip: str, value: int | float, minimum: int | float,
                    maximum: Optional[int | float], step: int | float, suffix: str, decimals: Optional[int] = None
                    ) -> None:
+        label, tooltip = self._field_text.get(name, (label, tooltip))
+        self._tooltips[name] = tooltip
         field = self._make_field(label, value, minimum, maximum, step=step, suffix=suffix, decimals=decimals,
                                  scrub_range=(0.0, 1.0), parent=self)
         field.setToolTip(tooltip)
@@ -401,8 +410,7 @@ class GeometryBlock(QWidget):
                                                   increase=increase_key))
 
     def _base_tooltip(self, name: str) -> str:
-        return {X: X_TOOLTIP, Y: Y_TOOLTIP, WIDTH: WIDTH_TOOLTIP, HEIGHT: HEIGHT_TOOLTIP, SCALE_X: SCALE_X_TOOLTIP,
-                SCALE_Y: SCALE_Y_TOOLTIP, ANGLE: ANGLE_TOOLTIP}[name]
+        return self._tooltips[name]
 
     # -----------------------------------------------------------------------------------------------------------------
     # Layout

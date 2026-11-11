@@ -7114,7 +7114,27 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>X and Y: distance from the left and top edges of the resized canvas to the current image content. Drag the preview to move the image.</source>
+        <source>Drag the preview to move the image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>X-offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Y-offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Horizontal offset of the image within the resized canvas</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Vertical offset of the image within the resized canvas</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
