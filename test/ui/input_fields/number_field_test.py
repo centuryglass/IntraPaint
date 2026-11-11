@@ -158,14 +158,60 @@ class NumberFieldTest(IntraPaintTestCase):
         self.assertEqual(changes, [55])
         self.assertEqual(field.value(), 55)
 
-    def test_float_values_snap_to_step(self) -> None:
-        """Float fields keep floats, snapped to the step without rounding noise."""
+    def test_float_values_keep_resolution(self) -> None:
+        """Float fields keep floats at the displayed precision, off the step grid and without rounding noise, and an
+        arrow key adds one step to them."""
         field = _shown(SliderField('Opacity', 0.5, 0.0, 1.0, step=0.05))
+        changes: list = []
+        field.valueChanged.connect(changes.append)
         field.set_value(0.333)
-        self.assertEqual(field.value(), 0.35)
+        self.assertEqual(field.value(), 0.33)
+        field.set_value(0.33)
+        self.assertEqual(changes, [0.33])
         QtTest.QTest.keyClick(field, Qt.Key.Key_Right)
-        self.assertEqual(field.value(), 0.4)
+        self.assertEqual(field.value(), 0.38)
         self.assertIsInstance(field.value(), float)
+
+    def test_typed_value_between_steps_is_kept(self) -> None:
+        """A typed value between steps is kept at the field's resolution, and the wheel steps from it."""
+        field = _shown(SliderField('Threshold', 0.0, 0.0, 300.0, step=1.0, decimals=1))
+        field.begin_edit()
+        editor = field.findChild(QLineEdit)
+        assert editor is not None
+        editor.setText('2.54')
+        field.commit_edit()
+        self.assertEqual(field.value(), 2.5)
+        self.assertEqual(field.value_text(), '2.5')
+        _wheel(field, 2)
+        self.assertEqual(field.value(), 4.5)
+
+    def test_resolution_follows_display_scale(self) -> None:
+        """The resolution is one unit of the last shown digit in stored units, or the step if that is finer."""
+        percent = _shown(SliderField('Opacity', 0.5, 0.0, 1.0, step=0.05, display_scale=100, decimals=0))
+        self.assertAlmostEqual(percent.resolution(), 0.01)
+        percent.set_value(0.333)
+        self.assertEqual(percent.value(), 0.33)
+        fine_step = _shown(SliderField('Zoom', 1.0, 0.01, 10.0, step=0.001, display_scale=100, decimals=0))
+        self.assertEqual(fine_step.resolution(), 0.001)
+        self.assertEqual(self._slider(10).resolution(), 1)
+
+    def test_drag_snaps_to_step(self) -> None:
+        """A drag snaps to the step grid, even from a value between steps."""
+        field = _shown(SliderField('Opacity', 0.33, 0.0, 1.0, step=0.05))
+        _scrub(field, 23)
+        self.assertEqual(field.value(), 0.45)
+
+    def test_snap_to_step(self) -> None:
+        """A field made with snap_to_step keeps every value on the step grid, which starts at the minimum."""
+        field = _shown(SliderField('Tile size', 512, 320, 4096, step=64, snap_to_step=True))
+        field.set_value(500)
+        self.assertEqual(field.value(), 512)
+        field.begin_edit()
+        editor = field.findChild(QLineEdit)
+        assert editor is not None
+        editor.setText('1000')
+        field.commit_edit()
+        self.assertEqual(field.value(), 1024)
 
     def test_display_mapping(self) -> None:
         """The shown text and typed entry use the display scale, suffix and zero text; the stored value doesn't."""
