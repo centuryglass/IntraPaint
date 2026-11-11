@@ -172,7 +172,7 @@
         "range_options": {
             "min": 0.0,
             "max": 300.0,
-            "step": 5.0
+            "step": 1.0
         },
         "saved": true
     },

@@ -74,5 +74,5 @@ class SharpenFilter(ImageFilter):
     def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the sharpen filter."""
         return [
-            Parameter(FACTOR_LABEL, TYPE_FLOAT, 2.0, FACTOR_DESCRIPTION)
+            Parameter(FACTOR_LABEL, TYPE_FLOAT, 2.0, FACTOR_DESCRIPTION, single_step=0.1)
         ]

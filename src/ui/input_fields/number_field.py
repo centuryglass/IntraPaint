@@ -6,6 +6,8 @@ label + slider + spin box rows.
 
 - Dragging anywhere scrubs the value. A click without a drag opens a text entry. Wheel, arrow keys and Page Up/Down
   step the value. Enter, Return or F2 opens the text entry from the keyboard.
+- Values are kept at the field's resolution (see `NumberField.resolution`), not on the step grid, so a value typed or
+  set between steps stays put. Only a drag, or a field made with `snap_to_step`, snaps to the step grid.
 - The stored value and its display are separate: `display_scale`, `suffix` and `zero_text` change what is shown and
   typed, never what `value()` returns.
 - The widget holds no config or undo state. The owner connects `valueChanged`, calls `set_value` when the bound value
@@ -101,7 +103,7 @@ class NumberField(QWidget):
     maximum: Optional[int | float]
         Largest accepted value, or None for no upper limit.
     step: int | float
-        Change made by one arrow key press or wheel notch, and the grid scrubbed and typed values snap to.
+        Change made by one arrow key press or wheel notch, and the grid a drag snaps to.
     suffix: str
         Text shown after the displayed value, such as ' px' or '%'.
     display_scale: float
@@ -113,6 +115,9 @@ class NumberField(QWidget):
         If set, the text shown in place of the number when the value is 0, such as 'none' or 'Off'.
     page_step: Optional[int | float]
         Change made by Page Up and Page Down. Defaults to ten steps.
+    snap_to_step: bool
+        If True, every value snaps to the step grid, for values where the step is a real constraint, such as a size
+        that must be a multiple of 64.
     parent: Optional[QWidget]
         Optional parent widget.
     """
@@ -126,7 +131,8 @@ class NumberField(QWidget):
     def __init__(self, label: str, value: int | float = 0, minimum: Optional[int | float] = None,
                  maximum: Optional[int | float] = None, step: int | float = 1, suffix: str = '',
                  display_scale: float = 1.0, decimals: Optional[int] = None, zero_text: Optional[str] = None,
-                 page_step: Optional[int | float] = None, parent: Optional[QWidget] = None) -> None:
+                 page_step: Optional[int | float] = None, snap_to_step: bool = False,
+                 parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         if step <= 0:
             raise ValueError(f'step must be positive, got {step}')
@@ -142,6 +148,7 @@ class NumberField(QWidget):
         self._display_scale = display_scale
         self._decimals = decimals if decimals is not None else (0 if self._integer else 2)
         self._zero_text = zero_text
+        self._snap_to_step = snap_to_step
         self._value: int | float = self._snap(self._clamp(value))
 
         self._pressure_available = False
@@ -174,8 +181,11 @@ class NumberField(QWidget):
         return self._value
 
     def set_value(self, value: int | float) -> None:
-        """Sets the value, clamped to the range and snapped to the step. Emits `valueChanged` if it changed."""
-        new_value = self._snap(self._clamp(value))
+        """Sets the value, clamped to the range and rounded to the resolution, or snapped to the step grid if the
+        field snaps to its step. Emits `valueChanged` if it changed."""
+        self._apply_value(self._snap(self._clamp(value)))
+
+    def _apply_value(self, new_value: int | float) -> None:
         if new_value == self._value:
             return
         self._value = new_value
@@ -202,6 +212,14 @@ class NumberField(QWidget):
     def step(self) -> int | float:
         """Returns the change made by one arrow key press or wheel notch."""
         return self._step
+
+    def resolution(self) -> int | float:
+        """Returns the smallest change a value keeps: one unit of the last displayed digit in stored units, or the
+        step if that is finer. Integer fields have a resolution of 1."""
+        if self._integer:
+            return 1
+        shown_unit = 10 ** -self._decimals / abs(self._display_scale) if self._display_scale != 0 else self._step
+        return min(shown_unit, self._step)
 
     def label(self) -> str:
         """Returns the label text."""
@@ -244,14 +262,19 @@ class NumberField(QWidget):
             value = self._maximum
         return value
 
-    def _snap(self, value: int | float) -> int | float:
-        """Rounds a value to the step grid, which starts at the minimum if there is one, otherwise at 0."""
-        origin = self._minimum if self._minimum is not None else 0
-        steps = round((value - origin) / self._step)
-        snapped = origin + steps * self._step
+    def _snap(self, value: int | float, to_step: bool = False) -> int | float:
+        """Rounds a value to the resolution, or to the step grid if `to_step` is True or the field snaps to its step.
+        The step grid starts at the minimum if there is one, otherwise at 0."""
+        if to_step or self._snap_to_step:
+            origin = self._minimum if self._minimum is not None else 0
+            interval = self._step
+        else:
+            origin = 0
+            interval = self.resolution()
+        snapped = origin + round((value - origin) / interval) * interval
         if self._integer:
-            return int(round(snapped))
-        digits = max(self._decimals + 2, 6)
+            return int(self._clamp(int(round(snapped))))
+        digits = max(math.ceil(-math.log10(min(interval, 1))) + 2, 6)
         snapped = round(float(snapped), digits)
         return float(self._clamp(snapped))
 
@@ -467,7 +490,7 @@ class NumberField(QWidget):
                 return
             self._scrubbing = True
             self.dragStarted.emit()
-        self.set_value(self._press_value + self._scrub_delta(delta_x))
+        self._apply_value(self._snap(self._clamp(self._press_value + self._scrub_delta(delta_x)), to_step=True))
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # pylint: disable=invalid-name

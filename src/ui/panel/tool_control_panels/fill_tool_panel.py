@@ -40,18 +40,16 @@ def build_threshold_field(parent: Optional[QWidget] = None) -> SliderField:
     cache = Cache()
     minimum, maximum, step = cache.get_range(Cache.FILL_THRESHOLD)
     assert minimum is not None and maximum is not None and step is not None
-    # Whole numbers only; the stored value stays a float:
     field = SliderField(normalize_row_label(cache.get_label(Cache.FILL_THRESHOLD)),
-                        int(cache.get(Cache.FILL_THRESHOLD)), int(minimum), int(maximum), step=int(step),
-                        parent=parent)
+                        cache.get(Cache.FILL_THRESHOLD), minimum, maximum, step=step, decimals=1, parent=parent)
     field.setToolTip(THRESHOLD_TOOLTIP)
 
     def _field_changed(value: int | float) -> None:
         if cache.get(Cache.FILL_THRESHOLD) != value:
-            cache.set(Cache.FILL_THRESHOLD, float(value))
+            cache.set(Cache.FILL_THRESHOLD, value)
 
     field.valueChanged.connect(_field_changed)
-    cache.connect(field, Cache.FILL_THRESHOLD, lambda value, *_: field.set_value(int(value)))
+    cache.connect(field, Cache.FILL_THRESHOLD, lambda value, *_: field.set_value(value))
     return field
 
 
