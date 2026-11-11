@@ -2,7 +2,8 @@
 button and a More button.
 
 - The key and description follow the name. When the first line can't fit them, they move to a second line, where the
-  description wraps. A name that still doesn't fit ends with an ellipsis.
+  description wraps. That line is flush with the header's left edge, whatever width the icon column has. A name that
+  still doesn't fit ends with an ellipsis.
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
 - `add_widget` puts an owner's control, such as a mode selector, on the first line before the reset and More buttons.
@@ -360,9 +361,6 @@ class PanelHeader(QWidget):
             widgets.append(self._name_label)
         return max(widget.sizeHint().height() for widget in widgets)
 
-    def _second_line_indent(self) -> int:
-        return self._icon_label.width() + HEADER_SPACING if not self._icon_label.isHidden() else 0
-
     def _needs_second_line(self, width: int) -> bool:
         has_details = not self._key_badge.isHidden() or not self._description_label.isHidden()
         return has_details and width < self._one_line_width()
@@ -400,7 +398,6 @@ class PanelHeader(QWidget):
         self._wrapped = wrap
         if wrap:
             self._first_line.removeWidget(self._details)
-            self._second_line.setContentsMargins(self._second_line_indent(), 0, 0, 0)
             self._second_line.addWidget(self._details)
             self._first_line.insertStretch(2, 1)
         else:
