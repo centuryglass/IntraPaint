@@ -77,6 +77,27 @@ class BrushToolTest(ToolTestCase):
         self.assertNotEqual(initial_image, final_image)
         self.assert_image_matches_golden(final_image, BRUSH_STROKE_IMAGE_PATH)
 
+    def test_stroke_drawn_in_parts_is_one_undo_step(self) -> None:
+        """A stroke whose tiles are written to the layer several times mid-stroke, as the surface's tile timer does
+           during a long stroke, is still one undo step that restores the layer."""
+        layer = self.image_stack.create_layer()
+        self.image_stack.active_layer = layer
+        self.activate_tool(self.brush_tool)
+        self.brush_tool.brush_size = 50
+        self.surface.brush.load_file(BRUSH_PATH)
+        initial_image = layer.image
+        UndoStack().clear()
+        self.mouse_press(QPoint(50, 50))
+        for xy in range(55, 150, 5):
+            self.mouse_move(QPoint(xy, xy))
+            if xy % 25 == 0:
+                self.surface.apply_pending_tile_updates()
+        self.mouse_release(QPoint(150, 150))
+        self.assertNotEqual(layer.image, initial_image)
+        self.assertEqual(1, UndoStack().undo_count())
+        UndoStack().undo()
+        self.assert_images_equal(layer.image, initial_image)
+
     def test_activation_two_layer(self) -> None:
         # Create one layer, confirm that layer property assumptions are true:
         layer1 = self.image_stack.create_layer()

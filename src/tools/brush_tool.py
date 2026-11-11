@@ -23,6 +23,7 @@ from src.ui.graphics_items.brush_outline import BrushOutline
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
+from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
@@ -41,6 +42,10 @@ FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 # The brush outline hides at or below this on-screen diameter, where the crosshair alone marks the brush:
 MIN_OUTLINE_DIAMETER = CROSSHAIR_GRID_SIZE
 MIN_LINE_PRESSURE = 0.5
+
+# Undo gesture that holds one stroke, from press to release. Every change a stroke makes, including the ones
+# `BrushTool._before_stroke_start` and `BrushTool._after_stroke_end` make, joins it as one undo step:
+STROKE_UNDO_GESTURE = 'BrushTool.stroke'
 
 
 def brush_size_step(size: int) -> int:
@@ -281,6 +286,7 @@ class BrushTool(BaseTool):
             self._drawing = False
             self._brush.end_stroke()
             self._after_stroke_end()
+            UndoStack().end_gesture()
             self._tablet_input = None
             self._tablet_pressure = None
             self._tablet_x_tilt = None
@@ -343,12 +349,14 @@ class BrushTool(BaseTool):
             return False
         if self._drawing:
             self._brush.end_stroke()
+            UndoStack().end_gesture()
         self._drawing = True
         self._fixed_angle = None
         self._last_pressure = None
         self._fixed_angle_suppressed = self._press_claims_fixed_angle_modifier()
         if self._fixed_angle_active() and not KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
             self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
+        UndoStack().begin_gesture(STROKE_UNDO_GESTURE)
         self._before_stroke_start()
         self._brush.start_stroke()
         self._stroke_to(image_coordinates)
@@ -381,6 +389,7 @@ class BrushTool(BaseTool):
             self._drawing = False
             self._brush.end_stroke()
             self._after_stroke_end()
+            UndoStack().end_gesture()
             self._tablet_input = None
             self._tablet_pressure = None
             self._last_pressure = None
@@ -403,11 +412,13 @@ class BrushTool(BaseTool):
         return False
 
     def _before_stroke_start(self) -> None:
-        """Called once the stroke is allowed to start, before the brush begins it. Subclasses can prepare the layer."""
+        """Called once the stroke is allowed to start, before the brush begins it. Subclasses can prepare the layer.
+
+        Runs inside the stroke's undo gesture, so its changes undo with the stroke."""
 
     def _after_stroke_end(self) -> None:
         """Called after the brush has drawn the last of a stroke. Subclasses can finish what
-           `_before_stroke_start` set up."""
+           `_before_stroke_start` set up, inside the stroke's undo gesture."""
 
     def mouse_enter(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Show the line preview on enter if in line mode."""
