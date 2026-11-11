@@ -610,6 +610,46 @@ class CollapsibleSectionTest(IntraPaintTestCase):
         self.assertFalse(self.panel.sampling.widget.is_collapsed())
         self.assertTrue(self.panel.block.isVisibleTo(self.panel))
 
+    def test_closing_a_section_plans_again(self) -> None:
+        """Closing a section in a side panel frees its room at once, so a section the plan collapsed for lack of room
+        expands without a resize."""
+        main = self.panel.sections[0].widget
+        main.set_expanded(False)
+        self._host(QSize(300, 900))
+        room = self.panel.measure().height() + 2 * self.panel.inset + HYSTERESIS + 1
+        main.set_expanded(True)
+        self._host(QSize(300, room))
+        self.assertTrue(self.panel.sampling.widget.is_collapsed())
+        main.header_button.click()
+        self.assertFalse(self.panel.sampling.widget.is_collapsed())
+        self.assertTrue(self.panel.block.isVisibleTo(self.panel))
+
+    def test_opening_a_section_plans_again(self) -> None:
+        """Opening a section in a side panel too short for it plans again, which collapses the section the plan ranks
+        below it."""
+        main = self.panel.sections[0].widget
+        main.set_expanded(False)
+        self._host(QSize(300, 900))
+        self._host(QSize(300, self.panel.measure().height() + 2 * self.panel.inset + HYSTERESIS + 1))
+        self.assertFalse(self.panel.sampling.widget.is_collapsed())
+        main.header_button.click()
+        self.assertTrue(self.panel.sampling.widget.is_collapsed())
+
+    def test_expanding_a_section_without_room_opens_its_popover(self) -> None:
+        """A click that expands a section the panel has no room for shows its body in the popover, so the click
+        isn't lost."""
+        widget = self.panel.sampling.widget
+        widget.set_expanded(False)
+        self._host(QSize(300, 200))
+        widget.header_button.click()
+        self.assertTrue(widget.is_expanded())
+        self.assertTrue(widget.is_collapsed())
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertIsNotNone(popover)
+        self.assertTrue(popover.isVisible())
+        self.assertIs(popover.content, widget.body)
+        popover.hide()
+
     def test_priority_must_be_above_required(self) -> None:
         """A collapsible section can't be required, since it could never be left out."""
         with self.assertRaises(ValueError):

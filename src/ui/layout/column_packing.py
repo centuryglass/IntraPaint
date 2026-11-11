@@ -120,8 +120,8 @@ class SectionPacker:
     - `budget()` returns the height a column has, or zero before the owner's first plan, which gives every section its
       own column. Inside `base_measurement` the budget is zero, so a base size measured there doesn't depend on
       earlier plans.
-    - While packing, opening or closing a section passed to `watch` calls `replan`, since its height decides the
-      columns.
+    - Opening or closing a section passed to `watch` calls `replan`, in either orientation. A strip's columns depend on
+      the sections' heights, and a side panel's plan depends on the room the sections leave.
 
     Bound-method callbacks are held weakly, since the owner owns the packer.
     """
@@ -168,7 +168,7 @@ class SectionPacker:
             self._base_depth -= 1
 
     def watch(self, section: PanelSection) -> None:
-        """Plans again when the section opens or closes while packing."""
+        """Plans again when the section opens or closes."""
         section.expanded_changed.connect(self._section_toggled)
 
     def invalidate(self) -> None:
@@ -209,5 +209,4 @@ class SectionPacker:
         return released
 
     def _section_toggled(self, _expanded: bool) -> None:
-        if self._packing:
-            self._replan()
+        self._replan()

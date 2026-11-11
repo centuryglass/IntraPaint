@@ -1,6 +1,7 @@
 """Tests the Tools dock's panel: buttons, grouping and button forms by fit, the active tool header, reset, and the
 space a fit-aware tool control panel gets."""
 import sys
+from unittest.mock import patch
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QWidget
@@ -18,6 +19,7 @@ from src.ui.layout.panel_fit import HYSTERESIS, Orientation
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel, ButtonLayout, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, SIDE_BUTTON_FORMS, \
     STRIP_BUTTON_FORMS, STRIP_MAX_COLUMNS, STRIP_NARROW_COLUMNS, strip_button_layout
+from src.ui.widget.panel_section import PanelSection
 from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import tell_orientation
@@ -129,6 +131,24 @@ class ToolPanelTest(IntraPaintTestCase):
                 else:
                     self.assertLess(space.width(), size.width() - self._tool_panel._strip_column.width())  # pylint: disable=protected-access
                     self.assertEqual(space.height(), box.height())
+
+    def test_section_toggle_in_a_tool_panel_plans_the_tools_panel_again(self) -> None:
+        """Opening or closing a section in a fit-planned tool control panel plans the Tools panel again in a side
+        panel, since the tool controls' size decides the Tools panel's scrolling and the space they get."""
+        for tool_class in (DrawTool, TextTool):
+            with self.subTest(tool=tool_class.__name__):
+                tool = self._tool(tool_class)
+                self._tool_panel.add_tool_button(tool)
+                self._tool_panel.setup_active_tool(tool)
+                self._host_named('side_regular')
+                control_panel = tool.get_control_panel()
+                section = next(section for section in control_panel.findChildren(PanelSection)
+                               if section.isVisibleTo(control_panel) and section.is_header_visible())
+                with patch.object(ToolPanel, 'refit', autospec=True, side_effect=ToolPanel.refit) as refit:
+                    section.header_button.click()
+                    self.assertEqual(refit.call_count, 1)
+                    section.header_button.click()
+                    self.assertEqual(refit.call_count, 2)
 
     def test_plans_leave_no_layout_work_for_the_event_loop(self) -> None:
         """After a resize, every widget already has its final geometry, so a paint before the posted layout requests

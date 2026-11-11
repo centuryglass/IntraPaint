@@ -22,9 +22,10 @@ their state survives.
   header actions and remembered expansion. A section with no control left in it hides.
 - A section made with `collapsible=True` has a planner item of its own with one form, expanded. Leaving it out collapses
   the section to its header and summary (`PanelSection.set_forced_collapsed`), and a click on that header opens the
-  section's body in a popover. The item fills by the section's `priority`, among the controls' priorities, so the
-  section collapses after the optional controls it outranks have moved to More. Controls in a collapsed section cost no
-  room and stay placed. A section whose controls are all required collapses only if declared `collapsible`.
+  section's body in a popover. So does a click that expands the section when the panel has no room for it. The item
+  fills by the section's `priority`, among the controls' priorities, so the section collapses after the optional
+  controls it outranks have moved to More. Controls in a collapsed section cost no room and stay placed. A section
+  whose controls are all required collapses only if declared `collapsible`.
 - Side panels stack sections in one column and scroll vertically. Spare height goes under the sections, except what
   `set_section_growth` lets their vertically expanding controls take first. Strip panels put sections in fixed-width
   columns and scroll horizontally. Both also scroll along the other axis when content can't shrink to fit, so nothing
@@ -34,6 +35,7 @@ their state survives.
   content that plans itself (`src.ui.layout.panel_fit.FitContent`).
 - The host calls `host_floating_changed` when the panel's dock starts or stops floating.
 - A title note (`set_title_note`) is short text a floating dock's title bar shows beside the dock's name.
+- Opening or closing a section plans again (`SectionPacker.watch`).
 - Call `refit` after a change to the content's size that no resize reports, such as a control appearing.
 """
 # pylint: disable=too-many-lines
@@ -240,6 +242,16 @@ class PanelLayout:
         return new_section
 
 
+def host_dock_panel(widget: QWidget) -> Optional['DockPanel']:
+    """Returns the `DockPanel` a widget is inside, or None."""
+    parent = widget.parentWidget()
+    while parent is not None:
+        if isinstance(parent, DockPanel):
+            return parent
+        parent = parent.parentWidget()
+    return None
+
+
 class DockPanel(QWidget):
     """A panel that shows as much of its content as fits its dock's size, in the orientation that fits it best."""
 
@@ -329,6 +341,8 @@ class DockPanel(QWidget):
             self._packer.watch(section.widget)
             if section.collapsible:
                 section.widget.forced_header_clicked.connect(partial(self._open_section_popover, section))
+                # Connected after the section's own toggle, so it runs once the toggle's plan has finished:
+                section.widget.header_button.clicked.connect(partial(self._section_header_clicked, section))
 
     def build(self, ui: PanelLayout) -> None:
         """Declares sections and controls. Subclasses override it. Called once, from the constructor."""
@@ -949,6 +963,12 @@ class DockPanel(QWidget):
         self._popover_section = section
         self._section_popover.set_content(section.widget.detach_body())
         self._section_popover.popup_below(section.widget.header_button, align_left=True)
+
+    def _section_header_clicked(self, section: DockSection) -> None:
+        """Opens a section's body in its popover when the user expanded it and the plan for that left no room."""
+        panel_section = section.widget
+        if panel_section.is_expanded() and panel_section.is_collapsed() and self._popover_section is not section:
+            self._open_section_popover(section)
 
     def reveal_control(self, section: DockSection, widget: QWidget) -> None:
         """Shows a control placed in a section and gives it keyboard focus.

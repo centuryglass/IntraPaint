@@ -488,6 +488,33 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         settle_layouts(self.panel)
         self.assertGreater(_rect_in(prompt, self.panel).bottom(), self.panel.height() * 3 // 4)
 
+    def test_closing_prompt_in_a_side_panel_packs_the_sections_at_once(self) -> None:
+        """Closing Prompt in a side panel gives the prompt boxes' spare height back to the space under the sections,
+        without a resize, so the headers below don't spread apart."""
+        self.panel.show()
+        _host(self.panel, SIDE, QSize(360, 1000))
+        prompt = self._section(SECTION_TITLE_PROMPT)
+        prompt.header_button.click()
+        settle_layouts(self.panel)
+        self.assertTrue(prompt.is_collapsed())
+        for section in self.panel.sections:
+            if not section.widget.isHidden():
+                with self.subTest(section=section.title):
+                    self.assertEqual(section.widget.height(), section.widget.minimumSizeHint().height())
+
+    def test_opening_prompt_in_a_side_panel_gives_it_room_at_once(self) -> None:
+        """Opening Prompt in a side panel planned with it closed lifts the closed section's height cap, without a
+        resize."""
+        self.panel.show()
+        prompt = self._section(SECTION_TITLE_PROMPT)
+        prompt.set_expanded(False)
+        _host(self.panel, SIDE, QSize(360, 1000))
+        prompt.header_button.click()
+        settle_layouts(self.panel)
+        self.assertFalse(prompt.is_collapsed())
+        self.assertGreaterEqual(prompt.height(), prompt.minimumSizeHint().height())
+        self.assertGreaterEqual(self.panel.prompt_textbox.height(), self.panel.prompt_textbox.minimumSizeHint().height())
+
     def test_strip_pins_prompt_left_and_the_action_block_right(self) -> None:
         """A strip keeps Prompt in a column at the left and the action block in one at the right, neither of which
         scrolls sideways, and a side panel puts the action block back in the footer."""

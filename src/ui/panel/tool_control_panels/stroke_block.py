@@ -46,6 +46,7 @@ from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.panel.tool_control_panels.stroke_preview import StrokePreview
 from src.ui.layout.column_packing import SectionPacker
+from src.ui.layout.dock_panel import host_dock_panel
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size, \
     held_weakly
 from src.ui.layout.label_column_layout import normalize_row_label
@@ -174,7 +175,7 @@ class StrokeBlock(QWidget):
     `preview` is the tool's stroke preview, if it has one.
 
     `section_toggled` is emitted when the user opens or closes one of the block's sections or a tool section. The
-    owner plans again, since a strip's columns depend on the sections' heights.
+    owner plans again, since the plan depends on the sections' heights.
     """
 
     section_toggled = Signal()
@@ -569,7 +570,7 @@ class StrokeToolPanel(QWidget):
         self._overflow_layout = QVBoxLayout(self._overflow)
         self._overflow_layout.setContentsMargins(0, 0, 0, 0)
         self._planner = self._build_planner()
-        block.section_toggled.connect(self._replan)
+        block.section_toggled.connect(self._section_toggled)
 
     @property
     def stroke_block(self) -> StrokeBlock:
@@ -640,8 +641,16 @@ class StrokeToolPanel(QWidget):
                 reserved += fresh_minimum_size(widget).height() + spacing
         return space.height() - reserved
 
+    def _section_toggled(self) -> None:
+        """Plans the hosting panel again after a section opens or closes, or this panel alone without a host."""
+        host = host_dock_panel(self)
+        if host is not None:
+            host.refit()
+        else:
+            self._replan()
+
     def _replan(self) -> None:
-        """Plans again after a section opens or closes in a strip, since its height decides the columns."""
+        """Plans this panel again in its latest space, after a change to its content."""
         space = self._space if self._space is not None else self.size()
         self._planner.update(self._fit_orientation(), space, force=True)
 
