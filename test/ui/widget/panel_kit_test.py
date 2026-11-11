@@ -92,6 +92,23 @@ class PanelSectionTest(IntraPaintTestCase):
         self.assertIs(button.parentWidget(), section)
 
 
+    def test_detached_body_still_counts_toward_the_sections_size(self) -> None:
+        """While the body is detached, the section's size hints include it as long as the section isn't collapsed, and
+        restoring the body removes the stand-in."""
+        section = self._section()
+        attached = section.minimumSizeHint().height()
+        body = section.detach_body()
+        self.assertIsNot(body.parentWidget(), section)
+        self.assertEqual(section.minimumSizeHint().height(), attached)
+        section.set_forced_collapsed(True)
+        self.assertLess(section.minimumSizeHint().height(), attached)
+        section.set_forced_collapsed(False)
+        self.assertEqual(section.minimumSizeHint().height(), attached)
+        section.restore_body()
+        self.assertIs(body.parentWidget(), section)
+        self.assertEqual(section.minimumSizeHint().height(), attached)
+        self.assertEqual(section.layout().count(), 2)
+
 class PanelHeaderTest(IntraPaintTestCase):
     """Tests the panel header's buttons, key badge and popover."""
 

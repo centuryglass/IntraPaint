@@ -898,6 +898,10 @@ class DockPanel(QWidget):
 
     def _plan_finished(self, orientation: Orientation) -> None:
         self.fit_finished(orientation)
+        # Trial placements expand sections the final plan collapses, so only the final plan decides:
+        if self._popover_section is not None and not self._popover_section.collapsed_by_fit:
+            self._close_section_popover()
+        self._resize_section_popover()
         # Refresh the cached sizes trials left behind, then have the scroll area re-fit the body to them at once. Its
         # own update waits on a posted layout request, and planning runs after it sized the body for this resize:
         self.measure()
@@ -941,8 +945,6 @@ class DockPanel(QWidget):
         for section, form in zip(collapsible, placement[1 + extra_count:1 + extra_count + section_count]):
             section.collapsed_by_fit = form is None
             section.widget.set_forced_collapsed(form is None)
-            if form is not None and self._popover_section is section:
-                self._close_section_popover()
         for control, form in zip(self._controls(), placement[1 + extra_count + section_count:]):
             control.form = form
             if form is not None and len(control.forms) > 0:
@@ -987,6 +989,12 @@ class DockPanel(QWidget):
             self._scroll.ensureWidgetVisible(widget)
         # Tab focus selects a field's text, so typing replaces the value:
         widget.setFocus(Qt.FocusReason.TabFocusReason)
+
+    def _resize_section_popover(self) -> None:
+        """Resizes an open section popover to its body, which a plan can change by showing or hiding controls in it."""
+        section = self._popover_section
+        if section is not None and self._section_popover is not None and self._section_popover.isVisible():
+            self._section_popover.popup_below(section.widget.header_button, align_left=True)
 
     def _close_section_popover(self) -> None:
         if self._section_popover is not None:
