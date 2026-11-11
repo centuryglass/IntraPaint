@@ -32,6 +32,14 @@ class _FakeHotkeyFilter(QObject):
 class GeometryBlockTest(IntraPaintTestCase):
     """Tests GeometryBlock."""
 
+    def test_field_text_overrides_label_and_tooltip(self) -> None:
+        """A field listed in `field_text` takes its label and tooltip, and others keep the defaults."""
+        block = GeometryBlock(field_text={X: ('X-offset', 'Horizontal offset')})
+        self.assertEqual(block.field(X).label(), 'X-offset')
+        self.assertEqual(block.field(X).toolTip(), 'Horizontal offset')
+        self.assertEqual(block.field(Y).label(), 'Y')
+        self.assertEqual(block.field(Y).toolTip(), 'Vertical position')
+
     def test_rows_follow_flags(self) -> None:
         """Scale and angle fields exist only when requested."""
         base = GeometryBlock()

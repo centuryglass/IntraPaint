@@ -36,8 +36,11 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 WINDOW_TITLE = _tr('Resize image canvas')
 SIZE_SECTION_TITLE = _tr('Size and position')
 LAYERS_SECTION_TITLE = _tr('Layers')
-OFFSET_HINT = _tr('X and Y: distance from the left and top edges of the resized canvas to the current image content.'
-                  ' Drag the preview to move the image.')
+OFFSET_HINT = _tr('Drag the preview to move the image.')
+X_OFFSET_LABEL = _tr('X-offset')
+Y_OFFSET_LABEL = _tr('Y-offset')
+X_OFFSET_TOOLTIP = _tr('Horizontal offset of the image within the resized canvas')
+Y_OFFSET_TOOLTIP = _tr('Vertical offset of the image within the resized canvas')
 NEW_SIZE_TEXT = _tr('New size: {width} x {height} ({width_change} x {height_change})')
 RESIZE_BUTTON_LABEL = _tr('Resize image canvas')
 
@@ -65,7 +68,9 @@ class ResizeCanvasModal(QDialog):
 
         max_size: QSize = cast(QSize, AppConfig().get(AppConfig.MAX_IMAGE_SIZE))
 
-        self._geometry = GeometryBlock(parent=self)
+        self._geometry = GeometryBlock(field_text={
+            geometry_block.X: (X_OFFSET_LABEL, X_OFFSET_TOOLTIP),
+            geometry_block.Y: (Y_OFFSET_LABEL, Y_OFFSET_TOOLTIP)}, parent=self)
         self._geometry.set_image_size(self._image_size)
         self._geometry.set_limits(geometry_block.WIDTH, MIN_PX_VALUE, max_size.width())
         self._geometry.set_limits(geometry_block.HEIGHT, MIN_PX_VALUE, max_size.height())
