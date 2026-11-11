@@ -4,41 +4,16 @@
     "theme": "intrapaint_ink",
     "overlay_scroll_bars": true,
     "rounded_popups": true,
-    "font_point_size": {
-        "min": 1,
-        "max": 100,
-        "step": 1,
-        "value": 10
-    },
-    "tab_font_point_size": {
-        "min": 1,
-        "max": 100,
-        "step": 1,
-        "value": 12
-    },
-    "key_hint_font_size": {
-        "min": 1,
-        "max": 100,
-        "step": 1,
-        "value": 8
-    },
-    "toolbar_tool_button_count": {
-        "min": 0,
-        "max": 99,
-        "step": 1,
-        "value": 4
-    },
+    "font_point_size": 10,
+    "tab_font_point_size": 12,
+    "key_hint_font_size": 8,
+    "toolbar_tool_button_count": 4,
     "show_tool_control_hints": true,
     "show_rulers": true,
     "show_selection_overlay": true,
     "show_ruler_highlights": true,
     "ruler_generation_area_color": "",
-    "ruler_font_size": {
-        "min": 4,
-        "max": 72,
-        "step": 1,
-        "value": 8
-    },
+    "ruler_font_size": 8,
     "animate_selection_outline": false,
     "animate_outlines_and_previews": true,
     "static_loading_indicator": false,
@@ -92,12 +67,7 @@
         1.0
     ],
     "interrogate_model": "clip",
-    "mask_blur": {
-        "min": 0,
-        "max": 64,
-        "step": 1,
-        "value": 4
-    },
+    "mask_blur": 4,
     "glid_model_path": "models/inpaint.pt",
     "bert_model_path": "models/bert.pt",
     "glid_vae_model_path": "models/kl-f8.pt",
