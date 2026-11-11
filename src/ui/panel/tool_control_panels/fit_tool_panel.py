@@ -14,7 +14,7 @@ from PySide6.QtCore import QEvent, QMargins, QSize, Qt
 from PySide6.QtWidgets import QBoxLayout, QGridLayout, QVBoxLayout, QWidget
 
 from src.ui.layout.column_packing import PackedColumns, SectionPacker
-from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
+from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, host_dock_panel
 from src.ui.layout.panel_fit import (strip_section_max_width, FitPlanner, Orientation, fresh_minimum_size,
                                      orientation_for_size)
 
@@ -64,18 +64,10 @@ class FitToolPanel(QWidget):
     def _measure_fit(self) -> QSize:
         return fresh_minimum_size(self)
 
-    def _host(self) -> Optional[DockPanel]:
-        """Returns the `DockPanel` the panel is inside, or None."""
-        parent = self.parentWidget()
-        while parent is not None:
-            if isinstance(parent, DockPanel):
-                return parent
-            parent = parent.parentWidget()
-        return None
-
     def _refit(self) -> None:
-        """Plans again after a row appears or disappears: the hosting panel if there is one, or else this panel."""
-        host = self._host()
+        """Plans again after a row or section's body appears or disappears: the hosting panel if there is one, or else
+        this panel."""
+        host = host_dock_panel(self)
         if host is not None:
             host.refit()
         elif self._planner is not None and self._planner.placement is not None:
@@ -196,6 +188,6 @@ class FitToolPanel(QWidget):
         if event.type() == QEvent.Type.ParentChange:
             self._space = None
         handled = super().event(event)
-        if event.type() == QEvent.Type.Resize and self._space is None and self._host() is None:
+        if event.type() == QEvent.Type.Resize and self._space is None and host_dock_panel(self) is None:
             self._plan_own_size()
         return handled
