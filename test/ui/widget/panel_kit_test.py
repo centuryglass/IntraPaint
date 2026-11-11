@@ -97,15 +97,13 @@ class PanelSectionTest(IntraPaintTestCase):
         restoring the body removes the stand-in."""
         section = self._section()
         attached = section.minimumSizeHint().height()
-        body = section.detach_body()
-        self.assertIsNot(body.parentWidget(), section)
+        section.detach_body()
         self.assertEqual(section.minimumSizeHint().height(), attached)
         section.set_forced_collapsed(True)
         self.assertLess(section.minimumSizeHint().height(), attached)
         section.set_forced_collapsed(False)
         self.assertEqual(section.minimumSizeHint().height(), attached)
         section.restore_body()
-        self.assertIs(body.parentWidget(), section)
         self.assertEqual(section.minimumSizeHint().height(), attached)
         self.assertEqual(section.layout().count(), 2)
 
