@@ -5,18 +5,36 @@ What a panel layout has to do, and where its look comes from. `src/ui/layout/pan
 
 ## Where the look comes from
 
-- **The design is the spec.** Build each panel as the "IntraPaint Panel Redesign" review shows it (linked from #301).
-  Its mock-ups are drawn at sample sizes, not layout classes.
-- **Between and beyond the mock-ups, keep the nearest mock-up's arrangement.** The fit planner adapts it with
-  priorities, forms and More. Don't invent a new arrangement, and don't build a general mechanism to choose one.
-- **The maintainer revises layouts after a panel lands,** by reading its sweep sheets. A revision is a change to that
-  panel's own code. Where it isn't obvious from the code, a comment says what it does.
+- **The code is the spec.** A panel's own code, its pinned layout snapshots and its sweep sheets define how it looks.
+  A design mock-up is a draft that a panel's code can depart from, and is never updated to match the code.
+- **The maintainer approves a new arrangement** by reading its sweep sheets. Each panel's arrangement lives in its own
+  code, adapted to each size by the fit planner's priorities, forms and More. Don't build a general mechanism that
+  picks between arrangements. Where an arrangement isn't obvious from the code, a comment says what it does.
 - **Look is judged by eye.** No test enforces alignment, spacing or how spare space is spread. The sweep checks report
   those as hints (see "How layouts are checked").
 
+## Shared conventions
+
+Every panel builds from the same controls, so a habit learned in one panel carries to the next. Each owning module
+describes its control.
+
+- **Numbers use a slider-field** (`SliderField`, or `NumberField` for an unbounded value), which carries its own label
+  and unit.
+- **Groups are `PanelSection`s,** with a short header that collapses to a summary of the section's values. The
+  most-used section comes first.
+- **A short choice that changes often is a `SegmentedControl`** (2-5 options). A long list stays a combo box.
+- **Push buttons take a `ButtonWeight`,** with at most one primary per panel. A destructive action uses the danger
+  weight and sits apart from its neighbors. Every icon-only button has a tooltip naming its action and key.
+- **Labels are sentence case, with no trailing colon and no unit** (`normalize_row_label`). Non-numeric rows share
+  one label column (`LabelColumnLayout`).
+- **A repeated group is one shared block** with the same order everywhere: `StrokeBlock` for brush-like tools,
+  `GeometryBlock` for position and size fields, `SelectionModeBar` for selection tools.
+- **A control leaves its panel only when it is rarely changed or duplicated elsewhere.** It moves to More, Settings or
+  a menu, and nothing is removed (see "Invariants").
+
 ## Invariants
 
-These hold at every size, whatever the design shows.
+These hold at every size.
 
 - **Nothing is cut off while there is room for it.** No control is clipped, squeezed below its minimum size, overlapped,
   scrolled out of view, or moved to the More popover while the panel has room to show it. Scrolling and More are for
