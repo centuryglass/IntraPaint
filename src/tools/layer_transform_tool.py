@@ -199,8 +199,10 @@ class LayerTransformTool(BaseTool):
             self._transform_outline.rotation_angle = rotation
 
     def set_layer(self, layer: Optional[Layer]) -> None:
-        """Connects to a new image layer, or disconnects if the layer parameter is None."""
+        """Connects to a new image layer, or disconnects if the layer parameter is None. Cancels any drag preview, and
+           the rest of an in-progress drag changes the new layer directly."""
         self._end_drag_preview(apply=False)
+        self._mouse_dragging = False
         last_layer = self._layer
         if last_layer is not None:
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
