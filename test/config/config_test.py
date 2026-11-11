@@ -460,7 +460,7 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION})
 
     def test_saved_file_format(self) -> None:
-        """Changed values are written in the saved file format, with the ranges of ranged values."""
+        """Changed values are written in the saved file format. Ranged values are saved without their ranges."""
         config = self._config()
         for key, new_value in CHANGED_VALUES.items():
             config.set(key, new_value, save_change=False)
@@ -468,9 +468,9 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(self._read_saved_values(), {
             CONFIG_VERSION_KEY: CURRENT_VERSION,
             BOOL_KEY: True,
-            INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 10},
-            BIG_INT_KEY: {'min': -1, 'max': BIG_INT_MAX, 'step': 1, 'value': BIG_INT_MAX},
-            FLOAT_KEY: {'min': 0.0, 'max': 1.0, 'step': 0.1, 'value': 0.25},
+            INT_KEY: 10,
+            BIG_INT_KEY: BIG_INT_MAX,
+            FLOAT_KEY: 0.25,
             STR_KEY: 'changed',
             OPTION_KEY: 'second',
             SIZE_KEY: '16x8',
@@ -532,7 +532,7 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(reloaded.get(BOOL_KEY), DEFAULT_VALUES[BOOL_KEY])
 
     def test_resetting_to_default_removes_saved_value(self) -> None:
-        """Setting a value back to its default removes it from the file, as does restoring its default range."""
+        """Setting a value back to its default removes it from the file."""
         config = self._config()
         config.set(STR_KEY, CHANGED_VALUES[STR_KEY], save_change=False)
         config.set(INT_KEY, 7, save_change=False)
@@ -544,13 +544,15 @@ class ConfigTest(IntraPaintTestCase):
         config._write_to_json()  # pylint: disable=protected-access
         self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION})
 
-    def test_changed_range_keeps_default_value_saved(self) -> None:
-        """A ranged value at its default is still saved when its range limits were changed."""
+    def test_saved_range_is_dropped_on_save(self) -> None:
+        """A versioned file's saved range doesn't keep a default value saved, and a custom value is rewritten without
+        its range."""
         self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION,
-                                  INT_KEY: {'min': 2, 'max': 20, 'step': 1, 'value': DEFAULT_VALUES[INT_KEY]}})
+                                  INT_KEY: {'min': 2, 'max': 20, 'step': 1, 'value': DEFAULT_VALUES[INT_KEY]},
+                                  FLOAT_KEY: {'min': 0.0, 'max': 5.0, 'step': 1.0, 'value': 0.25}})
         config = self._config()
         config._write_to_json()  # pylint: disable=protected-access
-        self.assertEqual(self._read_saved_values()[INT_KEY]['max'], 20)
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION, FLOAT_KEY: 0.25})
 
     def test_pinned_value_keeps_saved_default(self) -> None:
         """A pinned value is saved even when it equals the default, so a changed default doesn't alter it."""
@@ -563,13 +565,13 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(self._config().get(STR_KEY), DEFAULT_VALUES[STR_KEY])
 
     def test_unversioned_file_sheds_default_values(self) -> None:
-        """Migrating an unversioned file drops values equal to the default or to a previous default, keeps custom
-        values, and rewrites the file with the version."""
+        """Migrating an unversioned file drops values equal to the default or to a previous default, whatever range
+        is saved with them, keeps custom values, and rewrites the file with the version and without ranges."""
         self._write_saved_values({
             STR_KEY: 'old text',
             OPTION_KEY: DEFAULT_VALUES[OPTION_KEY],
             INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 3},
-            FLOAT_KEY: {'min': 0.0, 'max': 1.0, 'step': 0.1, 'value': 0.5},
+            FLOAT_KEY: {'min': 0.0, 'max': 30.0, 'step': 10.0, 'value': 0.5},
             SIZE_KEY: '64x32',
             BOOL_KEY: True})
         _ScratchConfig.PREVIOUS_DEFAULTS = {STR_KEY: ['old text']}
@@ -581,7 +583,7 @@ class ConfigTest(IntraPaintTestCase):
         self.assertTrue(config.get(BOOL_KEY))
         self.assertEqual(self._read_saved_values(), {
             CONFIG_VERSION_KEY: CURRENT_VERSION,
-            INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 3},
+            INT_KEY: 3,
             BOOL_KEY: True})
 
     def test_unversioned_file_keeps_custom_value_over_previous_default(self) -> None:
@@ -652,18 +654,21 @@ class ConfigTest(IntraPaintTestCase):
             with self.subTest(key=key):
                 self.assertEqual(config.get(key), DEFAULT_VALUES[key])
 
-    def test_load_reads_saved_range(self) -> None:
-        """Range limits in the saved file replace the definition's limits."""
-        self._write_saved_values({INT_KEY: {'min': 2, 'max': 20, 'step': 2, 'value': 15}})
+    def test_load_ignores_saved_range(self) -> None:
+        """A range saved with a value doesn't replace the definition's range, and a value outside the definition's
+        range keeps the default."""
+        self._write_saved_values({INT_KEY: {'min': 2, 'max': 20, 'step': 2, 'value': 8},
+                                  FLOAT_KEY: {'min': 0.0, 'max': 30.0, 'step': 10.0, 'value': 20.0}})
         config = self._config()
-        self.assertEqual(config.get(INT_KEY), 15)
-        self.assertEqual(config.get(INT_KEY, RangeKey.MIN), 2)
-        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 20)
-        self.assertEqual(config.get(INT_KEY, RangeKey.STEP), 2)
+        self.assertEqual(config.get(INT_KEY), 8)
+        self.assertEqual(config.get_range(INT_KEY), (1, 10, 1))
+        self.assertEqual(config.get(FLOAT_KEY), DEFAULT_VALUES[FLOAT_KEY])
+        self.assertEqual(config.get_range(FLOAT_KEY), (0.0, 1.0, 0.1))
 
     def test_reset_restores_loaded_state(self) -> None:
-        """`_reset` restores the values, options and ranges the config had once constructed, not the definition's."""
-        saved_values = {STR_KEY: 'saved', OPTION_KEY: 'second', INT_KEY: {'min': 2, 'max': 20, 'step': 2, 'value': 15}}
+        """`_reset` restores the values and options the config had once constructed, not the definition's, and the
+        definition's ranges."""
+        saved_values = {STR_KEY: 'saved', OPTION_KEY: 'second', INT_KEY: 7}
         self._write_saved_values(saved_values)
         config = self._config()
         config.set(STR_KEY, 'changed', save_change=False)
@@ -676,8 +681,8 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
         self.assertEqual(config.get_default(OPTION_KEY), 'first')
         self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
-        self.assertEqual(config.get(INT_KEY), 15)
-        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 20)
+        self.assertEqual(config.get(INT_KEY), 7)
+        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 10)
 
     def test_reset_survives_changes_to_restored_values(self) -> None:
         """A change after one `_reset` doesn't reach the state the next `_reset` restores."""

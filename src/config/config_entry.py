@@ -86,7 +86,6 @@ class RangeKey:
     MIN = 'min'
     MAX = 'max'
     STEP = 'step'
-    ALL = [MIN, MAX, STEP]
 
 
 class ConfigEntry(Parameter):
@@ -120,7 +119,6 @@ class ConfigEntry(Parameter):
                          step)
         self._key = key
         self._value = deepcopy(initial_value)  # Mutating the value in place must not change the default.
-        self._default_range = (minimum, maximum, step)
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
@@ -222,44 +220,29 @@ class ConfigEntry(Parameter):
         self.set_valid_options(options)
 
     def is_default_state(self) -> bool:
-        """Returns whether the value, and for ranged entries the min, max and step, all match the definition."""
-        return self._value == self._default_value and \
-            (self.minimum, self.maximum, self.single_step) == self._default_range
+        """Returns whether the value matches the definition's default."""
+        return self._value == self._default_value
 
-    def default_json_state(self) -> tuple[Any, tuple[Any, ...]]:
-        """Returns the definition's default as `json_state` describes saved values: (value, (min, max, step))."""
-        return _json_scalar(self._default_value), tuple(_json_scalar(item) for item in self._default_range)
+    def default_json_value(self) -> Any:
+        """Returns the definition's default in its saved JSON form."""
+        return _json_scalar(self._default_value)
 
-    def json_state(self, json_value: Any) -> tuple[Any, tuple[Any, ...]]:
-        """Splits a saved JSON value into (value, (min, max, step)), filling absent range parts from the default."""
-        default_range = self.default_json_state()[1]
-        if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
-            saved_range = tuple(json_value.get(inner_key) for inner_key in RangeKey.ALL)
-            return json_value.get(VALUE_KEY), tuple(saved if saved is not None else default
-                                                    for saved, default in zip(saved_range, default_range))
-        return json_value, default_range
+    def saved_json_value(self, json_value: Any) -> Any:
+        """Returns the value part of a saved JSON value, unwrapping the `{min, max, step, value}` form older files use
+        for ranged entries."""
+        if isinstance(json_value, dict) and self.type_name in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
+            return json_value.get(VALUE_KEY)
+        return json_value
 
     def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Adds the value to a dict in a format that can be written to a JSON file.
 
-        Nothing is added for an entry that is unsaved, or that matches its definition and isn't pinned.
+        Nothing is added for an entry that is unsaved, or that matches its definition and isn't pinned. Ranges always
+        come from the definition, so they are never saved.
         """
         if not self.save_json or (self.is_default_state() and not self.pinned):
             return
-        minimum = self.minimum
-        maximum = self.maximum
-        step = self.single_step
-        if minimum is not None or maximum is not None or step is not None:
-            json_dict[self._key] = {}
-            for config_param, inner_key in ((minimum, RangeKey.MIN),
-                                            (maximum, RangeKey.MAX),
-                                            (step, RangeKey.STEP),
-                                            (self._value, VALUE_KEY)):
-                if config_param is None:
-                    continue
-                json_dict[self._key][inner_key] = _json_scalar(config_param)
-        else:
-            json_dict[self._key] = _json_scalar(self._value)
+        json_dict[self._key] = _json_scalar(self._value)
 
     def load_from_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""
@@ -279,13 +262,7 @@ class ConfigEntry(Parameter):
         json_value = json_dict[self._key]
         if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
             if self.type_name in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
-                if RangeKey.MIN in json_value and json_value[RangeKey.MIN] is not None:
-                    self.minimum = _apply_type(json_value[RangeKey.MIN], self.type_name)
-                if RangeKey.MAX in json_value and json_value[RangeKey.MAX] is not None:
-                    self.maximum = _apply_type(json_value[RangeKey.MAX], self.type_name)
-                if RangeKey.STEP in json_value and json_value[RangeKey.STEP] is not None:
-                    step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
-                    self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
+                # Older files save ranged entries as {min, max, step, value}. Only the value is read.
                 if VALUE_KEY not in json_value:
                     logger.error(MISSING_VALUE_ERROR.format(key=self._key))
                     json_value = self.default_value

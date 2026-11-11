@@ -8,237 +8,87 @@
     "last_active_tool": "brush",
     "recent_tools": [],
     "last_nav_panel_tool": "",
-    "fill_threshold": {
-        "min": 0.0,
-        "max": 30.0,
-        "step": 10.0,
-        "value": 0.0
-    },
+    "fill_threshold": 0.0,
     "fill_tool_brush_pattern": "",
     "sample_merged": false,
     "paint_selection_only": false,
     "mypaint_brush": "",
-    "paint_tool_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "selection_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "draw_tool_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "draw_tool_opacity": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
-    "draw_tool_hardness": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
+    "paint_tool_brush_size": 40,
+    "selection_brush_size": 40,
+    "draw_tool_brush_size": 40,
+    "draw_tool_opacity": 1.0,
+    "draw_tool_hardness": 1.0,
     "draw_tool_pressure_size": true,
     "draw_tool_pressure_opacity": false,
     "draw_tool_pressure_hardness": false,
     "draw_tool_brush_pattern": "Solid",
     "draw_tool_antialias": true,
-    "eraser_tool_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 20
-    },
-    "eraser_tool_opacity": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
-    "eraser_tool_hardness": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
+    "eraser_tool_size": 20,
+    "eraser_tool_opacity": 1.0,
+    "eraser_tool_hardness": 1.0,
     "eraser_tool_pressure_size": true,
     "eraser_tool_pressure_opacity": false,
     "eraser_tool_pressure_hardness": false,
     "eraser_tool_antialias": true,
     "filter_tool_selected_filter": "RGBA color balance",
     "filter_tool_cached_parameters": "{\"Blur\": [\"Box\", 3.0], \"Brightness/contrast\": [1.0, 1.0], \"Posterize\": [3], \"RGBA color balance\": [1.0, 1.0, 1.0, 1.0], \"Sharpen\": [2.0], \"Saturation\": [1.0], \"Invert\": []}",
-    "filter_tool_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "filter_tool_opacity": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 0.5
-    },
-    "filter_tool_hardness": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
+    "filter_tool_brush_size": 40,
+    "filter_tool_opacity": 0.5,
+    "filter_tool_hardness": 1.0,
     "filter_tool_pressure_size": true,
     "filter_tool_pressure_opacity": false,
     "filter_tool_pressure_hardness": false,
     "filter_tool_antialias": true,
-    "smudge_tool_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "smudge_tool_opacity": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 0.5
-    },
-    "smudge_tool_hardness": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
+    "smudge_tool_brush_size": 40,
+    "smudge_tool_opacity": 0.5,
+    "smudge_tool_hardness": 1.0,
     "smudge_tool_pressure_size": true,
     "smudge_tool_pressure_opacity": false,
     "smudge_tool_pressure_hardness": false,
     "smudge_tool_antialias": true,
-    "clone_stamp_tool_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "clone_stamp_tool_opacity": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
-    "clone_stamp_tool_hardness": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 1.0
-    },
+    "clone_stamp_tool_brush_size": 40,
+    "clone_stamp_tool_opacity": 1.0,
+    "clone_stamp_tool_hardness": 1.0,
     "clone_stamp_tool_pressure_size": true,
     "clone_stamp_tool_pressure_opacity": false,
     "clone_stamp_tool_pressure_hardness": false,
     "clone_stamp_tool_antialias": true,
     "clone_stamp_tool_source_mode": "Fixed offset",
     "shape_tool_mode": "",
-    "shape_tool_vertex_count": {
-        "min": 3,
-        "max": 100,
-        "step": 1,
-        "value": 5
-    },
-    "shape_tool_star_inner_point_fraction": {
-        "min": 0.01,
-        "max": 1.0,
-        "step": 0.05,
-        "value": 0.5
-    },
+    "shape_tool_vertex_count": 5,
+    "shape_tool_star_inner_point_fraction": 0.5,
     "shape_tool_line_color": "#FF000000",
     "shape_tool_line_style": "",
     "shape_tool_line_join_style": "",
     "shape_tool_dash_pattern": "",
-    "shape_tool_line_width": {
-        "min": 0,
-        "max": 300,
-        "step": 1,
-        "value": 3
-    },
+    "shape_tool_line_width": 3,
     "shape_tool_fill_pattern": "",
     "shape_tool_fill_color": "#FFFFFFFF",
     "shape_tool_antialias": true,
     "saved_main_window_geometry": "",
     "saved_main_window_state": "",
     "saved_layouts": {},
-    "guidance_scale": {
-        "min": 0.0,
-        "max": 20.0,
-        "step": 0.1,
-        "value": 9.0
-    },
-    "batch_size": {
-        "min": 1,
-        "max": 20,
-        "step": 1,
-        "value": 5
-    },
-    "batch_count": {
-        "min": 1,
-        "max": 99,
-        "step": 1,
-        "value": 1
-    },
+    "guidance_scale": 9.0,
+    "batch_size": 5,
+    "batch_count": 1,
     "edit_mode": "Inpaint",
     "masked_content": "original",
-    "sampling_steps": {
-        "min": 1,
-        "max": 150,
-        "step": 1,
-        "value": 30
-    },
+    "sampling_steps": 30,
     "sampling_method": "Euler a",
     "scheduler": "default",
     "canvas_resize_layer_mode": "Only expand full-image layers",
     "canvas_resize_crop_layers": true,
-    "seed": {
-        "min": -1,
-        "max": 18446744073709551615,
-        "step": 1,
-        "value": -1
-    },
+    "seed": -1,
     "last_seed": "-1",
     "inpaint_full_res": true,
-    "inpaint_full_res_padding": {
-        "min": 0,
-        "max": 1024,
-        "step": 1,
-        "value": 32
-    },
-    "cutn": {
-        "min": 1,
-        "max": 32,
-        "step": 1,
-        "value": 16
-    },
-    "skip_steps": {
-        "min": 0,
-        "max": 27,
-        "step": 1,
-        "value": 0
-    },
+    "inpaint_full_res_padding": 32,
+    "cutn": 16,
+    "skip_steps": 0,
     "sd_webui_server_url": "http://localhost:7860",
     "sd_comfyui_server_url": "http://localhost:8188",
     "glid_server_url": "http://localhost:5555",
     "sd_model": "",
-    "clip_skip": {
-        "min": 1,
-        "max": 12,
-        "step": 1,
-        "value": 1
-    },
+    "clip_skip": 1,
     "controlnet_args_0_webui": "",
     "controlnet_args_1_webui": "",
     "controlnet_args_2_webui": "",
@@ -249,46 +99,21 @@
     "comfyui_model_config": "auto",
     "comfyui_inpainting_model": false,
     "comfyui_tiled_vae": false,
-    "comfyui_tiled_vae_tile_size": {
-        "min": 320,
-        "max": 4096,
-        "step": 64,
-        "value": 512
-    },
+    "comfyui_tiled_vae_tile_size": 512,
     "comfyui_cached_scaling_mode": "",
     "webui_cached_scaling_mode": "",
     "webui_tiling": false,
     "webui_restore_faces": false,
-    "webui_subseed": {
-        "min": -1,
-        "max": 18446744073709551615,
-        "step": 1,
-        "value": -1
-    },
+    "webui_subseed": -1,
     "webui_last_subseed": "-1",
-    "webui_subseed_strength": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01,
-        "value": 0.0
-    },
+    "webui_subseed_strength": 0.0,
     "webui_seed_resize_enabled": false,
     "webui_seed_resize": "512x512",
     "scaling_mode": "",
     "image_layer_scaling_behavior": "Scale merged, keep source layers",
     "use_stable_diffusion_upscaling": false,
-    "sd_upscaling_denoising_strength": {
-        "min": 0.0,
-        "max": 0.7,
-        "step": 0.01,
-        "value": 0.3
-    },
-    "sd_upscaling_step_count": {
-        "min": 1,
-        "max": 150,
-        "step": 1,
-        "value": 30
-    },
+    "sd_upscaling_denoising_strength": 0.3,
+    "sd_upscaling_step_count": 30,
     "sd_upscaling_controlnet_tile_settings": "",
     "use_ultimate_upscale_script": true
 }
