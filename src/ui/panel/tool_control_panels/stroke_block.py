@@ -14,12 +14,13 @@ join the block's grid, and can be planned with its items.
 
 Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
 - Side: the Stroke and options sections share column 1, and a preview beside them takes column 2. Tool sections go
-  below, spanning every column up to their own width caps. Strip: the Stroke section, the options section and the tool
-  sections fill columns in that order, then a preview beside them. A column stacks sections top to bottom while they
-  fit the strip's height (`src.ui.layout.column_packing`), so a collapsed section lets the next one move up beneath
-  it. A stretching tool section always has a column to itself.
+  below, spanning every column up to their own width caps. Strip: the Stroke section, the options section and the
+  tool sections that don't stretch fill columns in that order, then the stretching tool sections, then a preview beside
+  them. A column stacks sections top to bottom while they fit the strip's height (`src.ui.layout.column_packing`), so a
+  collapsed section lets the next one move up beneath it. A stretching tool section always has a column to itself.
 - Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
-  instead of stretching the columns apart.
+  instead of stretching the columns apart. A stretching tool section's column takes that spare width instead, and the
+  other columns keep their size hints.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
   when it doesn't fit across. In a strip the color pair row stays inline, because stacking would make it taller.
 - In a strip, the checkboxes take one row each when the strip is tall enough for the extra row. A tool with a color
@@ -526,7 +527,10 @@ class StrokeBlock(QWidget):
             self._grid.setColumnStretch(added, CONTROL_COLUMN_STRETCH)
             added += 1
 
-        if not self._packer.pack((self._stroke_section, self._options_section, *tool_sections),
+        # Stretching sections go last, so the sections before them can share columns:
+        ordered = [*(section for section in tool_sections if section not in stretching),
+                   *(section for section in tool_sections if section in stretching)]
+        if not self._packer.pack((self._stroke_section, self._options_section, *ordered),
                                  max(self._grid.verticalSpacing(), 0), _add_column, _clear, stretching):
             return
         # The preview is decorative, so it follows the tool's own columns:
@@ -534,7 +538,14 @@ class StrokeBlock(QWidget):
             self._grid.addWidget(self._preview, 0, added)
             self._grid.setColumnStretch(added, CONTROL_COLUMN_STRETCH)
             added += 1
-        self._grid.setColumnStretch(added, SPARE_COLUMN_STRETCH)
+        # A shown stretching section's column takes the spare width, and the other columns keep their size hints:
+        stretching_columns = [index for index, column in enumerate(self._packer.plan)
+                              if any(section in stretching for section in column)]
+        if len(stretching_columns) == 0:
+            self._grid.setColumnStretch(added, SPARE_COLUMN_STRETCH)
+        else:
+            for index in range(added):
+                self._grid.setColumnStretch(index, CONTROL_COLUMN_STRETCH if index in stretching_columns else 0)
         # Height beyond what the sections need goes below them:
         self._grid.setRowStretch(1, 1)
 
@@ -596,6 +607,12 @@ class StrokeToolPanel(QWidget):
             assert apply is not None
             self._tool_items.append((item, held_weakly(apply)))
             self._planner = self._build_planner()
+
+    def add_fit_item(self, item: FitItem, apply: Callable[[Orientation, Optional[int]], None]) -> None:
+        """Adds an item to plan with the block's that belongs to no new section, such as another form of a section's
+        controls. Planning calls `apply` as for `add_tool_section`, after the items added before it."""
+        self._tool_items.append((item, held_weakly(apply)))
+        self._planner = self._build_planner()
 
     def overflow_content(self) -> QWidget:
         """Returns the widget holding controls the latest plan left out, for the host's More popover. Subclasses add

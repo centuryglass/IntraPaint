@@ -14,6 +14,8 @@
   columns too narrow for the title and summary on one line.
 - A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
   loses no controls.
+- A title widget (`set_title_widget`) sits right after the title and takes the header's spare width while the body
+  shows. While the section is collapsed it hides, and the summary takes its place.
 - The section holds no config. The owner stores `is_expanded` per section by connecting `expanded_changed`, and calls
   `set_expanded` to restore it.
 """
@@ -255,6 +257,7 @@ class PanelSection(QWidget):
         self._header_button.clicked.connect(self._toggle)
         self._actions = QHBoxLayout()
         self._action_widgets: list[QWidget] = []
+        self._title_widget: Optional[QWidget] = None
         self._actions.setContentsMargins(0, 0, CHEVRON_MARGIN, 0)
         self._actions.setSpacing(ACTION_SPACING)
         layout = QVBoxLayout(self)
@@ -281,6 +284,8 @@ class PanelSection(QWidget):
         self._header_button.setAccessibleName(title)
         self._header_button.updateGeometry()
         self._header_button.update()
+        # A title widget's minimum width depends on the title:
+        self._apply_state()
 
     @property
     def body(self) -> QWidget:
@@ -370,6 +375,29 @@ class PanelSection(QWidget):
         self._action_widgets.append(widget)
         widget.setVisible(self._header_visible)
 
+    @property
+    def title_widget(self) -> Optional[QWidget]:
+        """The widget after the title, if any."""
+        return self._title_widget
+
+    def set_title_widget(self, widget: Optional[QWidget]) -> None:
+        """Puts a widget right after the title, where it takes the header's spare width, or removes the current one with
+        None. A removed widget stays a child of the section, hidden, for the owner to move elsewhere.
+
+        The widget shows while the header shows and the body does. The section sets its visibility, so the owner hides
+        it only by removing it.
+        """
+        if widget is self._title_widget:
+            return
+        if self._title_widget is not None:
+            self._header_layout.removeWidget(self._title_widget)
+            self._title_widget.hide()
+        self._title_widget = widget
+        if widget is not None:
+            self._header_layout.insertWidget(1, widget, 1)
+        self._header_layout.invalidate()
+        self._apply_state()
+
     def add_header_keycap(self, key_text: str) -> KeycapBadge:
         """Adds keycaps for the key binding `key_text` to the right of the header and returns them."""
         badge = KeycapBadge(key_text)
@@ -411,6 +439,13 @@ class PanelSection(QWidget):
 
     def _apply_state(self) -> None:
         collapsed = self.is_collapsed()
+        # The header button takes the spare width while it has a summary to show, and the title widget otherwise:
+        title_widget_shown = self._title_widget is not None and self._header_visible and not collapsed
+        if self._title_widget is not None:
+            self._title_widget.setVisible(title_widget_shown)
+        self._header_layout.setStretchFactor(self._header_button, 0 if title_widget_shown else 1)
+        # The title widget gives up width before the title does:
+        self._header_button.setMinimumWidth(self._header_button.sizeHint().width() if title_widget_shown else 0)
         if self._stand_in is not None:
             self._stand_in.setVisible(not collapsed)
         else:
