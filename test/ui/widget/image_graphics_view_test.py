@@ -116,12 +116,13 @@ class ZoomAnchorTest(ImageGraphicsViewTestCase):
         cursor = QPoint(150, 120)
         self._assert_zoom_holds(cursor, cursor, 0.75)
 
-    def test_zoom_in_with_cursor_outside_content_holds_content_center(self) -> None:
-        """Zooming in with the cursor beside the content holds the content center instead."""
+    def test_zoom_in_with_cursor_outside_content_holds_point_under_cursor(self) -> None:
+        """Zooming in with the cursor beside the content, where layers can extend past the image, keeps the scene point
+        under the cursor in place."""
         self.view.content_size = QSize(200, 600)
         cursor = QPoint(10, 150)
         self.assertFalse(self.view.widget_content_bounds.contains(cursor))
-        self._assert_zoom_holds(cursor, self.view.widget_content_bounds.center(), 2.0)
+        self._assert_zoom_holds(cursor, cursor, 2.0)
 
     def test_zoom_without_cursor_holds_content_center(self) -> None:
         """With no cursor position, zooming holds the content center."""

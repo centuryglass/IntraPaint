@@ -299,14 +299,16 @@ class ImageGraphicsView(QGraphicsView):
 
     @scene_scale.setter
     def scene_scale(self, new_scale: float) -> None:
-        """Updates the image content scale, limiting minimum scale to 0.01."""
+        """Updates the image content scale, limiting minimum scale to 0.01.
+
+        The scene point under the cursor stays in place, wherever the cursor is in the view. With no cursor position,
+        the content center stays in place."""
         initial_scale = self.scene_scale
         new_scale = max(new_scale, 0.01)
         self._content_scale_adjustment = new_scale - self._default_content_scale
 
         view_content_bounds = self.widget_content_bounds
-        if (self._last_scene_cursor_pos is not None and self._last_widget_cursor_pos is not None
-                and (new_scale < initial_scale or view_content_bounds.contains(self._last_widget_cursor_pos))):
+        if self._last_scene_cursor_pos is not None and self._last_widget_cursor_pos is not None:
             fixed_scene_pos = self._last_scene_cursor_pos
             fixed_widget_pos = self._last_widget_cursor_pos
         else:
