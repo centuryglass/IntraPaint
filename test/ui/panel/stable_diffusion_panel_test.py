@@ -296,6 +296,35 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         popover.hide()
         self.assertTrue(size_section.body.isAncestorOf(field))
 
+    def test_mask_popover_stays_open_while_its_controls_change_the_layout(self) -> None:
+        """Changing the mask blur or toggling soft inpainting re-plans the panel, which keeps the Mask section in its
+        popover, and the popover grows to hold the controls that appear."""
+        cache = Cache()
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, True)
+        self.panel.show()
+        _host(self.panel, SIDE, QSize(360, 400))
+        mask_section = self._section(SECTION_TITLE_MASK)
+        self.assertTrue(mask_section.is_collapsed())
+        self.panel.reveal_control(self.panel._mask_section, self.panel._mask_blur_field)  # pylint: disable=protected-access
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertTrue(popover.isVisible())
+        hint = self.panel._soft_inpainting_controls.hint  # pylint: disable=protected-access
+        try:
+            AppConfig().set(AppConfig.MASK_BLUR, 2)
+            self.assertTrue(popover.isVisible())
+            height = popover.height()
+            cache.set(Cache.SOFT_INPAINTING, True)
+            self.assertTrue(popover.isVisible())
+            self.assertTrue(mask_section.is_collapsed())
+            self.assertTrue(popover.isAncestorOf(hint))
+            self.assertFalse(hint.isHidden())
+            self.assertGreater(popover.height(), height)
+            AppConfig().set(AppConfig.MASK_BLUR, 12)
+            self.assertTrue(popover.isVisible())
+        finally:
+            popover.hide()
+        self.assertTrue(mask_section.body.isAncestorOf(hint))
+
     def test_negative_prompt_folds_to_a_line_showing_its_text(self) -> None:
         """The negative prompt starts folded, with its text as the fold's summary on one line."""
         fold = self.panel._negative_fold
