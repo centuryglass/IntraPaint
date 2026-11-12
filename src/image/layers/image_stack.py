@@ -1773,10 +1773,14 @@ class ImageStack(QObject):
         return parent, current_index + 1
 
     def next_layer(self, layer: Layer) -> Optional[Layer]:
-        """Given a layer in the stack, return the layer directly below it, or None if it's the bottom layer."""
-        assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
+        """Given a layer in the stack, return the layer directly below it, or None if it's the bottom layer.
+
+        For the root layer group, this is its topmost child, or None if it's empty."""
+        assert layer is not None and (layer == self._layer_stack or self._layer_stack.contains_recursive(layer))
         if isinstance(layer, LayerGroup) and layer.count > 0:
             return layer.get_layer_by_index(0)
+        if layer == self._layer_stack:
+            return None
         parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
         assert current_index is not None
@@ -1790,7 +1794,11 @@ class ImageStack(QObject):
         return parent.get_layer_by_index(current_index + 1)
 
     def prev_layer(self, layer: Layer) -> Optional[Layer]:
-        """Given a layer in the stack, return the layer directly above it, or None if it's the top layer."""
+        """Given a layer in the stack, return the layer directly above it, or None if it's the top layer.
+
+        The root layer group has nothing above it, so it returns None."""
+        if layer == self._layer_stack:
+            return None
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
         parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
