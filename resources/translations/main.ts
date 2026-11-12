@@ -8372,6 +8372,14 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.panel.mypaint_brush_grid</name>
+    <message>
+        <location filename="../../src/ui/panel/mypaint_brush_grid.py"/>
+        <source>Toggle favorite</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.mypaint_brush_panel</name>
     <message>
         <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
@@ -8395,12 +8403,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
-        <source>Toggle favorite</source>
+        <source>No brush</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
-        <source>No brush</source>
+        <source>Brush category</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

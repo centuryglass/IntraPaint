@@ -1,23 +1,24 @@
-"""Tests MypaintBrushPanel's tile sizing, categories, brush selection and favorites, and MyPaintBrushToolPanel."""
+"""Tests the brush grid's tile sizing, MypaintBrushPanel's categories, brush selection and favorites, and
+MyPaintBrushToolPanel."""
 import math
 import os
 import sys
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QPushButton, QToolButton, QWidget
+from PySide6.QtWidgets import QApplication, QToolButton, QWidget
 from PySide6.QtTest import QTest
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.mypaint.mypaint_brush import MyPaintBrush
-from src.ui.layout.flow_layout import FlowWidget
 from src.ui.layout.panel_fit import Orientation
-from src.ui.widget.panel_section import HEADER_HEIGHT
-from src.ui.panel.mypaint_brush_panel import (MypaintBrushPanel, BrushList, brush_cell_size, MIN_CELL_SIZE,
-                                              MAX_CELL_SIZE, MIN_COLUMNS, MIN_ROWS, FAVORITES_CATEGORY_NAME,
-                                              ALL_CATEGORY_NAME, FAV_CONFIG_KEY, BRUSH_DIR, BRUSH_PATH_ROLE,
-                                              FavoritesRow, star_rect)
-from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MyPaintBrushToolPanel
+from src.ui.widget.panel_section import HEADER_HEIGHT, PanelSection
+from src.ui.panel.mypaint_brush_grid import (BrushList, brush_cell_size, MIN_CELL_SIZE, MAX_CELL_SIZE, MIN_COLUMNS,
+                                             MIN_ROWS, BRUSH_PATH_ROLE, star_rect)
+from src.ui.panel.mypaint_brush_panel import (MypaintBrushPanel, FAVORITES_CATEGORY_NAME, ALL_CATEGORY_NAME,
+                                              FAV_CONFIG_KEY, BRUSH_DIR, FavoritesRow)
+from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import (MyPaintBrushToolPanel, SIDE_ROWS_WITH_DYNAMICS,
+                                                                        STRIP_LIST_MIN_COLUMNS)
 from src.util.shared_constants import PROJECT_DIR
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
@@ -92,20 +93,6 @@ class BrushListTest(IntraPaintTestCase):
         self.assertGreaterEqual(hint.width(), MIN_CELL_SIZE * MIN_COLUMNS)
 
 
-class FlowWidgetTest(IntraPaintTestCase):
-    """FlowWidget measures its minimum height at the width it is told it will be laid out at."""
-
-    def test_narrower_wrap_width_adds_lines(self) -> None:
-        """Chips that fit on one line at a wide wrap width need more height at a narrow one."""
-        chips = FlowWidget()
-        for name in ('Favorites', 'All', 'classic', 'deevad', 'ramon', 'experimental'):
-            chips.flow.addWidget(QPushButton(name, chips))
-        chips.set_wrap_width(2000)
-        one_line = chips.minimumSizeHint().height()
-        chips.set_wrap_width(chips.minimumSizeHint().width())
-        self.assertGreater(chips.minimumSizeHint().height(), one_line)
-
-
 class FavoritesRowTest(IntraPaintTestCase):
     """FavoritesRow shows as many thumbnails as fit its width."""
 
@@ -125,7 +112,7 @@ class FavoritesRowTest(IntraPaintTestCase):
 
 
 class MypaintBrushPanelTest(IntraPaintTestCase):
-    """MypaintBrushPanel keeps its grid in sync with Cache and the category chips, and edits the favorites."""
+    """MypaintBrushPanel keeps its grid in sync with Cache and the categories, and edits the favorites."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -134,23 +121,48 @@ class MypaintBrushPanelTest(IntraPaintTestCase):
     def _grid_paths(self) -> list[str]:
         return [os.path.abspath(path) for path in self.panel.grid.brush_paths()]
 
-    def test_chips_follow_favorites_and_groups(self) -> None:
-        """Favorites come first, then All, then one chip per brush group."""
+    def test_categories_follow_favorites_and_groups(self) -> None:
+        """Favorites come first, then All, then one category per brush group, in the combo box and the list alike."""
         names = self.panel.category_names
         self.assertEqual(names[:2], [FAVORITES_CATEGORY_NAME, ALL_CATEGORY_NAME])
         self.assertIn('classic', names)
+        combo = self.panel.category_combo
+        self.assertEqual([combo.itemText(i) for i in range(combo.count())], names)
+        category_list = self.panel.category_list
+        self.assertEqual([category_list.item(i).text() for i in range(category_list.count())], names)
         self.assertEqual(self.panel.grid.count(), len(AppConfig().get(FAV_CONFIG_KEY)))
 
     def test_choosing_category_filters_grid(self) -> None:
-        """Each category chip fills the grid with only that category's brushes."""
+        """Each category fills the grid with only that category's brushes, and the combo box and list follow."""
         self.panel.set_category('classic')
         paths = self._grid_paths()
         self.assertGreater(len(paths), 0)
         self.assertTrue(all(os.path.basename(os.path.dirname(path)) == 'classic' for path in paths))
-        self.assertTrue(self.panel.category_buttons['classic'].isChecked())
-        self.assertFalse(self.panel.category_buttons[FAVORITES_CATEGORY_NAME].isChecked())
+        self.assertEqual(self.panel.category_combo.currentText(), 'classic')
+        self.assertEqual(self.panel.category_list.currentItem().text(), 'classic')
         self.panel.set_category(ALL_CATEGORY_NAME)
         self.assertGreater(len(self._grid_paths()), len(paths))
+
+    def test_combo_and_list_choose_category(self) -> None:
+        """Choosing a category in the combo box or the list fills the grid with it."""
+        combo = self.panel.category_combo
+        combo.activated.emit(combo.findText('classic'))
+        self.assertEqual(self.panel.category, 'classic')
+        category_list = self.panel.category_list
+        item = category_list.findItems(ALL_CATEGORY_NAME, Qt.MatchFlag.MatchExactly)[0]
+        category_list.itemClicked.emit(item)
+        self.assertEqual(self.panel.category, ALL_CATEGORY_NAME)
+        self.assertEqual(combo.currentText(), ALL_CATEGORY_NAME)
+
+    def test_category_list_replaces_combo(self) -> None:
+        """The category list shows beside the grid in place of the combo box."""
+        self.panel.show()
+        self.assertTrue(self.panel.category_combo.isVisible())
+        self.assertFalse(self.panel.category_list.isVisible())
+        self.panel.set_category_list(True)
+        self.assertFalse(self.panel.category_combo.isVisible())
+        self.assertTrue(self.panel.category_list.isVisible())
+        self.panel.hide()
 
     def test_tiles_show_names(self) -> None:
         """Each tile carries its brush name as display text."""
@@ -164,16 +176,18 @@ class MypaintBrushPanelTest(IntraPaintTestCase):
         grid = self.panel.grid
         grid.setCurrentItem(grid.find_brush(os.path.abspath(CHARCOAL_PATH)))
         self.assertEqual(Cache().get(BRUSH_KEY), os.path.relpath(CHARCOAL_PATH, PROJECT_DIR))
+        self.assertEqual(self.panel.header_bar.name_label.full_text, 'charcoal')
         self.assertEqual(self.panel.chip.name_label.text(), 'charcoal')
         self.assertEqual(self.panel.chip.category_label.text(), 'classic')
 
     def test_brush_change_selects_tile_and_chip(self) -> None:
-        """A brush set through Cache is selected in the grid when shown, and the chip follows it."""
+        """A brush set through Cache is selected in the grid when shown, and the header bar and chip follow it."""
         self.panel.set_category('classic')
         Cache().set(BRUSH_KEY, os.path.relpath(PENCIL_PATH, PROJECT_DIR))
         selected = [os.path.abspath(item.data(BRUSH_PATH_ROLE)) for item in self.panel.grid.selectedItems()]
         self.assertEqual(selected, [os.path.abspath(PENCIL_PATH)])
         self.assertEqual(self.panel.chip.name_label.text(), 'pencil')
+        self.assertEqual(self.panel.header_bar.name_label.full_text, 'pencil')
         Cache().set(BRUSH_KEY, os.path.relpath(CHARCOAL_PATH, PROJECT_DIR))
         selected = [os.path.abspath(item.data(BRUSH_PATH_ROLE)) for item in self.panel.grid.selectedItems()]
         self.assertEqual(selected, [os.path.abspath(CHARCOAL_PATH)])
@@ -190,16 +204,16 @@ class MypaintBrushPanelTest(IntraPaintTestCase):
         self.assertEqual(self.panel.grid.count(), count)
         self.assertNotIn('classic/charcoal', AppConfig().get(FAV_CONFIG_KEY))
 
-    def test_last_favorite_removed_drops_chip(self) -> None:
-        """Removing the last favorite removes the Favorites chip at once and shows another category."""
+    def test_last_favorite_removed_drops_category(self) -> None:
+        """Removing the last favorite removes the Favorites category at once and shows another one."""
         for path in self.panel.library.favorite_paths():
             self.panel.remove_favorite(path)
         self.assertNotIn(FAVORITES_CATEGORY_NAME, self.panel.category_names)
         self.assertEqual(self.panel.category, ALL_CATEGORY_NAME)
         self.assertGreater(self.panel.grid.count(), 0)
 
-    def test_first_favorite_adds_chip(self) -> None:
-        """With no favorites there's no Favorites chip, and adding one creates it first in the chip order."""
+    def test_first_favorite_adds_category(self) -> None:
+        """With no favorites there's no Favorites category, and adding one creates it first in the order."""
         AppConfig().set(FAV_CONFIG_KEY, [])
         panel = MypaintBrushPanel(BRUSH_KEY)
         self.assertNotIn(FAVORITES_CATEGORY_NAME, panel.category_names)
@@ -212,15 +226,18 @@ class MypaintBrushPanelTest(IntraPaintTestCase):
         self.panel.add_favorite(CHARCOAL_PATH)
         self.assertIn(os.path.abspath(CHARCOAL_PATH), [os.path.abspath(p) for p in other.grid.brush_paths()])
 
-    def test_chip_star_toggles_active_favorite(self) -> None:
-        """The chip's star reflects and toggles whether the active brush is a favorite."""
+    def test_stars_toggle_active_favorite(self) -> None:
+        """The chip's and header bar's stars reflect and toggle whether the active brush is a favorite."""
         Cache().set(BRUSH_KEY, os.path.relpath(CHARCOAL_PATH, PROJECT_DIR))
-        self.assertFalse(self.panel.chip.star.isChecked())
-        self.panel.chip.star.click()
-        self.assertTrue(self.panel.is_favorite(CHARCOAL_PATH))
-        self.assertTrue(self.panel.chip.star.isChecked())
-        self.panel.chip.star.click()
-        self.assertFalse(self.panel.is_favorite(CHARCOAL_PATH))
+        for star in (self.panel.chip.star, self.panel.header_bar.star):
+            with self.subTest(star=star):
+                self.assertFalse(star.isChecked())
+                star.click()
+                self.assertTrue(self.panel.is_favorite(CHARCOAL_PATH))
+                self.assertTrue(self.panel.chip.star.isChecked())
+                self.assertTrue(self.panel.header_bar.star.isChecked())
+                star.click()
+                self.assertFalse(self.panel.is_favorite(CHARCOAL_PATH))
 
     def test_tile_star_click_toggles_favorite(self) -> None:
         """Clicking a tile's star toggles its favorite without selecting the tile."""
@@ -237,17 +254,34 @@ class MypaintBrushPanelTest(IntraPaintTestCase):
         self.panel.hide()
 
     def test_compact_form_shows_favorite_thumbnails(self) -> None:
-        """The compact form hides the chips and grid, shows favorite thumbnails, and lets the chip open the picker."""
+        """The compact form hides the header bar and grid, shows favorite thumbnails, and lets the chip open the
+        picker."""
         self.panel.set_compact(True)
         self.panel.show()
         self.assertFalse(self.panel.grid.isVisible())
-        self.assertFalse(self.panel.category_chips.isVisible())
+        self.assertFalse(self.panel.header_bar.isVisible())
         self.assertGreater(len(self.panel.thumbnails), 1)
         self.assertTrue(self.panel.chip.popup_enabled)
         self.panel.thumbnails[1].click()
         self.assertEqual(os.path.abspath(self.panel.active_brush_path),
                          os.path.abspath(self.panel.thumbnails[1].property('brush_path')))
         self.panel.hide()
+
+    def test_header_host_shows_header_bar_after_title(self) -> None:
+        """A section hosting the header bar shows it after its title while expanded, and the compact form takes it
+        back."""
+        section = PanelSection('Brush', QWidget())
+        self.panel.set_header_host(section)
+        section.show()
+        self.assertIs(section.title_widget, self.panel.header_bar)
+        self.assertTrue(self.panel.header_bar.isVisible())
+        section.set_expanded(False)
+        self.assertFalse(self.panel.header_bar.isVisible())
+        section.set_expanded(True)
+        self.panel.set_compact(True)
+        self.assertIsNone(section.title_widget)
+        self.assertIs(self.panel.header_bar.parentWidget(), self.panel)
+        section.hide()
 
 
 class MyPaintBrushToolPanelTest(IntraPaintTestCase):
@@ -265,34 +299,47 @@ class MyPaintBrushToolPanelTest(IntraPaintTestCase):
         self.assertEqual(self.panel.stroke_block.fields()[0].label(), 'Size')
 
     def test_side_forms_follow_fit(self) -> None:
-        """A side panel too narrow for the grid gets the compact picker, and dynamics open where they fit, collapse
-        where only the header fits, and move to the overflow content where nothing does."""
-        self.panel.set_fit_space(Orientation.SIDE, QSize(500, 1200))
-        self.assertFalse(self.panel.brush_panel.compact)
-        self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
-        self.assertFalse(self.panel.dynamics_section.is_collapsed())
-        self.panel.set_fit_space(Orientation.SIDE, QSize(120, 1200))
-        self.assertTrue(self.panel.brush_panel.compact)
-        short = self.panel.fit_base_size(Orientation.SIDE)
-        # The base size holds the compact picker, which is all that fits at the base width:
-        self.panel.set_fit_space(Orientation.SIDE, QSize(short.width(), short.height() + HEADER_HEIGHT + 12))
-        self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
-        self.assertTrue(self.panel.dynamics_section.is_collapsed())
-        self.panel.set_fit_space(Orientation.SIDE, QSize(short.width(), short.height()))
-        self.assertFalse(self.panel.dynamics_section.isVisibleTo(self.panel))
-        self.assertIs(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
+        """A side panel shows the grid with the header bar in the section header. As the panel grows taller, dynamics
+        move from the overflow content to a collapsed header, then open once the grid keeps SIDE_ROWS_WITH_DYNAMICS
+        rows of tiles beside them."""
+        picker = self.panel.brush_panel
+        states = []
+        for height in range(200, 1200, 4):
+            self.panel.set_fit_space(Orientation.SIDE, QSize(500, height))
+            self.assertFalse(picker.compact)
+            self.assertFalse(picker.category_list_shown)
+            self.assertIs(self.panel.brush_section.title_widget, picker.header_bar)
+            section = self.panel.dynamics_section
+            if not section.isVisibleTo(self.panel):
+                self.assertIs(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
+                state = 'overflow'
+            elif section.is_collapsed():
+                self.assertLess(picker.grid.minimum_rows, SIDE_ROWS_WITH_DYNAMICS)
+                state = 'collapsed'
+            else:
+                self.assertEqual(picker.grid.minimum_rows, SIDE_ROWS_WITH_DYNAMICS)
+                state = 'open'
+            if len(states) == 0 or states[-1] != state:
+                states.append(state)
+        self.assertEqual(states, ['overflow', 'collapsed', 'open'])
 
     def test_strip_forms_follow_fit(self) -> None:
-        """A short strip gets the compact picker and moves dynamics to the overflow content, and a tall, wide one
-        shows the grid and a dynamics column."""
-        self.panel.set_fit_space(Orientation.STRIP, QSize(900, 100))
-        self.assertTrue(self.panel.brush_panel.compact)
-        self.assertFalse(self.panel.dynamics_section.isVisibleTo(self.panel))
-        self.assertIs(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
+        """A tall, wide strip shows the grid last, with the category list beside it, and stacks dynamics under the
+        stroke sections. A strip without room for the list keeps the combo box."""
         self.panel.set_fit_space(Orientation.STRIP, QSize(1600, 500))
-        self.assertFalse(self.panel.brush_panel.compact)
+        picker = self.panel.brush_panel
+        self.assertFalse(picker.compact)
+        self.assertTrue(picker.category_list_shown)
+        self.assertEqual(picker.grid.minimum_columns, STRIP_LIST_MIN_COLUMNS)
         self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
         self.assertIsNot(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
+        plan = self.panel.stroke_block.packer.plan
+        self.assertEqual(plan[-1], (self.panel.brush_section,))
+        self.assertIn(self.panel.dynamics_section, plan[0])
+        base = self.panel.fit_base_size(Orientation.STRIP)
+        self.panel.set_fit_space(Orientation.STRIP, QSize(base.width(), 500))
+        self.assertFalse(picker.compact)
+        self.assertFalse(picker.category_list_shown)
 
     def test_long_dynamics_description_gets_its_whole_height(self) -> None:
         """After switching to a setting with a long description, the description is tall enough for every line at

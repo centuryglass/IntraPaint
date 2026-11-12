@@ -1,30 +1,32 @@
 """Selects between the MyPaint brushes found in resources/brushes and AppConfig.ADDED_MYPAINT_BRUSH_DIR.
 
-`MypaintBrushPanel` shows the active brush as a chip, category chips that wrap instead of scrolling, and a grid of
-named tiles with a favorite star on each. A compact form replaces the chips and grid with a row of favorite thumbnails,
-and the chip opens the full picker in a popover. The owner picks the form, and tells the panel the width it is laid out
-at, since the category chips' height depends on it. `BrushLibrary` reads the brush files once and can be shared between
-panels. The favorites list lives in AppConfig under FAV_CONFIG_KEY, so every panel follows changes made in any other.
+`MypaintBrushPanel` shows a grid of named tiles with a favorite star on each (`src.ui.panel.mypaint_brush_grid`),
+under a header bar naming the active brush. Categories are a combo box in the header bar, or a list beside the grid.
+An owner with a section header can host the header bar there. A compact form replaces the grid with the active brush
+chip and a row of favorite thumbnails, and the chip opens the full picker in a popover. The owner picks the forms.
+`BrushLibrary` reads the brush files once and can be shared between panels. The favorites list lives in AppConfig under
+FAV_CONFIG_KEY, so every panel follows changes made in any other.
 
 This widget can only be used if a compatible brushlib/libmypaint QT library is available, bundled for x86_64 Linux and
 Windows.
 """
 import logging
-import math
 import os
 import re
+import weakref
 from typing import Optional
 
-from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import (QIcon, QImage, QMouseEvent, QPainter, QPainterPath, QPalette, QPen, QPixmap,
-                           QResizeEvent)
-from PySide6.QtWidgets import (QAbstractButton, QAbstractItemView, QApplication, QBoxLayout, QFrame, QHBoxLayout,
-                               QLabel, QListView, QListWidget, QListWidgetItem, QMenu, QPushButton, QSizePolicy, QStyle,
-                               QStyledItemDelegate, QStyleOptionViewItem, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtCore import QPoint, QRect, QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QImage, QMouseEvent, QPainter, QPalette, QPixmap, QResizeEvent
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFrame, QHBoxLayout, QLabel, QListWidgetItem, QMenu,
+                               QSizePolicy, QToolButton, QVBoxLayout, QWidget)
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.ui.layout.flow_layout import FlowWidget
+from src.ui.panel.mypaint_brush_grid import (BRUSH_EXTENSION, BRUSH_PATH_ROLE, FAVORITE_ROLE, BrushList, CategoryList,
+                                             StarButton, brush_category, brush_name)
+from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.panel_header import PanelPopover
+from src.ui.widget.panel_section import PanelSection
 from src.util.layout import add_layout
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_utils import temp_image_path
@@ -43,32 +45,17 @@ FAVORITES_CATEGORY_NAME = _tr('Favorites')
 ALL_CATEGORY_NAME = _tr('All')
 ADD_FAVORITE_LABEL = _tr('Add to Favorites')
 REMOVE_FAVORITE_LABEL = _tr('Remove from Favorites')
-FAVORITE_TOOLTIP = _tr('Toggle favorite')
 NO_BRUSH_LABEL = _tr('No brush')
+CATEGORY_TOOLTIP = _tr('Brush category')
 
 BRUSH_DIR = f'{PROJECT_DIR}/resources/brushes'
 FAV_CONFIG_KEY = 'brush_favorites'
 
 BRUSH_CONF_FILE = 'brushes.conf'
 BRUSH_ORDER_FILE = 'order.conf'
-BRUSH_EXTENSION = '.myb'
 BRUSH_ICON_EXTENSION = '_prev.png'
 BRUSH_ICON_SIZE = 128
 
-MIN_ICON_SIZE = 48
-# Tiles stop growing here, so a wide panel adds columns:
-MAX_ICON_SIZE = 104
-# Space between an icon and the edge of its grid cell:
-ICON_PADDING = 3
-MIN_CELL_SIZE = MIN_ICON_SIZE + 2 * ICON_PADDING
-MAX_CELL_SIZE = MAX_ICON_SIZE + 2 * ICON_PADDING
-# Rows and columns of minimum-size tiles the brush grid asks for in its size hints:
-PREFERRED_ROWS = 2
-PREFERRED_COLUMNS = 4
-MIN_ROWS = 1
-MIN_COLUMNS = 3
-STAR_SIZE = 16
-STAR_MARGIN = 5
 CHIP_ICON_SIZE = 36
 CHIP_MIN_WIDTH = 150
 THUMBNAIL_SIZE = 40
@@ -76,40 +63,7 @@ THUMBNAIL_SPACING = 4
 MAX_FAVORITE_THUMBNAILS = 8
 POPOVER_SIZE = QSize(400, 430)
 
-# Item data roles holding each brush tile's .myb file path and whether it is a favorite:
-BRUSH_PATH_ROLE = Qt.ItemDataRole.UserRole
-FAVORITE_ROLE = Qt.ItemDataRole.UserRole + 1
-
 logger = logging.getLogger(__name__)
-
-
-def brush_cell_size(width: int, height: int, count: int, extra_height: int = 0) -> int:
-    """Returns the cell width for count brush tiles in a list area of the given size.
-
-    A tile is a square icon cell with `extra_height` more pixels under it for the name.
-    - When every tile fits without scrolling at some cell size from MIN_CELL_SIZE to MAX_CELL_SIZE, returns the
-      largest such size.
-    - Otherwise, rows hold as many cells of at least MIN_CELL_SIZE as fit, sized to fill the width.
-    A width below MIN_CELL_SIZE still gets MIN_CELL_SIZE.
-    """
-    max_columns = max(1, width // MIN_CELL_SIZE)
-    largest_fit = 0
-    for columns in range(1, max_columns + 1):
-        rows = max(1, math.ceil(count / columns))
-        largest_fit = max(largest_fit, min(width // columns, height // rows - extra_height, MAX_CELL_SIZE))
-    if largest_fit >= MIN_CELL_SIZE:
-        return largest_fit
-    return max(MIN_CELL_SIZE, min(width // max_columns, MAX_CELL_SIZE))
-
-
-def brush_name(brush_path: str) -> str:
-    """Returns a brush file's name without its directory or extension."""
-    return os.path.basename(brush_path)[:-len(BRUSH_EXTENSION)]
-
-
-def brush_category(brush_path: str) -> str:
-    """Returns the name of the directory holding a brush file."""
-    return os.path.basename(os.path.dirname(brush_path))
 
 
 def _saved_brush_path(brush_path: str) -> str:
@@ -155,53 +109,6 @@ def _brush_icon(name: str, image_path: str) -> QIcon:
             return image
         image_path = temp_image_path(name, _draw_image)
     return QIcon(QPixmap(image_path))
-
-
-def star_path(bounds: QRectF) -> QPainterPath:
-    """Returns a five-pointed star inscribed in `bounds`."""
-    center = bounds.center()
-    outer = min(bounds.width(), bounds.height()) / 2
-    inner = outer * 0.45
-    path = QPainterPath()
-    for point in range(10):
-        angle = -math.pi / 2 + point * math.pi / 5
-        radius = outer if point % 2 == 0 else inner
-        x, y = center.x() + radius * math.cos(angle), center.y() + radius * math.sin(angle)
-        if point == 0:
-            path.moveTo(x, y)
-        else:
-            path.lineTo(x, y)
-    path.closeSubpath()
-    return path
-
-
-def paint_star(painter: QPainter, bounds: QRectF, palette: QPalette, filled: bool) -> None:
-    """Draws a filled star in the highlight color, or a hollow one in the text color."""
-    painter.save()
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    color = palette.color(QPalette.ColorRole.Highlight if filled else QPalette.ColorRole.Text)
-    painter.setPen(QPen(color, 1.2))
-    painter.setBrush(color if filled else Qt.BrushStyle.NoBrush)
-    painter.drawPath(star_path(bounds))
-    painter.restore()
-
-
-class StarButton(QAbstractButton):
-    """A checkable star that marks a brush as a favorite."""
-
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
-        self.setCheckable(True)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setToolTip(FAVORITE_TOOLTIP)
-        self.setAccessibleName(FAVORITE_TOOLTIP)
-        self.setFixedSize(STAR_SIZE + 8, STAR_SIZE + 8)
-
-    def paintEvent(self, _event) -> None:  # pylint: disable=invalid-name
-        """Draws the star, filled while checked."""
-        painter = QPainter(self)
-        paint_star(painter, QRectF(self.rect()).adjusted(4, 4, -4, -4), self.palette(), self.isChecked())
-        painter.end()
 
 
 class FavoritesRow(QWidget):
@@ -368,169 +275,53 @@ class BrushLibrary:
         return True
 
 
-def star_rect(cell: QRect) -> QRect:
-    """Returns where a tile's favorite star sits inside its grid cell."""
-    return QRect(cell.right() - STAR_SIZE - STAR_MARGIN, cell.top() + STAR_MARGIN, STAR_SIZE, STAR_SIZE)
+class BrushHeaderBar(QWidget):
+    """The active brush's name and favorite star, and the category combo box at the right.
 
-
-class _TileDelegate(QStyledItemDelegate):
-    """Paints a brush tile: the preview icon, the brush name under it, and a favorite star in the corner."""
-
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index) -> None:
-        """Draws one tile."""
-        palette = option.palette
-        selected = bool(option.state & QStyle.StateFlag.State_Selected)
-        hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
-        cell = option.rect
-        tile = cell.adjusted(1, 1, -1, -1)
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        if selected or hovered:
-            painter.setPen(QPen(palette.color(QPalette.ColorRole.Highlight if selected else QPalette.ColorRole.Mid),
-                                2 if selected else 1))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawRoundedRect(QRectF(tile).adjusted(0.5, 0.5, -0.5, -0.5), 4, 4)
-        icon_size = cell.width() - 2 * ICON_PADDING
-        icon_rect = QRect(cell.left() + ICON_PADDING, cell.top() + ICON_PADDING, icon_size, icon_size)
-        icon = index.data(Qt.ItemDataRole.DecorationRole)
-        if isinstance(icon, QIcon):
-            icon.paint(painter, icon_rect)
-        name = str(index.data(Qt.ItemDataRole.DisplayRole) or '')
-        text_rect = QRect(cell.left() + 2, icon_rect.bottom() + 1, cell.width() - 4,
-                          cell.bottom() - icon_rect.bottom() - 1)
-        painter.setPen(palette.color(QPalette.ColorRole.Text))
-        painter.setFont(option.font)
-        painter.drawText(text_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-                         painter.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, text_rect.width()))
-        favorite = bool(index.data(FAVORITE_ROLE))
-        if favorite or selected or hovered:
-            star_bounds = QRectF(star_rect(cell))
-            paint_star(painter, star_bounds, palette, favorite)
-        painter.restore()
-
-
-class BrushList(QListWidget):
-    """A wrapping grid of named brush tiles that scrolls vertically and sizes its tiles to fill each row.
-
-    A click on a tile's star emits `favoriteToggled` and leaves the selection alone.
+    The name elides first, so the star and combo box stay whole.
     """
 
-    favoriteToggled = Signal(str)
+    favoriteToggled = Signal()
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setViewMode(QListView.ViewMode.IconMode)
-        self.setFlow(QListView.Flow.LeftToRight)
-        self.setWrapping(True)
-        self.setResizeMode(QListView.ResizeMode.Adjust)
-        self.setMovement(QListView.Movement.Static)
-        self.setUniformItemSizes(True)
-        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.setMouseTracking(True)
-        self.setItemDelegate(_TileDelegate(self))
-        self._favorites: set[str] = set()
-        self._update_cell_size()
+        self._name_label = ElidedLabel(parent=self)
+        self._star = StarButton(self)
+        self._star.clicked.connect(self.favoriteToggled)
+        self._combo = QComboBox(self)
+        self._combo.setToolTip(CATEGORY_TOOLTIP)
+        self._combo.setAccessibleName(CATEGORY_TOOLTIP)
+        self._combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        layout.addWidget(self._name_label)
+        layout.addWidget(self._star)
+        layout.addStretch(1)
+        layout.addWidget(self._combo)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     @property
-    def name_height(self) -> int:
-        """The height under each icon that holds the brush name."""
-        return self.fontMetrics().height() + 4
+    def name_label(self) -> ElidedLabel:
+        """The brush name."""
+        return self._name_label
 
-    def add_brush(self, brush_path: str, icon: QIcon) -> QListWidgetItem:
-        """Adds a tile for a brush file, showing the brush name."""
-        item = QListWidgetItem(icon, brush_name(brush_path), self)
-        item.setData(BRUSH_PATH_ROLE, brush_path)
-        item.setData(FAVORITE_ROLE, os.path.abspath(brush_path) in self._favorites)
-        item.setToolTip(brush_name(brush_path))
-        item.setData(Qt.ItemDataRole.AccessibleTextRole, item.toolTip())
-        self._update_cell_size()
-        return item
+    @property
+    def star(self) -> StarButton:
+        """The favorite toggle."""
+        return self._star
 
-    def remove_brush(self, brush_path: str) -> None:
-        """Removes a brush file's tile, if the list holds it."""
-        item = self.find_brush(os.path.abspath(brush_path))
-        if item is not None:
-            self.takeItem(self.row(item))
-            self._update_cell_size()
+    @property
+    def combo(self) -> QComboBox:
+        """The category combo box."""
+        return self._combo
 
-    def set_favorites(self, favorite_paths: set[str]) -> None:
-        """Changes which tiles show a filled star."""
-        self._favorites = {os.path.abspath(path) for path in favorite_paths}
-        for i in range(self.count()):
-            item = self.item(i)
-            item.setData(FAVORITE_ROLE, os.path.abspath(item.data(BRUSH_PATH_ROLE)) in self._favorites)
-        self.viewport().update()
-
-    def brush_paths(self) -> list[str]:
-        """Returns the brush file paths of every item, in display order."""
-        return [self.item(i).data(BRUSH_PATH_ROLE) for i in range(self.count())]
-
-    def find_brush(self, brush_path: Optional[str]) -> Optional[QListWidgetItem]:
-        """Returns the item for a brush file, or None if the list doesn't hold it."""
-        if brush_path is None:
-            return None
-        for i in range(self.count()):
-            item = self.item(i)
-            if os.path.abspath(item.data(BRUSH_PATH_ROLE)) == brush_path:
-                return item
-        return None
-
-    def icon_area_size(self) -> QSize:
-        """Returns the area brush_cell_size fills with tiles: the list's size inside its frame and scroll bar.
-
-        - The scroll bar's width is always left out, so the cell size is the same whether or not the scroll bar is
-          showing. Otherwise showing it could change the cell size and hide it again.
-        - One more pixel of width is left out: QListView only fits n cells in a row when the viewport is wider than n
-          cells.
-        """
-        scroll_bar = self.verticalScrollBar()
-        scroll_bar_width = 0 if scroll_bar is None else scroll_bar.sizeHint().width()
-        frame = 2 * self.frameWidth()
-        return QSize(self.width() - frame - scroll_bar_width - 1, self.height() - frame)
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=invalid-name
-        """Toggles the favorite when a tile's star is clicked, and otherwise selects as usual."""
-        if event.button() == Qt.MouseButton.LeftButton:
-            item = self.itemAt(event.position().toPoint())
-            if item is not None and star_rect(self.visualItemRect(item)).contains(event.position().toPoint()):
-                self.favoriteToggled.emit(item.data(BRUSH_PATH_ROLE))
-                event.accept()
-                return
-        super().mousePressEvent(event)
-
-    def _update_cell_size(self) -> None:
-        area = self.icon_area_size()
-        extra = self.name_height
-        cell_size = brush_cell_size(area.width(), area.height(), self.count(), extra)
-        if self.gridSize().width() != cell_size or self.gridSize().height() != cell_size + extra:
-            self.setGridSize(QSize(cell_size, cell_size + extra))
-            icon_size = cell_size - 2 * ICON_PADDING
-            self.setIconSize(QSize(icon_size, icon_size))
-
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Resizes the tiles for the new size."""
-        self._update_cell_size()
-        super().resizeEvent(event)
-
-    def _hint_size(self, columns: int, rows: int) -> QSize:
-        scroll_bar = self.verticalScrollBar()
-        scroll_bar_width = 0 if scroll_bar is None else scroll_bar.sizeHint().width()
-        frame = 2 * self.frameWidth()
-        return QSize(MIN_CELL_SIZE * columns + scroll_bar_width + frame,
-                     (MIN_CELL_SIZE + self.name_height) * rows + frame)
-
-    def sizeHint(self) -> QSize:
-        """Asks for PREFERRED_ROWS rows of PREFERRED_COLUMNS minimum-size tiles, and scrolls to show the rest."""
-        return self._hint_size(PREFERRED_COLUMNS, PREFERRED_ROWS)
-
-    def minimumSizeHint(self) -> QSize:
-        """Asks for MIN_ROWS rows of MIN_COLUMNS minimum-size tiles, and the scroll bar."""
-        return self._hint_size(MIN_COLUMNS, MIN_ROWS)
+    def set_brush(self, brush_path: Optional[str], favorite: bool) -> None:
+        """Shows a brush's name and favorite state, or "No brush" if `brush_path` is None."""
+        self._name_label.set_full_text(NO_BRUSH_LABEL if brush_path is None else brush_name(brush_path))
+        self._star.setEnabled(brush_path is not None)
+        self._star.setChecked(brush_path is not None and favorite)
+        self.updateGeometry()
 
 
 class CurrentBrushChip(QFrame):
@@ -652,13 +443,15 @@ class CurrentBrushChip(QFrame):
 
 
 class MypaintBrushPanel(QWidget):
-    """MypaintBrushPanel selects between the MyPaint brushes with a chip, category chips and a grid of tiles.
+    """MypaintBrushPanel selects between the MyPaint brushes with a grid of tiles, under a header bar with the active
+    brush and the category combo box.
 
-    - The category chips are Favorites while AppConfig's FAV_CONFIG_KEY lists any brushes, All, and one per brush group.
+    - The categories are Favorites while AppConfig's FAV_CONFIG_KEY lists any brushes, All, and one per brush group.
     - Selecting a tile sets the brush Cache holds under brush_config_key, and the panel follows changes to that key.
-    - `set_compact` swaps the chips and grid for a row of favorite thumbnails, beside the chip or under it. The chip
-      then opens the full picker in a popover that closes when a brush is picked.
-    - `set_layout_width` sets the width the category chips wrap at while the panel is measured.
+    - `set_category_list` swaps the category combo box for a list beside the grid.
+    - `set_header_host` moves the header bar into a section's header, or back to the top of the panel.
+    - `set_compact` swaps the header bar and grid for the active brush chip and a row of favorite thumbnails, beside
+      the chip or under it. The chip then opens the full picker in a popover that closes when a brush is picked.
     """
 
     brush_picked = Signal()
@@ -683,31 +476,42 @@ class MypaintBrushPanel(QWidget):
         self._library = library if library is not None else BrushLibrary()
         self._compact = compact
         self._beside = False
+        self._category_list_shown = False
+        # The section hosting the header bar is usually an ancestor, so it is held weakly to avoid a reference cycle:
+        self._header_host_ref: Optional[weakref.ref[PanelSection]] = None
         self._category: Optional[str] = None
-        self._category_buttons: dict[str, QPushButton] = {}
+        self._category_names_shown: list[str] = []
         self._popover: Optional[PanelPopover] = None
 
         self._chip = CurrentBrushChip(self)
         self._chip.favoriteToggled.connect(self._toggle_active_favorite)
         self._chip.clicked.connect(self._show_popover)
         self._favorites_row = FavoritesRow(self)
-        layout = QVBoxLayout(self)
+        self._header_bar = BrushHeaderBar(self)
+        self._header_bar.favoriteToggled.connect(self._toggle_active_favorite)
+        self._header_bar.combo.activated.connect(self._combo_activated)
+        layout = self._layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._header_bar)
         self._top_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom)
         self._top_layout.setContentsMargins(0, 0, 0, 0)
         add_layout(layout, self._top_layout)
         self._top_layout.addWidget(self._chip)
         self._top_layout.addWidget(self._favorites_row)
 
-        self._category_widget = FlowWidget(self)
-        self._category_layout = self._category_widget.flow
-        self._grid = BrushList(self)
+        # The grid row is a widget, since `fresh_minimum_size` doesn't refresh a nested layout's cached minimum size:
+        self._grid_row = QWidget(self)
+        self._category_list = CategoryList(self._grid_row)
+        self._category_list.itemClicked.connect(self._category_list_clicked)
+        self._grid = BrushList(self._grid_row)
         self._grid.itemSelectionChanged.connect(self._selection_change_slot)
         self._grid.customContextMenuRequested.connect(self._menu)
         self._grid.favoriteToggled.connect(self.toggle_favorite)
-
-        layout.addWidget(self._category_widget)
-        layout.addWidget(self._grid, stretch=1)
+        grid_row_layout = QHBoxLayout(self._grid_row)
+        grid_row_layout.setContentsMargins(0, 0, 0, 0)
+        grid_row_layout.addWidget(self._category_list)
+        grid_row_layout.addWidget(self._grid, stretch=1)
+        layout.addWidget(self._grid_row, stretch=1)
 
         self._rebuild_categories()
         self._apply_form()
@@ -726,8 +530,13 @@ class MypaintBrushPanel(QWidget):
 
     @property
     def chip(self) -> CurrentBrushChip:
-        """The active brush chip."""
+        """The active brush chip, shown in the compact form."""
         return self._chip
+
+    @property
+    def header_bar(self) -> BrushHeaderBar:
+        """The active brush's name and star and the category combo box, shown in the full form."""
+        return self._header_bar
 
     @property
     def grid(self) -> BrushList:
@@ -735,24 +544,24 @@ class MypaintBrushPanel(QWidget):
         return self._grid
 
     @property
-    def category_chips(self) -> FlowWidget:
-        """The category chips' container."""
-        return self._category_widget
+    def category_combo(self) -> QComboBox:
+        """The category combo box in the header bar."""
+        return self._header_bar.combo
+
+    @property
+    def category_list(self) -> CategoryList:
+        """The category list beside the grid."""
+        return self._category_list
 
     @property
     def category(self) -> Optional[str]:
-        """The name of the chosen category chip."""
+        """The name of the chosen category."""
         return self._category
 
     @property
     def category_names(self) -> list[str]:
-        """The names of the category chips, in display order."""
-        return list(self._category_buttons)
-
-    @property
-    def category_buttons(self) -> dict[str, QPushButton]:
-        """The category chips by name."""
-        return dict(self._category_buttons)
+        """The names of the categories, in display order."""
+        return list(self._category_names_shown)
 
     @property
     def favorites_row(self) -> FavoritesRow:
@@ -768,6 +577,11 @@ class MypaintBrushPanel(QWidget):
     def compact(self) -> bool:
         """Whether the compact form is showing."""
         return self._compact
+
+    @property
+    def category_list_shown(self) -> bool:
+        """Whether the categories are a list beside the grid. Otherwise they are the header bar's combo box."""
+        return self._category_list_shown
 
     @property
     def popover(self) -> Optional[PanelPopover]:
@@ -787,13 +601,44 @@ class MypaintBrushPanel(QWidget):
             self._beside = beside
             self._apply_form()
 
-    def set_layout_width(self, width: int) -> None:
-        """Sets the width the panel will be laid out at, which the category chips wrap at while measured."""
-        self._category_widget.set_wrap_width(width)
+    def set_category_list(self, shown: bool) -> None:
+        """Shows the categories as a list beside the grid, or as the header bar's combo box."""
+        if shown != self._category_list_shown:
+            self._category_list_shown = shown
+            self._apply_form()
+
+    def set_header_host(self, section: Optional[PanelSection]) -> None:
+        """Moves the header bar after a section's title, or back to the top of the panel with None. While the panel is
+        compact the header bar stays in the panel, hidden."""
+        host = None if self._compact else section
+        current = self._header_host()
+        if host is current:
+            return
+        if current is not None:
+            current.set_title_widget(None)
+        self._header_host_ref = None if host is None else weakref.ref(host)
+        if host is None:
+            self._header_bar.setParent(self)
+            self._layout.insertWidget(0, self._header_bar)
+        else:
+            self._layout.removeWidget(self._header_bar)
+            host.set_title_widget(self._header_bar)
+        self._apply_form()
+
+    def _header_host(self) -> Optional[PanelSection]:
+        return None if self._header_host_ref is None else self._header_host_ref()
 
     def _apply_form(self) -> None:
-        self._category_widget.setVisible(not self._compact)
-        self._grid.setVisible(not self._compact)
+        full = not self._compact
+        if self._compact and self._header_host() is not None:
+            self.set_header_host(None)
+            return
+        if self._header_host() is None:
+            self._header_bar.setVisible(full)
+        self._header_bar.combo.setVisible(not self._category_list_shown)
+        self._category_list.setVisible(self._category_list_shown)
+        self._grid_row.setVisible(full)
+        self._chip.setVisible(self._compact)
         self._favorites_row.setVisible(self._compact and len(self.thumbnails) > 0)
         self._chip.set_popup_enabled(self._compact)
         beside = self._compact and self._beside
@@ -819,29 +664,41 @@ class MypaintBrushPanel(QWidget):
         names = self._category_names()
         if self._category not in names:
             self._category = names[0]
-        for button in self._category_buttons.values():
-            self._category_layout.removeWidget(button)
-            button.setParent(None)
-            button.deleteLater()
-        self._category_buttons = {}
-        for name in names:
-            button = QPushButton(name, self._category_widget)
-            button.setCheckable(True)
-            button.setChecked(name == self._category)
-            button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-            button.clicked.connect(lambda _checked=False, chosen=name: self.set_category(chosen))
-            self._category_layout.addWidget(button)
-            self._category_buttons[name] = button
-        self._category_widget.updateGeometry()
+        self._category_names_shown = names
+        combo = self._header_bar.combo
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItems(names)
+        combo.blockSignals(False)
+        self._category_list.set_names(names)
+        self._show_category()
         self._fill_grid()
 
+    def _show_category(self) -> None:
+        """Marks the chosen category in the combo box and the list."""
+        index = self._category_names_shown.index(self._category) if self._category in self._category_names_shown \
+            else -1
+        combo = self._header_bar.combo
+        combo.blockSignals(True)
+        combo.setCurrentIndex(index)
+        combo.blockSignals(False)
+        self._category_list.blockSignals(True)
+        self._category_list.setCurrentRow(index)
+        self._category_list.blockSignals(False)
+
+    def _category_list_clicked(self, item: QListWidgetItem) -> None:
+        self.set_category(item.text())
+
+    def _combo_activated(self, index: int) -> None:
+        if 0 <= index < len(self._category_names_shown):
+            self.set_category(self._category_names_shown[index])
+
     def set_category(self, category: str) -> None:
-        """Shows the brushes of a category chip."""
-        if category not in self._category_buttons:
+        """Shows the brushes of a category."""
+        if category not in self._category_names_shown:
             return
         self._category = category
-        for name, button in self._category_buttons.items():
-            button.setChecked(name == category)
+        self._show_category()
         self._fill_grid()
 
     def _category_paths(self) -> list[str]:
@@ -875,6 +732,7 @@ class MypaintBrushPanel(QWidget):
         favorites = {os.path.abspath(path) for path in self._library.favorite_paths()}
         self._chip.set_brush(active_brush, None if active_brush is None else self._library.icon(active_brush),
                              active_brush in favorites)
+        self._header_bar.set_brush(active_brush, active_brush in favorites)
         for button in self.thumbnails:
             button.setChecked(os.path.abspath(button.property('brush_path')) == active_brush)
 
@@ -937,7 +795,7 @@ class MypaintBrushPanel(QWidget):
             self.toggle_favorite(active_brush)
 
     def _favorites_changed(self) -> None:
-        """Updates the chips, tiles, chip star and thumbnails after the favorites list changed."""
+        """Updates the categories, tiles, stars and thumbnails after the favorites list changed."""
         self._rebuild_categories()
         self._rebuild_thumbnails()
 
@@ -971,7 +829,6 @@ class MypaintBrushPanel(QWidget):
             self._popover = PanelPopover(self)
             picker = MypaintBrushPanel(self._brush_config_key, library=self._library)
             picker.setFixedWidth(POPOVER_SIZE.width())
-            picker.set_layout_width(POPOVER_SIZE.width())
             picker.brush_picked.connect(self._popover.hide)
             self._popover.set_content(picker)
         margins = self._popover.layout().contentsMargins()
