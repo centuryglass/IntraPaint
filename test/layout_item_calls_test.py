@@ -18,7 +18,7 @@ BANNED_METHODS = ('itemAt', 'itemAtPosition', 'addLayout', 'insertLayout', 'addC
 
 ALLOWED_CALLS = {
     # Receivers that are not layouts. `QListWidget.itemAt(QPoint)` returns a model item, and is safe.
-    ('src/ui/panel/mypaint_brush_panel.py', 'self.itemAt'),
+    ('src/ui/panel/mypaint_brush_grid.py', 'self.itemAt'),
     ('src/ui/panel/mypaint_brush_panel.py', 'self._grid.itemAt'),
     # The one checked caller:
     ('src/util/layout.py', 'parent.addLayout'),
