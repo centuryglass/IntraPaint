@@ -190,6 +190,23 @@ class SmudgeBrushTest(BrushTestCase):
                                     - image_data_as_numpy_8bit(initial).astype(int))
                 self.assertLessEqual(int(difference.max()), 1)
 
+    def test_pressure_size_on_uniform_layer_changes_nothing(self) -> None:
+        """Smudging a uniform layer changes nothing when pressure changes the brush size between steps."""
+        color = QColor(100, 40, 10, 100)  # Unpremultiplied
+        image = QImage(LAYER_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(color)
+        initial = image.copy()
+        self.use_layer(image)
+        self.brush.brush_size = 40
+        self.brush.opacity = 0.4
+        self.brush.hardness = 0.4
+        line = line_points(QPoint(30, 64), QPoint(160, 64), 2)
+        points: list[StrokePoint] = [(x, y, 1.0 - 0.9 * i / (len(line) - 1)) for i, (x, y, *_) in enumerate(line)]
+        result = self.stroke(points)
+        difference = np.abs(image_data_as_numpy_8bit(result).astype(int)
+                            - image_data_as_numpy_8bit(initial).astype(int))
+        self.assertLessEqual(int(difference.max()), 1)
+
     def test_stroke_inside_transparent_area_changes_nothing(self) -> None:
         """Smudging within fully transparent pixels leaves them transparent."""
         self.brush.brush_size = 10
