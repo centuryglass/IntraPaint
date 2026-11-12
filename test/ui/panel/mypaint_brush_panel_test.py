@@ -298,6 +298,42 @@ class MyPaintBrushToolPanelTest(IntraPaintTestCase):
         self.assertEqual(len(self.panel.stroke_block.fields()), 1)
         self.assertEqual(self.panel.stroke_block.fields()[0].label(), 'Size')
 
+    def _collapse_dynamics(self) -> None:
+        """Plans a side panel at the first height that collapses Brush dynamics to its header."""
+        for height in range(200, 1200, 4):
+            self.panel.set_fit_space(Orientation.SIDE, QSize(500, height))
+            section = self.panel.dynamics_section
+            if section.isVisibleTo(self.panel) and section.is_collapsed():
+                return
+        self.fail('Brush dynamics never collapsed')
+
+    def test_collapsed_dynamics_opens_in_a_popover(self) -> None:
+        """Clicking the collapsed Brush dynamics header shows its editor in a popover, and the editor returns to the
+        section when the popover closes."""
+        self.panel.show()
+        self._collapse_dynamics()
+        section = self.panel.dynamics_section
+        section.header_button.click()
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertIsNotNone(popover)
+        self.assertTrue(popover.isVisible())
+        self.assertTrue(popover.isAncestorOf(self.panel.dynamics))
+        popover.hide()
+        self.assertIs(self.panel.dynamics.window(), self.panel.window())
+        self.assertTrue(section.is_collapsed())
+        self.assertTrue(section.body.isAncestorOf(self.panel.dynamics))
+
+    def test_planning_an_open_dynamics_section_closes_its_popover(self) -> None:
+        """A plan that leaves room for the section closes its popover and puts the editor back."""
+        self.panel.show()
+        self._collapse_dynamics()
+        self.panel.dynamics_section.header_button.click()
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.panel.set_fit_space(Orientation.SIDE, QSize(500, 1200))
+        self.assertFalse(popover.isVisible())
+        self.assertFalse(self.panel.dynamics_section.is_collapsed())
+        self.assertTrue(self.panel.dynamics_section.body.isAncestorOf(self.panel.dynamics))
+
     def test_side_forms_follow_fit(self) -> None:
         """A side panel shows the grid with the header bar in the section header. As the panel grows taller, dynamics
         move from the overflow content to a collapsed header, then open once the grid keeps SIDE_ROWS_WITH_DYNAMICS
