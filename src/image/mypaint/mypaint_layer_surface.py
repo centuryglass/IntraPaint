@@ -25,6 +25,10 @@ TILE_UPDATE_TIMER_MS = 100
 # negative step comes from its own dab interpolation, not from this value.
 STROKE_DTIME_SECONDS = 0.1
 
+# Pressure sent for input with no pressure data, such as a mouse. MyPaint brush files usually center their pressure
+# curves near mid pressure, so 0.5 keeps most brushes' dabs near the base radius the brush outline shows.
+MOUSE_PRESSURE = 0.5
+
 
 class MyPaintLayerSurface(QObject):
     """A LibMyPaint surface that connects directly to an ImageLayer."""
@@ -268,10 +272,10 @@ class MyPaintLayerSurface(QObject):
             self._saved_lock_alpha = None
 
     def basic_stroke_to(self, x: float, y: float) -> None:
-        """Continue a brush stroke, without tablet inputs."""
+        """Continue a brush stroke, without tablet inputs, at MOUSE_PRESSURE."""
         if not self._should_allow_stroke():
             return
-        self.stroke_to(x, y, 1.0, 0.0, 0.0)
+        self.stroke_to(x, y, MOUSE_PRESSURE, 0.0, 0.0)
 
     def clear(self) -> None:
         """Disconnects and discards all tiles."""
