@@ -147,6 +147,33 @@ class LayerTransformToolTest(ToolTestCase):
         self.image_stack.flush_render()
         self.assertEqual(full_render(self.image_stack), before)
 
+    def test_non_left_click_does_not_start_drag(self) -> None:
+        """A middle or right click on the outline leaves no drag in progress, so activating another layer shows it
+        normally instead of as a drag preview."""
+        lower_image = QImage(LAYER_WIDTH * 2, LAYER_HEIGHT * 2, QImage.Format.Format_ARGB32_Premultiplied)
+        lower_image.fill(Qt.GlobalColor.blue)
+        lower_layer = self.image_stack.create_layer(image_data=lower_image, layer_index=1)
+        self.image_stack.active_layer = self.layer
+        click_point = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        for button in (Qt.MouseButton.MiddleButton, Qt.MouseButton.RightButton):
+            with self.subTest(button=button):
+                self.mouse_press(click_point, button)
+                self.mouse_release(click_point, button)
+                self._close_layer_menu()
+                self.image_stack.active_layer = lower_layer
+                self.assertIsNone(self.tool._drag_preview)
+                self.assertTrue(lower_layer.visible)
+                self.tool.set_x(self.panel.x_position + 5)
+                self.assertIsNone(self.tool._drag_preview)
+                self.assertTrue(lower_layer.visible)
+                self.image_stack.active_layer = self.layer
+
+    def _close_layer_menu(self) -> None:
+        """Closes the layer menu a right click opens, if any."""
+        menu = self.tool._layer_menu
+        if menu is not None:
+            menu.close()
+
     def test_drag_is_one_undo_step(self) -> None:
         """One drag adds one undo entry."""
         start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)

@@ -338,8 +338,14 @@ class TransformOutline(QGraphicsObject):
         return image
 
     def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
-        """Start dragging the layer."""
+        """Start dragging the layer on a left press, and ignore other buttons.
+
+        The item becomes the mouse grabber only for presses it accepts, so drag_started is sent only for a press whose
+        release will send drag_finished."""
         assert event is not None
+        if event.button() != Qt.MouseButton.LeftButton:
+            event.ignore()
+            return
         UndoStack().begin_gesture('TransformOutline.drag')
         self.drag_started.emit()
         for handle in self._handles.values():
