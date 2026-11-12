@@ -19,6 +19,7 @@ BULK_BRUSH = f'{BRUSH_DIR}/classic/bulk.myb'
 BLEND_BRUSH = f'{BRUSH_DIR}/classic/blend+paint.myb'
 ERASER_BRUSH = f'{BRUSH_DIR}/classic/ink_eraser.myb'
 TEXTURED_BRUSH = f'{BRUSH_DIR}/classic/charcoal.myb'
+PRESSURE_SIZED_BRUSH = f'{BRUSH_DIR}/classic/brush.myb'
 BRUSH_COLOR = QColor(30, 90, 200)
 
 
@@ -80,6 +81,20 @@ class MyPaintLayerBrushTest(BrushTestCase):
                                               in enumerate(points)]
         image = self.stroke(pressure_points)
         self.assert_stroke_matches_golden(image, 'bulk_pressure')
+
+    def test_mouse_stroke_stays_inside_outline(self) -> None:
+        """A stroke without pressure data stays within the brush outline, on a brush whose radius grows with pressure."""
+        self.brush.brush_path = PRESSURE_SIZED_BRUSH
+        # Slow tracking pulls a stroke's first dabs off its path: https://github.com/centuryglass/IntraPaint/issues/969
+        # pylint: disable-next=protected-access
+        self.brush._mp_surface.brush.set_value(MyPaintBrush.SLOW_TRACKING, 0.0)
+        start, end = QPoint(40, 64), QPoint(150, 64)
+        radius = self.brush.brush_size // 2
+        initial_image = self.layer.image
+        image = self.stroke(line_points(start, end, 8))
+        # One extra pixel covers anti-aliasing.
+        outline_bounds = QRect(start, end).adjusted(-radius - 1, -radius - 1, radius + 1, radius + 1)
+        self.assert_changes_inside(image, initial_image, outline_bounds)
 
     def test_blending_brush_on_pattern(self) -> None:
         """A brush that picks up and smudges the color under it."""
