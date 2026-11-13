@@ -15,6 +15,7 @@ from src.ui.window.panel_dock import PanelDock
 from src.ui.window.qt_dock_drag import TITLE_PRESS_INSET, TITLE_PRESS_Y
 from src.ui.window.rail_drag import DRAG_DISTANCE
 from test.base_test_case import IntraPaintTestCase
+from test.ui.window.procedural_layout import use_procedural_layout
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -38,6 +39,7 @@ class RailDragTest(IntraPaintTestCase):
         screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: QSize(4000, 3000))
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
+        use_procedural_layout(self)
         size = QSize(64, 64)
         self.window = MainWindow(ImageStack(size, size, size, size))
         for dock in self.window.docks:

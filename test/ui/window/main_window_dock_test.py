@@ -1,5 +1,5 @@
-"""Tests MainWindow's docks: the first-run layout, docks without content, keys, saved layouts, the image selector,
-and the orientation and size each dock reports to its panel."""
+"""Tests MainWindow's docks: the procedural layout (`test.ui.window.procedural_layout`), docks without content, keys,
+saved layouts, the image selector, and the orientation and size each dock reports to its panel."""
 import sys
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -14,6 +14,7 @@ from src.ui.layout.panel_fit import REQUIRED, Orientation
 from src.ui.window.main_window import MainWindow, DEFAULT_SIDE_DOCK_WIDTH, DOCK_STATE_VERSION
 from src.ui.window.panel_dock import PanelDock
 from test.base_test_case import IntraPaintTestCase
+from test.ui.window.procedural_layout import use_procedural_layout
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -53,6 +54,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: screen.size)
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
+        use_procedural_layout(self)
         test_size = QSize(64, 64)
         self.image_stack = ImageStack(test_size, test_size, test_size, test_size)
         self.windows: list[MainWindow] = []
@@ -92,7 +94,7 @@ class MainWindowDockTest(IntraPaintTestCase):
     def _open_docks(window: MainWindow) -> set[str]:
         return {dock.objectName() for dock in window.docks if not dock.isHidden()}
 
-    def test_first_run_layout(self) -> None:
+    def test_procedural_layout(self) -> None:
         """Every dock starts in the right area. Tools and Layers are the open docks of the upper and lower groups, and
         Tools shows at its default width above Layers, with no tab bar drawn."""
         window = self.window
@@ -107,8 +109,8 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.assertGreaterEqual(window.tools_dock.width(), DEFAULT_SIDE_DOCK_WIDTH)
         self.assertEqual(self._shown_tab_bars(window), [])
 
-    def test_first_run_layout_on_portrait_screen(self) -> None:
-        """On a screen taller than wide, the first-run layout uses the bottom area."""
+    def test_procedural_layout_on_portrait_screen(self) -> None:
+        """On a screen taller than wide, the procedural layout uses the bottom area."""
         self._screen.size = PORTRAIT_SCREEN
         window = self._new_window(QSize(1080, 1700))
         for dock in window.docks:

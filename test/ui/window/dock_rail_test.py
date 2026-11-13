@@ -18,6 +18,7 @@ from src.ui.window.dock_rail import RAIL_SPACING, RULE_SPACE, SIDE_RAIL_WIDTH
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from test.base_test_case import IntraPaintTestCase
+from test.ui.window.procedural_layout import use_procedural_layout
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -33,6 +34,7 @@ class DockRailTest(IntraPaintTestCase):
         screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: LARGE_SCREEN)
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
+        use_procedural_layout(self)
         size = QSize(64, 64)
         image_stack = ImageStack(size, size, size, size)
         self.window = MainWindow(image_stack)

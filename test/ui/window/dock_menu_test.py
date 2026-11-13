@@ -13,6 +13,7 @@ from src.ui.window.dock_placement import DockEdge, SplitSide
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
 from test.base_test_case import IntraPaintTestCase
+from test.ui.window.procedural_layout import use_procedural_layout
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -27,6 +28,7 @@ class DockMenuTest(IntraPaintTestCase):
         screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: QSize(4000, 3000))
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
+        use_procedural_layout(self)
         test_size = QSize(64, 64)
         self.window = MainWindow(ImageStack(test_size, test_size, test_size, test_size))
         for dock in self.window.docks:
