@@ -42,10 +42,11 @@ KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names},
 # Config keys that set the brush opacity directly, mapped to the opacity each sets:
 BRUSH_OPACITY_PRESETS = {f'brush_opacity_{percent}': percent / 100 for percent in range(10, 101, 10)}
 
-# Bindings that ship unbound, and report no error while they are:
 # Bindings that may be left empty. Each one with an empty default must be listed, or startup warns that it is unset.
 OPTIONAL_KEYS = ('toggle_sample_merged_hotkey', 'toggle_selection_shape_hotkey', 'report_bug_shortcut',
-                 'release_notes_shortcut', 'about_shortcut', 'about_qt_shortcut')
+                 'release_notes_shortcut', 'about_shortcut', 'about_qt_shortcut', 'image_flip_horizontal_shortcut',
+                 'image_flip_vertical_shortcut', 'image_rotate_cw_shortcut', 'image_rotate_ccw_shortcut',
+                 'image_rotate_180_shortcut')
 
 
 class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
