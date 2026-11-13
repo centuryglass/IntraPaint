@@ -378,14 +378,27 @@ class AppController(MenuBuilder):
             lambda: clipboard.dataChanged.disconnect(self._update_clipboard_paste_availability))
 
         self._last_active = self._image_stack.active_layer
-        self._lock_connection = self._last_active.lock_changed.connect(
-            lambda _layer, _lock: self._update_enabled_actions())
+        self._active_layer_connections: list[tuple[Any, Any]] = []
+
+        def _connect_active_layer(layer: Layer) -> None:
+            """Refreshes menu actions when a property that enables or disables one changes on the active layer."""
+            signals = [layer.lock_changed, layer.opacity_changed, layer.composition_mode_changed]
+            if isinstance(layer, TransformLayer):
+                signals.append(layer.transform_changed)
+            self._active_layer_connections = [(sig, sig.connect(lambda *_: self._update_enabled_actions()))
+                                              for sig in signals]
+
+        def _disconnect_active_layer() -> None:
+            for signal, connection in self._active_layer_connections:
+                signal.disconnect(connection)
+            self._active_layer_connections = []
+
+        _connect_active_layer(self._last_active)
 
         def _active_changed(active_layer: Layer) -> None:
-            self._last_active.lock_changed.disconnect(self._lock_connection)
+            _disconnect_active_layer()
             self._last_active = active_layer
-            self._lock_connection = self._last_active.lock_changed.connect(
-                lambda _layer, _lock: self._update_enabled_actions())
+            _connect_active_layer(active_layer)
             self._update_enabled_actions()
 
         self._image_stack.active_layer_changed.connect(_active_changed)

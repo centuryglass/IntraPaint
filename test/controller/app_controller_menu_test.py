@@ -150,3 +150,15 @@ class TestAppControllerMenus(IntraPaintTestCase):
         for expected in (APP_VERSION, LICENSE_LINK, ISSUES_LINK):
             self.assertIn(expected, text)
         about_qt.assert_called_once()
+
+    def test_flatten_follows_active_layer_opacity(self):
+        """Layer > Flatten is enabled while the active image layer's opacity is below 100%, and disabled at 100%."""
+        image_stack = self.controller._image_stack
+        layer = image_stack.active_layer
+        action = self.controller.get_action_for_method(self.controller.flatten_layer)
+        assert action is not None
+        self.assertFalse(action.isEnabled())
+        layer.opacity = 0.5
+        self.assertTrue(action.isEnabled())
+        layer.opacity = 1.0
+        self.assertFalse(action.isEnabled())
