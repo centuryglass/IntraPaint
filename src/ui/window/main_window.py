@@ -23,7 +23,7 @@ from enum import StrEnum
 from functools import partial
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, Signal, QByteArray, QMimeData
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, QEvent, Signal, QByteArray, QMimeData
 from PySide6.QtGui import QContextMenuEvent, QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, \
     QDragEnterEvent, QDropEvent, QAction, QMoveEvent, QScreen, QShowEvent
 from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QMenu, \
@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
     files_dropped = Signal(list)  # Local file paths with a readable image extension.
     cancel_generation = Signal()
     previous_options_available = Signal(bool)
+    full_screen_changed = Signal(bool)  # Emitted when the window enters or leaves full screen, however it happened.
     """Emitted when `can_restore_previous_options` changes."""
 
     def __init__(self, image_stack: ImageStack):
@@ -132,6 +133,7 @@ class MainWindow(QMainWindow):
             Image layers being edited.
         """
         super().__init__()
+        self._was_full_screen = False
         # Called on every close request; returning False keeps the window open. None closes without asking.
         self.confirm_close: Optional[Callable[[], bool]] = None
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -643,6 +645,15 @@ class MainWindow(QMainWindow):
         """Starts watching display changes once the window has a native handle."""
         super().showEvent(event)
         self._watch_displays()
+
+    def changeEvent(self, event: Optional[QEvent]) -> None:  # pylint: disable=invalid-name
+        """Reports full screen changes, including ones made by the window manager."""
+        super().changeEvent(event)
+        if event is not None and event.type() == QEvent.Type.WindowStateChange:
+            full_screen = self.isFullScreen()
+            if full_screen != self._was_full_screen:
+                self._was_full_screen = full_screen
+                self.full_screen_changed.emit(full_screen)
 
     def moveEvent(self, unused_event: Optional[QMoveEvent]) -> None:
         """Schedules a re-clamp as the window moves between displays."""

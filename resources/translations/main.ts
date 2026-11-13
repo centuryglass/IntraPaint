@@ -3274,6 +3274,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Full screen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch the main window between full screen and its previous size.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Canvas size...</source>
         <translation type="unfinished"></translation>
     </message>

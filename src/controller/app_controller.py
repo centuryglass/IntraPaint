@@ -42,7 +42,7 @@ from argparse import Namespace
 from typing import Any, Optional, Callable
 from weakref import WeakSet
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
 
@@ -298,6 +298,10 @@ class AppController(MenuBuilder):
         self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
         self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
         self._make_menu_action_checkable(self.toggle_selection_overlay, AppConfig.SHOW_SELECTION_OVERLAY)
+        full_screen_action = self.get_action_for_method(self.toggle_full_screen)
+        full_screen_action.setCheckable(True)
+        full_screen_action.setChecked(self._window.isFullScreen())
+        self._window.full_screen_changed.connect(full_screen_action.setChecked)
         self.insert_menu_actions(MENU_WINDOW, self._window.dock_toggle_actions())
         self.get_menu(MENU_WINDOW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
         self._build_recent_files_menu()
@@ -1106,6 +1110,12 @@ class AppController(MenuBuilder):
         """Show or hide the selection overlay fill, leaving the selection outline in place."""
         config = AppConfig()
         config.set(AppConfig.SHOW_SELECTION_OVERLAY, not config.get(AppConfig.SHOW_SELECTION_OVERLAY))
+
+    @menu_action(MENU_VIEW, 'toggle_full_screen_shortcut', 203,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def toggle_full_screen(self) -> None:
+        """Switch the main window between full screen and its previous size, keeping a maximized state."""
+        self._window.setWindowState(self._window.windowState() ^ Qt.WindowState.WindowFullScreen)
 
     @menu_action(MENU_WINDOW, 'reset_dock_layout_shortcut', 520,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])

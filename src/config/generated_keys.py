@@ -381,6 +381,7 @@ class KeyConfigKeys:
     SWAP_COLORS_SHORTCUT: Final = 'swap_colors_shortcut'
     TEXT_TOOL_KEY: Final = 'text_tool_key'
     TOGGLE_CONTROL_HINTS_SHORTCUT: Final = 'toggle_control_hints_shortcut'
+    TOGGLE_FULL_SCREEN_SHORTCUT: Final = 'toggle_full_screen_shortcut'
     TOGGLE_RULERS_SHORTCUT: Final = 'toggle_rulers_shortcut'
     TOGGLE_SAMPLE_MERGED_HOTKEY: Final = 'toggle_sample_merged_hotkey'
     TOGGLE_SELECTION_OVERLAY_SHORTCUT: Final = 'toggle_selection_overlay_shortcut'
