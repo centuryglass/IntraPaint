@@ -155,7 +155,10 @@ def create_control_widget(config: Config, key: str, connect_to_config: bool = Tr
         combobox = control_widget
 
         def _update_options(new_options: ParamTypeList) -> None:
-            last_selected = combobox.currentData()
+            # Reselect the config's value, not the combo box's: the box is empty after the options are cleared, but
+            # the config keeps its value. A value missing from the new options shows the first one, which
+            # `Config.update_options` then assigns.
+            last_selected = config.get(key)
             with signals_blocked(combobox):
                 while combobox.count() > 0:
                     combobox.removeItem(0)
