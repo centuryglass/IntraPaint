@@ -8,7 +8,7 @@ from typing import Optional, cast, Callable, TypeAlias, Generator
 
 import numpy as np
 from PIL import Image
-from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QTimer, QRectF
+from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QTimer, QRectF, QPointF
 from PySide6.QtGui import QPainter, QPixmap, QImage, QTransform, QPolygonF
 from PySide6.QtWidgets import QApplication
 
@@ -529,6 +529,72 @@ class ImageStack(QObject):
                 self._selection_layer.restore_state(sel_state)
 
             UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
+
+    def flip_image(self, horizontal: bool) -> None:
+        """Mirrors the whole image horizontally or vertically, as one undo step. See `transform_image`."""
+        width, height = self.width, self.height
+        if horizontal:
+            self.transform_image(QTransform(-1, 0, 0, 1, width, 0))
+        else:
+            self.transform_image(QTransform(1, 0, 0, -1, 0, height))
+
+    def rotate_image(self, degrees: int) -> None:
+        """Rotates the whole image clockwise by a multiple of 90 degrees, as one undo step. See `transform_image`."""
+        if degrees % 90 != 0:
+            raise ValueError(f'Image rotation must be a multiple of 90 degrees, got {degrees}')
+        width, height = self.width, self.height
+        degrees %= 360
+        if degrees == 90:
+            self.transform_image(QTransform(0, 1, -1, 0, height, 0))
+        elif degrees == 180:
+            self.transform_image(QTransform(-1, 0, 0, -1, width, height))
+        elif degrees == 270:
+            self.transform_image(QTransform(0, -1, 1, 0, 0, width))
+
+    def transform_image(self, transform: QTransform) -> None:
+        """Applies an image-space transformation to every layer, the selection, the context pins and the generation
+        area, as one undo step.
+
+        The transformation must map the canvas onto a rectangle at the origin, which becomes the new canvas. Locked
+        and hidden layers are transformed too. Layer transforms absorb the change, so layer pixels are untouched. The
+        selection layer only supports translation, so its mask is redrawn under the transformation; exact results
+        need a transformation that only mirrors or rotates by multiples of 90 degrees.
+        """
+        new_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+        if new_bounds.topLeft() != QPoint():
+            raise ValueError(f'Image transformation must map the canvas to the origin, got {new_bounds}')
+        layers = [layer for layer in self.all_layers() if isinstance(layer, TransformLayer)]
+        last_transforms = [layer.transform for layer in layers]
+        last_size = self.size
+        last_generation_area = QRect(self._generation_area)
+        new_generation_area = map_rect_precise(last_generation_area, transform).toAlignedRect()
+        selection_state = self.selection_layer.save_state()
+        last_selection_transform = self.selection_layer.transform
+        # Pins are pixel coordinates, so each pin's pixel center is transformed:
+        pixel_center = QPointF(0.5, 0.5)
+        new_pins = [(transform.map(QPointF(pin) + pixel_center) - pixel_center).toPoint()
+                    for pin in self.selection_layer.context_pins]
+
+        def _apply() -> None:
+            with self.batching_content_updates():
+                self.size = new_bounds.size()
+                for layer, last_transform in zip(layers, last_transforms):
+                    layer.set_transform(last_transform * transform)
+                selection_layer = self.selection_layer
+                selection_layer.set_transform(last_selection_transform * transform)
+                selection_layer.apply_transform()
+                selection_layer.set_context_pins(new_pins, False)
+                self._set_generation_area_internal(new_generation_area)
+
+        def _undo() -> None:
+            with self.batching_content_updates():
+                self.size = last_size
+                for layer, last_transform in zip(layers, last_transforms):
+                    layer.set_transform(last_transform)
+                self.selection_layer.restore_state(selection_state)
+                self._set_generation_area_internal(last_generation_area)
+
+        UndoStack().commit_action(_apply, _undo, 'ImageStack.transform_image')
 
     def qimage(self, crop_to_image: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
