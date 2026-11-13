@@ -51,6 +51,16 @@ class SamplePanel(DockPanel):
         advanced.add(self.only_extra, 3)
 
 
+class HeaderlessSidePanel(SamplePanel):
+    """A `SamplePanel` that hides its header in any orientation while `hide_header` is set, as a floating Layers
+    panel does."""
+
+    hide_header = False
+
+    def apply_header_form(self, collapsed: bool) -> None:
+        super().apply_header_form(collapsed or self.hide_header)
+
+
 class MeasureCountingPanel(SamplePanel):
     """A `SamplePanel` that counts its `measure` calls."""
 
@@ -227,7 +237,7 @@ class DockPanelTest(IntraPaintTestCase):
         self.assertEqual(self.panel.orientation, SIDE)
 
     def test_short_strip_collapses_header_into_the_row(self) -> None:
-        """A strip too short for the header hides it and moves the More button to the end of the row, and both
+        """A strip too short for the header hides it and moves the More button to the top of the row's end, and both
         return once the panel is taller. Side panels never collapse their header."""
         self._host(STRIP, QSize(300, 60))
         self.panel.show()
@@ -236,12 +246,37 @@ class DockPanelTest(IntraPaintTestCase):
         self.assertTrue(self.panel.header.isHidden())
         self.assertFalse(self.panel.header.isAncestorOf(more_button))
         self.assertTrue(more_button.isVisible())
+        self.assertEqual(more_button.geometry().top(), self.panel.content_margins().top())
         self._host(STRIP, QSize(300, 400))
         self.assertFalse(self.panel.header.isHidden())
         self.assertTrue(self.panel.header.isAncestorOf(more_button))
         self.assertEqual(more_button.isVisible(), len(self.panel.overflow_widgets) > 0)
         self._host(SIDE, QSize(60, 60))
         self.assertFalse(self.panel.header_collapsed)
+
+    def test_side_panel_with_hidden_header_keeps_more_in_the_top_right_corner(self) -> None:
+        """A side panel that hides its header shows the More button in its top-right corner, above the content, with
+        the top margin raised to fit it. The margin and button return to the header once it shows again."""
+        panel = HeaderlessSidePanel()
+        panel.hide_header = True
+        host = PanelHost(panel)
+        host.capture(QSize(200, 120), SIDE)
+        more_button = panel.header.more_button
+        self.assertTrue(panel.header_collapsed)
+        self.assertTrue(more_button.isVisible())
+        self.assertIs(more_button.parentWidget(), panel)
+        inset = panel.inset
+        self.assertEqual(more_button.geometry().right(), panel.width() - inset - 1)
+        self.assertEqual(more_button.geometry().top(), 0)
+        self.assertEqual(panel.layout().contentsMargins().top(), max(inset, more_button.height()))
+        scroll = panel.findChild(QScrollArea)
+        self.assertGreaterEqual(scroll.geometry().top(), more_button.geometry().bottom() + 1)
+        self.assertEqual(find_layout_problems(panel), [])
+        panel.hide_header = False
+        panel.refit()
+        self.assertTrue(panel.header.isAncestorOf(more_button))
+        self.assertEqual(panel.layout().contentsMargins().top(), inset)
+        host.release()
 
     def test_decorative_control_hides_instead_of_moving_to_more(self) -> None:
         """A decorative control that doesn't fit is hidden in place, never added to the More popover."""
