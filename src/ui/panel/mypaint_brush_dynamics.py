@@ -42,7 +42,8 @@ def editable_settings() -> list[BrushSetting]:
 
 
 class _DescriptionLabel(QLabel):
-    """A word-wrapped label whose minimum height fits its whole text at its current width.
+    """A word-wrapped label whose minimum height fits its whole text at its current width, or at the width its owner
+    plans to give it (`set_planned_width`).
 
     The height comes from the font metrics, since QLabel's own wrapped hints are cached and guessed at another width.
     A resize or new text re-measures it.
@@ -54,6 +55,14 @@ class _DescriptionLabel(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self._measured_height = -1
+        self._planned_width: Optional[int] = None
+
+    def set_planned_width(self, width: Optional[int]) -> None:
+        """Measures at `width` until it is changed, or at the current width with None. A planner that measures before
+        the label is resized sets the width it will get."""
+        if width != self._planned_width:
+            self._planned_width = width
+            self._remeasure()
 
     def setText(self, text: str) -> None:  # pylint: disable=invalid-name
         """Changes the text and re-measures the height."""
@@ -78,8 +87,8 @@ class _DescriptionLabel(QLabel):
         return bounds.height() + margins.top() + margins.bottom() + 2 * self.margin()
 
     def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns no width, and the wrapped text's height at the current width."""
-        return QSize(0, self.heightForWidth(self.width()))
+        """Returns no width, and the wrapped text's height at the planned width, or else the current width."""
+        return QSize(0, self.heightForWidth(self.width() if self._planned_width is None else self._planned_width))
 
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns the minimum size."""
@@ -128,6 +137,14 @@ class BrushDynamicsWidget(QWidget):
         if default_index >= 0:
             self._setting_combo.setCurrentIndex(default_index)
         self._show_setting()
+
+    def set_planned_width(self, width: Optional[int]) -> None:
+        """Measures the description's height for the width the widget will be laid out at, or at its current width with
+        None."""
+        layout = self.layout()
+        # The top-aligned layout stops at its own maximum width, which is narrower than the widget can be (#964):
+        self._description.set_planned_width(None if width is None or layout is None
+                                            else min(width, layout.maximumSize().width()))
 
     @property
     def setting_combo(self) -> QComboBox:

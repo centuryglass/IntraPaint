@@ -540,16 +540,19 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         panel.set_fit_space(Orientation.STRIP, QSize(base.width(), 2000))
         self.assertEqual([len(column) for column in panel._packer.plan], [2])
 
-    def test_fill_threshold_is_an_integer_field_bound_to_cache(self) -> None:
-        """The Color threshold field uses the Cache range as whole numbers and stores a float."""
+    def test_fill_threshold_is_a_decimal_field_bound_to_cache(self) -> None:
+        """The Color threshold field uses the Cache range, keeps one decimal place between steps, and stores a
+        float."""
         panel = FillToolPanel()
         field = panel.threshold_field
         minimum, maximum, step = Cache().get_range(Cache.FILL_THRESHOLD)
         self.assertEqual((field.minimum(), field.maximum(), field.step()), (minimum, maximum, step))
-        field.set_value(maximum)
-        self.assertEqual(Cache().get(Cache.FILL_THRESHOLD), float(maximum))
-        Cache().set(Cache.FILL_THRESHOLD, float(minimum))
-        self.assertEqual(field.value(), minimum)
+        field.set_value(2.54)
+        self.assertEqual(Cache().get(Cache.FILL_THRESHOLD), 2.5)
+        self.assertEqual(field.value_text(), '2.5')
+        Cache().set(Cache.FILL_THRESHOLD, 7.5)
+        self.assertEqual(field.value(), 7.5)
+        self.assertIsInstance(Cache().get(Cache.FILL_THRESHOLD), float)
 
     def test_filter_parameters_follow_the_cached_json(self) -> None:
         """Changing a parameter field rewrites the cached parameters, and a cache change moves the field."""

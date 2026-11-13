@@ -863,6 +863,15 @@
         "default": "Ctrl+R,Ctrl+Alt+Shift+R",
         "saved": true
     },
+    "toggle_full_screen_shortcut": {
+        "label": "Full screen",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Switch the main window between full screen and its previous size.",
+        "type": "string",
+        "default": "F11",
+        "saved": true
+    },
     "resize_canvas_shortcut": {
         "label": "Canvas size...",
         "category": "Menu Shortcuts",
@@ -879,6 +888,51 @@
         "description": "Scale image content to a new size.",
         "type": "string",
         "default": "Ctrl+Alt+I,F3",
+        "saved": true
+    },
+    "image_flip_horizontal_shortcut": {
+        "label": "Flip image horizontally",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Mirror every layer, the selection and the generation area from left to right.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_flip_vertical_shortcut": {
+        "label": "Flip image vertically",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Mirror every layer, the selection and the generation area from top to bottom.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_rotate_cw_shortcut": {
+        "label": "Rotate image 90° CW",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Rotate the whole image 90 degrees clockwise, swapping its width and height.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_rotate_ccw_shortcut": {
+        "label": "Rotate image 90° CCW",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Rotate the whole image 90 degrees counter-clockwise, swapping its width and height.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_rotate_180_shortcut": {
+        "label": "Rotate image 180°",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Rotate the whole image 180 degrees.",
+        "type": "string",
+        "default": "",
         "saved": true
     },
     "crop_image_shortcut": {
@@ -923,7 +977,7 @@
         "subcategory": "Generation Menu",
         "description": "Selects an AI image generator",
         "type": "string",
-        "default": "F11",
+        "default": "Alt+G",
         "saved": true
     },
     "generate_shortcut": {
@@ -1194,6 +1248,15 @@
         "description": "Rotate the active layer 90 degrees counter-clockwise.",
         "type": "string",
         "default": "Ctrl+Shift+L",
+        "saved": true
+    },
+    "repeat_filter_shortcut": {
+        "label": "Repeat last filter",
+        "category": "Menu Shortcuts",
+        "subcategory": "Filters Menu",
+        "description": "Apply the last filter again with the same settings",
+        "type": "string",
+        "default": "Ctrl+F",
         "saved": true
     },
     "color_balance_shortcut": {

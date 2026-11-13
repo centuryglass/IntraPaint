@@ -39,10 +39,10 @@ import os
 import sys
 import webbrowser
 from argparse import Namespace
-from typing import Optional, Callable
+from typing import Any, Optional, Callable
 from weakref import WeakSet
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
 
@@ -68,6 +68,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.image_metadata import ImageMetadata
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
+from src.image.filter.filter import ImageFilter
 from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
@@ -161,6 +162,7 @@ MENU_IMAGE = _tr('&Image')
 MENU_LAYER = _tr('&Layer')
 MENU_SELECT = _tr('&Select')
 MENU_FILTERS = _tr('Fil&ters')
+REPEAT_FILTER_TITLE = _tr('Repeat {filter_name}')
 MENU_WINDOW = _tr('&Window')
 MENU_HELP = _tr('&Help')
 LAYOUT_ACTION_PROPERTY = 'saved_layout_entry'
@@ -296,6 +298,10 @@ class AppController(MenuBuilder):
         self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
         self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
         self._make_menu_action_checkable(self.toggle_selection_overlay, AppConfig.SHOW_SELECTION_OVERLAY)
+        full_screen_action = self.get_action_for_method(self.toggle_full_screen)
+        full_screen_action.setCheckable(True)
+        full_screen_action.setChecked(self._window.isFullScreen())
+        self._window.full_screen_changed.connect(full_screen_action.setChecked)
         self.insert_menu_actions(MENU_WINDOW, self._window.dock_toggle_actions())
         self.get_menu(MENU_WINDOW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
         self._build_recent_files_menu()
@@ -306,6 +312,13 @@ class AppController(MenuBuilder):
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
+        # The repeat action stays disabled until _record_applied_filter registers it with AppStateTracker.
+        self._last_filter: Optional[tuple[ImageFilter, list[Any], bool]] = None
+        repeat_action = self.add_menu_action(MENU_FILTERS, self.repeat_last_filter, KeyConfig.REPEAT_FILTER_SHORTCUT)
+        assert repeat_action is not None
+        repeat_action.setEnabled(False)
+        self._repeat_filter_action = repeat_action
+        self.get_menu(MENU_FILTERS).addSeparator()
         filter_class_names: list[str] = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
@@ -319,6 +332,7 @@ class AppController(MenuBuilder):
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
+                modal.filter_applied.connect(lambda values: self._record_applied_filter(filter_instance, values))
                 self._set_alt_window_centered_bounds(modal)
                 modal.exec()
                 modal.deleteLater()
@@ -1097,6 +1111,12 @@ class AppController(MenuBuilder):
         config = AppConfig()
         config.set(AppConfig.SHOW_SELECTION_OVERLAY, not config.get(AppConfig.SHOW_SELECTION_OVERLAY))
 
+    @menu_action(MENU_VIEW, 'toggle_full_screen_shortcut', 203,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def toggle_full_screen(self) -> None:
+        """Switch the main window between full screen and its previous size, keeping a maximized state."""
+        self._window.setWindowState(self._window.windowState() ^ Qt.WindowState.WindowFullScreen)
+
     @menu_action(MENU_WINDOW, 'reset_dock_layout_shortcut', 520,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def reset_panel_layout(self) -> None:
@@ -1180,6 +1200,36 @@ class AppController(MenuBuilder):
                 if self._generator.upscale(new_size):
                     return
             self._scale(new_size)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_flip_horizontal_shortcut', 202,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_flip_horizontal(self) -> None:
+        """Flip the whole image horizontally."""
+        self._image_stack.flip_image(True)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_flip_vertical_shortcut', 203,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_flip_vertical(self) -> None:
+        """Flip the whole image vertically."""
+        self._image_stack.flip_image(False)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_cw_shortcut', 204,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_cw(self) -> None:
+        """Rotate the whole image 90 degrees clockwise."""
+        self._image_stack.rotate_image(90)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_ccw_shortcut', 205,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_ccw(self) -> None:
+        """Rotate the whole image 90 degrees counter-clockwise."""
+        self._image_stack.rotate_image(-90)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_180_shortcut', 206,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_180(self) -> None:
+        """Rotate the whole image 180 degrees."""
+        self._image_stack.rotate_image(180)
 
     @menu_action(MENU_IMAGE, 'crop_image_shortcut', 210, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def crop_image_to_selection(self) -> None:
@@ -1477,6 +1527,22 @@ class AppController(MenuBuilder):
                                       screen_size.height()))
         window_bounds.moveCenter(center)
         alt_window.setGeometry(window_bounds)
+
+    def repeat_last_filter(self) -> None:
+        """Applies the last filter applied from the Filters menu again, with the same values and no dialog."""
+        if self._last_filter is None:
+            return
+        image_filter, param_values, active_layer_only = self._last_filter
+        image_filter.active_layer_only = active_layer_only
+        image_filter.selection_only = not self._image_stack.selection_layer.empty
+        image_filter.apply_filter(param_values)
+
+    def _record_applied_filter(self, image_filter: ImageFilter, param_values: list[Any]) -> None:
+        """Saves a filter applied from its dialog for repeat_last_filter, and names it in the repeat action."""
+        if self._last_filter is None:
+            AppStateTracker.set_enabled_states(self._repeat_filter_action, [APP_STATE_EDITING])
+        self._last_filter = (image_filter, list(param_values), image_filter.active_layer_only)
+        self._repeat_filter_action.setText(REPEAT_FILTER_TITLE.format(filter_name=image_filter.get_name()))
 
     def _set_alt_window_centered_bounds(self, alt_window: QWidget) -> None:
         """Set a new window's bounds centered over the main window bounds, scaled to the sizeHint and restricted to

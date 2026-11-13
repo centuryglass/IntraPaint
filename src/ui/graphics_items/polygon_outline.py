@@ -159,13 +159,14 @@ class PolygonOutline(QGraphicsPathItem):
         self.setTransform(transform)
 
     def load_polygons(self, polygons: list[QPolygonF]):
-        """Replace the current outline polygons with new ones."""
+        """Replace the current outline polygons with new ones, closing each so its last edge is drawn too."""
         scene = self._view.scene()
         assert scene is not None
         path = QPainterPath()
         path.setFillRule(Qt.FillRule.OddEvenFill)
         for polygon in polygons:
             path.addPolygon(polygon)
+            path.closeSubpath()
         self.setPath(path)
         self._start_or_stop_animation()
 

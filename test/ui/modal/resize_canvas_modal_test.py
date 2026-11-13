@@ -24,6 +24,12 @@ class ResizeCanvasModalTest(IntraPaintTestCase):
         self.assertEqual(modal.minimumSizeHint(), initial_minimum)
         self.assertEqual(modal.size(), QSize(400, 400).expandedTo(initial_minimum))
 
+    def test_offset_fields_are_labelled_as_offsets(self) -> None:
+        """The X and Y fields read as offsets, since they place the image within the new canvas."""
+        modal = _modal()
+        self.assertEqual(modal._geometry.field(geometry_block.X).label(), 'X-offset')  # pylint: disable=protected-access
+        self.assertEqual(modal._geometry.field(geometry_block.Y).label(), 'Y-offset')  # pylint: disable=protected-access
+
     def test_anchor_places_content(self) -> None:
         """Choosing an anchor sets the offset that puts the old image at that cell."""
         modal = _modal()

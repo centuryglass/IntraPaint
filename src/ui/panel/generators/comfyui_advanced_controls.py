@@ -42,7 +42,8 @@ class ComfyUIAdvancedControls(AdvancedControls):
         self._inpainting_model_checkbox = create_control_widget(cache, Cache.COMFYUI_INPAINTING_MODEL)
         self._tiled_vae_checkbox = create_control_widget(cache, Cache.COMFYUI_TILED_VAE)
         self._tiled_vae_checkbox.setText(LABEL_TILED_VAE)
-        self._tile_size_field = config_slider_field(cache, Cache.COMFYUI_TILED_VAE_TILE_SIZE, self, suffix=' px')
+        self._tile_size_field = config_slider_field(cache, Cache.COMFYUI_TILED_VAE_TILE_SIZE, self, suffix=' px',
+                                                    snap_to_step=True)
 
         def _enable_tile_size(enabled: bool) -> None:
             self._tile_size_field.setEnabled(enabled)

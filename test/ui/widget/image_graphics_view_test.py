@@ -4,7 +4,7 @@ import sys
 from unittest.mock import patch
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtGui import QMouseEvent, QWheelEvent
 from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
@@ -116,12 +116,13 @@ class ZoomAnchorTest(ImageGraphicsViewTestCase):
         cursor = QPoint(150, 120)
         self._assert_zoom_holds(cursor, cursor, 0.75)
 
-    def test_zoom_in_with_cursor_outside_content_holds_content_center(self) -> None:
-        """Zooming in with the cursor beside the content holds the content center instead."""
+    def test_zoom_in_with_cursor_outside_content_holds_point_under_cursor(self) -> None:
+        """Zooming in with the cursor beside the content, where layers can extend past the image, keeps the scene point
+        under the cursor in place."""
         self.view.content_size = QSize(200, 600)
         cursor = QPoint(10, 150)
         self.assertFalse(self.view.widget_content_bounds.contains(cursor))
-        self._assert_zoom_holds(cursor, self.view.widget_content_bounds.center(), 2.0)
+        self._assert_zoom_holds(cursor, cursor, 2.0)
 
     def test_zoom_without_cursor_holds_content_center(self) -> None:
         """With no cursor position, zooming holds the content center."""
@@ -249,6 +250,49 @@ class OffsetTest(ImageGraphicsViewTestCase):
                 scene_point = self.view.widget_point_to_scene(widget_point)
                 self.assert_points_close(QPointF(widget_point), QPointF(self.view.scene_point_to_widget(scene_point)),
                                          1.0)
+
+
+class PanDragTest(ImageGraphicsViewTestCase):
+    """Tests middle-button pan drags, which keep the grabbed scene point under the cursor at any drag speed."""
+
+    def _middle_drag(self, start: QPoint, step: QPoint, steps: int) -> QPoint:
+        """Drags with the middle button from `start` in `steps` moves of `step`, returning the end point."""
+        def mouse_event(event_type: QEvent.Type, pos: QPoint, button: Qt.MouseButton,
+                        buttons: Qt.MouseButton) -> QMouseEvent:
+            return QMouseEvent(event_type, QPointF(pos), QPointF(pos), button, buttons, Qt.KeyboardModifier.NoModifier)
+
+        middle = Qt.MouseButton.MiddleButton
+        self.view.mousePressEvent(mouse_event(QEvent.Type.MouseButtonPress, start, middle, middle))
+        pos = QPoint(start)
+        for _ in range(steps):
+            pos += step
+            self.view.mouseMoveEvent(mouse_event(QEvent.Type.MouseMove, pos, Qt.MouseButton.NoButton, middle))
+        self.view.mouseReleaseEvent(mouse_event(QEvent.Type.MouseButtonRelease, pos, middle,
+                                                Qt.MouseButton.NoButton))
+        return pos
+
+    def test_drag_keeps_grabbed_point_under_cursor(self) -> None:
+        """Slow and fast drags in each direction, zoomed in and out, end with the grabbed point under the cursor."""
+        start = QPoint(200, 150)
+        for scale in (0.5, 1.0, 2.0):
+            for direction in (QPoint(1, 0), QPoint(-1, 0), QPoint(0, 1), QPoint(0, -1)):
+                for step_size in (1, 20):
+                    with self.subTest(scale=scale, direction=direction, step_size=step_size):
+                        self.view.reset_scale()
+                        self.view.scene_scale = scale
+                        grabbed = self.view.mapToScene(start)
+                        end = self._middle_drag(start, direction * step_size, 60 // step_size)
+                        tolerance = 2.0 / scale
+                        self.assert_points_close(grabbed, self.view.mapToScene(end), tolerance)
+
+    def test_repeated_offset_set_does_not_move_view(self) -> None:
+        """Setting the offset to its current value leaves the view in place, however many times it is set."""
+        self.view.scene_scale = 1.3
+        center = self.view.rect().center()
+        before = self.scene_point_at(center)
+        for _ in range(20):
+            self.view.offset = self.view.offset
+        self.assert_points_close(before, self.scene_point_at(center), 1.0)
 
 
 class ZoomToBoundsTest(ImageGraphicsViewTestCase):

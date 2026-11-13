@@ -102,5 +102,6 @@ class BlurFilter(ImageFilter):
                       3.0,
                       RADIUS_DESCRIPTION,
                       0.0,
-                      MAX_VALUE)
+                      MAX_VALUE,
+                      1.0)
         ]

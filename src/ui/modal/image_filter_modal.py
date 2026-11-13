@@ -1,7 +1,8 @@
 """Popup modal window that applies an arbitrary image filtering action.
 
 The preview fills the left of the window and the filter's controls sit in a column on the right. A window taller than
-it is wide stacks them instead. Holding the compare button, or the compare modifier key, shows the unfiltered image.
+it is wide stacks them instead. Holding the compare button, at the left of the footer, or the compare modifier key,
+shows the unfiltered image.
 """
 from dataclasses import dataclass
 from typing import Callable, Optional, TypeAlias, Any
@@ -9,8 +10,8 @@ from typing import Callable, Optional, TypeAlias, Any
 from shiboken6 import isValid
 from PySide6.QtCore import QEvent, QRect, QSize, Signal, QTimer
 from PySide6.QtGui import QImage, QIcon, QKeyEvent, QPainter, QPaintEvent, QResizeEvent, Qt
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QDialog, QLabel, QPushButton,
-                               QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QDialog, QLabel, QSizePolicy,
+                               QVBoxLayout, QWidget)
 
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.check_box import CheckBox
@@ -51,7 +52,6 @@ PREFERRED_PREVIEW_SIZE = QSize(520, 420)
 CONTROLS_COLUMN_WIDTH = 300
 # Delay after the last input change before a preview render starts, so slider drags don't queue a render per tick.
 PREVIEW_DEBOUNCE_MS = 100
-COMPARE_BUTTON_MARGIN = 8
 
 # parameters: filter_param_values: list
 FilterFunction: TypeAlias = Callable[[list[Any]], Optional[QImage]]
@@ -74,10 +74,6 @@ class _FilterPreview(QWidget):
         self._comparing = False
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(QSize(MIN_PREVIEW_SIZE, MIN_PREVIEW_SIZE))
-        self.compare_button = QPushButton(COMPARE_BUTTON_TEXT, self)
-        self.compare_button.setAutoDefault(False)
-        self.compare_button.pressed.connect(lambda: self.set_comparing(True))
-        self.compare_button.released.connect(lambda: self.set_comparing(False))
 
     @property
     def image(self) -> Optional[QImage]:
@@ -120,13 +116,6 @@ class _FilterPreview(QWidget):
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns a fixed preferred size."""
         return PREFERRED_PREVIEW_SIZE
-
-    def resizeEvent(self, event: QResizeEvent) -> None:  # pylint: disable=invalid-name
-        """Keeps the compare button in the bottom left corner."""
-        super().resizeEvent(event)
-        button_size = self.compare_button.sizeHint()
-        self.compare_button.setGeometry(COMPARE_BUTTON_MARGIN, self.height() - button_size.height()
-                                        - COMPARE_BUTTON_MARGIN, button_size.width(), button_size.height())
 
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws the shown image scaled to the widget, keeping its aspect ratio."""
@@ -195,6 +184,8 @@ class ImageFilterModal(QDialog):
 
     filter_active_only = Signal(bool)
     filter_selection_only = Signal(bool)
+    # Emitted with the parameter values after the Apply button applies the filter.
+    filter_applied = Signal(list)
 
     def __init__(self,
                  title: str,
@@ -263,6 +254,9 @@ class ImageFilterModal(QDialog):
         self._footer.accepted.connect(self._apply_change)
         self._footer.rejected.connect(self.close)
         self._apply_button = self._footer.confirm_button
+        self._compare_button = self._footer.add_secondary_button(COMPARE_BUTTON_TEXT)
+        self._compare_button.pressed.connect(lambda: self._preview.set_comparing(True))
+        self._compare_button.released.connect(lambda: self._preview.set_comparing(False))
         assert self._footer.cancel_button is not None
         self._cancel_button = self._footer.cancel_button
 
@@ -275,7 +269,7 @@ class ImageFilterModal(QDialog):
 
         self._update_compare_hint()
         KeyConfig().connect(self, KeyConfig.COMPARE_ORIGINAL_MODIFIER, self._update_compare_hint)
-        self._preview.compare_button.setVisible(prepare_original is not None)
+        self._compare_button.setVisible(prepare_original is not None)
         self._fit_to_screen()
         self._start_preview()
 
@@ -286,7 +280,7 @@ class ImageFilterModal(QDialog):
     def _update_compare_hint(self, *_) -> None:
         key_text = key_hint_text(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER))
         tooltip = COMPARE_BUTTON_TOOLTIP_WITH_KEY.format(key=key_text) if key_text else COMPARE_BUTTON_TOOLTIP
-        self._preview.compare_button.setToolTip(tooltip)
+        self._compare_button.setToolTip(tooltip)
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # pylint: disable=invalid-name
         """Stacks the preview over the controls while the window is taller than it is wide."""
@@ -295,7 +289,7 @@ class ImageFilterModal(QDialog):
 
     def _compare_from_modifiers(self, modifiers: Qt.KeyboardModifier) -> None:
         held = KeyConfig.modifier_held(KeyConfig.COMPARE_ORIGINAL_MODIFIER, held_modifiers=modifiers)
-        self._preview.set_comparing((held or self._preview.compare_button.isDown())
+        self._preview.set_comparing((held or self._compare_button.isDown())
                                     and self._prepare_original is not None)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # pylint: disable=invalid-name
@@ -357,4 +351,5 @@ class ImageFilterModal(QDialog):
     def _apply_change(self) -> None:
         param_values = [control.value() for control in self._param_inputs]
         self._apply_filter(param_values)
+        self.filter_applied.emit(param_values)
         self.close()

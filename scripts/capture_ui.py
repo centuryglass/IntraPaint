@@ -31,10 +31,16 @@ of each form, and the windows opened from menus.
 `--edit-mode` sets `Cache.EDIT_MODE` before any panel is built, for either kind of capture. Panels that show or hide
 controls by edit mode (the Stable Diffusion panels, the selection tool's controls) render that mode's layout.
 
+`--language CODE` captures in a translated language (any `.qm` in `resources/translations/`), to check translations for
+clipped or overflowing text. The translator is installed before `src/` is imported, as `IntraPaint.py` does. The theme
+fonts have no CJK glyphs and this script doesn't hide the system's fonts, so those characters come from whichever
+system font Qt falls back to. Their metrics, and so the clipping seen, depend on the machine.
+
 Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...] [--edit-mode MODE]
        python scripts/capture_ui.py --windows [--output DIR] [--only NAME_PART ...]
        python scripts/capture_ui.py --sheet [--only NAME_PART ...] [--widths W ...] [--heights H ...] [--scale S]
                                     [--overlay] [--edit-mode MODE]
+Any form also takes --language CODE.
 """
 import argparse
 import html
@@ -58,6 +64,22 @@ from typing import Optional
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QApplication
+
+from src.util.translation import ENGLISH, available_languages, install_translation
+
+
+def _requested_language() -> str:
+    """Returns the `--language` value, read before the full parser runs, or English if there is none."""
+    early_parser = argparse.ArgumentParser(add_help=False)
+    early_parser.add_argument('--language', default=ENGLISH)
+    return early_parser.parse_known_args()[0].language
+
+
+# Config labels and module-level `_tr` constants are translated when `src/` is imported, so the translator has to be
+# installed before the imports below. An unknown language is rejected by the full parser in `main`.
+_APP = QApplication.instance() or QApplication(sys.argv)
+_LANGUAGE = _requested_language()
+_TRANSLATOR = install_translation(_APP, _LANGUAGE) if _LANGUAGE in available_languages() else None
 
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
@@ -375,10 +397,11 @@ def main() -> None:
     parser.add_argument('--heights', nargs='+', type=int, default=list(SWEEP_HEIGHTS), help='Sweep sheet heights.')
     parser.add_argument('--scale', type=float, default=SHEET_SCALE, help='Sweep sheet scale.')
     parser.add_argument('--overlay', action='store_true', help='Outline each checked widget in sweep sheets.')
+    parser.add_argument('--language', choices=available_languages(), default=ENGLISH,
+                        help='UI language to capture in. Default: English.')
     parser.add_argument('--edit-mode', choices=EDIT_MODES, default=None,
                         help='Stable Diffusion edit mode to render panels in. Default: the test config\'s mode.')
     args = parser.parse_args()
-    _ = QApplication.instance() or QApplication(sys.argv)
     os.makedirs(args.output, exist_ok=True)
     try:
         if args.sheet:

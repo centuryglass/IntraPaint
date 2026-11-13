@@ -18,7 +18,6 @@ from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
-from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode, brush_selection_mode_for_gesture, compose_selection_image
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
@@ -38,7 +37,6 @@ CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon
 ICON_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 
 # Undo gesture that holds a REPLACE or INTERSECT stroke together with the clearing that precedes it:
-UNDO_GESTURE = 'SelectionBrushTool.stroke'
 
 class SelectionBrushTool(BrushTool):
     """Selects image content for image generation or editing."""
@@ -106,26 +104,24 @@ class SelectionBrushTool(BrushTool):
         """Applies the selection mode to the stroke about to start, with the subtract modifier read at the press.
 
         The brush only adds or removes pixels as it draws. REPLACE clears the selection first, and INTERSECT clears it
-        while keeping a copy that `_after_stroke_end` intersects with the stroke. Both happen in the undo gesture that
-        the stroke's own changes join, so the whole stroke is one undo step.
+        while keeping a copy that `_after_stroke_end` intersects with the stroke. Both join the stroke's undo gesture
+        (`STROKE_UNDO_GESTURE` in `src.tools.brush_tool`), so the whole stroke is one undo step.
         """
         self._stroke_mode = brush_selection_mode_for_gesture()
         self._brush.eraser = self._stroke_mode == SelectionMode.SUBTRACT
         if self._stroke_mode in (SelectionMode.REPLACE, SelectionMode.INTERSECT):
-            UndoStack().begin_gesture(UNDO_GESTURE)
             if self._stroke_mode == SelectionMode.INTERSECT:
                 self._selection_before_stroke = self._image_stack.selection_layer.image
             self._image_stack.selection_layer.clear()
 
     def _after_stroke_end(self) -> None:
-        """Finishes an INTERSECT stroke, and closes the undo gesture opened for REPLACE and INTERSECT strokes."""
+        """Finishes an INTERSECT stroke."""
         if self._stroke_mode not in (SelectionMode.REPLACE, SelectionMode.INTERSECT):
             return
         if self._selection_before_stroke is not None:
             with self._image_stack.selection_layer.borrow_image() as selection_image:
                 compose_selection_image(selection_image, self._selection_before_stroke, SelectionMode.INTERSECT)
             self._selection_before_stroke = None
-        UndoStack().end_gesture()
         self._stroke_mode = SelectionMode.ADD
 
     def set_brush_size(self, new_size: int) -> None:

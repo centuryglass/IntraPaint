@@ -142,7 +142,8 @@ class ImageFilterModalLayoutTest(IntraPaintTestCase):
         """Holding the compare button shows the original image, and releasing it shows the preview."""
         preview = self.modal._preview  # pylint: disable=protected-access
         self.assertIs(preview.shown_image(), self.big)
-        preview.compare_button.pressed.emit()
+        compare_button = self.modal._compare_button  # pylint: disable=protected-access
+        compare_button.pressed.emit()
         self.assertIs(preview.shown_image(), self.small)
-        preview.compare_button.released.emit()
+        compare_button.released.emit()
         self.assertIs(preview.shown_image(), self.big)

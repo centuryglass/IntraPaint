@@ -35,6 +35,12 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
      - [Resize image canvas window](#resize-image-canvas-window)
    - [Scale image (Ctrl+Alt+I)](#scale-image-ctrlalti)
      - [Scale image window](#scale-image-window)
+   - [Transform](#transform)
+     - [Flip image horizontally](#flip-image-horizontally)
+     - [Flip image vertically](#flip-image-vertically)
+     - [Rotate image 90° CW](#rotate-image-90-cw)
+     - [Rotate image 90° CCW](#rotate-image-90-ccw)
+     - [Rotate image 180°](#rotate-image-180)
    - [Crop to selection (Ctrl+Alt+Shift+C)](#crop-to-selection-ctrlaltshiftc)
    - [Crop to generation area (Ctrl+Alt+G)](#crop-to-generation-area-ctrlaltg)
    - [Fit canvas to layers (Ctrl+Alt+R)](#fit-canvas-to-layers-ctrlaltr)
@@ -51,7 +57,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
      - [Move layer up (Ctrl+])](#move-layer-up-ctrl)
      - [Move layer down (Ctrl+[)](#move-layer-down-ctrl)
      - [Move layer to top (Ctrl+Shift+])](#move-layer-to-top-ctrlshift)
-   - [Transform](#transform)
+   - [Transform](#transform-1)
      - [Mirror layer horizontally (Ctrl+Shift+H)](#mirror-layer-horizontally-ctrlshifth)
      - [Mirror layer vertically (Ctrl+Shift+V)](#mirror-layer-vertically-ctrlshiftv)
      - [Rotate layer 90° CW (Ctrl+Shift+R)](#rotate-layer-90-cw-ctrlshiftr)
@@ -72,6 +78,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Shrink selection (Ctrl+Alt+-)](#shrink-selection-ctrlalt-)
    - [Clear context pins (Ctrl+Alt+P)](#clear-context-pins-ctrlaltp)
 7. [Filters menu](#filters-menu)
+   - [Repeat last filter (Ctrl+F)](#repeat-last-filter-ctrlf)
    - [RGBA color balance (Ctrl+B)](#rgba-color-balance-ctrlb)
    - [Brightness/contrast (Ctrl+2)](#brightnesscontrast-ctrl2)
    - [Saturation (Ctrl+U)](#saturation-ctrlu)
@@ -86,7 +93,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [View LoRA models (Ctrl+Alt+2)](#view-lora-models-ctrlalt2)
    - [LCM mode (F10)](#lcm-mode-f10)
    - [Clear GPU memory](#clear-gpu-memory)
-   - [Select image generator (F11)](#select-image-generator-f11)
+   - [Select image generator (Alt+G)](#select-image-generator-altg)
      - [Image Generator Selection window](#image-generator-selection-window)
 9. [Window menu](#window-menu)
    - [Panels](#panels)
@@ -243,6 +250,8 @@ Actions that change how the image is shown, without changing the image.
 - **Selection overlay** (Ctrl+H): A checkable entry that shows or hides the fill over selected content. The selection
   outline stays visible and keeps its animation if outline animation is on.
 - **Rulers** (Ctrl+R): A checkable entry that shows or hides the rulers beside the image.
+- **Full screen** (F11): A checkable entry that switches the main window between full screen and its previous size.
+  Escape does not leave full screen, since tools use it.
 
 ---
 
@@ -304,6 +313,33 @@ Scaling the image behaves differently depending on whether AI upscaling is in us
     - **9c. Tile preprocessor settings**: Settings specific to the selected ControlNet preprocessor will be listed here. The one shown here (Downsampling Rate) can be increased to make the tile ControlNet less strict, but other preprocessors may have different options.
 10. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
 11. **Cancel button**: Closes the scaling window without making changes.
+
+### Transform
+
+Flips or rotates the whole image. Every layer moves with the image, including hidden and locked layers and content
+outside the image bounds, and so do the selection, context pins and generation area. Layer content is not resampled:
+each layer's transformation changes, as with the [layer menu's transform options](#transform-1). One undo restores
+everything. These options have no default shortcuts.
+
+#### Flip image horizontally
+
+Mirrors the image from left to right.
+
+#### Flip image vertically
+
+Mirrors the image from top to bottom.
+
+#### Rotate image 90° CW
+
+Rotates the image ninety degrees clockwise, swapping its width and height.
+
+#### Rotate image 90° CCW
+
+Rotates the image ninety degrees counter-clockwise, swapping its width and height.
+
+#### Rotate image 180°
+
+Turns the image upside down about its center.
 
 ### Crop to selection (Ctrl+Alt+Shift+C)
 
@@ -510,6 +546,10 @@ The Filters menu lets you apply various changes to image content. When selected,
 
 All filters are available in both the filter menu and the [filter brush tool](./tool_guide.md#-filter-brush-tool-shiftu).
 
+### Repeat last filter (Ctrl+F)
+
+Applies the last filter you applied from this menu again, with the same settings and without opening the filter window. The menu entry names that filter, for example "Repeat Blur". The "Change active layer only" choice is kept, while "Change selected areas only" follows whether anything is selected now. This option is disabled until a filter has been applied.
+
 ### RGBA color balance (Ctrl+B)
 
 This filter lets you multiply the intensity of each color component. It includes sliders for red, green, blue, and alpha (transparency) values, each starting at 1.0. These can be increased to strengthen their component, or decreased to weaken it.
@@ -598,7 +638,7 @@ This option is only visible when using Stable Diffusion, when the LCM LoRA model
 
 Removes cached models from GPU memory within ComfyUI. This entry is only shown when the ComfyUI generator is active.
 
-### Select image generator (F11)
+### Select image generator (Alt+G)
 
 Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable Diffusion image generator instead.  Support for other AI image generators may become available in the future.
 

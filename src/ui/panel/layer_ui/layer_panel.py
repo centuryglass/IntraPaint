@@ -264,6 +264,12 @@ class LayerPanel(DockPanel):
     def _select_offset(self, offset: int) -> None:
         self._image_stack.offset_active_selection(offset)
 
+    def _update_select_buttons(self) -> None:
+        """Disables 'select previous' at the start of the layer list and 'select next' at its end."""
+        active_layer = self._image_stack.active_layer
+        self._select_previous_button.setEnabled(self._image_stack.prev_layer(active_layer) is not None)
+        self._select_next_button.setEnabled(self._image_stack.next_layer(active_layer) is not None)
+
     def _thumbnail_size_chosen_slot(self, index: int) -> None:
         Cache().set(Cache.LAYER_THUMBNAIL_SIZE, self._thumbnail_size_box.itemData(index))
 
@@ -382,6 +388,7 @@ class LayerPanel(DockPanel):
         description = ONE_LAYER_DESCRIPTION if count == 1 else LAYER_COUNT_DESCRIPTION.format(count=count)
         self.header.set_description(description)
         self.set_title_note(description)
+        self._update_select_buttons()
         # The list's minimum height follows its row count (`LayerList.minimumSizeHint`):
         if self.available_size is not None:
             self.refit()
@@ -394,6 +401,7 @@ class LayerPanel(DockPanel):
         for button in (self._move_up_button, self._move_down_button):
             button.setEnabled(new_active_layer != self._image_stack.layer_stack)
         self._lock_change_slot()
+        self._update_select_buttons()
 
     def _lock_change_slot(self, *_args) -> None:
         # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.

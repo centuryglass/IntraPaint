@@ -128,16 +128,17 @@ class SectionPackerTest(IntraPaintTestCase):
         owner.pack()
         self.assertEqual(owner.packer.plan, [(owner.sections[0],), (owner.sections[2],)])
 
-    def test_toggle_replans_only_while_packing(self) -> None:
-        """Opening or closing a section asks for a plan while packing, and not after `release`."""
+    def test_toggle_replans_whether_or_not_packing(self) -> None:
+        """Opening or closing a section asks for a plan before packing, while packing and after `release`, since a
+        side panel's plan also depends on the sections' heights."""
         owner = _PackingOwner(10000)
         owner.sections[0].set_expanded(False)
-        self.assertEqual(owner.replans, 0)
+        self.assertEqual(owner.replans, 1)
         owner.pack()
         owner.sections[0].set_expanded(True)
-        self.assertEqual(owner.replans, 1)
+        self.assertEqual(owner.replans, 2)
         released = owner.packer.release()
         self.assertEqual(released, owner.sections)
         self.assertFalse(owner.packer.packing)
         owner.sections[0].set_expanded(False)
-        self.assertEqual(owner.replans, 1)
+        self.assertEqual(owner.replans, 3)

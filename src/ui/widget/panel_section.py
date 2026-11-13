@@ -6,13 +6,16 @@
 - Two states decide whether the body shows: the remembered choice (`is_expanded`) and a forced collapse
   (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice. A click on the
   header while forced emits `forced_header_clicked`, and the owner can show the body elsewhere with `detach_body` and
-  `restore_body`.
+  `restore_body`. While detached, a stand-in with the body's size hints takes its place in the layout, so the section
+  measures the same as with the body attached.
 - A section can mark its summary as a caution (`set_summary_caution`), drawing it in the caution color, for a value
   that changes what an action does.
 - A section can draw its collapsed header as a bar with the summary on a second line (`set_summary_below`), for
   columns too narrow for the title and summary on one line.
 - A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
   loses no controls.
+- A title widget (`set_title_widget`) sits right after the title and takes the header's spare width while the body
+  shows. While the section is collapsed it hides, and the summary takes its place.
 - The section holds no config. The owner stores `is_expanded` per section by connecting `expanded_changed`, and calls
   `set_expanded` to restore it.
 """
@@ -188,6 +191,51 @@ class _HeaderButton(QAbstractButton):
         super().keyPressEvent(event)
 
 
+class _BodyStandIn(QWidget):
+    """Takes a detached body's place in its section's layout, with the body's size hints read live.
+
+    Measuring a section with a stand-in gives the size the section would have with the body attached, which is what a
+    panel's fit planning needs to decide whether the section's body has room.
+    """
+
+    def __init__(self, body: QWidget, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._body = body
+        self.setSizePolicy(body.sizePolicy())
+        body.installEventFilter(self)
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the body's size hint."""
+        return self._body.sizeHint()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the body's minimum size hint."""
+        return self._body.minimumSizeHint().expandedTo(self._body.minimumSize())
+
+    def hasHeightForWidth(self) -> bool:  # pylint: disable=invalid-name
+        """Returns whether the body's layout trades height for width."""
+        layout = self._body.layout()
+        return layout is not None and layout.hasHeightForWidth()
+
+    def heightForWidth(self, width: int) -> int:  # pylint: disable=invalid-name
+        """Returns the body's height at `width`."""
+        layout = self._body.layout()
+        return layout.heightForWidth(width) if layout is not None else -1
+
+    def eventFilter(self, watched, event) -> bool:  # pylint: disable=invalid-name
+        """Passes the body's layout changes on to the section's layout."""
+        if watched is self._body and event.type() == QEvent.Type.LayoutRequest:
+            self.updateGeometry()
+        return False
+
+    def release(self) -> None:
+        """Stops watching the body, and schedules the stand-in's deletion."""
+        self._body.removeEventFilter(self)
+        self.hide()
+        self.setParent(None)
+        self.deleteLater()
+
+
 class PanelSection(QWidget):
     """A titled group of controls that collapses to its header line."""
 
@@ -201,6 +249,7 @@ class PanelSection(QWidget):
         self._expanded = expanded
         self._forced_collapsed = False
         self._body_detached = False
+        self._stand_in: Optional[_BodyStandIn] = None
         self._header_visible = True
         self._summary = ''
         self._summary_fn: Optional[Callable[[], str]] = None
@@ -208,6 +257,7 @@ class PanelSection(QWidget):
         self._header_button.clicked.connect(self._toggle)
         self._actions = QHBoxLayout()
         self._action_widgets: list[QWidget] = []
+        self._title_widget: Optional[QWidget] = None
         self._actions.setContentsMargins(0, 0, CHEVRON_MARGIN, 0)
         self._actions.setSpacing(ACTION_SPACING)
         layout = QVBoxLayout(self)
@@ -234,6 +284,8 @@ class PanelSection(QWidget):
         self._header_button.setAccessibleName(title)
         self._header_button.updateGeometry()
         self._header_button.update()
+        # A title widget's minimum width depends on the title:
+        self._apply_state()
 
     @property
     def body(self) -> QWidget:
@@ -323,6 +375,29 @@ class PanelSection(QWidget):
         self._action_widgets.append(widget)
         widget.setVisible(self._header_visible)
 
+    @property
+    def title_widget(self) -> Optional[QWidget]:
+        """The widget after the title, if any."""
+        return self._title_widget
+
+    def set_title_widget(self, widget: Optional[QWidget]) -> None:
+        """Puts a widget right after the title, where it takes the header's spare width, or removes the current one with
+        None. A removed widget stays a child of the section, hidden, for the owner to move elsewhere.
+
+        The widget shows while the header shows and the body does. The section sets its visibility, so the owner hides
+        it only by removing it.
+        """
+        if widget is self._title_widget:
+            return
+        if self._title_widget is not None:
+            self._header_layout.removeWidget(self._title_widget)
+            self._title_widget.hide()
+        self._title_widget = widget
+        if widget is not None:
+            self._header_layout.insertWidget(1, widget, 1)
+        self._header_layout.invalidate()
+        self._apply_state()
+
     def add_header_keycap(self, key_text: str) -> KeycapBadge:
         """Adds keycaps for the key binding `key_text` to the right of the header and returns them."""
         badge = KeycapBadge(key_text)
@@ -335,15 +410,23 @@ class PanelSection(QWidget):
 
     def detach_body(self) -> QWidget:
         """Takes the body out of the section for the owner to show elsewhere, and returns it. The section keeps its
-        header. `restore_body` puts it back."""
-        self._body_detached = True
-        self.layout().removeWidget(self._body)
+        header, with a stand-in for measuring. `restore_body` puts it back."""
+        if not self._body_detached:
+            self._body_detached = True
+            self.layout().removeWidget(self._body)
+            self._stand_in = _BodyStandIn(self._body, self)
+            self.layout().addWidget(self._stand_in)
+            self._apply_state()
         return self._body
 
     def restore_body(self) -> None:
         """Puts a body taken with `detach_body` back under the header, shown or hidden by the section's state."""
         if self._body_detached:
             self._body_detached = False
+            if self._stand_in is not None:
+                self.layout().removeWidget(self._stand_in)
+                self._stand_in.release()
+                self._stand_in = None
             self._body.setParent(self)
             self.layout().addWidget(self._body)
             self._apply_state()
@@ -356,7 +439,16 @@ class PanelSection(QWidget):
 
     def _apply_state(self) -> None:
         collapsed = self.is_collapsed()
-        if not self._body_detached:
+        # The header button takes the spare width while it has a summary to show, and the title widget otherwise:
+        title_widget_shown = self._title_widget is not None and self._header_visible and not collapsed
+        if self._title_widget is not None:
+            self._title_widget.setVisible(title_widget_shown)
+        self._header_layout.setStretchFactor(self._header_button, 0 if title_widget_shown else 1)
+        # The title widget gives up width before the title does:
+        self._header_button.setMinimumWidth(self._header_button.sizeHint().width() if title_widget_shown else 0)
+        if self._stand_in is not None:
+            self._stand_in.setVisible(not collapsed)
+        else:
             self._body.setVisible(not collapsed)
         self._header_button.set_summary(self._summary, not collapsed)
         self._header_button.setAccessibleDescription(self._summary)

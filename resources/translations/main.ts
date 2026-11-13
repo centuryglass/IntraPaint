@@ -3274,6 +3274,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Full screen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch the main window between full screen and its previous size.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Canvas size...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3295,6 +3305,56 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Scale image content to a new size.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Flip image horizontally</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Mirror every layer, the selection and the generation area from left to right.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Flip image vertically</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Mirror every layer, the selection and the generation area from top to bottom.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate image 90° CW</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate the whole image 90 degrees clockwise, swapping its width and height.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate image 90° CCW</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate the whole image 90 degrees counter-clockwise, swapping its width and height.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate image 180°</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate the whole image 180 degrees.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3664,17 +3724,27 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Repeat last filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Apply the last filter again with the same settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Filters Menu</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>RGBA color balance...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Adjust RGBA color channels</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Filters Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3896,6 +3966,11 @@
     <message>
         <location filename="../../src/controller/app_controller.py"/>
         <source>Fil&amp;ters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Repeat {filter_name}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4796,6 +4871,11 @@
     <message>
         <location filename="../../src/controller/image_io.py"/>
         <source>Reload without saving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Open without saving</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7109,7 +7189,27 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>X and Y: distance from the left and top edges of the resized canvas to the current image content. Drag the preview to move the image.</source>
+        <source>Drag the preview to move the image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>X-offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Y-offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Horizontal offset of the image within the resized canvas</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Vertical offset of the image within the resized canvas</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7972,11 +8072,6 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
-        <source>Image commands</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
         <source>The whole image. Click to select it.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8347,6 +8442,14 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.panel.mypaint_brush_grid</name>
+    <message>
+        <location filename="../../src/ui/panel/mypaint_brush_grid.py"/>
+        <source>Toggle favorite</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.mypaint_brush_panel</name>
     <message>
         <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
@@ -8370,12 +8473,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
-        <source>Toggle favorite</source>
+        <source>No brush</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
-        <source>No brush</source>
+        <source>Brush category</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

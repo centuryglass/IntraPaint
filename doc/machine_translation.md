@@ -223,8 +223,9 @@ Automated checks run on every translation file after every batch:
 - punctuation and spacing follow the language's style section, where a rule can be checked mechanically (the same
   script; the rules are `STYLE_RULES` and `LABEL_COLONS` in it, so a new language's checkable rules are added there).
 
-Then run `python scripts/capture_ui.py --sheet` in the language for the batch's panels and windows, and look for
-clipped or overflowing text, which needs no knowledge of the language to spot. The batch PR names the sheets checked.
+Then run `python scripts/capture_ui.py --sheet --language <code>` (and `--windows --language <code>`) for the batch's
+panels and windows, and look for clipped or overflowing text, which needs no knowledge of the language to spot. CJK
+glyphs come from the system's fonts, so the result depends on the machine. The batch PR names the sheets checked.
 
 Once every batch is merged, a model from a different family than the translator makes a consistency pass over the
 whole file, following "Reviewing as a model" for the Glossary category only, and lists every English string that has

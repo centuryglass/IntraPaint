@@ -56,6 +56,15 @@
     "&Image": [
       "Canvas size...",
       "Scale image...",
+      {
+        "Transform": [
+          "Flip image horizontally",
+          "Flip image vertically",
+          "Rotate image 90\u00b0 CW",
+          "Rotate image 90\u00b0 CCW",
+          "Rotate image 180\u00b0"
+        ]
+      },
       "----",
       "Crop to selection",
       "Crop to generation area",
@@ -119,7 +128,8 @@
       "----",
       "Rulers [checkable]",
       "Tool control hints [checkable]",
-      "Selection overlay [checkable]"
+      "Selection overlay [checkable]",
+      "Full screen [checkable]"
     ],
     "&Window": [
       "Tools [checkable]",
@@ -140,6 +150,8 @@
       }
     ],
     "Fil&ters": [
+      "Repeat last filter",
+      "----",
       "RGBA color balance...",
       "Brightness/contrast...",
       "Saturation...",

@@ -14,12 +14,13 @@ join the block's grid, and can be planned with its items.
 
 Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
 - Side: the Stroke and options sections share column 1, and a preview beside them takes column 2. Tool sections go
-  below, spanning every column up to their own width caps. Strip: the Stroke section, the options section and the tool
-  sections fill columns in that order, then a preview beside them. A column stacks sections top to bottom while they
-  fit the strip's height (`src.ui.layout.column_packing`), so a collapsed section lets the next one move up beneath
-  it. A stretching tool section always has a column to itself.
+  below, spanning every column up to their own width caps. Strip: the Stroke section, the options section and the
+  tool sections that don't stretch fill columns in that order, then the stretching tool sections, then a preview beside
+  them. A column stacks sections top to bottom while they fit the strip's height (`src.ui.layout.column_packing`), so a
+  collapsed section lets the next one move up beneath it. A stretching tool section always has a column to itself.
 - Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
-  instead of stretching the columns apart.
+  instead of stretching the columns apart. A stretching tool section's column takes that spare width instead, and the
+  other columns keep their size hints.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
   when it doesn't fit across. In a strip the color pair row stays inline, because stacking would make it taller.
 - In a strip, the checkboxes take one row each when the strip is tall enough for the extra row. A tool with a color
@@ -31,6 +32,7 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
 - Headers are required in a side panel and optional in a strip, where they cost height.
 """
 from dataclasses import dataclass
+from functools import partial
 from typing import Callable, Optional
 
 from PySide6.QtCore import QEvent, QSize, Qt, Signal
@@ -46,11 +48,13 @@ from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.panel.tool_control_panels.stroke_preview import StrokePreview
 from src.ui.layout.column_packing import SectionPacker
+from src.ui.layout.dock_panel import host_dock_panel
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size, \
     held_weakly
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.section_popover import SectionPopover
 from src.util.layout import layout_contents, add_layout
 from src.ui.input_fields.field_factory import create_control_widget
 
@@ -174,7 +178,7 @@ class StrokeBlock(QWidget):
     `preview` is the tool's stroke preview, if it has one.
 
     `section_toggled` is emitted when the user opens or closes one of the block's sections or a tool section. The
-    owner plans again, since a strip's columns depend on the sections' heights.
+    owner plans again, since the plan depends on the sections' heights.
     """
 
     section_toggled = Signal()
@@ -525,7 +529,10 @@ class StrokeBlock(QWidget):
             self._grid.setColumnStretch(added, CONTROL_COLUMN_STRETCH)
             added += 1
 
-        if not self._packer.pack((self._stroke_section, self._options_section, *tool_sections),
+        # Stretching sections go last, so the sections before them can share columns:
+        ordered = [*(section for section in tool_sections if section not in stretching),
+                   *(section for section in tool_sections if section in stretching)]
+        if not self._packer.pack((self._stroke_section, self._options_section, *ordered),
                                  max(self._grid.verticalSpacing(), 0), _add_column, _clear, stretching):
             return
         # The preview is decorative, so it follows the tool's own columns:
@@ -533,7 +540,14 @@ class StrokeBlock(QWidget):
             self._grid.addWidget(self._preview, 0, added)
             self._grid.setColumnStretch(added, CONTROL_COLUMN_STRETCH)
             added += 1
-        self._grid.setColumnStretch(added, SPARE_COLUMN_STRETCH)
+        # A shown stretching section's column takes the spare width, and the other columns keep their size hints:
+        stretching_columns = [index for index, column in enumerate(self._packer.plan)
+                              if any(section in stretching for section in column)]
+        if len(stretching_columns) == 0:
+            self._grid.setColumnStretch(added, SPARE_COLUMN_STRETCH)
+        else:
+            for index in range(added):
+                self._grid.setColumnStretch(index, CONTROL_COLUMN_STRETCH if index in stretching_columns else 0)
         # Height beyond what the sections need goes below them:
         self._grid.setRowStretch(1, 1)
 
@@ -549,6 +563,8 @@ class StrokeToolPanel(QWidget):
     - Sections added with `add_tool_section` join the block's arrangement, and those given a `FitItem` are planned
       with the block's items. Controls a plan leaves out go in `overflow_content`, which the Tools panel shows in its
       More popover.
+    - A section a plan forced collapsed shows its body in a popover under its header when clicked. The body returns to
+      the section when the popover closes or a plan expands the section.
     - `set_orientation` arranges it for an orientation, vertical for a side panel. Subclasses extend it for their own
       sections.
     """
@@ -559,6 +575,7 @@ class StrokeToolPanel(QWidget):
         self._orientation = Qt.Orientation.Vertical
         self._space: Optional[QSize] = None
         self._planning = False
+        self._section_popover: Optional[SectionPopover] = None
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(block)
@@ -569,7 +586,7 @@ class StrokeToolPanel(QWidget):
         self._overflow_layout = QVBoxLayout(self._overflow)
         self._overflow_layout.setContentsMargins(0, 0, 0, 0)
         self._planner = self._build_planner()
-        block.section_toggled.connect(self._replan)
+        block.section_toggled.connect(self._section_toggled)
 
     @property
     def stroke_block(self) -> StrokeBlock:
@@ -591,10 +608,17 @@ class StrokeToolPanel(QWidget):
         method is held weakly, since the panel usually owns it.
         """
         self._block.add_tool_section(section, stretch)
+        section.forced_header_clicked.connect(partial(self._open_section_popover, section))
         if item is not None:
             assert apply is not None
             self._tool_items.append((item, held_weakly(apply)))
             self._planner = self._build_planner()
+
+    def add_fit_item(self, item: FitItem, apply: Callable[[Orientation, Optional[int]], None]) -> None:
+        """Adds an item to plan with the block's that belongs to no new section, such as another form of a section's
+        controls. Planning calls `apply` as for `add_tool_section`, after the items added before it."""
+        self._tool_items.append((item, held_weakly(apply)))
+        self._planner = self._build_planner()
 
     def overflow_content(self) -> QWidget:
         """Returns the widget holding controls the latest plan left out, for the host's More popover. Subclasses add
@@ -621,7 +645,21 @@ class StrokeToolPanel(QWidget):
 
     def _build_planner(self) -> FitPlanner:
         items = [*self._block.fit_items, *(item for item, _ in self._tool_items)]
-        return FitPlanner(items, self._apply_fit, self._measure_fit)
+        return FitPlanner(items, self._apply_fit, self._measure_fit, finish=self._plan_finished)
+
+    def _plan_finished(self, _orientation: Orientation) -> None:
+        """Closes the section popover once the final plan no longer collapses its section. Trial placements expand
+        sections the final plan collapses, so only the final plan decides."""
+        popover = self._section_popover
+        section = None if popover is None else popover.section
+        if section is not None and (section.isHidden() or not section.is_collapsed()):
+            popover.close_section()
+
+    def _open_section_popover(self, section: PanelSection) -> None:
+        """Shows a forced-collapsed section's body in a popover under its header."""
+        if self._section_popover is None:
+            self._section_popover = SectionPopover(self)
+        self._section_popover.open_section(section)
 
     def _measure_fit(self) -> QSize:
         return fresh_minimum_size(self)
@@ -640,8 +678,16 @@ class StrokeToolPanel(QWidget):
                 reserved += fresh_minimum_size(widget).height() + spacing
         return space.height() - reserved
 
+    def _section_toggled(self) -> None:
+        """Plans the hosting panel again after a section opens or closes, or this panel alone without a host."""
+        host = host_dock_panel(self)
+        if host is not None:
+            host.refit()
+        else:
+            self._replan()
+
     def _replan(self) -> None:
-        """Plans again after a section opens or closes in a strip, since its height decides the columns."""
+        """Plans this panel again in its latest space, after a change to its content."""
         space = self._space if self._space is not None else self.size()
         self._planner.update(self._fit_orientation(), space, force=True)
 

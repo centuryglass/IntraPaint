@@ -294,10 +294,8 @@ class Config:
         for key, entry in self._entries.items():
             if key not in json_data or entry.pinned:
                 continue
-            saved_value, saved_range = entry.json_state(json_data[key])
-            default_value, default_range = entry.default_json_state()
-            if saved_range == default_range and \
-                    (saved_value == default_value or saved_value in self.PREVIOUS_DEFAULTS.get(key, [])):
+            saved_value = entry.saved_json_value(json_data[key])
+            if saved_value == entry.default_json_value() or saved_value in self.PREVIOUS_DEFAULTS.get(key, []):
                 del json_data[key]
 
     def _migrations(self) -> list[Callable[[dict[str, Any]], None]]:
