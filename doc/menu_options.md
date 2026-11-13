@@ -93,7 +93,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [View LoRA models (Ctrl+Alt+2)](#view-lora-models-ctrlalt2)
    - [LCM mode (F10)](#lcm-mode-f10)
    - [Clear GPU memory](#clear-gpu-memory)
-   - [Select image generator (Alt+G)](#select-image-generator-altg)
+   - [Select image generator (Ctrl+F4)](#select-image-generator-ctrlf4)
      - [Image Generator Selection window](#image-generator-selection-window)
 9. [Window menu](#window-menu)
    - [Panels](#panels)
@@ -638,7 +638,7 @@ This option is only visible when using Stable Diffusion, when the LCM LoRA model
 
 Removes cached models from GPU memory within ComfyUI. This entry is only shown when the ComfyUI generator is active.
 
-### Select image generator (Alt+G)
+### Select image generator (Ctrl+F4)
 
 Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable Diffusion image generator instead.  Support for other AI image generators may become available in the future.
 
