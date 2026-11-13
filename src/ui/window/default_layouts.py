@@ -43,8 +43,8 @@ LAYOUT_SMALL = (
 
 def select_default_layout_state(width: int, height: int) -> str:
     """Picks a bundled default layout by window (or screen, before the window is sized) width and height."""
-    if width >= 850 and height >= 1200:
+    if width >= 850 and height >= 1200 and height > width * 1.3:
         return LAYOUT_4K_TALL
-    if width >= 1300 and height >= 80:
+    if width >= 1300 and height >= 800:
         return LAYOUT_1080P
     return LAYOUT_SMALL

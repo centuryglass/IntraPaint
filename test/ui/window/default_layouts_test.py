@@ -22,13 +22,17 @@ class SelectDefaultLayoutTest(IntraPaintTestCase):
     """Tests `select_default_layout_state` alone."""
 
     def test_common_sizes_pick_their_layout(self) -> None:
-        """A small screen gets the small layout, a 1080p screen the 1080p layout, and a tall portrait screen the tall
-        layout."""
+        """A small or short screen gets the small layout, a large landscape screen the 1080p layout, and a large
+        portrait screen the tall layout."""
         cases = {
             QSize(800, 600): LAYOUT_SMALL,
             QSize(1024, 600): LAYOUT_SMALL,
             QSize(1280, 720): LAYOUT_SMALL,
+            QSize(1366, 768): LAYOUT_SMALL,
             QSize(1920, 1080): LAYOUT_1080P,
+            QSize(1920, 1200): LAYOUT_1080P,
+            QSize(3840, 2160): LAYOUT_1080P,
+            QSize(2560, 2560): LAYOUT_1080P,
             QSize(1080, 1920): LAYOUT_4K_TALL,
             QSize(2160, 3840): LAYOUT_4K_TALL
         }
