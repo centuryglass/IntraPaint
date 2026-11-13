@@ -56,7 +56,7 @@ MAX_SCROLL_SPEED = 10
 
 
 class ImageStrip(QWidget):
-    """The root group's row: its eye, name and canvas size, and a context menu with rename, crop to selection and mirror.
+    """The root group's row: its eye, name and canvas size, and a context menu with rename, crop and mirror.
 
     Its eye lines up with the rows' eyes. Clicking it selects the root, and it shows the selection like a row.
     """
