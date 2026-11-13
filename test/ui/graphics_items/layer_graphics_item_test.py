@@ -2,7 +2,7 @@
 import sys
 
 import numpy as np
-from PySide6.QtCore import QPoint, QRect, QSize
+from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
@@ -145,3 +145,22 @@ class LayerGraphicsItemTest(IntraPaintTestCase):
         self.assertEqual(self.image_stack.layer_stack.bounds, bounds.translated(-15, -9))
         _paint_noise(self.top, QRect(0, 0, 20, 12), 50)
         self.assert_view_matches_render('after painting a layer in the moved stack')
+
+
+class OpaqueContentTest(IntraPaintTestCase):
+    """Tests that an item built from fully opaque content can still show transparency afterwards."""
+
+    def test_hiding_opaque_content_shows_transparency(self) -> None:
+        """The item's pixmap keeps an alpha channel for opaque content, so hiding the layer shows what is behind."""
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        opaque = QImage(QSize(64, 64), QImage.Format.Format_ARGB32_Premultiplied)
+        opaque.fill(Qt.GlobalColor.red)
+        image_stack.load_image(opaque)
+        image_stack.flush_render()
+        viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        item = next(scene_item for scene_item in viewer.scene().items()
+                    if isinstance(scene_item, LayerGraphicsItem) and scene_item.layer is image_stack.layer_stack)
+        self.assertTrue(item.pixmap().hasAlphaChannel())
+        image_stack.layer_stack.get_layer_by_index(0).set_visible(False)
+        image_stack.flush_render()
+        self.assertEqual(displayed_image(viewer, image_stack).pixelColor(10, 10).alpha(), 0)

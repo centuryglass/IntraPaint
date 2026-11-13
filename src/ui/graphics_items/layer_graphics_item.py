@@ -124,7 +124,10 @@ class LayerGraphicsItem(PixmapItem):
                 self.prepareGeometryChange()
             # fromImage shares the image's data, and a group paints its next renders into that image, so sharing
             # would make both sides copy it in full on their next paint.
-            self._pixmap = QPixmap() if image.isNull() else QPixmap.fromImage(image.copy())
+            # NoOpaqueDetection keeps the alpha channel when the content is fully opaque. Without it the pixmap has no
+            # alpha, and later partial updates that erase or hide content paint black instead of transparency.
+            self._pixmap = QPixmap() if image.isNull() else QPixmap.fromImage(
+                image.copy(), Qt.ImageConversionFlag.NoOpaqueDetection)
             self._pixmap_origin = QPoint(origin)
             self.update()
         else:
