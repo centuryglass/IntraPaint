@@ -119,7 +119,8 @@
       "----",
       "Rulers [checkable]",
       "Tool control hints [checkable]",
-      "Selection overlay [checkable]"
+      "Selection overlay [checkable]",
+      "Full screen [checkable]"
     ],
     "&Window": [
       "Tools [checkable]",

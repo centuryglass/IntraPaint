@@ -84,6 +84,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
         'reset_view_shortcut': ['Ctrl+Alt+0'],
         'zoom_to_gen_area_shortcut': ['Ctrl+Alt+Z'],
         'toggle_rulers_shortcut': ['Ctrl+Alt+Shift+R'],
+        'generator_select_shortcut': ['F11'],
         'resize_canvas_shortcut': ['F2', 'Shift+F2'],
         'scale_image_shortcut': ['F3'],
         'crop_image_shortcut': ['Ctrl+Alt+C'],

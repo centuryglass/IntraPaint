@@ -3,6 +3,7 @@ import sys
 from typing import Any
 from unittest.mock import patch
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox
 
 from src.config.key_config import KeyConfig
@@ -112,6 +113,25 @@ class TestAppControllerMenus(IntraPaintTestCase):
         modal = self.controller._settings_modal
         assert modal is not None
         self.assertIn(KEYBINDINGS_CATEGORY, modal.categories())
+
+    def test_full_screen_entry_follows_window_state(self):
+        """View > Full screen toggles the window's full screen flag, and its check state follows any change."""
+        window = self.controller._window
+        action = self.controller.get_action_for_method(self.controller.toggle_full_screen)
+        self.assertTrue(action.isCheckable())
+        self.assertFalse(action.isChecked())
+        self.controller.toggle_full_screen()
+        self.assertTrue(window.isFullScreen())
+        self.assertTrue(action.isChecked())
+        # A change made outside the menu, as a window manager would:
+        window.setWindowState(window.windowState() & ~Qt.WindowState.WindowFullScreen)
+        self.assertFalse(window.isFullScreen())
+        self.assertFalse(action.isChecked())
+        self.controller.toggle_full_screen()
+        self.assertTrue(action.isChecked())
+        self.controller.toggle_full_screen()
+        self.assertFalse(window.isFullScreen())
+        self.assertFalse(action.isChecked())
 
     def test_help_links_open_project_pages(self):
         """Help > Report a bug and Release notes open the issue tracker and the releases page."""

@@ -863,6 +863,15 @@
         "default": "Ctrl+R,Ctrl+Alt+Shift+R",
         "saved": true
     },
+    "toggle_full_screen_shortcut": {
+        "label": "Full screen",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Switch the main window between full screen and its previous size.",
+        "type": "string",
+        "default": "F11",
+        "saved": true
+    },
     "resize_canvas_shortcut": {
         "label": "Canvas size...",
         "category": "Menu Shortcuts",
@@ -923,7 +932,7 @@
         "subcategory": "Generation Menu",
         "description": "Selects an AI image generator",
         "type": "string",
-        "default": "F11",
+        "default": "Alt+G",
         "saved": true
     },
     "generate_shortcut": {
