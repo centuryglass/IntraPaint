@@ -10,7 +10,9 @@ their state survives.
   otherwise moves into the popover of the header's "More" button (`PanelHeader`). A `decorative` optional control
   hides instead.
 - A control with several forms gets a callback per form, largest first. Planning calls the one for the form that fits.
-- The header is a required item. A strip too short for it hides it and moves its More button to the end of the row.
+- The header is a required item. A strip too short for it hides it and moves its More button to the top of the row's
+  end. A subclass that hides the header in a side panel gets the More button in the top-right corner, in a top margin
+  raised to the button's height (`finish_placement`).
 - A footer set with `set_footer` stays below the scrolled content, and counts toward the panel's minimum size.
 - A subclass can fill a pinned column (`pinned_layout`) that stays left of content that scrolls sideways, and a
   trailing column (`trailing_layout`) that stays right of it. While the pinned column shows, the footer sits under it.
@@ -281,6 +283,8 @@ class DockPanel(QWidget):
         self._strip_scroll_limit: Optional[float] = None
         self._fresh_sizes: Optional[dict[QWidget, QSize]] = None
         self._header_collapsed = False
+        # Whether the More button shows in the top-right corner, outside any layout (`finish_placement`):
+        self._more_in_corner = False
         self._title_note = ''
         self._scrolls = False
         self._overflow: list[QWidget] = []
@@ -497,7 +501,7 @@ class DockPanel(QWidget):
 
     @property
     def header_collapsed(self) -> bool:
-        """Whether the header is hidden, with its More button at the end of the row."""
+        """Whether the header is hidden, with its More button at the top right (`finish_placement`)."""
         return self._header_collapsed
 
     @property
@@ -559,6 +563,7 @@ class DockPanel(QWidget):
         """Plans for the new size."""
         super().resizeEvent(event)
         self._update_plan(None, self._inside_inset(self.size()))
+        self._place_corner_more_button()
 
     def _update_plan(self, orientation: Optional[Orientation], available: QSize, force: bool = False) -> None:
         """Plans for an available size, then records the cross extent the content overflows to, if it overflows.
@@ -729,6 +734,8 @@ class DockPanel(QWidget):
         if not self._header.isHidden() and self._header.parentWidget() is self:
             header = self._fresh_size(self._header)
             content = QSize(max(content.width(), header.width()), content.height() + spacing + header.height())
+        # The More button's corner, while a side panel's header is hidden, raises the top margin above the inset:
+        content.setHeight(content.height() + self.layout().contentsMargins().top() - self._inset)
         if self._footer is not None and not self._footer.isHidden() and self._footer.parentWidget() is self:
             assert self._footer_divider is not None
             footer = self._fresh_size(self._footer)
@@ -863,16 +870,39 @@ class DockPanel(QWidget):
             self._header.resize(self.header_width(available), self._header.height())
 
     def finish_placement(self) -> None:
-        """Updates the More popover and button after every item is placed. Overrides should call this."""
+        """Updates the More popover and button after every item is placed. Overrides should call this.
+
+        While the header is hidden, the More button stays at the top right. A strip ends its row with it, aligned to
+        the top. A side panel puts it in the corner above the scroll area, and raises the top margin to the button's
+        height while the button shows, so the corner takes no full row.
+        """
         content = self.more_content()
         self._header.set_popover_content(content)
         more_button = self._header.more_button
-        if self._header_collapsed:
-            self._body_layout.addWidget(more_button)
-        else:
+        in_corner = self._header_collapsed and self._orientation == Orientation.SIDE
+        if not self._header_collapsed:
             self._header.restore_more_button()
+        elif in_corner:
+            self._body_layout.removeWidget(more_button)
+            more_button.setParent(self)
+        else:
+            self._body_layout.addWidget(more_button, 0, Qt.AlignmentFlag.AlignTop)
         # Reparenting hides a widget:
         more_button.setVisible(content is not None)
+        self._more_in_corner = in_corner and content is not None
+        margins = self.layout().contentsMargins()
+        top = max(self._inset, more_button.height()) if self._more_in_corner else self._inset
+        if margins.top() != top:
+            margins.setTop(top)
+            self.layout().setContentsMargins(margins)
+        self._place_corner_more_button()
+
+    def _place_corner_more_button(self) -> None:
+        """Puts the More button in the top-right corner while it sits there, right-aligned with the content."""
+        if self._more_in_corner:
+            more_button = self._header.more_button
+            more_button.move(self.width() - self.layout().contentsMargins().right() - more_button.width(), 0)
+            more_button.raise_()
 
     def more_content(self) -> Optional[QWidget]:
         """Returns the widget the More popover shows, or None to hide the More button. By default it holds the
