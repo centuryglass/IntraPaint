@@ -977,7 +977,7 @@
         "subcategory": "Generation Menu",
         "description": "Selects an AI image generator",
         "type": "string",
-        "default": "Alt+G",
+        "default": "Ctrl+F4",
         "saved": true
     },
     "generate_shortcut": {
