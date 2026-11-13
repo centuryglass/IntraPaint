@@ -27,7 +27,6 @@ from src.ui.panel.layer_ui.layer_row import (INDENT, MIN_NAME_TEXT, ROW_PADDING,
                                              SMALL_THUMBNAIL_SIZE, LayerNameLabel, LayerRow, refused_drop_color,
                                              selection_fill_color, selection_stripe_color)
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
-from src.ui.widget.panel_header import GlyphButton
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.panel.layer_ui.layer_list'
@@ -39,7 +38,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 IMAGE_SIZE_TEXT = _tr('{width} x {height}')
-IMAGE_MENU_TOOLTIP = _tr('Image commands')
 IMAGE_STRIP_TOOLTIP = _tr('The whole image. Click to select it.')
 DROP_INTO_LABEL = _tr('Into {name}')
 DROP_ABOVE_LABEL = _tr('Above {name}')
@@ -58,7 +56,7 @@ MAX_SCROLL_SPEED = 10
 
 
 class ImageStrip(QWidget):
-    """The root group's row: its eye, name and canvas size, and a menu with rename, crop to selection and mirror.
+    """The root group's row: its eye, name and canvas size, and a context menu with rename, crop to selection and mirror.
 
     Its eye lines up with the rows' eyes. Clicking it selects the root, and it shows the selection like a row.
     """
@@ -82,9 +80,6 @@ class ImageStrip(QWidget):
         self._size_label = QLabel()
         self._size_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
         layout.addWidget(self._size_label)
-        self._menu_button = GlyphButton(GlyphButton.MORE, IMAGE_MENU_TOOLTIP)
-        self._menu_button.clicked.connect(self._show_menu_from_button)
-        layout.addWidget(self._menu_button)
         root.name_changed.connect(self._name_change_slot)
         image_stack.size_changed.connect(self._size_change_slot)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -107,11 +102,6 @@ class ImageStrip(QWidget):
         return self._size_label.text()
 
     @property
-    def menu_button(self) -> GlyphButton:
-        """The button that opens `build_menu`."""
-        return self._menu_button
-
-    @property
     def active(self) -> bool:
         """Whether the root is the active layer."""
         return self._active
@@ -125,9 +115,6 @@ class ImageStrip(QWidget):
     def build_menu(self) -> QMenu:
         """Returns the root's menu: rename, crop to selection and mirror."""
         return build_layer_menu(self._image_stack.layer_stack, self._image_stack, self._name.activate_input_mode)
-
-    def _show_menu_from_button(self) -> None:
-        self.build_menu().exec(self._menu_button.mapToGlobal(QPoint(0, self._menu_button.height())))
 
     def _context_menu_slot(self, pos: QPoint) -> None:
         self.build_menu().exec(self.mapToGlobal(pos))

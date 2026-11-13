@@ -7997,11 +7997,6 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
-        <source>Image commands</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
         <source>The whole image. Click to select it.</source>
         <translation type="unfinished"></translation>
     </message>
