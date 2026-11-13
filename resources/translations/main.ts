@@ -3664,17 +3664,27 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Repeat last filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Apply the last filter again with the same settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Filters Menu</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>RGBA color balance...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Adjust RGBA color channels</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Filters Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3896,6 +3906,11 @@
     <message>
         <location filename="../../src/controller/app_controller.py"/>
         <source>Fil&amp;ters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Repeat {filter_name}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

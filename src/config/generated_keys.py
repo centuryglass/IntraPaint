@@ -339,6 +339,7 @@ class KeyConfigKeys:
     RELEASE_NOTES_SHORTCUT: Final = 'release_notes_shortcut'
     RELOAD_SHORTCUT: Final = 'reload_shortcut'
     RENAME_LAYER_SHORTCUT: Final = 'rename_layer_shortcut'
+    REPEAT_FILTER_SHORTCUT: Final = 'repeat_filter_shortcut'
     REPORT_BUG_SHORTCUT: Final = 'report_bug_shortcut'
     RESET_COLORS_SHORTCUT: Final = 'reset_colors_shortcut'
     RESET_DOCK_LAYOUT_SHORTCUT: Final = 'reset_dock_layout_shortcut'

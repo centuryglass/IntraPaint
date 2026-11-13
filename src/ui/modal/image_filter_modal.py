@@ -184,6 +184,8 @@ class ImageFilterModal(QDialog):
 
     filter_active_only = Signal(bool)
     filter_selection_only = Signal(bool)
+    # Emitted with the parameter values after the Apply button applies the filter.
+    filter_applied = Signal(list)
 
     def __init__(self,
                  title: str,
@@ -349,4 +351,5 @@ class ImageFilterModal(QDialog):
     def _apply_change(self) -> None:
         param_values = [control.value() for control in self._param_inputs]
         self._apply_filter(param_values)
+        self.filter_applied.emit(param_values)
         self.close()

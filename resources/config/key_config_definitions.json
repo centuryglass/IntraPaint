@@ -1196,6 +1196,15 @@
         "default": "Ctrl+Shift+L",
         "saved": true
     },
+    "repeat_filter_shortcut": {
+        "label": "Repeat last filter",
+        "category": "Menu Shortcuts",
+        "subcategory": "Filters Menu",
+        "description": "Apply the last filter again with the same settings",
+        "type": "string",
+        "default": "Ctrl+F",
+        "saved": true
+    },
     "color_balance_shortcut": {
         "label": "RGBA color balance...",
         "category": "Menu Shortcuts",
