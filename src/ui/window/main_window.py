@@ -46,6 +46,7 @@ from src.ui.window.dock_menu import build_dock_menu
 from src.ui.window.dock_placement import DockEdge, move_all_to_edge
 from src.ui.window.dock_rail import DockRails
 from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
+from src.ui.window.default_layouts import select_default_layout_state
 from src.ui.window.floating_title_bar import FloatingTitleBar
 from src.ui.window.rail_drag import RailDrag
 from src.ui.window.panel_dock import PanelDock
@@ -357,7 +358,24 @@ class MainWindow(QMainWindow):
         self._show_dock_menu(dock, event.globalPos())
 
     def reset_dock_layout(self) -> None:
-        """Puts every dock back in the first-run layout.
+        """Puts every dock back in the default layout for the window's current size.
+
+        Picks one of the bundled layouts in `src.ui.window.default_layouts` by width and height, using the window's
+        own size once it has one (`isVisible`), or the screen it will open on before its first show. Falls back to
+        `_reset_dock_layout_procedural` if the bundled layout can't be restored, which `DOCK_STATE_VERSION` changing
+        can cause.
+        """
+        self.set_image_selector_visible(False)
+        size = self.size() if self.isVisible() else get_screen_size(self)
+        state = select_default_layout_state(size.width(), size.height())
+        if self._restore_layout(QByteArray.fromBase64(state.encode())):
+            self._rails.sync()
+            return
+        logger.warning('Could not apply the bundled default layout, using the procedural fallback layout')
+        self._reset_dock_layout_procedural()
+
+    def _reset_dock_layout_procedural(self) -> None:
+        """Builds a first-run layout from scratch, used if a bundled default layout fails to restore.
 
         The upper docks (Tools, Image generation, ControlNet) are tabified in the right area, or in the bottom area
         on a screen taller than wide, with Tools open. The lower docks (Layers, Color, Navigation) are tabified in a
