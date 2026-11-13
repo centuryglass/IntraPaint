@@ -42,7 +42,9 @@ class MainWindowSizeSweepTest(IntraPaintTestCase):
         super().tearDown()
 
     def test_minimum_size_hint_fits_target(self) -> None:
-        """The default layout fits 1024x600."""
+        """The default layout for a 1024x600 window fits it."""
+        self.window.resize(TARGET_SIZE)
+        self.window.reset_dock_layout()
         hint = self.window.minimumSizeHint()
         self.assertLessEqual(hint.width(), TARGET_SIZE.width())
         self.assertLessEqual(hint.height(), TARGET_SIZE.height())
