@@ -881,6 +881,51 @@
         "default": "Ctrl+Alt+I,F3",
         "saved": true
     },
+    "image_flip_horizontal_shortcut": {
+        "label": "Flip image horizontally",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Mirror every layer, the selection and the generation area from left to right.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_flip_vertical_shortcut": {
+        "label": "Flip image vertically",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Mirror every layer, the selection and the generation area from top to bottom.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_rotate_cw_shortcut": {
+        "label": "Rotate image 90° CW",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Rotate the whole image 90 degrees clockwise, swapping its width and height.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_rotate_ccw_shortcut": {
+        "label": "Rotate image 90° CCW",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Rotate the whole image 90 degrees counter-clockwise, swapping its width and height.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "image_rotate_180_shortcut": {
+        "label": "Rotate image 180°",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Rotate the whole image 180 degrees.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "crop_image_shortcut": {
         "label": "Crop to selection",
         "category": "Menu Shortcuts",

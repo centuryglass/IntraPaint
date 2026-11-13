@@ -1191,6 +1191,36 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_flip_horizontal_shortcut', 202,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_flip_horizontal(self) -> None:
+        """Flip the whole image horizontally."""
+        self._image_stack.flip_image(True)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_flip_vertical_shortcut', 203,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_flip_vertical(self) -> None:
+        """Flip the whole image vertically."""
+        self._image_stack.flip_image(False)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_cw_shortcut', 204,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_cw(self) -> None:
+        """Rotate the whole image 90 degrees clockwise."""
+        self._image_stack.rotate_image(90)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_ccw_shortcut', 205,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_ccw(self) -> None:
+        """Rotate the whole image 90 degrees counter-clockwise."""
+        self._image_stack.rotate_image(-90)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_180_shortcut', 206,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_180(self) -> None:
+        """Rotate the whole image 180 degrees."""
+        self._image_stack.rotate_image(180)
+
     @menu_action(MENU_IMAGE, 'crop_image_shortcut', 210, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def crop_image_to_selection(self) -> None:
         """Crop the image to fit selected content."""

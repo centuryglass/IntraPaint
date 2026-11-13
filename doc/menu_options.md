@@ -35,6 +35,12 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
      - [Resize image canvas window](#resize-image-canvas-window)
    - [Scale image (Ctrl+Alt+I)](#scale-image-ctrlalti)
      - [Scale image window](#scale-image-window)
+   - [Transform](#transform)
+     - [Flip image horizontally](#flip-image-horizontally)
+     - [Flip image vertically](#flip-image-vertically)
+     - [Rotate image 90° CW](#rotate-image-90-cw)
+     - [Rotate image 90° CCW](#rotate-image-90-ccw)
+     - [Rotate image 180°](#rotate-image-180)
    - [Crop to selection (Ctrl+Alt+Shift+C)](#crop-to-selection-ctrlaltshiftc)
    - [Crop to generation area (Ctrl+Alt+G)](#crop-to-generation-area-ctrlaltg)
    - [Fit canvas to layers (Ctrl+Alt+R)](#fit-canvas-to-layers-ctrlaltr)
@@ -51,7 +57,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
      - [Move layer up (Ctrl+])](#move-layer-up-ctrl)
      - [Move layer down (Ctrl+[)](#move-layer-down-ctrl)
      - [Move layer to top (Ctrl+Shift+])](#move-layer-to-top-ctrlshift)
-   - [Transform](#transform)
+   - [Transform](#transform-1)
      - [Mirror layer horizontally (Ctrl+Shift+H)](#mirror-layer-horizontally-ctrlshifth)
      - [Mirror layer vertically (Ctrl+Shift+V)](#mirror-layer-vertically-ctrlshiftv)
      - [Rotate layer 90° CW (Ctrl+Shift+R)](#rotate-layer-90-cw-ctrlshiftr)
@@ -305,6 +311,33 @@ Scaling the image behaves differently depending on whether AI upscaling is in us
     - **9c. Tile preprocessor settings**: Settings specific to the selected ControlNet preprocessor will be listed here. The one shown here (Downsampling Rate) can be increased to make the tile ControlNet less strict, but other preprocessors may have different options.
 10. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
 11. **Cancel button**: Closes the scaling window without making changes.
+
+### Transform
+
+Flips or rotates the whole image. Every layer moves with the image, including hidden and locked layers and content
+outside the image bounds, and so do the selection, context pins and generation area. Layer content is not resampled:
+each layer's transformation changes, as with the [layer menu's transform options](#transform-1). One undo restores
+everything. These options have no default shortcuts.
+
+#### Flip image horizontally
+
+Mirrors the image from left to right.
+
+#### Flip image vertically
+
+Mirrors the image from top to bottom.
+
+#### Rotate image 90° CW
+
+Rotates the image ninety degrees clockwise, swapping its width and height.
+
+#### Rotate image 90° CCW
+
+Rotates the image ninety degrees counter-clockwise, swapping its width and height.
+
+#### Rotate image 180°
+
+Turns the image upside down about its center.
 
 ### Crop to selection (Ctrl+Alt+Shift+C)
 
