@@ -140,6 +140,8 @@
       }
     ],
     "Fil&ters": [
+      "Repeat last filter",
+      "----",
       "RGBA color balance...",
       "Brightness/contrast...",
       "Saturation...",

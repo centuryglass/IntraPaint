@@ -72,6 +72,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Shrink selection (Ctrl+Alt+-)](#shrink-selection-ctrlalt-)
    - [Clear context pins (Ctrl+Alt+P)](#clear-context-pins-ctrlaltp)
 7. [Filters menu](#filters-menu)
+   - [Repeat last filter (Ctrl+F)](#repeat-last-filter-ctrlf)
    - [RGBA color balance (Ctrl+B)](#rgba-color-balance-ctrlb)
    - [Brightness/contrast (Ctrl+2)](#brightnesscontrast-ctrl2)
    - [Saturation (Ctrl+U)](#saturation-ctrlu)
@@ -509,6 +510,10 @@ The Filters menu lets you apply various changes to image content. When selected,
 6. **Cancel button**: Closes the window without changing the image.
 
 All filters are available in both the filter menu and the [filter brush tool](./tool_guide.md#-filter-brush-tool-shiftu).
+
+### Repeat last filter (Ctrl+F)
+
+Applies the last filter you applied from this menu again, with the same settings and without opening the filter window. The menu entry names that filter, for example "Repeat Blur". The "Change active layer only" choice is kept, while "Change selected areas only" follows whether anything is selected now. This option is disabled until a filter has been applied.
 
 ### RGBA color balance (Ctrl+B)
 
