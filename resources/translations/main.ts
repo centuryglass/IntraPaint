@@ -983,16 +983,6 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Second color slider mode:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/cache_value_definitions.json"/>
-        <source>Color model of the second slider block, shown in wide color picker layouts.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/cache_value_definitions.json"/>
         <source>New image background color:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7368,6 +7358,34 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.panel.color_panel</name>
+    <message>
+        <location filename="../../src/ui/panel/color_panel.py"/>
+        <source>Wheel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/color_panel.py"/>
+        <source>Sliders</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/color_panel.py"/>
+        <source>Recent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/color_panel.py"/>
+        <source>Saved</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/color_panel.py"/>
+        <source>H {hue}, S {saturation}%, V {value}%</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.controlnet_panel</name>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
@@ -9464,47 +9482,6 @@ Turns red when the text does not fit.</source>
     </message>
 </context>
 <context>
-    <name>ui.widget.color_picker</name>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
-        <source>&amp;Wheel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
-        <source>Sl&amp;iders</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
-        <source>Pa&amp;lettes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
-        <source>&amp;Alpha and hex</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>ui.widget.color_picker.alpha_hex_row</name>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py"/>
-        <source>Alpha:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py"/>
-        <source>Opacity, from 0 (transparent) to 255 (opaque)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py"/>
-        <source>Hex color: #RGB, #RRGGBB, or #AARRGGBB with alpha first</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>ui.widget.color_picker.color_comparison</name>
     <message>
         <location filename="../../src/ui/widget/color_picker/color_comparison.py"/>
@@ -9523,11 +9500,6 @@ Turns red when the text does not fit.</source>
         <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
         <source>Cursor at {x},{y}
 Click to pick, or press Esc to cancel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
-        <source>Current color, as a hex code</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -9556,6 +9528,21 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
         <source>OKLCH</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>A</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Opacity, from 0 (transparent) to 255 (opaque)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>{mode} {first}, {second}, {third}, alpha {alpha}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9645,10 +9632,23 @@ Click to pick, or press Esc to cancel</source>
     </message>
 </context>
 <context>
+    <name>ui.widget.color_picker.hex_field</name>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/hex_field.py"/>
+        <source>Hex color: #RGB, #RRGGBB, or #AARRGGBB with alpha first</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.widget.color_picker.saved_colors_panel</name>
     <message>
         <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
-        <source>Saved colors ({count}/{max_count}):</source>
+        <source>Saved colors ({count}/{max_count})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>{count} of {max_count}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9688,7 +9688,12 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
-        <source>Recent colors:</source>
+        <source>Recent colors</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>{count} colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

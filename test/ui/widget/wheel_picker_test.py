@@ -4,7 +4,7 @@ from PySide6.QtGui import QColor
 
 from src.config.cache import Cache
 from src.ui.panel.color_panel import ColorControlPanel
-from src.ui.widget.color_picker.alpha_hex_row import parse_hex_color, format_hex_color
+from src.ui.widget.color_picker.hex_field import parse_hex_color, format_hex_color
 from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare, MAX_SQUARE_RENDER_SIZE
 from src.util.visual import color_math
 from test.base_test_case import IntraPaintTestCase
@@ -150,7 +150,7 @@ class ColorPanelWheelTabTest(IntraPaintTestCase):
         Cache().set(Cache.LAST_BRUSH_COLOR, '#ff336699')
         Cache().set(Cache.RECENT_COLORS, [])
         self.panel = ColorControlPanel()
-        self.ring_square = self.panel.ring_square
+        self.ring_square = self.panel.parts.ring_square
         self.ring_square.resize(WIDGET_SIZE, WIDGET_SIZE)
 
     def test_wheel_shows_foreground(self) -> None:
