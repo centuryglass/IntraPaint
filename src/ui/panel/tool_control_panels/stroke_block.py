@@ -32,6 +32,7 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
 - Headers are required in a side panel and optional in a strip, where they cost height.
 """
 from dataclasses import dataclass
+from functools import partial
 from typing import Callable, Optional
 
 from PySide6.QtCore import QEvent, QSize, Qt, Signal
@@ -53,6 +54,7 @@ from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, 
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.section_popover import SectionPopover
 from src.util.layout import layout_contents, add_layout
 from src.ui.input_fields.field_factory import create_control_widget
 
@@ -561,6 +563,8 @@ class StrokeToolPanel(QWidget):
     - Sections added with `add_tool_section` join the block's arrangement, and those given a `FitItem` are planned
       with the block's items. Controls a plan leaves out go in `overflow_content`, which the Tools panel shows in its
       More popover.
+    - A section a plan forced collapsed shows its body in a popover under its header when clicked. The body returns to
+      the section when the popover closes or a plan expands the section.
     - `set_orientation` arranges it for an orientation, vertical for a side panel. Subclasses extend it for their own
       sections.
     """
@@ -571,6 +575,7 @@ class StrokeToolPanel(QWidget):
         self._orientation = Qt.Orientation.Vertical
         self._space: Optional[QSize] = None
         self._planning = False
+        self._section_popover: Optional[SectionPopover] = None
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(block)
@@ -603,6 +608,7 @@ class StrokeToolPanel(QWidget):
         method is held weakly, since the panel usually owns it.
         """
         self._block.add_tool_section(section, stretch)
+        section.forced_header_clicked.connect(partial(self._open_section_popover, section))
         if item is not None:
             assert apply is not None
             self._tool_items.append((item, held_weakly(apply)))
@@ -639,7 +645,21 @@ class StrokeToolPanel(QWidget):
 
     def _build_planner(self) -> FitPlanner:
         items = [*self._block.fit_items, *(item for item, _ in self._tool_items)]
-        return FitPlanner(items, self._apply_fit, self._measure_fit)
+        return FitPlanner(items, self._apply_fit, self._measure_fit, finish=self._plan_finished)
+
+    def _plan_finished(self, _orientation: Orientation) -> None:
+        """Closes the section popover once the final plan no longer collapses its section. Trial placements expand
+        sections the final plan collapses, so only the final plan decides."""
+        popover = self._section_popover
+        section = None if popover is None else popover.section
+        if section is not None and (section.isHidden() or not section.is_collapsed()):
+            popover.close_section()
+
+    def _open_section_popover(self, section: PanelSection) -> None:
+        """Shows a forced-collapsed section's body in a popover under its header."""
+        if self._section_popover is None:
+            self._section_popover = SectionPopover(self)
+        self._section_popover.open_section(section)
 
     def _measure_fit(self) -> QSize:
         return fresh_minimum_size(self)

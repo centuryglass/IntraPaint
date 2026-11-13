@@ -56,8 +56,9 @@ from src.ui.layout.flow_layout import FlowWidget
 from src.ui.layout.panel_fit import (REQUIRED, strip_section_max_width, strip_section_min_width, FitItem, FitPlanner,
                                      Orientation, Placement, cross_extent, fresh_minimum_size,
                                      held_weakly, scroll_extent)
-from src.ui.widget.panel_header import PanelHeader, PanelPopover
+from src.ui.widget.panel_header import PanelHeader
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.section_popover import SectionPopover
 from src.util.layout import add_layout
 
 QWIDGETSIZE_MAX = 16777215
@@ -293,8 +294,7 @@ class DockPanel(QWidget):
         self._measuring_final = False
         self._packer = SectionPacker(self._column_budget, self.refit)
         # Shows a collapsed section's body when its header is clicked, and the section it shows:
-        self._section_popover: Optional[PanelPopover] = None
-        self._popover_section: Optional[DockSection] = None
+        self._section_popover: Optional[SectionPopover] = None
 
         self._header = PanelHeader(name, icon, key_text)
         self._scroll = QScrollArea()
@@ -899,7 +899,8 @@ class DockPanel(QWidget):
     def _plan_finished(self, orientation: Orientation) -> None:
         self.fit_finished(orientation)
         # Trial placements expand sections the final plan collapses, so only the final plan decides:
-        if self._popover_section is not None and not self._popover_section.collapsed_by_fit:
+        popover_section = self._popover_section()
+        if popover_section is not None and not popover_section.collapsed_by_fit:
             self._close_section_popover()
         self._resize_section_popover()
         # Refresh the cached sizes trials left behind, then have the scroll area re-fit the body to them at once. Its
@@ -954,22 +955,22 @@ class DockPanel(QWidget):
             self._overflow.extend(section.place(self._overflow_layout))
         self.finish_placement()
 
+    def _popover_section(self) -> Optional[DockSection]:
+        """Returns the section whose body the section popover holds, if any."""
+        held = None if self._section_popover is None else self._section_popover.section
+        return next((section for section in self._layout_model.sections if section.widget is held), None)
+
     def _open_section_popover(self, section: DockSection) -> None:
         """Shows a collapsed section's body in a popover under its header. The body returns to the section when the
         popover closes or planning expands the section."""
         if self._section_popover is None:
-            self._section_popover = PanelPopover(self)
-            self._section_popover.closed.connect(self._restore_popover_section)
-        if self._popover_section is not None:
-            self._close_section_popover()
-        self._popover_section = section
-        self._section_popover.set_content(section.widget.detach_body())
-        self._section_popover.popup_below(section.widget.header_button, align_left=True)
+            self._section_popover = SectionPopover(self)
+        self._section_popover.open_section(section.widget)
 
     def _section_header_clicked(self, section: DockSection) -> None:
         """Opens a section's body in its popover when the user expanded it and the plan for that left no room."""
         panel_section = section.widget
-        if panel_section.is_expanded() and panel_section.is_collapsed() and self._popover_section is not section:
+        if panel_section.is_expanded() and panel_section.is_collapsed() and self._popover_section() is not section:
             self._open_section_popover(section)
 
     def reveal_control(self, section: DockSection, widget: QWidget) -> None:
@@ -992,23 +993,12 @@ class DockPanel(QWidget):
 
     def _resize_section_popover(self) -> None:
         """Resizes an open section popover to its body, which a plan can change by showing or hiding controls in it."""
-        section = self._popover_section
-        if section is not None and self._section_popover is not None and self._section_popover.isVisible():
-            self._section_popover.popup_below(section.widget.header_button, align_left=True)
+        if self._section_popover is not None and self._section_popover.isVisible():
+            self._section_popover.reposition()
 
     def _close_section_popover(self) -> None:
         if self._section_popover is not None:
-            self._section_popover.hide()
-        self._restore_popover_section()
-
-    def _restore_popover_section(self) -> None:
-        section = self._popover_section
-        if section is None:
-            return
-        self._popover_section = None
-        if self._section_popover is not None:
-            self._section_popover.set_content(None)
-        section.widget.restore_body()
+            self._section_popover.close_section()
 
     def _set_packed(self, packed: bool) -> None:
         """Enters or leaves column packing. Leaving puts every section back in `section_layout` in order."""
