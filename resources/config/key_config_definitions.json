@@ -17,6 +17,15 @@
         "default": "Alt",
         "saved": true
     },
+    "brush_size_drag_modifier": {
+        "label": "Brush size drag modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "Held with the right mouse button, dragging in a brush tool sets the brush size from the drag distance. Escape restores the previous size. On Linux, some desktops (KDE Plasma, Xfce) use Alt+right-drag to resize windows, and the drag never reaches IntraPaint. Either change the desktop's window-resize modifier, or bind this to another modifier.",
+        "type": "string",
+        "default": "Alt",
+        "saved": true
+    },
     "pan_view_key": {
         "label": "Pan view key:",
         "category": "Keybindings",

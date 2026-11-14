@@ -260,6 +260,7 @@ class KeyConfigKeys:
     BRUSH_OPACITY_DECREASE: Final = 'brush_opacity_decrease'
     BRUSH_OPACITY_INCREASE: Final = 'brush_opacity_increase'
     BRUSH_SIZE_DECREASE: Final = 'brush_size_decrease'
+    BRUSH_SIZE_DRAG_MODIFIER: Final = 'brush_size_drag_modifier'
     BRUSH_SIZE_INCREASE: Final = 'brush_size_increase'
     BRUSH_TOOL_KEY: Final = 'brush_tool_key'
     CLEAR_CONTEXT_PINS_SHORTCUT: Final = 'clear_context_pins_shortcut'

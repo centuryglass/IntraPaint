@@ -131,7 +131,12 @@ class SelectionBrushTool(BrushTool):
         Cache().set(Cache.SELECTION_BRUSH_SIZE, max(1, new_size))
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Starts a selection stroke on left-click, or a context pin drag on right-click."""
+        """Starts a selection stroke on left-click, or a context pin drag on right-click.
+
+        A size drag takes a right-click with the size drag modifier before the context pin dragger sees it.
+        """
+        if self._size_drag_event(event):
+            return True
         if event is None or event.buttons() != Qt.MouseButton.RightButton:
             return super().mouse_click(event, image_coordinates)
         return self._pin_dragger.press(event, image_coordinates)

@@ -2294,6 +2294,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Brush size drag modifier:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Held with the right mouse button, dragging in a brush tool sets the brush size from the drag distance. Escape restores the previous size. On Linux, some desktops (KDE Plasma, Xfce) use Alt+right-drag to resize windows, and the drag never reaches IntraPaint. Either change the desktop's window-resize modifier, or bind this to another modifier.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Pan view key:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5694,6 +5704,11 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/brush_tool.py"/>
         <source>{modifier_or_modifiers}: fixed angle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/tools/brush_tool.py"/>
+        <source>{modifier_or_modifiers}+{right_mouse_icon} drag: brush size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
