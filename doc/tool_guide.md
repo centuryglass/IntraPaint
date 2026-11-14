@@ -59,6 +59,7 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. The step grows with the brush size.
+- **Hold Alt and right-click and drag**: Change the brush size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **Number keys 1 to 0**: Set the brush opacity to 10% through 100%.
 - **Hold Ctrl**: temporarily switch to the color picker tool.
 
@@ -92,6 +93,7 @@ A basic brush tool with easily adjustable properties.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
+- **Hold Alt and right-click and drag**: Change the brush size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **"<" and ">" keys**: Change the brush opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the brush hardness.
 - **Hold Ctrl**: Temporarily switch to the color picker tool.
@@ -122,6 +124,7 @@ Erase image content.
 - **Hold shift and left-click**: Erase a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the eraser to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the eraser size.
+- **Hold Alt and right-click and drag**: Change the eraser size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **"<" and ">" keys**: Change the eraser opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the eraser hardness.
 
@@ -173,6 +176,7 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
+- **Hold Alt and right-click and drag**: Change the brush size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **"<" and ">" keys**: Change the brush opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the brush hardness.
 
@@ -209,6 +213,7 @@ Smudge image content to adjust the placement of image elements and smooth away u
 - **Hold shift and left-click**: Smudge a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the cursor to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the cursor size.
+- **Hold Alt and right-click and drag**: Change the cursor size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **"<" and ">" keys**: Adjust smudge tool opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Adjust smudge tool hardness.
 
@@ -237,6 +242,7 @@ Copy image content from one area to another using a brush.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
+- **Hold Alt and right-click and drag**: Change the brush size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **"<" and ">" keys**: Change the brush opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the brush hardness.
 
@@ -464,6 +470,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 - **Hold shift and left-click**: Select a line from the last place you clicked, using the current mode. Hold Alt too to keep the line at a fixed angle.
 - **Press Alt while drawing**: Force the brush to follow a fixed angle. If Alt was already held when the stroke started, release it and press it again.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. The step grows with the brush size.
+- **Hold Alt and right-click and drag**: Change the brush size. The outline stays where you pressed, and its edge follows the pointer. Release to keep the new size, or press Escape to restore the old one.
 - **"Shift+Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface

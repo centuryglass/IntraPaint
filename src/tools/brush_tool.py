@@ -5,7 +5,7 @@ import math
 from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF, QEvent, QRect
-from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
+from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice, QKeySequence
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -18,6 +18,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool
+from src.tools.brush_size_dragger import BrushSizeDragger
 from src.ui.brush_crosshair import CROSSHAIR_GRID_SIZE, CrosshairVariant, crosshair_cursor
 from src.ui.graphics_items.brush_outline import BrushOutline
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
@@ -25,7 +26,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
-from src.util.visual.text_drawing_utils import left_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.brush_tool'
@@ -38,6 +39,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}: draw line')
 FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
+SIZE_DRAG_HINT = _tr('{modifier_or_modifiers}+{right_mouse_icon} drag: brush size')
 
 # The brush outline hides at or below this on-screen diameter, where the crosshair alone marks the brush:
 MIN_OUTLINE_DIAMETER = CROSSHAIR_GRID_SIZE
@@ -54,6 +56,20 @@ def brush_size_step(size: int) -> int:
     return max(1, size // 10)
 
 logger = logging.getLogger(__name__)
+
+
+def _all_modifier_combinations() -> list[Qt.KeyboardModifier]:
+    """Returns every combination of the Shift, Ctrl, Alt and Meta modifiers, including none."""
+    flags = (Qt.KeyboardModifier.ShiftModifier, Qt.KeyboardModifier.ControlModifier,
+             Qt.KeyboardModifier.AltModifier, Qt.KeyboardModifier.MetaModifier)
+    combinations = []
+    for mask in range(1 << len(flags)):
+        combination = Qt.KeyboardModifier.NoModifier
+        for i, flag in enumerate(flags):
+            if mask & (1 << i):
+                combination |= flag
+        combinations.append(combination)
+    return combinations
 
 
 class BrushTool(BaseTool):
@@ -91,6 +107,7 @@ class BrushTool(BaseTool):
 
         self._crosshair_variant = CrosshairVariant.PLAIN
         self._outline = BrushOutline(scene)
+        self._size_dragger = BrushSizeDragger(image_viewer)
 
         def _update_crosshair_variants(_: bool) -> None:
             self._apply_crosshair()
@@ -111,6 +128,13 @@ class BrushTool(BaseTool):
 
             binding_id = f'BrushTool_{id(self)}_{key}'
             HotkeyFilter.instance().register_config_keybinding(binding_id, _size_change, key)
+
+        def _cancel_size_drag() -> bool:
+            return self.is_active and self.cancel_size_drag()
+        # Bindings match exact modifiers, and the size drag modifier may still be held when Escape is pressed:
+        for modifiers in _all_modifier_combinations():
+            HotkeyFilter.instance().register_keybinding(f'BrushTool_{id(self)}_cancel_size_drag', _cancel_size_drag,
+                                                        QKeySequence(Qt.Key.Key_Escape), modifiers)
 
         if enable_selection_restrictions:
             # Handle restricting changes to selection:
@@ -143,11 +167,46 @@ class BrushTool(BaseTool):
 
     @staticmethod
     def brush_control_hints() -> str:
-        """Get control hints for line and fixed angle modes, if enabled."""
+        """Get control hints for line mode, fixed angle mode and size drags, if their modifiers are bound."""
         line_hint = LINE_HINT.format(left_mouse_icon=left_button_hint_text(),
                                      modifier_or_modifiers='{modifier_or_modifiers}')
+        size_drag_hint = SIZE_DRAG_HINT.format(right_mouse_icon=right_button_hint_text(),
+                                               modifier_or_modifiers='{modifier_or_modifiers}')
         return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint)}'
-                f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}')
+                f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}'
+                f' - {BaseTool.modifier_hint(KeyConfig.BRUSH_SIZE_DRAG_MODIFIER, size_drag_hint)}')
+
+    def _size_drag_event(self, event: Optional[QMouseEvent]) -> bool:
+        """Passes a mouse press, move or release to the size dragger, returning whether it belongs to a size drag.
+
+        Subclasses that handle mouse events before calling the BrushTool handlers call this first.
+        """
+        if event is None:
+            return False
+        match event.type():
+            case QEvent.Type.MouseButtonPress:
+                handled = self._size_dragger.press(event, self.brush_size)
+            case QEvent.Type.MouseMove:
+                handled = self._size_dragger.move(event)
+            case QEvent.Type.MouseButtonRelease:
+                handled = self._size_dragger.release(event)
+            case _:
+                return False
+        if handled:
+            drag_size = self._size_dragger.size
+            if drag_size is not None and drag_size != self.brush_size:
+                self.set_brush_size(drag_size)
+            self.update_brush_cursor()
+        return handled
+
+    def cancel_size_drag(self) -> bool:
+        """Ends a size drag and restores the size from before it. Returns whether a size drag was in progress."""
+        initial_size = self._size_dragger.cancel()
+        if initial_size is None:
+            return False
+        self.set_brush_size(initial_size)
+        self.update_brush_cursor()
+        return True
 
     @property
     def crosshair_variant(self) -> CrosshairVariant:
@@ -281,7 +340,8 @@ class BrushTool(BaseTool):
         self.update_brush_cursor()
 
     def _on_deactivate(self) -> None:
-        """Disconnect from the image when the tool is inactive."""
+        """Disconnect from the image when the tool is inactive, ending a size drag without keeping its size."""
+        self.cancel_size_drag()
         if self._drawing:
             self._drawing = False
             self._brush.end_stroke()
@@ -344,6 +404,8 @@ class BrushTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
+        if self._size_drag_event(event):
+            return True
         if event is None or event.buttons() != Qt.MouseButton.LeftButton or not self._image_stack.has_image \
                 or not self.validate_layer(self._layer, image_stack=self._image_stack):
             return False
@@ -364,6 +426,8 @@ class BrushTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
+        if self._size_drag_event(event):
+            return True
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
 
@@ -383,6 +447,8 @@ class BrushTool(BaseTool):
 
     def mouse_release(self, event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
+        if self._size_drag_event(event):
+            return True
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
         if self._drawing:
@@ -470,11 +536,18 @@ class BrushTool(BaseTool):
         """Sizes the brush outline to the brush at the current zoom, and moves it under the cursor.
 
         The outline shows only while the tool is active, the cursor is over the image viewer, input is enabled, and
-        the brush is wider on screen than MIN_OUTLINE_DIAMETER.
+        the brush is wider on screen than MIN_OUTLINE_DIAMETER. During a size drag it shows at the drag's press point
+        at any size.
         """
         viewer = self._image_viewer
         cursor_pos = viewer.cursor_pos
         view_scale = viewer.scene_scale
+        size_drag_anchor = self._size_dragger.anchor
+        if size_drag_anchor is not None and self.is_active:
+            self._outline.set_size(self.brush_size, view_scale)
+            self._outline.setPos(size_drag_anchor)
+            self._outline.setVisible(True)
+            return
         if (not self.is_active or cursor_pos is None or self.cursor_disabled
                 or self.brush_size * view_scale <= MIN_OUTLINE_DIAMETER):
             self._outline.setVisible(False)

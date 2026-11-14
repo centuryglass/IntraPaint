@@ -179,6 +179,8 @@ class CloneStampTool(QtPaintBrushTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Set clone source on right-click, draw from source on left-click."""
+        if self._size_drag_event(event):
+            return True
         assert event is not None
         if event.buttons() == Qt.MouseButton.RightButton:
             if self._source_mode == SOURCE_MODE_STATIC:
@@ -195,6 +197,8 @@ class CloneStampTool(QtPaintBrushTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Update the offset marker if offset is set and the mouse moves."""
+        if self._size_drag_event(event):
+            return True
         if self._pending_source_point is None and self._source_mode != SOURCE_MODE_STATIC:
             self._update_source_marker()
         elif self._pending_source_point is not None and self._control_panel is not None:
@@ -204,6 +208,8 @@ class CloneStampTool(QtPaintBrushTool):
         return super().mouse_move(event, image_coordinates)
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        if self._size_drag_event(event):
+            return True
         if self._pending_source_point is None and self._source_mode == SOURCE_MODE_DYNAMIC_OFFSET:
             self._pending_source_point = image_coordinates + self._source_offset
         return super().mouse_release(event, image_coordinates)
