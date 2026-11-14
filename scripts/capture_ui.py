@@ -1,5 +1,6 @@
-"""Saves screenshots of the style gallery, the main window and every panel at extreme sizes, with a layout report,
-or sweep sheets that show panels across a grid of dock sizes.
+"""Saves screenshots of the style gallery, the main window and every panel, for checking layouts by eye.
+
+The captures show each panel at extreme sizes with a layout report, or on sweep sheets across a grid of dock sizes.
 
 The renders come from `test/ui/ui_capture.py` and `test/ui/panel_capture.py`, the same code the style gallery and panel
 layout tests compare against their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's

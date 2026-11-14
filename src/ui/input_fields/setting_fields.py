@@ -1,5 +1,6 @@
-"""Input fields for the typed values in the settings window, each with the `value`/`setValue`/`valueChanged` interface
-the window's other controls share.
+"""Input fields for the typed values in the settings window.
+
+Each has the `value`/`setValue`/`valueChanged` interface the window's other controls share.
 
 - `ColorSettingField`: a swatch button for a color string, optionally with a "theme default" state for the empty string.
 - `DirectorySettingField`: a path field with a Browse button.

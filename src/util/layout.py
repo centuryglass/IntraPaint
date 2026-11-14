@@ -1,4 +1,4 @@
-"""QLayout utility functions"""
+"""QLayout utility functions."""
 from typing import Optional
 
 from PySide6.QtCore import Qt

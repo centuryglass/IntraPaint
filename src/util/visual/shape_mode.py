@@ -1,4 +1,4 @@
-"""Shape drawing utility functions"""
+"""Shape tool modes (ellipse, rectangle, polygon, star) and their display text."""
 from enum import Enum
 from typing import Optional
 

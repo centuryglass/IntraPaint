@@ -1,4 +1,4 @@
-"""QComboBox used to select between brush/fill patterns"""
+"""QComboBox used to select between brush/fill patterns."""
 from typing import Optional
 
 from PySide6.QtCore import QSize, QRect

@@ -1,5 +1,6 @@
-"""Shape preview for the shape tool panel: one sample shape drawn with the tool's current settings over a transparency
-tile background.
+"""Shape preview for the shape tool panel: one sample shape drawn with the tool's current settings.
+
+The shape is drawn over a transparency tile background.
 
 `ShapePreview` is a `BrushPreview` over the shape tool's `Cache` values. It draws with `QPainter` and the same pen and
 brush settings the shape tool reads, so it shows what a drag would paint. The shape tool's `Cache` color sources are

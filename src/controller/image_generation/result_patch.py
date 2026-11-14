@@ -1,5 +1,6 @@
-"""Turns a generated inpainting result into a patch: a color and an alpha that reproduce the result when drawn
-Normal over the image that was sent to the backend.
+"""Turns a generated inpainting result into a patch that holds only what the result changed.
+
+A patch is a color and an alpha that reproduce the result when drawn Normal over the image that was sent to the backend.
 
 The backends return the result already blended into the sent image C through a blurred mask, so writing it into a
 layer copies C, which may be the flattened composite of every layer, into that layer. A patch keeps only what the

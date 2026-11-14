@@ -1,5 +1,6 @@
-"""The X, Y, W and H fields shared by the text, layer transform and generation area panels, with optional scale and
-angle rows and a ratio lock.
+"""The X, Y, W and H fields, ratio lock and optional scale and angle rows that several tool panels share.
+
+The text, layer transform and generation area panels use it.
 
 `GeometryBlock` is a view: it holds field values and the lock, and tells its owner what the user changed. It touches no
 config or tool state. The owner connects `valueChanged`, calls `set_value` when the model changes, and registers the

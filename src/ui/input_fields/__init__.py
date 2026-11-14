@@ -1,1 +1,1 @@
-"""Provides various data input widgets, mostly standard QWidgets with slight adjustments for convenience."""
+"""Widgets that edit one value: number fields, sliders, combo boxes, segmented controls and setting fields."""

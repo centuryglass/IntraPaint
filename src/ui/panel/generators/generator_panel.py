@@ -1,5 +1,8 @@
-"""Base classes for image generator panels: `GeneratorPanel` marks a widget as a generator control panel, and
-`GenerateFooterPanel` is the `DockPanel` with a pinned Generate button that the GLID and test panels share."""
+"""Base classes for image generator panels.
+
+`GeneratorPanel` marks a widget as a generator control panel, and `GenerateFooterPanel` is the `DockPanel` with a pinned
+Generate button that the GLID and test panels share.
+"""
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget

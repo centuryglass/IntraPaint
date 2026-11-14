@@ -1,5 +1,7 @@
-"""Track the active widget, see if it's a text input field, and notify when cut/copy/clear/paste/undo/redo
-   action availability change for an active text widget."""
+"""Tracks whether the active widget is a text field, and which of its edit actions are available.
+
+Notifies when cut/copy/clear/paste/undo/redo action availability changes for an active text widget.
+"""
 from typing import TypeAlias, Optional
 
 from PySide6.QtCore import QObject, Signal, SignalInstance

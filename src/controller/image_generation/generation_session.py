@@ -1,5 +1,7 @@
-"""Owns the current and previous batch of generated image options for the open document, the edits that
-write an option out of a batch, and the background task that produces a batch.
+"""Owns the open document's generated image batches, the edits that apply an option, and the task that generates.
+
+The session holds the current and previous batch of generated image options, the edits that write an option out of a
+batch, and the background task that produces a batch.
 
 The selection screen shows whichever batch the session holds. The session lives on the main thread and opens no
 dialogs: `apply` and `choose` return an outcome for the caller to report, and generation reports through signals.

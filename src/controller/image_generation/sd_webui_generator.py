@@ -1,5 +1,7 @@
-"""Generates images through the Stable Diffusion WebUI (A1111 or Forge), using the `sd_backend_client` library's WebUI
-client."""
+"""Generates images through the Stable Diffusion WebUI (A1111 or Forge).
+
+It uses the `sd_backend_client` library's WebUI client.
+"""
 import logging
 import os
 from argparse import Namespace

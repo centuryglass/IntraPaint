@@ -1,5 +1,7 @@
-"""Coordinate the current application state, mostly for enabling/disabling components that should only be active
-   in particular states."""
+"""Coordinates the current application state.
+
+Mostly used for enabling and disabling components that should only be active in particular states.
+"""
 from typing import Any
 import logging
 

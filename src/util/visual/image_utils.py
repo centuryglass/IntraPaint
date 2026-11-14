@@ -1,4 +1,4 @@
-"""Adds general-purpose utility functions for manipulating image data"""
+"""General-purpose utility functions for manipulating image data."""
 import base64
 import io
 import logging

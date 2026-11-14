@@ -1,1 +1,1 @@
-"""Contains the image layer panel and associated widgets."""
+"""The layer panel: the layer list, its rows and context menus, and the active layer's properties."""
