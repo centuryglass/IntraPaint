@@ -1126,6 +1126,16 @@
         "default": "-1",
         "saved": true
     },
+    "image_generation_available": {
+        "label": "Image generation available",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Whether an image generator other than the null generator is loaded. Context pin controls show only while it is.",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
     "inpaint_options_available": {
         "label": "Inpaint options available",
         "category": "Cache",

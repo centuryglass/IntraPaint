@@ -527,7 +527,7 @@ Shrinks all selected areas by one pixel.
 
 ### Clear context pins (Ctrl+Alt+P)
 
-Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-q), and stretch the inpaint context crop without being inpainted. Clearing the selection leaves them in place. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#preferences-ctrlk) under the **"Stable Diffusion"** category.
+Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-q), and stretch the inpaint context crop without being inpainted. Clearing the selection leaves them in place. Like the generation area, pins and this option are hidden while no image generator is connected, and disconnecting the generator removes every pin. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#preferences-ctrlk) under the **"Stable Diffusion"** category.
 
 ---
 

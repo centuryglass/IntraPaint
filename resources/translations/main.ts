@@ -5761,6 +5761,14 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
 </context>
 <context>
+    <name>tools.context_pin_dragger</name>
+    <message>
+        <location filename="../../src/tools/context_pin_dragger.py"/>
+        <source>{right_mouse_icon}: add, move or remove context pin</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>tools.draw_tool</name>
     <message>
         <location filename="../../src/tools/draw_tool.py"/>
@@ -5892,7 +5900,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/free_selection_tool.py"/>
-        <source>{left_mouse_icon}: add or move point&lt;br/&gt;{enter_key} or {left_mouse_icon}+first point: finish selection&lt;br/&gt;{escape_key}: cancel selection&lt;br/&gt;{right_mouse_icon}: add, move or remove context pin</source>
+        <source>{left_mouse_icon}: add or move point&lt;br/&gt;{enter_key} or {left_mouse_icon}+first point: finish selection&lt;br/&gt;{escape_key}: cancel selection</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -5928,7 +5936,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/magic_wand_tool.py"/>
-        <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
+        <source>{left_mouse_icon}: select</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -5946,7 +5954,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/selection_brush_tool.py"/>
-        <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
+        <source>{left_mouse_icon}: select</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -5964,7 +5972,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/shape_selection_tool.py"/>
-        <source>{left_mouse_icon}, drag: select - {right_mouse_icon}: add, move or remove context pin</source>
+        <source>{left_mouse_icon}, drag: select</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -10373,7 +10381,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/window/navigation_window.py"/>
-        <source>Left-click to pan, Shift + left-click to draw viewport, right-click to add, move or remove context pins</source>
+        <source>Left-click to pan, Shift + left-click to draw viewport</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

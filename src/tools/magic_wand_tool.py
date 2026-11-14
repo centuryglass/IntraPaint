@@ -11,14 +11,14 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool, ToolGroup
-from src.tools.context_pin_dragger import ContextPinDragger
+from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.magic_wand_panel import MagicWandPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_fill import flood_fill, color_fill
 from src.util.visual.magic_wand_area import FillArea
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.magic_wand_tool'
@@ -35,7 +35,7 @@ CURSOR_SIZE = 25
 
 MAGIC_WAND_LABEL = _tr('Magic wand')
 MAGIC_WAND_TOOLTIP = _tr('Select areas of similar color')
-MAGIC_WAND_CONTROL_HINT = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
+MAGIC_WAND_CONTROL_HINT = _tr('{left_mouse_icon}: select')
 
 
 def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
@@ -73,8 +73,8 @@ class MagicWandTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        magic_wand_hint = MAGIC_WAND_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                                right_mouse_icon=right_button_hint_text())
+        magic_wand_hint = (MAGIC_WAND_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+                           + context_pin_control_hint(' - '))
         return f'{magic_wand_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:

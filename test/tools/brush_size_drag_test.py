@@ -184,6 +184,10 @@ class SelectionBrushSizeDragTest(_BrushSizeDragTestBase):
     TOOL_CLASS = SelectionBrushTool
     SIZE_KEY = Cache.SELECTION_BRUSH_SIZE
 
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)  # So the plain right button would edit pins.
+
     def test_drag_adds_and_moves_no_pin(self) -> None:
         """The drag neither adds a context pin nor moves one under the press point."""
         selection_layer = self.image_stack.selection_layer

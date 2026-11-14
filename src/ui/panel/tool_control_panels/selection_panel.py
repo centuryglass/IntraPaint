@@ -153,10 +153,10 @@ class SelectionPanel(FitToolPanel):
         _update_clear_pins_enabled(selection_layer.context_pins)
 
         def _update_clear_pins_visibility(_=None) -> None:
-            """Show the clear pins button only while inpainting is available and selected."""
-            clear_pins_button.setVisible(cache.get(Cache.INPAINT_OPTIONS_AVAILABLE)
+            """Show the clear pins button only while an image generator is loaded and inpainting is selected."""
+            clear_pins_button.setVisible(cache.get(Cache.IMAGE_GENERATION_AVAILABLE)
                                          and cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT)
-        cache.connect(self, Cache.INPAINT_OPTIONS_AVAILABLE, _update_clear_pins_visibility)
+        cache.connect(self, Cache.IMAGE_GENERATION_AVAILABLE, _update_clear_pins_visibility)
         cache.connect(self, Cache.EDIT_MODE, _update_clear_pins_visibility)
         _update_clear_pins_visibility()
 
