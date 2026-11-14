@@ -33,7 +33,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-SAVED_COLORS_LABEL = _tr('Saved colors ({count}/{max_count}):')
+SAVED_COLORS_LABEL = _tr('Saved colors ({count}/{max_count})')
+SAVED_COLORS_SUMMARY = _tr('{count} of {max_count}')
 SAVED_COLORS_TOOLTIP = _tr('Click a color to use it. Drag colors here to save them, or drag to reorder them. '
                            'Right-click a color to remove it.')
 SAVE_BUTTON_LABEL = _tr('Sa&ve')
@@ -42,13 +43,15 @@ SAVE_BUTTON_FULL_TOOLTIP = _tr('The saved colors are full. Remove one to save an
 REMOVE_BUTTON_LABEL = _tr('Re&move')
 REMOVE_BUTTON_TOOLTIP = _tr('Remove the current color from the saved colors')
 REMOVE_ACTION_LABEL = _tr('Remove')
-RECENT_COLORS_LABEL = _tr('Recent colors:')
+RECENT_COLORS_LABEL = _tr('Recent colors')
+RECENT_COLORS_SUMMARY = _tr('{count} colors')
 RECENT_COLORS_TOOLTIP = _tr('Colors you chose most recently, newest first. Click a color to use it again, or drag it '
                             'to the saved colors.')
 
 
 class _GridScrollArea(QScrollArea):
-    """Scrolls a swatch grid, showing every row up to MAX_VISIBLE_ROWS and shrinking to MIN_VISIBLE_ROWS."""
+    """Scrolls a swatch grid, showing every row up to MAX_VISIBLE_ROWS and shrinking to MIN_VISIBLE_ROWS. An empty
+    grid keeps one row, so there is somewhere to drop a color."""
 
     def __init__(self, grid: ColorSwatchGrid) -> None:
         super().__init__()
@@ -75,6 +78,7 @@ class _GridScrollArea(QScrollArea):
         """Sets the height limits from the grid's rows at the current width."""
         content_height = self._grid.heightForWidth(max(self.viewport().width(), SWATCH_SIZE))
         row_step = SWATCH_SIZE + SWATCH_SPACING
+        content_height = max(content_height, SWATCH_SIZE)
         maximum = min(content_height, MAX_VISIBLE_ROWS * row_step - SWATCH_SPACING)
         minimum = min(content_height, MIN_VISIBLE_ROWS * row_step - SWATCH_SPACING)
         if maximum != self.maximumHeight() or minimum != self.minimumHeight():
@@ -85,16 +89,23 @@ class _GridScrollArea(QScrollArea):
 
 
 class SavedColorsPanel(QWidget):
-    """Saved color swatches in a scrolling grid, with buttons that save or remove the current color."""
+    """Saved color swatches in a scrolling grid, with buttons that save or remove the current color.
+
+    With `inline_controls` false, the count label and buttons stay out of the panel's layout, for an owner that shows
+    them elsewhere, such as in a section header. `summary_changed` carries the count text for that owner.
+    """
 
     color_clicked = Signal(QColor)
+    summary_changed = Signal(str)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, inline_controls: bool = True) -> None:
         super().__init__(parent)
         self._color = QColor(Qt.GlobalColor.black)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         self._label = QLabel()
-        layout.addWidget(self._label)
+        if inline_controls:
+            layout.addWidget(self._label)
         self._grid = ColorSwatchGrid(accept_drops=True)
         self._grid.setToolTip(SAVED_COLORS_TOOLTIP)
         self._grid.color_dropped.connect(color_controller.insert_saved_color)
@@ -105,15 +116,16 @@ class SavedColorsPanel(QWidget):
         self._scroll_area = _GridScrollArea(self._grid)
         layout.addWidget(self._scroll_area)
 
-        button_row = QHBoxLayout()
-        add_layout(layout, button_row)
         self._save_button = QPushButton(SAVE_BUTTON_LABEL)
         self._save_button.clicked.connect(lambda: color_controller.save_color(self._color))
-        button_row.addWidget(self._save_button, stretch=1)
         self._remove_button = QPushButton(REMOVE_BUTTON_LABEL)
         self._remove_button.setToolTip(REMOVE_BUTTON_TOOLTIP)
         self._remove_button.clicked.connect(self._remove_current_color)
-        button_row.addWidget(self._remove_button)
+        if inline_controls:
+            button_row = QHBoxLayout()
+            add_layout(layout, button_row)
+            button_row.addWidget(self._save_button, stretch=1)
+            button_row.addWidget(self._remove_button)
         layout.addStretch(1)
         self._update_colors()
         AppConfig().connect(self, AppConfig.SAVED_COLORS, lambda _: self._update_colors())
@@ -143,6 +155,11 @@ class SavedColorsPanel(QWidget):
         """The button that removes the current color from the saved colors."""
         return self._remove_button
 
+    def summary(self) -> str:
+        """Returns the saved color count, for a collapsed section's header."""
+        return SAVED_COLORS_SUMMARY.format(count=len(color_controller.saved_colors()),
+                                           max_count=color_controller.MAX_SAVED_COLORS)
+
     def set_color(self, color: QColor) -> None:
         """Sets the color the buttons save or remove, and highlights it if it is already saved."""
         self._color = QColor(color)
@@ -156,6 +173,7 @@ class SavedColorsPanel(QWidget):
                                                       max_count=color_controller.MAX_SAVED_COLORS))
         self._update_buttons()
         self._scroll_area.update_height_limits()
+        self.summary_changed.emit(self.summary())
 
     def _update_buttons(self) -> None:
         is_saved = color_controller.saved_color_index(self._color) >= 0
@@ -180,23 +198,35 @@ class SavedColorsPanel(QWidget):
 
 
 class RecentColorsRow(QWidget):
-    """Recent color swatches, newest first."""
+    """Recent color swatches, newest first. With `labeled` false, it leaves out its label, for an owner that names
+    it elsewhere. `summary_changed` carries the count text for that owner."""
 
     color_clicked = Signal(QColor)
+    summary_changed = Signal(str)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, labeled: bool = True) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        label = QLabel(RECENT_COLORS_LABEL)
-        layout.addWidget(label)
         self._grid = ColorSwatchGrid()
         self._grid.setToolTip(RECENT_COLORS_TOOLTIP)
         self._grid.color_clicked.connect(self.color_clicked)
-        label.setBuddy(self._grid)
+        if labeled:
+            label = QLabel(RECENT_COLORS_LABEL)
+            layout.addWidget(label)
+            label.setBuddy(self._grid)
         layout.addWidget(self._grid)
+        self._update_colors()
+        Cache().connect(self, Cache.RECENT_COLORS, lambda _: self._update_colors())
+
+    def _update_colors(self) -> None:
         self._grid.set_colors(color_controller.recent_colors())
-        Cache().connect(self, Cache.RECENT_COLORS, lambda _: self._grid.set_colors(color_controller.recent_colors()))
+        self.summary_changed.emit(self.summary())
+
+    @staticmethod
+    def summary() -> str:
+        """Returns the recent color count, for a collapsed section's header."""
+        return RECENT_COLORS_SUMMARY.format(count=len(color_controller.recent_colors()))
 
     @property
     def grid(self) -> ColorSwatchGrid:

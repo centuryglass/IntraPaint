@@ -113,7 +113,7 @@ chooses a rendering and records its reasoning.
 | Selection brush | Tool that paints a selection. | Tools panel | "Selection brush" |
 | Magic wand | Tool that selects connected or similar-colored areas. Photoshop and Paint.NET use this name; GIMP calls it Fuzzy Select. | Tools panel | "Magic wand", "Switch to the magic wand tool:" |
 | Fit box, fit font | Text tool sizing: the box resizes to fit the text, or the font size changes to fit the box. | Text tool | "Fit box", "Fit font", "Fit box: the box resizes to fit the text" |
-| Saved colors | The user's stored color swatches. | Color panel | "Saved colors ({count}/{max_count}):", "Add the current color to the saved colors" |
+| Saved colors | The user's stored color swatches. | Color panel | "Saved colors ({count}/{max_count})", "Add the current color to the saved colors" |
 
 ## Names kept as they are
 
