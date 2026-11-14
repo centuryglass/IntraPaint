@@ -22,6 +22,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Redo (Ctrl+Shift+Z)](#redo-ctrlshiftz)
    - [Cut (Ctrl+X)](#cut-ctrlx)
    - [Copy (Ctrl+C)](#copy-ctrlc)
+   - [Copy merged (Ctrl+Shift+C)](#copy-merged-ctrlshiftc)
    - [Paste (Ctrl+V)](#paste-ctrlv)
    - [Clear (Delete)](#clear-delete)
    - [Keyboard shortcuts (Ctrl+Alt+Shift+K)](#keyboard-shortcuts-ctrlaltshiftk)
@@ -195,6 +196,10 @@ When text is selected and focused, this will instead clear the selected text and
 When a visible [layer](#layers-panel-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing copy will cache the selected areas so that they can be duplicated using [paste](#paste-ctrlv).  Copy and cut only act on the active layer, and will not affect other layers.  If you want to copy across all visible layers, select the main layer group (the top item) in the layer panel.
 
 When text is selected and focused, this will instead copy that text into the system clipboard.
+
+### Copy merged (Ctrl+Shift+C)
+
+Copies the [selected](./tool_guide.md#selection-tools) region of all visible layers combined, as one image, so it can be duplicated using [paste](#paste-ctrlv).  With nothing selected, the whole image is copied.  Hidden layers are left out, and the pasted layer uses the default opacity and composite mode.
 
 ### Paste (Ctrl+V)
 
