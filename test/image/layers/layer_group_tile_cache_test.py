@@ -18,7 +18,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.undo_stack import UndoStack
-from src.util.visual.image_utils import image_data_as_numpy_8bit
+from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, image_is_fully_transparent
 from src.util.visual.tile_cache import TILE_SIZE
 from test.base_test_case import IntraPaintTestCase
 from test.render_assertions import full_group_render, full_render
@@ -53,8 +53,8 @@ def _dab(layer: ImageLayer, area: QRect, color: QColor) -> None:
         painter.end()
 
 
-class LayerGroupTileCacheTest(IntraPaintTestCase):
-    """Edits a stack with a partly transparent background, a non-isolated group and an isolated group."""
+class TileCacheFixture(IntraPaintTestCase):
+    """A stack with a partly transparent background, a non-isolated group and an isolated group."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -89,12 +89,19 @@ class LayerGroupTileCacheTest(IntraPaintTestCase):
         canvas_in_stack = QRect(QPoint(), CANVAS_SIZE).translated(-layer_stack.bounds.topLeft())
         self.assert_images_equal(layer_stack.get_qimage().copy(canvas_in_stack), full_render(self.image_stack),
                                  f'canvas after {step}')
+        self.assert_images_equal(self.image_stack.qimage(), full_render(self.image_stack), f'qimage after {step}')
+        self.assert_images_equal(self.image_stack.qimage(crop_to_image=False), full_group_render(layer_stack),
+                                 f'uncropped qimage after {step}')
 
     def run_steps(self, steps: list[tuple[str, Callable[[], None]]]) -> None:
         """Runs each step, checking the caches after each one."""
         for name, step in steps:
             step()
             self.assert_cache_matches(name)
+
+
+class LayerGroupTileCacheTest(TileCacheFixture):
+    """Edits the fixture's stack, checking every cached composite after each edit."""
 
     def test_repeated_strokes_over_partial_alpha(self) -> None:
         """Many overlapping translucent dabs across tile boundaries leave the cache exact, with no drift."""
@@ -205,3 +212,84 @@ class LayerGroupTileCacheTest(IntraPaintTestCase):
         self.assert_images_equal(returned, returned_copy)
         returned.fill(QColor(0, 0, 0, 255))
         self.assert_images_equal(layer_stack.get_qimage(), full_group_render(layer_stack))
+
+
+class ImageStackQImageTest(TileCacheFixture):
+    """Reads ImageStack.qimage and qimage_area, which serve the root group's tile cache."""
+
+    def test_qimage_includes_unflushed_edits(self) -> None:
+        """qimage runs scheduled renders, so an edit still waiting on the render timer is included."""
+        for i in range(4):
+            _dab(self.background, TILE_EDGE_EDIT.translated(i * 5, i * 3), QColor(30, 200, 90, 90))
+            self.assert_images_equal(self.image_stack.qimage(), full_render(self.image_stack), f'dab {i}')
+
+    def test_repeated_reads_do_not_recomposite(self) -> None:
+        """With no edits in between, reading qimage again renders nothing."""
+        self.image_stack.qimage()
+        self.image_stack.qimage(crop_to_image=False)
+        with patch.object(LayerGroup, 'render', autospec=True, side_effect=LayerGroup.render) as render:
+            image = self.image_stack.qimage()
+            uncropped = self.image_stack.qimage(crop_to_image=False)
+            area = self.image_stack.qimage_area(TILE_EDGE_EDIT)
+        self.assertEqual(render.call_count, 0)
+        self.assert_images_equal(image, full_render(self.image_stack))
+        self.assert_images_equal(uncropped, full_group_render(self.image_stack.layer_stack))
+        self.assert_images_equal(area, full_render(self.image_stack).copy(TILE_EDGE_EDIT))
+
+    def test_qimage_area_renders_only_covered_tiles(self) -> None:
+        """qimage_area renders only the tiles under its area, and leaves pixels outside the image transparent."""
+        layer_stack = self.image_stack.layer_stack
+        _dab(self.background, QRect(5, TILE_SIZE + 20, 20, 20), QColor(255, 0, 0, 80))
+        _dab(self.background, QRect(TILE_SIZE + 5, 5, 20, 20), QColor(255, 0, 0, 80))
+        self.image_stack.flush_render()
+        area = QRect(-20, TILE_SIZE + 10, 60, 100)  # Crosses the image's left and bottom edges.
+        with patch.object(LayerGroup, '_render_area', autospec=True,
+                          side_effect=LayerGroup._render_area) as render_area:  # pylint: disable=protected-access
+            image = self.image_stack.qimage_area(area)
+        rendered = [call.args[2] for call in render_area.call_args_list if call.args[0] is layer_stack]
+        self.assertEqual(rendered, [QRect(0, TILE_SIZE, TILE_SIZE, TILE_SIZE)])
+        self.assert_images_equal(image, full_render(self.image_stack).copy(area))
+
+    def test_generation_area_content(self) -> None:
+        """qimage_generation_area_content matches the generation area of a full render."""
+        self.image_stack.generation_area = QRect(TILE_SIZE - 40, 30, 120, 90)
+        _dab(self.lower, QRect(5, 5, 40, 40), QColor(0, 0, 255, 100))
+        self.assert_images_equal(self.image_stack.qimage_generation_area_content(),
+                                 full_render(self.image_stack).copy(self.image_stack.generation_area))
+
+    def test_hidden_stack_is_transparent(self) -> None:
+        """A hidden layer stack reads as a transparent image."""
+        self.image_stack.layer_stack.visible = False
+        image = self.image_stack.qimage()
+        self.assertEqual(image.size(), CANVAS_SIZE)
+        self.assertTrue(image_is_fully_transparent(image))
+        self.assertTrue(image_is_fully_transparent(self.image_stack.qimage_area(TILE_EDGE_EDIT)))
+
+    def test_returned_qimage_is_independent(self) -> None:
+        """Painting on qimage's result, or writing through its bits, leaves the cache unchanged."""
+        expected = full_render(self.image_stack)
+        painted = self.image_stack.qimage()
+        painted.fill(QColor(0, 0, 0, 255))
+        written = self.image_stack.qimage()
+        image_data_as_numpy_8bit(written)[:] = 255
+        self.assert_images_equal(self.image_stack.qimage(), expected)
+        self.assert_images_equal(self.image_stack.layer_stack.get_qimage(),
+                                 full_group_render(self.image_stack.layer_stack))
+
+    def test_z_max_and_adjuster_renders_bypass_the_cache(self) -> None:
+        """Renders with z_max or an image adjuster give their own result after qimage has filled the cache."""
+        self.image_stack.qimage()
+        below_top = create_transparent_image(CANVAS_SIZE)
+        self.image_stack.render(below_top, QTransform(), z_max=self.background.z_value)
+        expected_below = create_transparent_image(CANVAS_SIZE)
+        self.background.render(expected_below, QTransform())
+        self.assert_images_equal(below_top, expected_below)
+
+        def _clear_upper(layer, image: QImage) -> QImage:
+            return create_transparent_image(image.size()) if layer is self.upper else image
+
+        adjusted = create_transparent_image(CANVAS_SIZE)
+        self.image_stack.render(adjusted, QTransform(), image_adjuster=_clear_upper)
+        self.upper.visible = False
+        self.assert_images_equal(adjusted, full_render(self.image_stack))
+        self.assertFalse(image_is_fully_transparent(self.image_stack.qimage()))

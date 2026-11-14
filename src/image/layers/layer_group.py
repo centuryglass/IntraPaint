@@ -244,6 +244,24 @@ class LayerGroup(LayerParent):
         self._tiles.draw_region(self._image, stale_area, bounds.topLeft(), self._render_area)
         return QImage(self._image)
 
+    def cached_image(self, area: QRect, clip: Optional[QRect] = None) -> QImage:
+        """Returns the group's content within area, in image coordinates, read from the tile cache.
+
+        Pixels outside the group's bounds, or outside clip when it is given, are transparent. Only the tiles under the
+        drawn area are rendered. Like `get_qimage`, this reads the cache as of the last render, so a change still
+        waiting on the render timer is missing until `flush_render` runs.
+        """
+        bounds = self.bounds
+        content_area = area.intersected(bounds)
+        if clip is not None:
+            content_area = content_area.intersected(clip)
+        if area == bounds and content_area == bounds:
+            return self.get_qimage()
+        image = create_transparent_image(area.size())
+        if not content_area.isEmpty():
+            self._tiles.draw(image, content_area, area.topLeft(), self._render_area)
+        return image
+
     def _render_area(self, image: QImage, area: QRect) -> None:
         """Renders the group's content within area, in image coordinates, into a transparent image the size of area."""
         self.render(base_image=image, transform=QTransform.fromTranslate(-area.x(), -area.y()))

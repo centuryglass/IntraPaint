@@ -28,7 +28,6 @@ from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
-from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
@@ -150,11 +149,10 @@ class ImageStack(QObject):
         Cache().connect(self, Cache.EDIT_SIZE, _update_gen_area_size)
 
         self._layer_stack = LayerGroup(NEW_IMAGE_LAYER_GROUP_NAME)
-        self._image = CachedData(None)
         self._render_timer = QTimer()
         self._render_timer.setSingleShot(True)
         self._render_timer.setInterval(RENDER_DELAY_MS)
-        self._render_timer.timeout.connect(self._invalidate_cache)
+        self._render_timer.timeout.connect(self._emit_content_changed)
         self._active_layer_id = self._layer_stack.id
 
         # Create selection layer:
@@ -597,24 +595,35 @@ class ImageStack(QObject):
         UndoStack().commit_action(_apply, _undo, 'ImageStack.transform_image')
 
     def qimage(self, crop_to_image: bool = True) -> QImage:
-        """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
-        if crop_to_image and self._image.valid:
-            return self._image.data
+        """Returns the visible layers' combined content, read from the layer stack's tile cache.
+
+        The image covers the image bounds when crop_to_image is set, and the layer stack's bounds otherwise. Scheduled
+        renders run first, so content changes are included even before their render timers fire. Changes made while
+        layer signals are blocked (`LayerGroup.all_signals_delayed`) are missing until those signals are sent.
+
+        The result may share data with the cache. Painting on it or writing through `QImage.bits` detaches it, so
+        neither changes the cache.
+        """
+        self._layer_stack.flush_render()
         if not self._layer_stack.visible:
             size = QSize(self.size if crop_to_image else self._layer_stack.bounds.size())
             size.setWidth(max(self.width, size.width()))
             size.setHeight(max(self.height, size.height()))
-            image = create_transparent_image(size)
-            return image
+            return create_transparent_image(size)
         if crop_to_image:
-            image = create_transparent_image(self.size)
-            transform = QTransform()
-        else:
-            stack_bounds = self._layer_stack.bounds
-            image = create_transparent_image(stack_bounds.size())
-            transform = QTransform.fromTranslate(-stack_bounds.x(), -stack_bounds.y())
-        self.render(image, transform)
-        return image
+            return self._layer_stack.cached_image(self.bounds)
+        return self._layer_stack.get_qimage()
+
+    def qimage_area(self, area: QRect) -> QImage:
+        """Returns the visible layers' combined content within area, rendering only the cached tiles it covers.
+
+        area is in image coordinates. Pixels outside the image bounds are transparent, as in `qimage().copy(area)`.
+        Pending renders run first and the result shares data with the cache, as in `qimage`.
+        """
+        self._layer_stack.flush_render()
+        if not self._layer_stack.visible:
+            return create_transparent_image(area.size())
+        return self._layer_stack.cached_image(area, self.bounds)
 
     def render(self, base_image: QImage, transform: Optional[QTransform] = None,
                image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
@@ -641,7 +650,7 @@ class ImageStack(QObject):
 
     def qimage_generation_area_content(self) -> QImage:
         """Returns the contents of the generation area as a QImage."""
-        return self.qimage().copy(self.generation_area)
+        return self.qimage_area(self.generation_area)
 
     # LAYER ACCESS / MANIPULATION FUNCTIONS:
 
@@ -1649,13 +1658,9 @@ class ImageStack(QObject):
         self._layer_stack.flush_render()
         if self._render_timer.isActive():
             self._render_timer.stop()
-            self._invalidate_cache()
+            self._emit_content_changed()
 
     # INTERNAL:
-
-    def _invalidate_cache(self) -> None:
-        self._image.invalidate()
-        self._emit_content_changed()
 
     def _trigger_content_render(self) -> None:
         if not self._render_timer.isActive():
