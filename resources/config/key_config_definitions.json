@@ -719,6 +719,15 @@
         "default": "Ctrl+C",
         "saved": true
     },
+    "copy_merged_shortcut": {
+        "label": "Copy merged",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Copy selected image content from all visible layers combined.",
+        "type": "string",
+        "default": "Ctrl+Shift+C",
+        "saved": true
+    },
     "paste_shortcut": {
         "label": "Paste",
         "category": "Menu Shortcuts",
@@ -1094,7 +1103,7 @@
         "subcategory": "Layer Menu",
         "description": "Create a duplicate of the active layer.",
         "type": "string",
-        "default": "Ctrl+J,Ctrl+Shift+C",
+        "default": "Ctrl+J",
         "saved": true
     },
     "rename_layer_shortcut": {

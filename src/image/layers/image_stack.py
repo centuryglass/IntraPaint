@@ -1411,6 +1411,39 @@ class ImageStack(QObject):
             self._copy_buffer_layer_properties = (layer.opacity, layer.composition_mode)
         return image
 
+    def copy_merged(self) -> Optional[QImage]:
+        """Returns the visible layers' combined content within the selection, saving it in the copy buffer.
+
+        With nothing selected, the whole image is copied. Hidden layers are left out. Paste applies the default
+        opacity and composite mode. Returns None when the copied region has no visible content.
+        """
+        if self.selection_layer.is_empty():
+            image = self.qimage().copy()
+            origin = QPoint(0, 0)
+        else:
+            stack_bounds = self._layer_stack.bounds
+            origin = stack_bounds.topLeft()
+            image = self.qimage(crop_to_image=False).copy()
+            mask = create_transparent_image(image.size())
+            painter = QPainter(mask)
+            painter.setTransform(self.selection_layer.transform * QTransform.fromTranslate(-origin.x(), -origin.y()))
+            painter.drawImage(0, 0, self.selection_layer.image)
+            painter.end()
+            painter = QPainter(image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            painter.drawImage(0, 0, mask)
+            painter.end()
+        if image_is_fully_transparent(image):
+            return None
+        content_bounds = image_content_bounds(image)
+        if content_bounds.size() != image.size():
+            image = image.copy(content_bounds)
+        self._copy_buffer = image
+        self._copy_buffer_transform = QTransform.fromTranslate(origin.x() + content_bounds.x(),
+                                                               origin.y() + content_bounds.y())
+        self._copy_buffer_layer_properties = (1.0, CompositeMode.NORMAL)
+        return image
+
     def clear_selected(self, layer: Optional[Layer] = None, save_to_copy_buffer=False) -> Optional[QImage]:
         """Replaces all masked image content in a layer with transparency, returning the content the operation copied.
 

@@ -270,6 +270,7 @@ class KeyConfigKeys:
     COLOR_BALANCE_SHORTCUT: Final = 'color_balance_shortcut'
     COMPARE_ORIGINAL_MODIFIER: Final = 'compare_original_modifier'
     COPY_LAYER_SHORTCUT: Final = 'copy_layer_shortcut'
+    COPY_MERGED_SHORTCUT: Final = 'copy_merged_shortcut'
     COPY_SHORTCUT: Final = 'copy_shortcut'
     CROP_IMAGE_SHORTCUT: Final = 'crop_image_shortcut'
     CROP_IMAGE_TO_GEN_SHORTCUT: Final = 'crop_image_to_gen_shortcut'

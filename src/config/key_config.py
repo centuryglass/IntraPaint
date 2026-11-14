@@ -99,7 +99,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
         'move_layer_up_shortcut': ['Ctrl+Home'],
         'move_layer_down_shortcut': ['Ctrl+End'],
         'move_layer_to_top_shortcut': ['Ctrl+Shift+Home'],
-        'copy_layer_shortcut': ['Ctrl+Shift+C'],
+        'copy_layer_shortcut': ['Ctrl+Shift+C', 'Ctrl+J,Ctrl+Shift+C'],
         'delete_layer_shortcut': ['Ctrl+Shift+D'],
         'merge_layer_down_shortcut': ['Ctrl+Shift+M'],
         'merge_all_visible_shortcut': ['Ctrl+Shift+Alt+M'],

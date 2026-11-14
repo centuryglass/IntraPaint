@@ -3104,6 +3104,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Copy merged</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Copy selected image content from all visible layers combined.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Paste</source>
         <translation type="unfinished"></translation>
     </message>

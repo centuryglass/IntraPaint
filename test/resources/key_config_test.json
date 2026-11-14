@@ -45,7 +45,7 @@
     "grow_selection_shortcut": "Ctrl+=",
     "shrink_selection_shortcut": "Ctrl+-",
     "new_layer_shortcut": "Ctrl+Shift+N",
-    "copy_layer_shortcut": "Ctrl+Shift+C",
+    "copy_layer_shortcut": "Ctrl+J",
     "delete_layer_shortcut": "Ctrl+Shift+D",
     "select_previous_layer_shortcut": "Ctrl+PgUp",
     "select_next_layer_shortcut": "Ctrl+PgDown",

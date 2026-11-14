@@ -355,6 +355,7 @@ class AppController(MenuBuilder):
                                      (KeyConfig.REDO_SHORTCUT, self.redo),
                                      (KeyConfig.CUT_SHORTCUT, self.cut),
                                      (KeyConfig.COPY_SHORTCUT, self.copy),
+                                     (KeyConfig.COPY_MERGED_SHORTCUT, self.copy_merged),
                                      (KeyConfig.PASTE_SHORTCUT, self.paste),
                                      (KeyConfig.CLEAR_SHORTCUT, self.clear),
                                      (KeyConfig.SWAP_COLORS_SHORTCUT, self.swap_colors),
@@ -1027,7 +1028,17 @@ class AppController(MenuBuilder):
                 self._can_paste_image = True
                 self._update_enabled_actions()
 
-    @menu_action(MENU_EDIT, 'paste_shortcut', 112, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'copy_merged_shortcut', 112, valid_app_states=[APP_STATE_EDITING])
+    def copy_merged(self) -> None:
+        """Copy the selected region of all visible layers combined, as one image."""
+        copied_image = self._image_stack.copy_merged()
+        if copied_image is not None and not copied_image.isNull():
+            set_clipboard_image(copied_image)
+        if not self._can_paste_image:
+            self._can_paste_image = True
+            self._update_enabled_actions()
+
+    @menu_action(MENU_EDIT, 'paste_shortcut', 113, valid_app_states=[APP_STATE_EDITING])
     def paste(self) -> None:
         """Paste copied image content into a new layer, or copied text in an active text field."""
         if self._active_text_field_tracker.focused_can_paste():
@@ -1052,7 +1063,7 @@ class AppController(MenuBuilder):
                                           center.y() - (image.height() - 1) // 2)
         self._image_stack.paste_image(image, offset)
 
-    @menu_action(MENU_EDIT, 'clear_shortcut', 113, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'clear_shortcut', 114, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:
         """Clear selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
