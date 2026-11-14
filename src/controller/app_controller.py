@@ -625,6 +625,14 @@ class AppController(MenuBuilder):
             self._tool_controller.remove_tool(gen_area_tool)
         elif gen_area_tool is None and show_image_gen_controls:
             self._tool_controller.add_tool(self._generation_area_tool)
+        # Context pins only take effect with a generator. They show and accept edits while this flag is set, and are
+        # dropped when it clears:
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, show_image_gen_controls)
+        if not show_image_gen_controls:
+            self._image_stack.selection_layer.clear_context_pins(False)
+        active_tool = self._tool_controller.active_tool
+        if active_tool is not None:
+            self._window.image_panel.set_control_hint(active_tool.get_input_hint())
         image_panels = (self._window.image_panel, self._tool_panel_navigation_panel)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
@@ -789,8 +797,9 @@ class AppController(MenuBuilder):
                     break
 
         # Hide everything related to generation area if no generator is in use:
-        crop_to_gen_action = self.get_action_for_method(self.crop_image_to_gen_area)
-        crop_to_gen_action.setVisible(self._generator != self._null_generator)
+        generation_available = bool(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+        for gen_area_method in (self.crop_image_to_gen_area, self.clear_context_pins):
+            self.get_action_for_method(gen_area_method).setVisible(generation_available)
 
         # "Merge down" should also check the next layer:
         merge_down_action = self.get_action_for_method(self.merge_layer_down)
@@ -1364,8 +1373,9 @@ class AppController(MenuBuilder):
     @menu_action(MENU_SELECT, 'clear_context_pins_shortcut', 330,
                  valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def clear_context_pins(self) -> None:
-        """Removes all context pins."""
-        self._image_stack.selection_layer.clear_context_pins()
+        """Removes all context pins, if an image generator is loaded."""
+        if Cache().get(Cache.IMAGE_GENERATION_AVAILABLE):
+            self._image_stack.selection_layer.clear_context_pins()
 
     # Layer menu:
     @menu_action(MENU_LAYER, 'rename_layer_shortcut', 410, valid_app_states=[APP_STATE_EDITING], separator_before=True)

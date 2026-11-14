@@ -9,7 +9,7 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool, ToolGroup
-from src.tools.context_pin_dragger import ContextPinDragger
+from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
 from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
@@ -19,7 +19,7 @@ from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_path
 from src.util.visual.key_hint_text import rich_text_key_hints
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.lasso_selection_tool'
@@ -36,8 +36,7 @@ FREE_SELECTION_LABEL = _tr('Free selection')
 FREE_SELECTION_TOOLTIP = _tr('Select or deselect polygonal areas')
 FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{enter_key}'
                                   ' or {left_mouse_icon}+first point: finish selection<br/>'
-                                  '{escape_key}: cancel selection<br/>'
-                                  '{right_mouse_icon}: add, move or remove context pin')
+                                  '{escape_key}: cancel selection')
 
 
 class FreeSelectionTool(BaseTool):
@@ -81,10 +80,10 @@ class FreeSelectionTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                            right_mouse_icon=right_button_hint_text(),
-                                                            escape_key=rich_text_key_hints('Esc'),
-                                                            enter_key=rich_text_key_hints('Enter'))
+        selection_hint = (FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                             escape_key=rich_text_key_hints('Esc'),
+                                                             enter_key=rich_text_key_hints('Enter'))
+                          + context_pin_control_hint('<br/>'))
         return f'{selection_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
