@@ -1,1 +1,1 @@
-"""widgets provides various multi-purpose Qt6 QWidget classes."""
+"""Widgets shared across panels and windows: panel parts, color controls, labels, rulers and image views."""

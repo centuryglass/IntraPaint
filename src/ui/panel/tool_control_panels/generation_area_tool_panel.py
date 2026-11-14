@@ -1,5 +1,6 @@
-"""Generation area tool control panel: the shared `GeometryBlock`, labeled size presets, and a read-only line naming
-the resolution the generator receives.
+"""Generation area tool control panel: the shared `GeometryBlock`, size presets, and the generation resolution.
+
+The resolution is a read-only line naming the resolution the generator receives.
 
 The panel is a view over `ImageStack.generation_area`. It sets the area when the user changes a field or picks a
 preset, and follows the area whenever it changes.

@@ -1,5 +1,8 @@
-"""Generic interface for image filtering functions. Handles the process of opening modal windows to apply the filter
-and provides the information needed to add the function as a menu action."""
+"""Generic interface for image filtering functions.
+
+Handles the process of opening modal windows to apply the filter and provides the information needed to add the
+function as a menu action.
+"""
 import math
 from typing import Callable, Optional, Any
 

@@ -1,5 +1,4 @@
-"""Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
-   support."""
+"""Shared base for the Stable Diffusion generators, with optional ControlNet and upscaling support."""
 import logging
 import weakref
 from abc import ABC, abstractmethod

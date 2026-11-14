@@ -1,5 +1,8 @@
-"""Provides various functions that act on an ImageStack.  Includes only functions that the ImageStack itself does not
-   need to access, which don't access any protected internal data."""
+"""Provides various functions that act on an ImageStack.
+
+Includes only functions that the ImageStack itself does not need to access, which don't access any protected internal
+data.
+"""
 from typing import Optional
 
 from PIL import Image

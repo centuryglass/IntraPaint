@@ -1,5 +1,5 @@
-"""
-QSpinbox implementation that supports a larger range of integer values.
+"""QSpinbox implementation that supports a larger range of integer values.
+
 Adapted from https://stackoverflow.com/a/26861829
 """
 from typing import Optional, Any

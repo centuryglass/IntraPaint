@@ -1,5 +1,6 @@
-"""Starts Qt's own dock drag for a docked `PanelDock` from code, for drags that begin on something other than Qt's title
-bar: a rail button (`src.ui.window.rail_drag`) or the dock's corner notch (`src.ui.window.dock_notch`).
+"""Starts Qt's own dock drag for a docked `PanelDock` from code, for drags that don't begin on Qt's title bar.
+
+Those drags begin on a rail button (`src.ui.window.rail_drag`) or the dock's corner notch (`src.ui.window.dock_notch`).
 
 The dock opens with its title bar, and gets a synthetic press near the bar's left end and moves, as if that bar had been
 dragged. Qt floats the dock with that point under the pointer and follows the mouse from there. This relies on Qt

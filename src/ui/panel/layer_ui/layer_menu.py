@@ -1,5 +1,7 @@
-"""Context menus for layer list rows and the image strip. They act on the layer they were built for, which isn't always
-the active layer."""
+"""Context menus for layer list rows and the image strip.
+
+They act on the layer they were built for, which isn't always the active layer.
+"""
 from typing import Callable, Optional, cast
 
 from PySide6.QtCore import Qt

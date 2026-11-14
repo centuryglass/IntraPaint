@@ -1,5 +1,7 @@
-"""Widgets the ControlNet panel shows in a strip: the unit list that stands in for its tabs, and the preprocessor
-preview that sizes itself to a strip column."""
+"""Widgets the ControlNet panel shows in a strip: a unit list in place of its tabs, and a preprocessor preview.
+
+The preprocessor preview sizes itself to a strip column.
+"""
 from typing import Optional
 
 from PySide6.QtCore import QSize, Qt

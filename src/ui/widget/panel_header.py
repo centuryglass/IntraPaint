@@ -1,5 +1,6 @@
-"""A panel header: the panel or active tool's icon, name and key, an optional dim description, a reset-to-defaults
-button and a More button.
+"""A panel header: the panel or tool's icon, name and key, a description, and reset-to-defaults and More buttons.
+
+The description is optional and drawn dim.
 
 - The key and description follow the name. When the first line can't fit them, they move to a second line, where the
   description wraps. That line starts at the icon's left edge, which is inset from the header's edge when the icon

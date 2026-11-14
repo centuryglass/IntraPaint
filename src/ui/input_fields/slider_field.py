@@ -1,5 +1,7 @@
-"""`NumberField` with a fill that shows the value's place in a finite range. See `number_field.py` for the shared
-behavior."""
+"""`NumberField` with a fill that shows the value's place in a finite range.
+
+See `number_field.py` for the shared behavior.
+"""
 from typing import Optional
 
 from PySide6.QtWidgets import QWidget

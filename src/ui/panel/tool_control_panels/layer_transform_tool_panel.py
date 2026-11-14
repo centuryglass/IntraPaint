@@ -1,5 +1,6 @@
-"""Layer transform tool control panel: the shared `GeometryBlock` with its Scale and Angle rows, Revert and Clear
-transform, and a preview of the layer over the image.
+"""Layer transform tool control panel: the shared `GeometryBlock`, Revert and Clear transform, and a preview.
+
+The geometry block includes its Scale and Angle rows, and the preview shows the layer over the image.
 
 The panel is a view over the transform tool's outline. It emits a signal per field the user changes, and the tool sets
 the fields back with the panel's properties, which emit nothing.

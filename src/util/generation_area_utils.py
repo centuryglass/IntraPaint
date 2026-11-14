@@ -1,5 +1,4 @@
-"""Pure helpers for generation area frames, the generation resolution rule, follow-selection placement and handle
-   resizing.
+"""Pure helpers for generation area frames, resolution, follow-selection placement and handle resizing.
 
 Frames are one-click generation area sizes. The resolution rule decides the generation resolution whenever the
 generation area size changes. Follow-selection placement moves the area to contain the selection after selection edits.

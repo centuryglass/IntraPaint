@@ -1,5 +1,8 @@
-"""Image composition mode management: Handles conversion between QPainter CompositionModes, open raster composite
- operations, and equivalent display text, and provides implementations for composite modes not supported by QPainter."""
+"""Layer composition modes: conversion between Qt and OpenRaster modes, and the modes QPainter lacks.
+
+Handles conversion between QPainter CompositionModes, OpenRaster composite operations and equivalent display text, and
+provides implementations for composite modes not supported by QPainter.
+"""
 
 from enum import StrEnum
 from typing import Optional, Callable, TypeAlias

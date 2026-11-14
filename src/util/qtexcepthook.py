@@ -2,7 +2,9 @@
 # Source: http://blog.ssokolow.com/archives/2019/06/01/gui-error-handler-for-pyqt-5-x/
 # I removed a @pyqtSlot annotation from _cb_copy_to_clipboard, blocked activation outside the main thread, and
 # ported to PySide6, but it's otherwise unchanged.
-"""Qt Exception Handler for Python 3.5+
+"""Shows uncaught exceptions in an error dialog, from Stephan Sokolow's Qt exception handler.
+
+Qt Exception Handler for Python 3.5+
 
 Additions copyright 2019, 2020 Stephan Sokolow
 
