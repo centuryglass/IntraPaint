@@ -25,6 +25,11 @@ TILE_UPDATE_TIMER_MS = 100
 # negative step comes from its own dab interpolation, not from this value.
 STROKE_DTIME_SECONDS = 0.1
 
+# Time passed with a stroke's first input. libmypaint snaps its smoothed position and other state to the input when the
+# time step exceeds about 5 seconds, which a stroke needs so slow tracking doesn't pull its first dabs toward the
+# previous stroke's end. mypaint_brush_reset alone doesn't do this in the bundled libraries.
+STROKE_START_DTIME_SECONDS = 10.0
+
 # Pressure sent for input with no pressure data, such as a mouse. MyPaint brush files usually center their pressure
 # curves near mid pressure, so 0.5 keeps most brushes' dabs near the base radius the brush outline shows.
 MOUSE_PRESSURE = 0.5
@@ -49,6 +54,7 @@ class MyPaintLayerSurface(QObject):
         self._writing_tiles = False
         self._stroke_tiles: set[MyPaintLayerTile] = set()
         self._saved_lock_alpha: Optional[float] = None
+        self._stroke_starting = False
         self._pending_tile_timer = QTimer()
         self._pending_tile_timer.timeout.connect(self.apply_pending_tile_updates)
         self._pending_tile_timer.setSingleShot(True)
@@ -244,15 +250,18 @@ class MyPaintLayerSurface(QObject):
             self.brush.set_value(MyPaintBrush.LOCK_ALPHA, 1.0)
         libmypaint.mypaint_brush_reset(self.brush.brush_ptr)
         libmypaint.mypaint_brush_new_stroke(self.brush.brush_ptr)
+        self._stroke_starting = True
 
     def stroke_to(self, x: float, y: float, pressure: float, x_tilt: float, y_tilt: float):
         """Continue a brush stroke, providing tablet inputs."""
         if not self._should_allow_stroke():
             return
+        dtime = STROKE_START_DTIME_SECONDS if self._stroke_starting else STROKE_DTIME_SECONDS
+        self._stroke_starting = False
         libmypaint.mypaint_surface_begin_atomic(byref(self._surface_data))
         libmypaint.mypaint_brush_stroke_to(self.brush.brush_ptr, byref(self._surface_data),
                                            c_float(x), c_float(y), c_float(pressure), c_float(x_tilt), c_float(y_tilt),
-                                           c_double(STROKE_DTIME_SECONDS), c_float(1.0), c_float(0.0), c_float(0.0),
+                                           c_double(dtime), c_float(1.0), c_float(0.0), c_float(0.0),
                                            c_int(1))
         libmypaint.mypaint_surface_end_atomic(byref(self._surface_data), self._roi)
 
