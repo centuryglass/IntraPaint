@@ -22,7 +22,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 GROUP_TITLE_SEED_VARIATION = _tr('Seed variation')
 GROUP_TITLE_OUTPUT = _tr('Output')
-LABEL_LAST_VARIATION_SEED = _tr('Last variation seed')
+LABEL_LAST_VARIATION_SEED = _tr('Last variation seed {seed}')
 LABEL_RESIZE_SEED_FROM = _tr('Resize seed from')
 VARIATION_OFF = _tr('Off', 'Variation strength is zero')
 SUMMARY_VARIATION = _tr('variation {strength}')
@@ -49,7 +49,7 @@ class WebUIAdvancedControls(AdvancedControls):
         self._last_subseed_label.setToolTip(cache.get_tooltip(Cache.WEBUI_LAST_SUBSEED))
 
         def _last_subseed_update(last_subseed: str) -> None:
-            self._last_subseed_label.setText(f'{LABEL_LAST_VARIATION_SEED} {last_subseed}')
+            self._last_subseed_label.setText(LABEL_LAST_VARIATION_SEED.format(seed=last_subseed))
 
         cache.connect(self._last_subseed_label, Cache.WEBUI_LAST_SUBSEED, _last_subseed_update)
         _last_subseed_update(cache.get(Cache.WEBUI_LAST_SUBSEED))

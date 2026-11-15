@@ -118,11 +118,15 @@ class MetadataWindowTest(IntraPaintTestCase):
         window.refresh()
 
     def test_add_and_remove_field(self) -> None:
-        """Add field appends a field, and Remove field deletes the selected one."""
+        """Add field appends a numbered field when the name is taken, and Remove field deletes the selected one."""
         self.window._add_field()
         params = self.metadata.a1111_parameters()
         assert params is not None
         self.assertIsNotNone(params.get('New field'))
+        self.window._add_field()
+        params = self.metadata.a1111_parameters()
+        assert params is not None
+        self.assertIsNotNone(params.get('New field 2'))
         self.window._field_table.selectRow(self._row('Version'))
         self.assertTrue(self.window._remove_field_button.isEnabled())
         self.window._remove_field()
@@ -269,6 +273,9 @@ class MetadataWindowTest(IntraPaintTestCase):
         window._all_table.selectRow(0)
         self.assertFalse(window._remove_row_button.isEnabled())
         self.assertTrue(window._row_value_box.isReadOnly())
+        selected = window._selected_row()
+        assert selected is not None
+        self.assertEqual(window._row_value_label.text(), f'Value of "{selected.name}" (read-only)')
 
     def test_remove_buttons_need_a_target(self) -> None:
         """Remove needs a selected row, and Remove all metadata needs metadata."""
