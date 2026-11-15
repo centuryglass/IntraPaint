@@ -320,7 +320,7 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
 - **A released bug's fix gets its own `fix` PR.** release-please reads only the squash commit's title, so a fix inside
   a `test`, `refactor` or `feat` PR never reaches the changelog.
   - `fix` is for a bug in the latest release: the commit that introduced it is an ancestor of the newest `v*` tag
-    (`git merge-base --is-ancestor <commit> <tag>`; a shallow clone needs `git fetch --tags` first).
+    (`git merge-base --is-ancestor <commit> <tag>`).
   - A fix to work merged since that release is typed `chore` or `refactor`, so the changelog doesn't list a fix for a
     bug no release had.
   - When work on one PR finds a released bug, put the fix in a separate PR, stacked on the first if it depends on it.
@@ -367,9 +367,10 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
 ## Cloud sessions
 
 `.claude/hooks/session-start.sh` refreshes the issue cache in every session (see "Tracking open work"). At the start
-of a Claude Code on the web session it also installs the system libraries CI installs, creates `.venv` with Python
-3.13 and `requirements-dev.txt`, builds `image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and
-`scripts/pylint_check.py` work without further setup.
+of a Claude Code on the web session it also fetches the rest of the git history and the release tags (the clone starts
+shallow), installs the system libraries CI installs, creates `.venv` with Python 3.13 and `requirements-dev.txt`,
+builds `image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and `scripts/pylint_check.py` work without
+further setup.
 
 ## Legacy / don't-touch
 

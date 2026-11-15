@@ -2,10 +2,10 @@
 # Starts every Claude Code session by refreshing the GitHub issue cache and printing its index as session context (see
 # AGENTS.md, "Tracking open work").
 #
-# A Claude Code on the web session is also prepared to run the test suite and the lint check: the system libraries
-# headless Qt needs, a Python 3.13 virtual environment with requirements-dev.txt, and the compiled image_fill module.
-# Python 3.13 matches CI's lint job, since scripts/pylint_baseline.json is only valid for the Python version it was
-# generated with.
+# A Claude Code on the web session also gets the rest of the git history (the clone starts shallow) and is prepared to
+# run the test suite and the lint check: the system libraries headless Qt needs, a Python 3.13 virtual environment with
+# requirements-dev.txt, and the compiled image_fill module. Python 3.13 matches CI's lint job, since
+# scripts/pylint_baseline.json is only valid for the Python version it was generated with.
 set -euo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-.}"
@@ -22,6 +22,12 @@ python3 scripts/issues.py "$issue_source" && cat .claude/cache/issues/index.md |
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
+fi
+
+# The web session's clone is shallow. Fetching the rest of the history, with the release tags, takes seconds and about
+# 80 MB. Best-effort, since a failed fetch must not fail session start.
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  git fetch --unshallow --tags -q origin || echo "git fetch --unshallow failed; history stays shallow." >&2
 fi
 
 # The same packages as the "Install system libraries" step in .github/workflows/ci.yml.
