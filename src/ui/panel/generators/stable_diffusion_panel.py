@@ -77,7 +77,7 @@ LABEL_MODEL = _tr('Model')
 LABEL_CFG_SCALE = _tr('CFG scale')
 LABEL_STEPS = _tr('Steps')
 LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
-LABEL_LAST_SEED = _tr('Last seed')
+LABEL_LAST_SEED = _tr('Last seed {seed}')
 CONTEXT_OFF = _tr('whole area', 'Inpaint context while it covers the whole generation area')
 TOOLTIP_LIMIT_CONTEXT_TILING = _tr('Inpainting ignores the context limit while tiling is on.')
 BUTTON_TEXT_TILING_ON = _tr('Tiling on')
@@ -521,7 +521,7 @@ class StableDiffusionPanel(DockPanel):
         self._last_seed_label.setToolTip(cache.get_tooltip(Cache.LAST_SEED))
 
         def _last_seed_update(last_seed: str) -> None:
-            self._last_seed_label.setText(f'{LABEL_LAST_SEED} {last_seed}')
+            self._last_seed_label.setText(LABEL_LAST_SEED.format(seed=last_seed))
 
         cache.connect(self._last_seed_label, Cache.LAST_SEED, _last_seed_update)
         _last_seed_update(cache.get(Cache.LAST_SEED))

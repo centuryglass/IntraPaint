@@ -7812,7 +7812,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Last seed</source>
+        <source>Last seed {seed}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7997,7 +7997,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
-        <source>Last variation seed</source>
+        <source>Last variation seed {seed}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10153,7 +10153,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/window/metadata_window.py"/>
-        <source>(read-only)</source>
+        <source>Value of "{name}" (read-only)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10179,6 +10179,11 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/metadata_window.py"/>
         <source>New field</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>New field {number}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

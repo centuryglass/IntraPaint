@@ -67,13 +67,14 @@ SOURCE_COLUMN = _tr('Source')
 NAME_COLUMN = _tr('Name')
 SELECTED_VALUE_LABEL = _tr('Value of "{name}"')
 NO_SELECTION_LABEL = _tr('Select a row to see its full value.')
-READ_ONLY_SUFFIX = _tr('(read-only)')
+SELECTED_READ_ONLY_VALUE_LABEL = _tr('Value of "{name}" (read-only)')
 ADD_FIELD_LABEL = _tr('Add field')
 ADD_FIELD_DISABLED_TOOLTIP = _tr('Generation parameters need a settings line first. Use "Update all" to create one.')
 REMOVE_FIELD_LABEL = _tr('Remove field')
 REMOVE_FIELD_DISABLED_TOOLTIP = _tr('Select a field to remove. A1111 reads a settings line with fewer than three fields'
                                     ' as part of the prompt, so the last three can\'t be removed.')
 NEW_FIELD_NAME = _tr('New field')
+NUMBERED_NEW_FIELD_NAME = _tr('New field {number}')
 ADD_ENTRY_LABEL = _tr('Add text entry')
 REMOVE_LABEL = _tr('Remove')
 REMOVE_DISABLED_TOOLTIP = _tr('Select a text entry or EXIF tag to remove.')
@@ -628,7 +629,7 @@ class MetadataWindow(QDialog):
         suffix = 1
         while params.get(name) is not None:
             suffix += 1
-            name = f'{NEW_FIELD_NAME} {suffix}'
+            name = NUMBERED_NEW_FIELD_NAME.format(number=suffix)
         params.set(name, '')
         self._store_parameters(params)
         self._field_table.selectRow(self._field_rows.index(name))
@@ -760,8 +761,8 @@ class MetadataWindow(QDialog):
         if row is None:
             self._row_value_label.setText(NO_SELECTION_LABEL)
         else:
-            label = SELECTED_VALUE_LABEL.format(name=row.name)
-            self._row_value_label.setText(label if row.editable else f'{label} {READ_ONLY_SUFFIX}')
+            label = SELECTED_VALUE_LABEL if row.editable else SELECTED_READ_ONLY_VALUE_LABEL
+            self._row_value_label.setText(label.format(name=row.name))
         self._row_value_box.setEnabled(row is not None)
         self._row_value_box.setReadOnly(row is None or not row.editable)
         text = '' if row is None else row.value
