@@ -4905,7 +4905,7 @@
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Could not open the following images: </source>
+        <source>Could not open the following images: {file_list}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

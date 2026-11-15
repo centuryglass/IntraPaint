@@ -587,6 +587,18 @@ class TestOpenAnimation(ImageIOTestCase):
         self.assertEqual(self._layer_names_bottom_up()[1:],
                          ['anim.gif: Frame 1 (100ms)', 'anim.gif: Frame 2 (200ms)', 'anim.gif: Frame 3 (50ms)'])
 
+    def test_unreadable_layer_files_listed_in_error(self) -> None:
+        """Layer files that fail to open are listed in the error message, separated by a comma and a space."""
+        bad_paths = [os.path.join(self.temp_dir.name, name) for name in ('a.png', 'b.png')]
+        for path in bad_paths:
+            with open(path, 'w', encoding='utf-8') as bad_file:
+                bad_file.write('not an image')
+        with patch('src.controller.image_io.show_error_dialog') as error_dialog:
+            self.image_io.add_layers_from_files([*bad_paths, self.gif_path])
+        error_dialog.assert_called_once()
+        self.assertEqual(error_dialog.call_args.args[2],
+                         f'Could not open the following images: {bad_paths[0]}, {bad_paths[1]}')
+
 
 class TestSaveAnimation(ImageIOTestCase):
     """Tests saving one layer per frame as an animated image."""
