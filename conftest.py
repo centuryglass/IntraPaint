@@ -20,8 +20,8 @@ prepare the environment that the Qt-based tests rely on:
 - Fail any test during which `HotkeyFilter` received an event source that isn't a QObject, the sign of a stale PySide
   wrapper. Failing where it is first seen narrows down which test left it.
 - Flush C stdio after each test, so output native libraries print is captured with the test.
-- Fail any test that opens a modal dialog or menu. Under the offscreen platform nothing can close
-  one, so it would block the whole run until the CI job times out.
+- Fail any test that opens a modal dialog or menu, and abort the run if session setup opens one. Under the offscreen
+  platform nothing can close one, so it would block the whole run until the CI job times out.
 - Fail any test during which an exception reached `sys.excepthook`, where PySide sends exceptions raised in Qt slots.
 - On Python 3.12 and up, keep the last few exceptions raised in the project's own code. A failure that says a Qt call "returned
   NULL without setting an exception" gets a report section listing them and the test that ran before it, since
@@ -62,6 +62,7 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 import pytest
+from PySide6.QtGui import QTextDocumentFragment
 from PySide6.QtWidgets import (QApplication, QColorDialog, QDialog, QFileDialog, QFontDialog, QInputDialog, QMenu,
                                QMessageBox, QWidget)
 
@@ -69,6 +70,8 @@ from test import qt_cycles
 from test.hang_diagnostics import HangWatchdog
 
 _hang_watchdog = HangWatchdog()
+# Holds the modal dialog guard from pytest_sessionstart until pytest_sessionfinish:
+_modal_guard_patch = pytest.MonkeyPatch()
 _CONFIG_FIXTURE_DIR = os.path.join(_PROJECT_ROOT, 'test', 'resources')
 _config_copy_dir: Optional[str] = None
 
@@ -78,8 +81,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
     This runs before test collection. Config classes are singletons, so these are the instances every later
     `AppConfig('test/resources/app_config_test.json')`-style call returns, and the path in those calls is ignored.
+    The modal dialog guard goes up first, so a config that opens a warning dialog, such as `KeyConfig` finding a key
+    error, aborts the run with the dialog's text instead of hanging before any test starts.
     """
     global _config_copy_dir  # pylint: disable=global-statement
+    _block_modal_dialogs(_modal_guard_patch)
     _ = QApplication.instance() or QApplication(sys.argv)
     # Imported here rather than at module level so PySide6 and the QApplication are ready first:
     # pylint: disable=import-outside-toplevel
@@ -101,7 +107,8 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Write the cycle report when asked to, and remove the temporary config copies and user directories."""
+    """Write the cycle report when asked to, lift the modal dialog guard, and remove the temporary directories."""
+    _modal_guard_patch.undo()
     qt_cycles.stop()
     qt_cycles.write_report()
     if _config_copy_dir is not None:
@@ -131,14 +138,17 @@ _blocked_modals: list[str] = []
 
 def _block_modal(description: str) -> None:
     _blocked_modals.append(description)
-    raise UnexpectedModalDialog(f'{description} opened during a test, where it would block forever. Mock it, or '
-                                'avoid the code path that opens it.')
+    raise UnexpectedModalDialog(f'{description} opened during the test run, where it would block forever. Mock it, '
+                                'or avoid the code path that opens it.')
 
 
 def _blocked_exec(self, *_args, **_kwargs) -> None:
     if not isinstance(self, QWidget):  # QMenu's static exec(actions, pos) overload
         _block_modal('QMenu.exec')
-    text = f': {self.text()}' if isinstance(self, QMessageBox) else ''
+    text = ''
+    if isinstance(self, QMessageBox):
+        text = ': ' + ' '.join(QTextDocumentFragment.fromHtml(part).toPlainText()
+                               for part in (self.text(), self.informativeText()) if part)
     _block_modal(f'{type(self).__name__} "{self.windowTitle()}"{text}')
 
 
@@ -148,28 +158,25 @@ def _blocked_static(name: str) -> Callable[..., None]:
     return _blocked
 
 
-@pytest.fixture(scope='session', autouse=True)
-def _block_modal_dialogs():
+def _block_modal_dialogs(patch: pytest.MonkeyPatch) -> None:
     """Replace every modal entry point the app uses with one that raises UnexpectedModalDialog.
 
     QDialog subclasses inherit the patched `exec`. The static convenience functions run their own event loop in
     C++, so they are patched individually.
     """
-    with pytest.MonkeyPatch.context() as patch:
-        for widget_class in (QDialog, QMenu):
-            patch.setattr(widget_class, 'exec', _blocked_exec)
-            if hasattr(widget_class, 'exec_'):
-                patch.setattr(widget_class, 'exec_', _blocked_exec)
-        for widget_class, function_names in (
-                (QMessageBox, ('critical', 'warning', 'information', 'question', 'about')),
-                (QFileDialog, ('getOpenFileName', 'getOpenFileNames', 'getSaveFileName', 'getExistingDirectory')),
-                (QInputDialog, ('getText', 'getInt', 'getDouble', 'getItem', 'getMultiLineText')),
-                (QColorDialog, ('getColor',)),
-                (QFontDialog, ('getFont',))):
-            for function_name in function_names:
-                patch.setattr(widget_class, function_name,
-                              staticmethod(_blocked_static(f'{widget_class.__name__}.{function_name}')))
-        yield
+    for widget_class in (QDialog, QMenu):
+        patch.setattr(widget_class, 'exec', _blocked_exec)
+        if hasattr(widget_class, 'exec_'):
+            patch.setattr(widget_class, 'exec_', _blocked_exec)
+    for widget_class, function_names in (
+            (QMessageBox, ('critical', 'warning', 'information', 'question', 'about')),
+            (QFileDialog, ('getOpenFileName', 'getOpenFileNames', 'getSaveFileName', 'getExistingDirectory')),
+            (QInputDialog, ('getText', 'getInt', 'getDouble', 'getItem', 'getMultiLineText')),
+            (QColorDialog, ('getColor',)),
+            (QFontDialog, ('getFont',))):
+        for function_name in function_names:
+            patch.setattr(widget_class, function_name,
+                          staticmethod(_blocked_static(f'{widget_class.__name__}.{function_name}')))
 
 
 _CALL_FAILED = pytest.StashKey[bool]()
