@@ -31,6 +31,30 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         """The default bindings produce no warnings."""
         self.assertEqual([], _validation_errors())
 
+    def test_empty_bindings_valid(self) -> None:
+        """A tool key, a menu shortcut and a modifier left empty produce no warnings, and don't conflict."""
+        for config_key in (KeyConfig.DRAW_TOOL_KEY, KeyConfig.TEXT_TOOL_KEY, KeyConfig.SAVE_SHORTCUT,
+                           KeyConfig.UNDO_SHORTCUT, KeyConfig.LINE_MODIFIER, KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER):
+            KeyConfig().set(config_key, '')
+        self.assertEqual([], _validation_errors())
+
+    def test_duplicate_binding_reported(self) -> None:
+        """Two bindings sharing a key still produce a warning."""
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, KeyConfig().get(KeyConfig.DRAW_TOOL_KEY))
+        errors = _validation_errors()
+        self.assertEqual(1, len(errors))
+        self.assertIn(KeyConfig().get_label(KeyConfig.DRAW_TOOL_KEY), errors[0])
+
+    def test_empty_modifier_never_held(self) -> None:
+        """An empty modifier binding reads as not held, whatever modifiers are down."""
+        KeyConfig().set(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, '')
+        for held in (Qt.KeyboardModifier.NoModifier, Qt.KeyboardModifier.ControlModifier,
+                     Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.AltModifier):
+            with self.subTest(held=held):
+                self.assertFalse(KeyConfig.modifier_held(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, held_modifiers=held))
+                self.assertFalse(KeyConfig.modifier_held(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, exclusive=True,
+                                                         held_modifiers=held))
+
 
 class _ScratchKeyConfig(Config):
     """A key config that isn't the shared singleton, with `KeyConfig`'s definitions and previous defaults."""
