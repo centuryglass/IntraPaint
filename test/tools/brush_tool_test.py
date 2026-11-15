@@ -1,8 +1,11 @@
 import unittest
+from unittest.mock import patch
 
 from PySide6.QtCore import QPoint, QRectF, Qt
 
 from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.tools.brush_tool import MIN_OUTLINE_DIAMETER
 from src.tools.mypaint_brush_tool import MyPaintBrushTool
 from src.ui.brush_crosshair import CrosshairVariant, crosshair_cursor
@@ -216,6 +219,31 @@ class BrushToolTest(ToolTestCase):
         self.assertFalse(self.brush_tool.brush_outline.isVisible())
         self.mouse_move(QPoint(120, 100), Qt.MouseButton.NoButton)
         self.assertFalse(self.brush_tool.brush_outline.isVisible())
+
+    def _line_preview_after_modifiers(self, modifiers: Qt.KeyboardModifier) -> bool:
+        """Draws a short stroke, then returns whether a modifier change with the cursor over the image shows the line
+        preview."""
+        self.image_stack.active_layer = self.image_stack.create_layer()
+        self.activate_tool(self.brush_tool)
+        self.mouse_press(QPoint(50, 50))
+        self.mouse_release(QPoint(50, 50))
+        cursor = self.image_viewer.mapToGlobal(self.image_point_to_widget(QPoint(150, 150)))
+        with patch('src.tools.brush_tool.QCursor.pos', return_value=cursor):
+            HotkeyFilter.instance().modifiers_changed.emit(modifiers)
+        return self.brush_tool._preview_line.isVisible()
+
+    def test_line_modifier_press_shows_line_preview(self) -> None:
+        """Pressing the line modifier alone after a stroke shows the line preview without moving the mouse."""
+        self.assertTrue(self._line_preview_after_modifiers(Qt.KeyboardModifier.ShiftModifier))
+
+    def test_other_modifiers_hide_line_preview(self) -> None:
+        """Extra modifiers, other modifiers and an unbound line modifier leave the line preview hidden."""
+        for modifiers in (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier,
+                          Qt.KeyboardModifier.ControlModifier):
+            with self.subTest(modifiers=modifiers):
+                self.assertFalse(self._line_preview_after_modifiers(modifiers))
+        KeyConfig().set(KeyConfig.LINE_MODIFIER, '')
+        self.assertFalse(self._line_preview_after_modifiers(Qt.KeyboardModifier.ShiftModifier))
 
 
 if __name__ == '__main__':
