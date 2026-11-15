@@ -29,6 +29,7 @@ class ZoomToolTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.image_stack.create_layer()
         self.main_viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
         self.tool = self.activate_tool(ZoomTool(self.image_stack, self.main_viewer, self.image_viewer))
@@ -38,6 +39,13 @@ class ZoomToolTest(ToolTestCase):
     def tearDown(self) -> None:
         self.main_viewer.deleteLater()
         super().tearDown()
+
+    def test_no_pin_editing_without_generator(self) -> None:
+        """With no image generator loaded, the right button leaves pins alone."""
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, False)
+        self.mouse_drag([QPoint(40, 30)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [])
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_right_click_adds_and_removes_pin(self) -> None:
         """A right-click adds a pin, and a second right-click on it removes the pin, each as one undo step."""
@@ -81,6 +89,7 @@ class NavigationPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.image_stack = ImageStack(self.IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048))
         self.image_stack.create_layer()
         self.main_viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
@@ -126,6 +135,12 @@ class NavigationPanelTest(IntraPaintTestCase):
         self.panel.set_image_generation_controls_visible(False)
         self.assertFalse(self.panel.tool_toggle.isVisible())
         self.assertEqual(self.panel.tool_toggle.value(), ZOOM_LABEL)
+
+    def test_pin_hint_hides_without_generator(self) -> None:
+        """The viewer's tooltip leaves out the context pin hint once the generator is unloaded."""
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, False)
+        self.panel.set_image_generation_controls_visible(False)
+        self.assertEqual(self.panel.image_viewer.toolTip(), '\n'.join(VIEW_HINT_LINES))
 
     def test_highlight_follows_main_view(self) -> None:
         """The viewer highlights the region the main view shows, as the main view pans and zooms."""

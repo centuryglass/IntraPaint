@@ -5,6 +5,7 @@ import numpy as np
 from PySide6.QtCore import QRect, QRectF, QSize
 from PySide6.QtGui import QImage
 
+from src.config.cache import Cache
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.tool_test_case import ToolTestCase
@@ -36,13 +37,15 @@ class SelectionToolTestCase(ToolTestCase):
     """Base class for selection tool tests, on a small image with one layer and an empty undo history.
 
     Undo merging by elapsed time is off, so each committed action is its own undo step unless the tool groups it.
-    The selection layer covers the whole image at the origin, so its pixels are image pixels.
+    The selection layer covers the whole image at the origin, so its pixels are image pixels. An image generator
+    counts as loaded, so context pins are available.
     """
 
     IMAGE_SIZE = QSize(64, 48)
 
     def setUp(self) -> None:
         super().setUp()
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.layer = self.image_stack.create_layer()
         self.selection_layer = self.image_stack.selection_layer
         assert self.selection_layer.position.isNull()

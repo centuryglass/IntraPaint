@@ -13,13 +13,13 @@ from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import ToolGroup
 from src.tools.brush_tool import BrushTool
-from src.tools.context_pin_dragger import ContextPinDragger
+from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
 from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import SelectionMode, brush_selection_mode_for_gesture, compose_selection_image
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.selection_tool'
@@ -32,7 +32,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 LABEL_TEXT_SELECTION_TOOL = _tr('Selection brush')
 TOOLTIP_SELECTION_TOOL = _tr('Draw to select areas for editing or inpainting.')
-CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
+CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select')
 
 ICON_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 
@@ -80,8 +80,8 @@ class SelectionBrushTool(BrushTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        select_hint = CONTROL_HINT_SELECTION_TOOL.format(left_mouse_icon=left_button_hint_text(),
-                                                         right_mouse_icon=right_button_hint_text())
+        select_hint = (CONTROL_HINT_SELECTION_TOOL.format(left_mouse_icon=left_button_hint_text())
+                       + context_pin_control_hint(' - '))
         return f'{select_hint}<br/>{BrushTool.brush_control_hints()}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:

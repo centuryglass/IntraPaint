@@ -31,7 +31,7 @@ class SelectionPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         cache = Cache()
-        cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
+        cache.set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
         self.selection_layer = self.image_stack.selection_layer
@@ -39,14 +39,14 @@ class SelectionPanelTest(IntraPaintTestCase):
         self.button = self.panel._clear_pins_button  # pylint: disable=protected-access
 
     def test_shown_only_while_inpainting(self) -> None:
-        """The button shows in inpainting mode, and hides in other modes or without inpainting support."""
+        """The button shows in inpainting mode, and hides in other modes or without an image generator."""
         cache = Cache()
         self.assertFalse(self.button.isHidden())
         cache.set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
         self.assertTrue(self.button.isHidden())
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self.assertFalse(self.button.isHidden())
-        cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
+        cache.set(Cache.IMAGE_GENERATION_AVAILABLE, False)
         self.assertTrue(self.button.isHidden())
 
     def test_enabled_only_with_pins(self) -> None:

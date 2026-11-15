@@ -10,14 +10,14 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool, ToolGroup
-from src.tools.context_pin_dragger import ContextPinDragger
+from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
 from src.tools.shape_drag_tool import ShapeDragTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import SelectionMode, selection_mode_for_gesture, compose_selection_path
 from src.util.visual.shape_mode import ShapeMode
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.shape_selection_tool'
@@ -32,8 +32,7 @@ ICON_PATH_SHAPE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_select
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or deselect rectangles or ellipses')
-SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag: select - '
-                                      '{right_mouse_icon}: add, move or remove context pin')
+SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag: select')
 
 ERASING_COLOR = Qt.GlobalColor.white
 
@@ -79,8 +78,8 @@ class ShapeSelectionTool(ShapeDragTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        shape_selection_hint = SHAPE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                                  right_mouse_icon=right_button_hint_text())
+        shape_selection_hint = (SHAPE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+                                + context_pin_control_hint(' - '))
         fixed_aspect_hint = BaseTool.fixed_aspect_hint()
         if fixed_aspect_hint:
             shape_selection_hint = f'{shape_selection_hint}, {fixed_aspect_hint}'

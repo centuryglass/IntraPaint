@@ -2,6 +2,8 @@
 
 A right-button press grabs the pin under the pointer or adds one. Dragging moves it, releasing outside the image
 deletes it, and releasing a grabbed pin without having moved it deletes it. Each drag is one undo step.
+
+Pins only take effect while an image generator is loaded, so every pin control checks `context_pins_available`.
 """
 from dataclasses import dataclass
 from enum import Enum
@@ -9,15 +11,45 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF
 from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_screen_bounds
 from src.ui.image_viewer import ImageViewer
+from src.util.visual.text_drawing_utils import right_button_hint_text
+
+# The QCoreApplication.translate context for strings in this file
+TR_ID = 'tools.context_pin_dragger'
+
+
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, key, disambiguation, n)
+
+
+CONTEXT_PIN_CONTROL_HINT = _tr('{right_mouse_icon}: add, move or remove context pin')
 
 # Screen distance a drag must move before releasing it keeps a grabbed pin instead of removing it:
 PIN_DRAG_THRESHOLD_PX = 4
 # Extra screen distance around a drawn pin marker where a right-click still grabs that pin:
 PIN_HIT_MARGIN_PX = 2
+
+
+def context_pins_available() -> bool:
+    """Returns whether context pins can be shown and edited, which is whenever an image generator is loaded.
+
+    `AppController.load_image_generator` sets `Cache.IMAGE_GENERATION_AVAILABLE` where it shows or hides the
+    generation area.
+    """
+    return bool(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+
+
+def context_pin_control_hint(separator: str) -> str:
+    """Returns the right-click pin hint after `separator`, or an empty string while context pins are unavailable."""
+    if not context_pins_available():
+        return ''
+    return separator + CONTEXT_PIN_CONTROL_HINT.format(right_mouse_icon=right_button_hint_text())
 
 
 class PinDragState(Enum):
@@ -62,11 +94,12 @@ class ContextPinDragger:
         return self._pin_drag is not None
 
     def press(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Starts a drag if the right button alone was pressed. Returns whether one started.
+        """Starts a drag if the right button alone was pressed while context pins are available. Returns whether one
+        started.
 
         Pressing a pin's marker grabs that pin. Pressing anywhere else in the image adds a pin there and grabs it.
         """
-        if event is None or event.buttons() != Qt.MouseButton.RightButton:
+        if event is None or event.buttons() != Qt.MouseButton.RightButton or not context_pins_available():
             return False
         if self._pin_drag is not None:
             self._finish_drag(False)

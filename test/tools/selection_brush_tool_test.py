@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.cache import Cache
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.selection_layer import SelectionLayer
+from src.tools.context_pin_dragger import CONTEXT_PIN_CONTROL_HINT
 from src.tools.selection_brush_tool import SelectionBrushTool
 from src.util.visual.selection_mode import SelectionMode
 from src.undo_stack import UndoStack
@@ -27,6 +28,7 @@ class SelectionBrushToolTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.image_stack.create_layer()
         self.tool = self.activate_tool(SelectionBrushTool(self.image_stack, self.image_viewer))
         self.selection_layer = self.image_stack.selection_layer
@@ -43,6 +45,21 @@ class SelectionBrushToolTest(ToolTestCase):
         self.assertTrue(self.selection_layer.is_empty())
         self.assertEqual(UndoStack().undo_count(), 1)
         self.assertEqual(len(self.image_viewer._context_pin_items), 1)  # pylint: disable=protected-access
+
+    def test_no_pin_editing_or_hint_without_generator(self) -> None:
+        """With no image generator loaded, the right button leaves pins alone, markers hide and the hint omits pins."""
+        pin_hint_start = CONTEXT_PIN_CONTROL_HINT.split('}', 1)[1]
+        self.selection_layer.set_context_pins([QPoint(100, 100)], False)
+        pin_item = self.image_viewer._context_pin_items[0]  # pylint: disable=protected-access
+        self.assertTrue(pin_item.isVisibleTo(pin_item.parentItem()))
+        self.assertIn(pin_hint_start, self.tool.get_input_hint())
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, False)
+        self.assertFalse(pin_item.isVisibleTo(pin_item.parentItem()))
+        self.assertNotIn(pin_hint_start, self.tool.get_input_hint())
+        self.mouse_drag([QPoint(200, 200)], RIGHT)
+        self.mouse_drag([QPoint(100, 100), QPoint(150, 150)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [QPoint(100, 100)])
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_right_click_on_pin_removes_it(self) -> None:
         """A right-click on a pin's needle tip removes the pin, as one undo step."""

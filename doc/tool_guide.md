@@ -464,7 +464,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 #### Basic controls
 
 - **Left-click**: Select content within the image, using the current [selection mode](#selection-modes). In Replace and Intersect modes, each stroke starts from a cleared selection, and Intersect keeps the part of the old selection that the stroke covers.
-- **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the inpaint context crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
+- **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the inpaint context crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp). Pins need an image generator: without one, right-clicking does nothing, and disconnecting the generator removes every pin.
 - **Right-click and drag**: Drag a new pin into place, or drag an existing pin to move it. Releasing a dragged pin outside the image removes it.
 - **Hold Alt before pressing**: Subtract the stroke from the selection, whatever the mode is.
 - **Hold shift and left-click**: Select a line from the last place you clicked, using the current mode. Hold Alt too to keep the line at a fixed angle.
@@ -481,7 +481,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 2. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content.
-5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-q).
+5. **Clear Context Pins button**: Only visible in inpainting mode with an image generator connected.  Removes every [context pin](#-selection-brush-tool-q).
 6. Selected content, under the selection brush cursor. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 7. A context pin. The cropped bounds stretch to include it, but the pinned spot isn't selected for inpainting.
 

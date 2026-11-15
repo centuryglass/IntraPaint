@@ -148,6 +148,7 @@ class CacheKeys:
     GLID_SERVER_URL: Final = 'glid_server_url'
     GUIDANCE_SCALE: Final = 'guidance_scale'
     HYPERNETWORK_MODELS: Final = 'hypernetwork_models'
+    IMAGE_GENERATION_AVAILABLE: Final = 'image_generation_available'
     IMAGE_LAYER_SCALING_BEHAVIOR: Final = 'image_layer_scaling_behavior'
     INPAINT_FULL_RES: Final = 'inpaint_full_res'
     INPAINT_FULL_RES_PADDING: Final = 'inpaint_full_res_padding'

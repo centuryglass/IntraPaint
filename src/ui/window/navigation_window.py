@@ -22,7 +22,7 @@ from src.config.cache import Cache
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
-from src.tools.context_pin_dragger import ContextPinDragger
+from src.tools.context_pin_dragger import ContextPinDragger, context_pins_available
 from src.tools.generation_area_tool import GenerationAreaTool, GEN_AREA_CONTROL_HINT
 from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
@@ -46,8 +46,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 WINDOW_TITLE = _tr('Navigate')
 ZOOM_LABEL = _tr('Move view')
-ZOOM_TOOLTIP = _tr('Left-click to pan, Shift + left-click to draw viewport, right-click to add, move or remove '
-                   'context pins')
+ZOOM_TOOLTIP = _tr('Left-click to pan, Shift + left-click to draw viewport')
 GENERATION_AREA_LABEL = _tr('Move gen. area')
 ZOOM_LABEL_SHORT = _tr('View')
 GENERATION_AREA_LABEL_SHORT = _tr('Gen. area')
@@ -55,7 +54,8 @@ BUTTON_TEXT_RESET_VIEW = _tr('Reset view')
 ZOOM_PERCENT_TEXT = _tr('Zoom {percent}%')
 # Each hint is a list of lines, joined into one line where the panel has the width for it:
 VIEW_HINT_LINES = (_tr('Drag: pan'), _tr('Shift+drag: draw new view'))
-# Added to the viewer's tooltip in the view mode, which has room the hint line doesn't:
+# Added to the viewer's tooltip in the view mode while context pins are available. The tooltip has room the hint line
+# doesn't:
 CONTEXT_PIN_HINT = _tr('Right-click: add, move or remove context pins')
 GEN_AREA_HINT_LINES = (_tr('Drag: move area'), _tr('Right-drag: resize area'))
 HINT_LINE_SEPARATOR = _tr(', ')
@@ -279,12 +279,13 @@ class NavigationWindow(ImagePanel):
         return self._orientation
 
     def set_image_generation_controls_visible(self, visible: bool) -> None:
-        """Only show the tool toggle if generation area controls are visible."""
+        """Show the tool toggle and the context pin hint only while generation area controls are visible."""
         if not visible and self._tool_controller.active_tool == self._generation_area_tool:
             self._tool_toggle.set_value(ZOOM_LABEL)
         self._toggle_shown = visible
         self._tool_toggle.setVisible(visible)
         super().set_image_generation_controls_visible(visible)
+        self._update_hint(self._tool_controller.active_tool)
         self._refit()
 
     def _set_active_tool(self, tool_name: str) -> None:
@@ -306,7 +307,9 @@ class NavigationWindow(ImagePanel):
             return  # The tool controller activates its first tool before the controls exist.
         moving_area = active_tool == self._generation_area_tool
         self._hint_lines = GEN_AREA_HINT_LINES if moving_area else VIEW_HINT_LINES
-        tooltip_lines = self._hint_lines if moving_area else (*self._hint_lines, CONTEXT_PIN_HINT)
+        tooltip_lines = self._hint_lines
+        if not moving_area and context_pins_available():
+            tooltip_lines = (*tooltip_lines, CONTEXT_PIN_HINT)
         self.image_viewer.setToolTip('\n'.join(tooltip_lines))
         self._refit()
 

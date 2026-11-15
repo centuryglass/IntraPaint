@@ -59,10 +59,10 @@ class BrushSelectionPanel(SelectionPanel):
         self.insert_into_layout(tool_section(BRUSH_SECTION_TITLE, size_field))
 
         def _update_hint(_=None) -> None:
-            text = MODE_HINT_WITH_PINS if cache.get(Cache.INPAINT_OPTIONS_AVAILABLE) else MODE_HINT
+            text = MODE_HINT_WITH_PINS if cache.get(Cache.IMAGE_GENERATION_AVAILABLE) else MODE_HINT
             self.set_mode_hint(text.format(subtract_keys=modifier_keys_text((KeyConfig.SELECTION_SUBTRACT_MODIFIER,)),
                                            line_keys=modifier_keys_text((KeyConfig.LINE_MODIFIER,))))
-        cache.connect(size_field, Cache.INPAINT_OPTIONS_AVAILABLE, _update_hint)
+        cache.connect(size_field, Cache.IMAGE_GENERATION_AVAILABLE, _update_hint)
         for config_key in (KeyConfig.SELECTION_SUBTRACT_MODIFIER, KeyConfig.LINE_MODIFIER):
             key_config.connect(size_field, config_key, _update_hint)
         _update_hint()

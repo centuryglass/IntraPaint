@@ -127,6 +127,7 @@ class ImageViewer(ImageGraphicsView):
         self._context_pin_items: list[ContextPinItem] = []
         self._context_pin_marker_size = DEFAULT_MARKER_SIZE
         selection_layer.context_pins_changed.connect(self._context_pins_change_slot)
+        Cache().connect(self, Cache.IMAGE_GENERATION_AVAILABLE, self._update_context_pin_visibility)
         for limit_context_key in (Cache.INPAINT_FULL_RES, Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
             Cache().connect(self, limit_context_key, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
@@ -371,7 +372,14 @@ class ImageViewer(ImageGraphicsView):
             pin_item.setZValue(CONTEXT_PIN_Z_VALUE)
             self._canvas_extras.register(pin_item, CanvasExtraCategory.GENERATION_AREA)
             self._context_pin_items.append(pin_item)
+        self._update_context_pin_visibility()
         self._selection_content_change_slot()
+
+    def _update_context_pin_visibility(self, *_) -> None:
+        """Shows the pin markers only while an image generator is loaded, since pins do nothing without one."""
+        shown = bool(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+        for pin_item in self._context_pin_items:
+            pin_item.setVisible(shown)
 
     @property
     def context_pin_marker_size(self) -> int:

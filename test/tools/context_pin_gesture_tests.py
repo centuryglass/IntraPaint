@@ -1,6 +1,8 @@
 """Right-button context pin tests shared by every selection tool except the selection brush, which pins its own."""
 from PySide6.QtCore import QPoint, Qt
 
+from src.config.cache import Cache
+from src.tools.context_pin_dragger import CONTEXT_PIN_CONTROL_HINT
 from src.undo_stack import UndoStack
 
 RIGHT = Qt.MouseButton.RightButton
@@ -51,6 +53,19 @@ class ContextPinGestureTests:
         self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assertEqual(self.selection_layer.context_pins, [QPoint(20, 20)])
+
+    def test_no_pin_editing_or_hint_without_generator(self) -> None:
+        """With no image generator loaded, the right button leaves pins alone and the control hint omits pins."""
+        pin_hint_start = CONTEXT_PIN_CONTROL_HINT.split('}', 1)[1]
+        self.assertIn(pin_hint_start, self.tool.get_input_hint())
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, False)
+        self.assertNotIn(pin_hint_start, self.tool.get_input_hint())
+        self.mouse_drag([QPoint(20, 20)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [])
+        self.selection_layer.set_context_pins([QPoint(30, 30)], False)
+        self.mouse_drag([QPoint(30, 30), QPoint(40, 40)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [QPoint(30, 30)])
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_left_button_adds_no_pin(self) -> None:
         """The left button never touches context pins."""

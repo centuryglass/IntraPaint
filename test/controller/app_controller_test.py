@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from typing import Iterator
 from unittest.mock import patch, MagicMock
 
-from PySide6.QtCore import QEvent, QSize, QTimer
+from PySide6.QtCore import QEvent, QPoint, QSize, QTimer
 from PySide6.QtGui import QAction, QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 from shiboken6 import delete, isValid
@@ -138,6 +138,28 @@ class TestAppController(IntraPaintTestCase):
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
         self.assertIsInstance(self.controller._generator, TestGenerator)
         self.assertTrue(self.controller._image_io.metadata.is_empty)
+
+    def test_context_pins_follow_generator(self):
+        """Unloading the generator clears context pins and hides their menu action, and loading one restores it."""
+        controller = self.controller
+        generator = controller._generator
+        selection_layer = controller._image_stack.selection_layer
+        clear_pins_action = controller.get_action_for_method(controller.clear_context_pins)
+        self.assertTrue(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+        self.assertTrue(clear_pins_action.isVisible())
+        selection_layer.set_context_pins([QPoint(4, 4)], False)
+
+        controller.load_image_generator(controller._null_generator)
+        self.assertFalse(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+        self.assertEqual(selection_layer.context_pins, [])
+        self.assertFalse(clear_pins_action.isVisible())
+        selection_layer.set_context_pins([QPoint(4, 4)], False)
+        controller.clear_context_pins()
+        self.assertEqual(selection_layer.context_pins, [QPoint(4, 4)])
+
+        controller.load_image_generator(generator)
+        self.assertTrue(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+        self.assertTrue(clear_pins_action.isVisible())
 
     @patch('src.controller.app_controller.SettingsModal')
     def test_init_settings(self, MockSettingsModal):
