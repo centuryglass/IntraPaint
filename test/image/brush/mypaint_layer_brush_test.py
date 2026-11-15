@@ -85,9 +85,6 @@ class MyPaintLayerBrushTest(BrushTestCase):
     def test_mouse_stroke_stays_inside_outline(self) -> None:
         """A stroke without pressure data stays within the brush outline, on a brush whose radius grows with pressure."""
         self.brush.brush_path = PRESSURE_SIZED_BRUSH
-        # Slow tracking pulls a stroke's first dabs off its path: https://github.com/centuryglass/IntraPaint/issues/969
-        # pylint: disable-next=protected-access
-        self.brush._mp_surface.brush.set_value(MyPaintBrush.SLOW_TRACKING, 0.0)
         start, end = QPoint(40, 64), QPoint(150, 64)
         radius = self.brush.brush_size // 2
         initial_image = self.layer.image
@@ -95,6 +92,18 @@ class MyPaintLayerBrushTest(BrushTestCase):
         # One extra pixel covers anti-aliasing.
         outline_bounds = QRect(start, end).adjusted(-radius - 1, -radius - 1, radius + 1, radius + 1)
         self.assert_changes_inside(image, initial_image, outline_bounds)
+
+    def test_slow_tracking_stroke_starts_at_first_point(self) -> None:
+        """With slow tracking, a stroke's first dabs land on its path, not toward the previous stroke's end."""
+        self.brush.brush_path = PRESSURE_SIZED_BRUSH
+        self.use_layer(create_transparent_image(LAYER_SIZE))
+        radius = self.brush.brush_size // 2
+        for start, end in ((QPoint(40, 64), QPoint(150, 64)), (QPoint(60, 30), QPoint(170, 30))):
+            with self.subTest(start=start):
+                initial_image = self.layer.image
+                image = self.stroke(line_points(start, end, 8))
+                outline_bounds = QRect(start, end).adjusted(-radius - 1, -radius - 1, radius + 1, radius + 1)
+                self.assert_changes_inside(image, initial_image, outline_bounds)
 
     def test_blending_brush_on_pattern(self) -> None:
         """A brush that picks up and smudges the color under it."""
