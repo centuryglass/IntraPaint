@@ -2243,11 +2243,6 @@
     </message>
     <message>
         <location filename="../../src/config/key_config.py"/>
-        <source>{key_binding_name} is not set</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/config/key_config.py"/>
         <source>Key "{key_str}" is shared between options {key_names}, some keys may not work.</source>
         <translation type="unfinished"></translation>
     </message>

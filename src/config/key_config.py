@@ -35,18 +35,11 @@ NOT_A_MODIFIER_ERROR = _tr('"{key_binding_name}" should be a modifier key (Ctrl,
 UNEXPECTED_MODIFIER_ERROR = _tr('"{key_binding_name}" assigned unexpected modifier key "{key_value}", this may cause '
                                 'problems')
 UNKNOWN_KEY_CODE_ERROR = _tr('"{key_binding_name}" value "{key_value}" is not a recognized key')
-UNSET_KEY_ERROR = _tr('{key_binding_name} is not set')
 KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names}, some keys may not work.')
 
 
 # Config keys that set the brush opacity directly, mapped to the opacity each sets:
 BRUSH_OPACITY_PRESETS = {f'brush_opacity_{percent}': percent / 100 for percent in range(10, 101, 10)}
-
-# Bindings that may be left empty. Each one with an empty default must be listed, or startup warns that it is unset.
-OPTIONAL_KEYS = ('toggle_sample_merged_hotkey', 'toggle_selection_shape_hotkey', 'report_bug_shortcut',
-                 'release_notes_shortcut', 'about_shortcut', 'about_qt_shortcut', 'image_flip_horizontal_shortcut',
-                 'image_flip_vertical_shortcut', 'image_rotate_cw_shortcut', 'image_rotate_ccw_shortcut',
-                 'image_rotate_180_shortcut')
 
 
 class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
@@ -126,7 +119,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
     @staticmethod
     def modifier_held(modifier_key: str, exclusive=False,
                       held_modifiers: Optional[Qt.KeyboardModifier] = None) -> bool:
-        """Returns whether a KeyConfig modifier is held, or false if modifier key is invalid or unbound."""
+        """Returns whether a KeyConfig modifier is held, or False if the modifier binding is invalid or empty."""
         try:
             if held_modifiers is None:
                 held_modifiers = QApplication.keyboardModifiers()
@@ -159,7 +152,11 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
         return False
 
     def get_modifier(self, key: str) -> Qt.KeyboardModifier | list[Qt.KeyboardModifier]:
-        """Returns the modifier or modifier list associated with a config value."""
+        """Returns the modifier or modifier list associated with a config value.
+
+        An empty binding returns `Qt.KeyboardModifier.NoModifier`, which means disabled, never always held. A caller
+        that reads this directly instead of using `modifier_held` checks for `NoModifier` itself.
+        """
         str_value = self.get(key)
         try:
             return get_modifiers(str_value)
@@ -168,7 +165,10 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
             return Qt.KeyboardModifier.NoModifier
 
     def validate_keybindings(self) -> None:
-        """Checks all keybindings for conflicts, and shows a warning message if any are found."""
+        """Checks all keybindings for conflicts, and shows a warning message if any are found.
+
+        Any binding may be empty, which leaves its action unbound. Empty values are skipped, so they never conflict.
+        """
         key_binding_options = self.get_category_keys('Keybindings') + self.get_category_keys('Menu Shortcuts')
         duplicate_map = {}
         errors = []
@@ -196,10 +196,10 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
 
         for config_key in key_binding_options:
             key_binding_name = self.get_label(config_key)
-            if config_key in OPTIONAL_KEYS and self.get(config_key) == '':
-                continue
             key_values = self.get(config_key).split(',')
             for key_value in key_values:
+                if key_value == '':
+                    continue
                 standardized_key = _standardize_key_str(key_value)
                 if config_key.endswith('_modifier'):
                     if not _is_modifier(standardized_key):
@@ -210,12 +210,10 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
                         errors.append(UNEXPECTED_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
                                                                        key_value=key_value))
                 # noinspection PyUnresolvedReferences
-                if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
+                if key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
                     errors.append(UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
                                                                 key_value=key_value))
-                if len(key_value) == 0:
-                    errors.append(UNSET_KEY_ERROR.format(key_binding_name=key_binding_name))
-                elif standardized_key not in duplicate_map:
+                if standardized_key not in duplicate_map:
                     duplicate_map[standardized_key] = [config_key]
                 else:
                     duplicate_map[standardized_key].append(config_key)
