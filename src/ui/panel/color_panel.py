@@ -8,7 +8,8 @@ The panel is a `src.ui.panel.tool_control_panels.fit_tool_panel.FitToolPanel`, p
 - A side panel stacks the sections. A strip packs them into columns (`src.ui.layout.column_packing`).
 - Plans measure the ring at its minimum size. Once a plan is applied, the ring grows to the largest size that still
   fits, up to a strip column's width (`strip_section_max_width`), and the saved colors take the height left after that.
-  The sliders are no wider than a strip column either, so their tracks don't stretch across a wide side panel.
+  The sliders, recent colors and saved colors are no wider than a strip column either, so they don't stretch across a
+  wide side panel. A side panel centers a ring that is narrower than that.
 
 The Tools panel hosts the panel as `FitContent`. The Color dock hosts it directly: the dock's area sets the orientation
 through `set_orientation`, the panel plans for its own size, and its minimum size is the smallest plan's for that
@@ -98,13 +99,15 @@ class ColorControlPanel(FitToolPanel):
         self._layout.addWidget(section_holder, stretch=1)
 
         wheel_body = QWidget()
-        wheel_layout = QHBoxLayout(wheel_body)
-        wheel_layout.setContentsMargins(0, 0, 0, 0)
-        wheel_layout.addWidget(parts.ring_square, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._wheel_layout = QHBoxLayout(wheel_body)
+        self._wheel_layout.setContentsMargins(0, 0, 0, 0)
+        self._wheel_layout.addWidget(parts.ring_square, alignment=Qt.AlignmentFlag.AlignLeft)
         self._wheel_section = PanelSection(WHEEL_SECTION_TITLE, wheel_body)
         self._sliders_section = PanelSection(SLIDERS_SECTION_TITLE, parts.slider_block)
         parts.slider_block.setMaximumWidth(strip_section_max_width())
         self._recent_section = PanelSection(RECENT_SECTION_TITLE, parts.recent_colors_row)
+        parts.recent_colors_row.setMaximumWidth(strip_section_max_width())
+        parts.saved_colors_panel.setMaximumWidth(strip_section_max_width())
         self._saved_section = PanelSection(SAVED_SECTION_TITLE, parts.saved_colors_panel)
         self._saved_section.add_header_widget(parts.saved_colors_panel.save_button)
         self._saved_section.add_header_widget(parts.saved_colors_panel.remove_button)
@@ -249,6 +252,8 @@ class ColorControlPanel(FitToolPanel):
         self._layout.setAlignment(self._parts.header, Qt.AlignmentFlag.AlignTop if strip else Qt.AlignmentFlag(0))
         self._parts.header.set_vertical(strip)
         ring = self._parts.ring_square
+        # A side panel centers a ring narrower than the sections' cap over them; a strip column keeps it at the left:
+        self._wheel_layout.setAlignment(ring, Qt.AlignmentFlag.AlignLeft if strip else Qt.AlignmentFlag.AlignHCenter)
         if self._ring_side is None:
             ring.setMinimumSize(RING_MIN_SIZE, RING_MIN_SIZE)
             ring.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
