@@ -584,8 +584,8 @@ class BrushTool(BaseTool):
     def _modifier_change_slot(self, modifiers: Qt.KeyboardModifier) -> None:
         if not self.is_active:
             return
-        line_modifier = KeyConfig().get(KeyConfig.LINE_MODIFIER)
-        if modifiers == line_modifier and self._last_pos is not None:
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER, exclusive=True, held_modifiers=modifiers) \
+                and self._last_pos is not None:
             cursor_pos = self._image_viewer.mapFromGlobal(QCursor.pos())
             if QRect(QPoint(), self._image_viewer.size()).contains(cursor_pos):
                 self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(cursor_pos)))
