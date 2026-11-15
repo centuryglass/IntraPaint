@@ -75,7 +75,7 @@ UNTITLED_FILE_NAME = _tr('Untitled')
 METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
-LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
+LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: {file_list}')
 LARGE_ANIMATION_TITLE = _tr('Open every frame?')
 LARGE_ANIMATION_MESSAGE = _tr('{file_name} has {frame_count} frames. Opening each one as a layer will use about'
                               ' {size_gb:.1f} GB of memory.\n\nChoose "No" to open only the first frame.')
@@ -577,7 +577,8 @@ class ImageIO:
             else:
                 add_frame_layers(self._image_stack, frames, f'{name}: ')
         if len(errors) > 0:
-            show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE, LOAD_LAYER_ERROR_MESSAGE + ','.join(errors))
+            show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE,
+                              LOAD_LAYER_ERROR_MESSAGE.format(file_list=', '.join(errors)))
         if self._image_stack.has_image:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
