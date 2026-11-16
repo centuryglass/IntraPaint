@@ -75,8 +75,9 @@
       "squeezed: QWidget is 43x176, minimum 184x162",
       "squeezed: QWidget/QWidget[0] is 43x176, minimum 184x162",
       "squeezed: QWidget/QWidget[0]/PanelSection[3] is 43x46, minimum 184x46",
-      "squeezed: QWidget/QWidget[0]/PanelSection[3]/SavedColorsPanel is 43x20, minimum 59x20",
-      "squeezed: QWidget/QWidget[0]/PanelSection[3]/SavedColorsPanel/_GridScrollArea is 43x20, minimum 59x20",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QWidget is 43x20, minimum 59x20",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QWidget/SavedColorsPanel is 43x20, minimum 59x20",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QWidget/SavedColorsPanel/_GridScrollArea is 43x20, minimum 59x20",
       "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Save' is 10x25, minimum 80x25",
       "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Remove' is 9x25, minimum 80x25"
     ],

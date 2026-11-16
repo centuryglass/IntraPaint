@@ -99,6 +99,7 @@ class CacheKeys:
     CLONE_STAMP_TOOL_PRESSURE_OPACITY: Final = 'clone_stamp_tool_pressure_opacity'
     CLONE_STAMP_TOOL_PRESSURE_SIZE: Final = 'clone_stamp_tool_pressure_size'
     CLONE_STAMP_TOOL_SOURCE_MODE: Final = 'clone_stamp_tool_source_mode'
+    COLOR_PANEL_TAB: Final = 'color_panel_tab'
     COLOR_SLIDER_MODE: Final = 'color_slider_mode'
     COMFYUI_CACHED_SCALING_MODE: Final = 'comfyui_cached_scaling_mode'
     COMFYUI_INPAINTING_MODEL: Final = 'comfyui_inpainting_model'

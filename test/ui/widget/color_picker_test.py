@@ -290,6 +290,119 @@ class ColorControlPanelTest(IntraPaintTestCase):
         self.assertEqual(Cache().get(Cache.RECENT_COLORS)[0], '#ff445566')
 
 
+TABS_SPACE = QSize(260, 340)
+SECTIONS_SPACE = QSize(300, 700)
+
+
+class ColorControlPanelTabsTest(IntraPaintTestCase):
+    """Tests the tabs a `tabs_when_small` panel shows in a small side panel."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().set(Cache.RECENT_COLORS, ['#ff112233', '#ff445566'])
+        AppConfig().set(AppConfig.SAVED_COLORS, ['#ffaabbcc'])
+        self.panel = ColorControlPanel(tabs_when_small=True)
+
+    def _shown_pages(self) -> list[str]:
+        wheel, sliders, _, saved = self.panel.sections
+        return [page.title for page in (wheel, sliders, saved) if not page.isHidden()]
+
+    def test_only_the_dock_panel_has_tabs(self) -> None:
+        """A panel built without `tabs_when_small`, the Color picker tool's, keeps its sections in a small space."""
+        panel = ColorControlPanel()
+        panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
+        self.assertIsNone(panel.tab_bar)
+        self.assertFalse(panel.tabs_shown)
+
+    def test_small_side_panel_shows_one_page_and_recent(self) -> None:
+        """Without room for both Wheel and Sliders, the panel shows the selected tab's page with Recent below it, and
+        no section headers."""
+        self.panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
+        tab_bar = self.panel.tab_bar
+        assert tab_bar is not None
+        self.assertTrue(self.panel.tabs_shown)
+        self.assertFalse(tab_bar.isHidden())
+        self.assertEqual([tab_bar.tabText(i) for i in range(tab_bar.count())], ['Wheel', 'Sliders', 'Saved'])
+        self.assertEqual(self._shown_pages(), ['Wheel'])
+        recent = self.panel.sections[2]
+        self.assertFalse(recent.isHidden())
+        self.assertFalse(recent.body.isHidden())
+        for section in self.panel.sections:
+            with self.subTest(section=section.title):
+                self.assertFalse(section.is_header_visible())
+
+    def test_saved_tab_holds_save_and_remove(self) -> None:
+        """The Saved tab shows Save and Remove in its page, and the section's header gets them back with the
+        sections."""
+        saved = self.panel.sections[3]
+        save_button = self.panel.parts.saved_colors_panel.save_button
+        self.panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
+        self.assertTrue(saved.body.isAncestorOf(save_button))
+        self.panel.set_fit_space(Orientation.SIDE, SECTIONS_SPACE)
+        self.assertFalse(self.panel.tabs_shown)
+        self.assertFalse(saved.body.isAncestorOf(save_button))
+        self.assertIs(save_button.parentWidget(), saved)
+        self.assertFalse(save_button.isHidden())
+
+    def test_roomy_side_panel_shows_sections(self) -> None:
+        """With room for Wheel and Sliders, the panel shows every section with its header, and no tabs."""
+        self.panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
+        self.panel.set_fit_space(Orientation.SIDE, SECTIONS_SPACE)
+        tab_bar = self.panel.tab_bar
+        assert tab_bar is not None
+        self.assertFalse(self.panel.tabs_shown)
+        self.assertTrue(tab_bar.isHidden())
+        for section in self.panel.sections:
+            with self.subTest(section=section.title):
+                self.assertTrue(section.is_header_visible())
+                self.assertFalse(section.isHidden())
+                self.assertFalse(section.is_collapsed())
+
+    def test_strip_never_shows_tabs(self) -> None:
+        """A strip packs sections into columns, whatever its size."""
+        for space in (QSize(500, 200), QSize(900, 240)):
+            with self.subTest(space=space):
+                self.panel.set_fit_space(Orientation.STRIP, space)
+                self.assertFalse(self.panel.tabs_shown)
+
+    def test_switching_tabs_keeps_the_content_in_its_space(self) -> None:
+        """Every page has the largest page's minimum size, so the planned content fits its space on every tab."""
+        tab_bar = self.panel.tab_bar
+        assert tab_bar is not None
+        self.panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
+        self.panel.resize(TABS_SPACE)
+        sizes = []
+        for index, title in enumerate(('Wheel', 'Sliders', 'Saved')):
+            with self.subTest(tab=title):
+                tab_bar.setCurrentIndex(index)
+                self.assertEqual(self._shown_pages(), [title])
+                need = self.panel.layout().minimumSize()
+                self.assertFalse(_overflows(need, TABS_SPACE))
+                sizes.append(need)
+        self.assertEqual(len(set((size.width(), size.height()) for size in sizes)), 1)
+
+    def test_selected_tab_is_remembered(self) -> None:
+        """The selected tab is saved in `Cache.COLOR_PANEL_TAB`, and a new panel opens on it."""
+        tab_bar = self.panel.tab_bar
+        assert tab_bar is not None
+        tab_bar.setCurrentIndex(2)
+        self.assertEqual(Cache().get(Cache.COLOR_PANEL_TAB), 'Saved')
+        panel = ColorControlPanel(tabs_when_small=True)
+        panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
+        assert panel.tab_bar is not None
+        self.assertEqual(panel.tab_bar.currentIndex(), 2)
+
+    def test_tabs_do_not_change_the_minimum_size(self) -> None:
+        """The smallest plan collapses every section, so tabs leave the panel's minimum size as it was."""
+        plain = ColorControlPanel()
+        for orientation in (Qt.Orientation.Vertical, Qt.Orientation.Horizontal):
+            with self.subTest(orientation=orientation):
+                plain.set_orientation(orientation)
+                self.panel.set_orientation(orientation)
+                self.assertEqual(self.panel.minimumSizeHint(), plain.minimumSizeHint())
+                self.assertEqual(self.panel.fit_base_size(Orientation.SIDE), plain.fit_base_size(Orientation.SIDE))
+
+
 class ColorDialogTest(IntraPaintTestCase):
     """Tests ColorDialog's comparison, without opening it."""
 

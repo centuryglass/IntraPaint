@@ -429,7 +429,7 @@ class AppController(MenuBuilder):
         self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
                                                              include_zoom_controls=False, use_keybindings=False)
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
-        self._tool_panel_color_picker = ColorControlPanel()
+        self._tool_panel_color_picker = ColorControlPanel(tabs_when_small=True)
         self._layer_dock_panel = LayerPanel(self._image_stack)
         self._window.layers_dock.set_content(self._layer_dock_panel)
         self._window.color_dock.set_content(self._tool_panel_color_picker)

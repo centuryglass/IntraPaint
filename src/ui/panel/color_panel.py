@@ -10,6 +10,12 @@ The panel is a `src.ui.panel.tool_control_panels.fit_tool_panel.FitToolPanel`, p
   fits, up to a strip column's width (`strip_section_max_width`), and the saved colors take the height left after that.
   The sliders are no wider than a strip column either, so their tracks don't stretch across a wide side panel.
 
+A panel built with `tabs_when_small`, the Color dock's, shows Wheel, Sliders and Saved as tabs in a side panel too
+small to open both Wheel and Sliders, with Recent below them. The tabs are the `TABS_PRIORITY` planner item, after
+Wheel and Sliders in fill order, so a plan uses them only when it can't open both and the tabs still fit. Below that,
+the panel collapses sections as above, so the tabs don't raise its minimum size. Every tab page has the largest page's
+minimum size, so switching tabs needs no new plan.
+
 The Tools panel hosts the panel as `FitContent`. The Color dock hosts it directly: the dock's area sets the orientation
 through `set_orientation`, the panel plans for its own size, and its minimum size is the smallest plan's for that
 orientation, whatever it shows.
@@ -19,7 +25,8 @@ from typing import Optional
 
 from PySide6.QtCore import QEvent, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QApplication, QBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QApplication, QBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QTabBar, QVBoxLayout, \
+    QWidget
 
 from src.config.cache import Cache
 from src.config.config_from_key import get_config_from_key
@@ -52,8 +59,14 @@ WHEEL_SUMMARY = _tr('H {hue}, S {saturation}%, V {value}%')
 # Each section's planner item, in fill order. A section left out of a plan collapses to its summary:
 WHEEL_PRIORITY = 1
 SLIDERS_PRIORITY = 2
-RECENT_PRIORITY = 3
-SAVED_PRIORITY = 4
+TABS_PRIORITY = 3
+RECENT_PRIORITY = 4
+SAVED_PRIORITY = 5
+# The tabs item's index in a placement, after one item per section:
+TABS_INDEX = 4
+
+# `Cache.COLOR_PANEL_TAB` values, in tab order:
+TAB_KEYS = ('Wheel', 'Sliders', 'Saved')
 
 
 class _PanelLayout(QBoxLayout):
@@ -69,10 +82,11 @@ class ColorControlPanel(FitToolPanel):
     """The color picker as a panel that edits a config color, planned by fit.
 
     Committed colors go to `color_controller.commit_color`. A panel editing the foreground color shows the
-    foreground/background color pair in its header. No control is optional, so `overflow_content` stays empty.
+    foreground/background color pair in its header. No control is optional, so `overflow_content` stays empty. With
+    `tabs_when_small`, a small side panel shows tabs (see this module's docstring).
     """
 
-    def __init__(self, config_key: Optional[str] = 'last_brush_color') -> None:
+    def __init__(self, config_key: Optional[str] = 'last_brush_color', tabs_when_small: bool = False) -> None:
         super().__init__()
         swatch_widget = ColorPairWidget() if config_key == Cache.LAST_BRUSH_COLOR else None
         self._parts = ColorPickerParts(swatch_widget, section_controls=True, parent=self)
@@ -92,6 +106,16 @@ class ColorControlPanel(FitToolPanel):
         # A window's layout would set its minimum size to the arrangement's, in place of `minimumSizeHint`:
         self._layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         self._layout.addWidget(parts.header)
+        # The tab bar, or None without `tabs_when_small`. It shows only while the panel shows tabs:
+        self._tab_bar: Optional[QTabBar] = None
+        self._tabs_shown = False
+        if tabs_when_small:
+            self._tab_bar = QTabBar()
+            self._tab_bar.setUsesScrollButtons(False)
+            self._tab_bar.setElideMode(Qt.TextElideMode.ElideNone)
+            self._tab_bar.setExpanding(False)
+            self._tab_bar.hide()
+            self._layout.addWidget(self._tab_bar)
         section_holder = QWidget()
         self._section_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, section_holder)
         self._section_layout.setContentsMargins(0, 0, 0, 0)
@@ -105,10 +129,30 @@ class ColorControlPanel(FitToolPanel):
         self._sliders_section = PanelSection(SLIDERS_SECTION_TITLE, parts.slider_block)
         parts.slider_block.setMaximumWidth(strip_section_max_width())
         self._recent_section = PanelSection(RECENT_SECTION_TITLE, parts.recent_colors_row)
-        self._saved_section = PanelSection(SAVED_SECTION_TITLE, parts.saved_colors_panel)
+        # The Saved tab shows Save and Remove below the saved colors, while the section has them in its header:
+        self._saved_tab_buttons = QWidget()
+        self._saved_tab_buttons_layout = QHBoxLayout(self._saved_tab_buttons)
+        self._saved_tab_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self._saved_tab_buttons.hide()
+        saved_body: QWidget = parts.saved_colors_panel
+        if tabs_when_small:
+            saved_body = QWidget()
+            saved_layout = QVBoxLayout(saved_body)
+            saved_layout.setContentsMargins(0, 0, 0, 0)
+            saved_layout.addWidget(parts.saved_colors_panel)
+            saved_layout.addWidget(self._saved_tab_buttons)
+            saved_layout.addStretch(1)
+        self._saved_section = PanelSection(SAVED_SECTION_TITLE, saved_body)
         self._saved_section.add_header_widget(parts.saved_colors_panel.save_button)
         self._saved_section.add_header_widget(parts.saved_colors_panel.remove_button)
         self._sections = (self._wheel_section, self._sliders_section, self._recent_section, self._saved_section)
+        self._tab_pages = (self._wheel_section, self._sliders_section, self._saved_section)
+        if self._tab_bar is not None:
+            for page in self._tab_pages:
+                self._tab_bar.addTab(page.title)
+            saved_tab = Cache().get(Cache.COLOR_PANEL_TAB)
+            self._tab_bar.setCurrentIndex(TAB_KEYS.index(saved_tab) if saved_tab in TAB_KEYS else 0)
+            self._tab_bar.currentChanged.connect(self._tab_changed)
         for section in self._sections:
             self._section_layout.addWidget(section)
             self._packer.watch(section)
@@ -123,7 +167,10 @@ class ColorControlPanel(FitToolPanel):
         self._saved_section.set_summary(parts.saved_colors_panel.summary())
         self._update_summaries()
 
-        items = [FitItem(priority) for priority in (WHEEL_PRIORITY, SLIDERS_PRIORITY, RECENT_PRIORITY, SAVED_PRIORITY)]
+        priorities = [WHEEL_PRIORITY, SLIDERS_PRIORITY, RECENT_PRIORITY, SAVED_PRIORITY]
+        if self._tab_bar is not None:
+            priorities.append(TABS_PRIORITY)
+        items = [FitItem(priority) for priority in priorities]
         self._planner = FitPlanner(items, self._apply_fit, self._measure_fit, prepare=self._prepare_fit,
                                    finish=self._plan_finished)
         self._measure_base_sizes()
@@ -145,6 +192,16 @@ class ColorControlPanel(FitToolPanel):
     def sections(self) -> tuple[PanelSection, ...]:
         """The Wheel, Sliders, Recent and Saved sections, in order."""
         return self._sections
+
+    @property
+    def tab_bar(self) -> Optional[QTabBar]:
+        """The Wheel, Sliders and Saved tabs, or None without `tabs_when_small`."""
+        return self._tab_bar
+
+    @property
+    def tabs_shown(self) -> bool:
+        """Whether the latest plan shows tabs."""
+        return self._tabs_shown
 
     @property
     def orientation(self) -> Orientation:
@@ -255,9 +312,70 @@ class ColorControlPanel(FitToolPanel):
             ring.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         else:
             ring.setFixedSize(self._ring_side, self._ring_side)
+        tabs = self._uses_tabs(orientation, placement)
+        if not tabs:
+            self._show_tabs(False)
         for section, form in zip(self._sections, placement):
-            section.set_forced_collapsed(form is None)
+            section.set_forced_collapsed(form is None and not tabs)
         self._arrange_box_sections(self._section_layout, self._sections, orientation)
+        if tabs:
+            self._show_tabs(True)
+            self._fit_tab_pages()
+
+    def _uses_tabs(self, orientation: Orientation, placement: Placement) -> bool:
+        """Returns whether a placement shows tabs: in a side panel, with the tabs item placed, unless Wheel and
+        Sliders both open."""
+        if self._tab_bar is None or orientation != Orientation.SIDE or len(placement) <= TABS_INDEX:
+            return False
+        return placement[TABS_INDEX] is not None and (placement[0] is None or placement[1] is None)
+
+    def _show_tabs(self, shown: bool) -> None:
+        """Switches between tabs and sections: the section headers, where Save and Remove sit, and the sections' order,
+        which puts Recent after the tab pages."""
+        if shown == self._tabs_shown or self._tab_bar is None:
+            return
+        self._tabs_shown = shown
+        self._tab_bar.setVisible(shown)
+        buttons = (self._parts.saved_colors_panel.save_button, self._parts.saved_colors_panel.remove_button)
+        for section in self._sections:
+            section.set_header_visible(not shown)
+        if shown:
+            for button in buttons:
+                self._saved_section.remove_header_widget(button)
+                self._saved_tab_buttons_layout.addWidget(button)
+                button.show()
+        else:
+            for button in buttons:
+                self._saved_tab_buttons_layout.removeWidget(button)
+                self._saved_section.add_header_widget(button)
+            for page in self._tab_pages:
+                page.setMinimumSize(0, 0)
+                page.show()
+        self._saved_tab_buttons.setVisible(shown)
+        self._take_items(self._section_layout)
+        order = (self._wheel_section, self._sliders_section, self._saved_section, self._recent_section) if shown \
+            else self._sections
+        for section in order:
+            self._section_layout.addWidget(section)
+        self._section_layout.addStretch(1)
+
+    def _fit_tab_pages(self) -> None:
+        """Shows the selected tab's page, at the largest page's minimum size."""
+        assert self._tab_bar is not None
+        need = QSize(0, 0)
+        for page in self._tab_pages:
+            page.setMinimumSize(0, 0)
+            need = need.expandedTo(fresh_minimum_size(page))
+        selected = self._tab_pages[max(self._tab_bar.currentIndex(), 0)]
+        for page in self._tab_pages:
+            page.setVisible(page is selected)
+        selected.setMinimumSize(need)
+
+    def _tab_changed(self, index: int) -> None:
+        if 0 <= index < len(TAB_KEYS):
+            Cache().set(Cache.COLOR_PANEL_TAB, TAB_KEYS[index])
+        if self._tabs_shown:
+            self._fit_tab_pages()
 
     def _plan_finished(self, orientation: Orientation) -> None:
         """Grows the ring into the room the plan leaves, and closes the section popover once the plan no longer
