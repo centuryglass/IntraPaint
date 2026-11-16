@@ -8,7 +8,8 @@ The panel is a `src.ui.panel.tool_control_panels.fit_tool_panel.FitToolPanel`, p
 - A side panel stacks the sections. A strip packs them into columns (`src.ui.layout.column_packing`).
 - Plans measure the ring at its minimum size. Once a plan is applied, the ring grows to the largest size that still
   fits, up to a strip column's width (`strip_section_max_width`), and the saved colors take the height left after that.
-  The sliders are no wider than a strip column either, so their tracks don't stretch across a wide side panel.
+  A side panel's sections are no wider than a strip column either, so they don't stretch across a wide panel, and a
+  ring narrower than that is centered in its section.
 
 A panel built with `tabs_when_small`, the Color dock's, shows Wheel, Sliders and Saved as tabs in a side panel too
 small to open both Wheel and Sliders, with Recent below them. The tabs are the `TABS_PRIORITY` planner item, after
@@ -122,9 +123,9 @@ class ColorControlPanel(FitToolPanel):
         self._layout.addWidget(section_holder, stretch=1)
 
         wheel_body = QWidget()
-        wheel_layout = QHBoxLayout(wheel_body)
-        wheel_layout.setContentsMargins(0, 0, 0, 0)
-        wheel_layout.addWidget(parts.ring_square, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._wheel_layout = QHBoxLayout(wheel_body)
+        self._wheel_layout.setContentsMargins(0, 0, 0, 0)
+        self._wheel_layout.addWidget(parts.ring_square, alignment=Qt.AlignmentFlag.AlignLeft)
         self._wheel_section = PanelSection(WHEEL_SECTION_TITLE, wheel_body)
         self._sliders_section = PanelSection(SLIDERS_SECTION_TITLE, parts.slider_block)
         parts.slider_block.setMaximumWidth(strip_section_max_width())
@@ -306,6 +307,8 @@ class ColorControlPanel(FitToolPanel):
         self._layout.setAlignment(self._parts.header, Qt.AlignmentFlag.AlignTop if strip else Qt.AlignmentFlag(0))
         self._parts.header.set_vertical(strip)
         ring = self._parts.ring_square
+        # A side panel centers a ring narrower than the sections' cap over them; a strip column keeps it at the left:
+        self._wheel_layout.setAlignment(ring, Qt.AlignmentFlag.AlignLeft if strip else Qt.AlignmentFlag.AlignHCenter)
         if self._ring_side is None:
             ring.setMinimumSize(RING_MIN_SIZE, RING_MIN_SIZE)
             ring.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
@@ -321,6 +324,9 @@ class ColorControlPanel(FitToolPanel):
         if tabs:
             self._show_tabs(True)
             self._fit_tab_pages()
+        elif not strip:
+            for section in self._sections:
+                self._cap_width(section)
 
     def _uses_tabs(self, orientation: Orientation, placement: Placement) -> bool:
         """Returns whether a placement shows tabs: in a side panel, with the tabs item placed, unless Wheel and

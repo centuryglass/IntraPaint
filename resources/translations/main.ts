@@ -9551,6 +9551,16 @@ Turns red when the text does not fit.</source>
     </message>
     <message>
         <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
+        <source>Use the system color picker, or press Esc to cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
+        <source>Screen color picking failed: {reason}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
         <source>Cursor at {x},{y}
 Click to pick, or press Esc to cancel</source>
         <translation type="unfinished"></translation>
