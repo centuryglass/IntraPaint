@@ -2,7 +2,7 @@
 import logging
 import math
 import weakref
-from ctypes import sizeof, pointer, byref, c_float, c_double, c_int
+from ctypes import sizeof, pointer, byref, c_float, c_double
 from typing import Any, Optional
 
 from PySide6.QtCore import QObject, QSize, QRect, QTimer
@@ -261,8 +261,7 @@ class MyPaintLayerSurface(QObject):
         libmypaint.mypaint_surface_begin_atomic(byref(self._surface_data))
         libmypaint.mypaint_brush_stroke_to(self.brush.brush_ptr, byref(self._surface_data),
                                            c_float(x), c_float(y), c_float(pressure), c_float(x_tilt), c_float(y_tilt),
-                                           c_double(dtime), c_float(1.0), c_float(0.0), c_float(0.0),
-                                           c_int(1))
+                                           c_double(dtime))
         libmypaint.mypaint_surface_end_atomic(byref(self._surface_data), self._roi)
 
     def end_stroke(self) -> None:

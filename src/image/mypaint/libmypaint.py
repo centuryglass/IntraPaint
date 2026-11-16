@@ -200,15 +200,13 @@ def load_libmypaint() -> CDLL:
     lib.mypaint_brush_reset.argtypes = [c_void_p]  # (brush)
     lib.mypaint_brush_new_stroke.restype = None
     lib.mypaint_brush_new_stroke.argtypes = [c_void_p]  # (brush)
-    # These argtypes are the libmypaint 2.x form. The bundled 1.x libraries take only the first eight arguments and
-    # ignore the rest, including is_linear. The library version is not detected, so a system libmypaint found by
-    # find_library may use either form.
+    # The 8-argument form every libmypaint 1.x release exports. The view zoom, view rotation, barrel rotation and
+    # linear inputs exist only on the `mypaint_brush_stroke_to_2` functions, which take a MyPaintSurface2.
     lib.mypaint_brush_stroke_to.restype = c_int
     lib.mypaint_brush_stroke_to.argtypes = [c_void_p, SurfacePtr,  # brush, surface,
                                             c_float, c_float,  # x, y
                                             c_float, c_float, c_float,  # pressure, x_tilt, y_tilt
-                                            c_double, c_float, c_float,  # dtime, view_zoom, view_rotation
-                                            c_float, c_int]  # barrel_rotation, is_linear
+                                            c_double]  # dtime
     lib.mypaint_brush_get_base_value.restype = c_float
     lib.mypaint_brush_get_base_value.argtypes = [c_void_p, c_int]  # (brush, setting ID)
     lib.mypaint_brush_set_base_value.restype = None
