@@ -91,6 +91,16 @@
         "saved": true,
         "translate": false
     },
+    "color_panel_tab": {
+        "label": "Color panel tab:",
+        "category": "Cache",
+        "description": "Tab the Color panel shows while it is too small for its sections.",
+        "type": "string",
+        "default": "wheel",
+        "options": ["wheel", "sliders", "saved"],
+        "saved": true,
+        "translate": false
+    },
     "new_image_background_color": {
         "label": "New image background color:",
         "category": "Cache",

@@ -91,6 +91,19 @@ class PanelSectionTest(IntraPaintTestCase):
         self.assertFalse(section.body.isAncestorOf(button))
         self.assertIs(button.parentWidget(), section)
 
+    def test_removed_header_action_stays_shown_by_its_owner(self) -> None:
+        """A removed action no longer follows the header's visibility, and adding it again restores that."""
+        section = self._section()
+        button = QPushButton('Save')
+        section.add_header_widget(button)
+        section.remove_header_widget(button)
+        section.set_header_visible(False)
+        self.assertFalse(button.isHidden())
+        section.add_header_widget(button)
+        self.assertTrue(button.isHidden())
+        section.set_header_visible(True)
+        self.assertFalse(button.isHidden())
+
 
     def test_detached_body_still_counts_toward_the_sections_size(self) -> None:
         """While the body is detached, the section's size hints include it as long as the section isn't collapsed, and

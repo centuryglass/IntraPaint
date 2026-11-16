@@ -375,6 +375,12 @@ class PanelSection(QWidget):
         self._action_widgets.append(widget)
         widget.setVisible(self._header_visible)
 
+    def remove_header_widget(self, widget: QWidget) -> None:
+        """Takes an action added with `add_header_widget` out of the header. It stays a child of the section, for the
+        owner to move elsewhere, and `add_header_widget` puts it back."""
+        self._actions.removeWidget(widget)
+        self._action_widgets.remove(widget)
+
     @property
     def title_widget(self) -> Optional[QWidget]:
         """The widget after the title, if any."""
