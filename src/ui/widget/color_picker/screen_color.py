@@ -6,6 +6,8 @@ from PySide6.QtGui import QColor, QWindow, Qt, QMouseEvent, QKeyEvent, QKeySeque
 from PySide6.QtCore import QPoint, QTimer, QEvent, Signal, SignalInstance
 from PySide6.QtWidgets import QApplication, QWidget
 
+from src.ui.widget.color_picker.portal_color_pick import PortalColorPicker, is_native_wayland
+
 
 def grab_screen_color(pos: QPoint) -> QColor:
     """Picks a color from anywhere on-screen."""
@@ -22,6 +24,9 @@ class ScreenColorWidget(QWidget):
 
     `color_previewed` follows the cursor while picking, and `screen_color_picked` fires once with the chosen color.
     `color_selected` is for subclasses to report their own color changes; picking never emits it.
+
+    On native Wayland the picker is the desktop portal's: the compositor shows its own eyedropper, so `live_preview` is
+    False, `color_previewed` never fires, and a failed request emits `color_picking_failed` with the reason.
     """
 
     started_color_picking = Signal()
@@ -29,11 +34,13 @@ class ScreenColorWidget(QWidget):
     color_previewed = Signal(QPoint, QColor)
     screen_color_picked = Signal(QColor)
     color_selected = Signal(QColor)
+    color_picking_failed = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
         self._active = False
         self._last_global_pos = QPoint()
+        self._portal_picker: Optional[PortalColorPicker] = None
         if os.name == 'nt':
             self._transparent_selection_window: Optional[QWindow] = QWindow()
             self._transparent_selection_window.resize(1, 1)
@@ -45,10 +52,18 @@ class ScreenColorWidget(QWidget):
             self._transparent_selection_window = None
             self._update_timer = None
 
+    @property
+    def live_preview(self) -> bool:
+        """Returns whether `color_previewed` follows the cursor while picking."""
+        return not is_native_wayland()
+
     def start_screen_color_picking(self) -> None:
         """Begin screen color picking."""
         assert self._active is False
         self._active = True
+        if not self.live_preview:
+            self._start_portal_picking()
+            return
         self.installEventFilter(self)
         self.grabMouse(Qt.CursorShape.CrossCursor)
         if os.name == 'nt':
@@ -61,8 +76,32 @@ class ScreenColorWidget(QWidget):
         self.started_color_picking.emit()
         self.color_previewed.emit(QCursor.pos(), grab_screen_color(QCursor.pos()))
 
+    def _start_portal_picking(self) -> None:
+        picker = PortalColorPicker()
+        self._portal_picker = picker
+        picker.picked.connect(self._portal_picked)
+        picker.cancelled.connect(self.release_color_picking)
+        picker.failed.connect(self._portal_failed)
+        self.started_color_picking.emit()
+        picker.start()
+
+    def _portal_picked(self, color: QColor) -> None:
+        self.screen_color_picked.emit(color)
+        self.release_color_picking()
+
+    def _portal_failed(self, reason: str) -> None:
+        self.release_color_picking()
+        self.color_picking_failed.emit(reason)
+
     def release_color_picking(self):
         """Exits screen color selection mode."""
+        if self._portal_picker is not None:
+            self._portal_picker.cancel()
+            self._portal_picker.deleteLater()
+            self._portal_picker = None
+            self._active = False
+            self.stopped_color_picking.emit()
+            return
         self.removeEventFilter(self)
         self.releaseMouse()
         if os.name == 'nt':

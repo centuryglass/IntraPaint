@@ -24,6 +24,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 PICK_SCREEN_COLOR_TOOLTIP = _tr('Pick a color from anywhere on the screen')
+PICK_SCREEN_COLOR_PORTAL_INFO = _tr('Use the system color picker, or press Esc to cancel')
+PICK_SCREEN_COLOR_FAILED = _tr('Screen color picking failed: {reason}')
 PICK_SCREEN_COLOR_INFO = _tr('Cursor at {x},{y}\nClick to pick, or press Esc to cancel')
 
 ICON_PATH_PICK_SCREEN_COLOR = f'{PROJECT_DIR}/resources/icons/tools/eyedropper_icon.svg'
@@ -65,6 +67,8 @@ class ColorPickerHeader(ScreenColorWidget):
         layout.addWidget(self._picking_label)
         self.color_previewed.connect(self._show_picking_preview)
         self.stopped_color_picking.connect(self._clear_picking_preview)
+        self.started_color_picking.connect(self._show_portal_info)
+        self.color_picking_failed.connect(self._show_picking_failure)
         self.set_color(QColor(Qt.GlobalColor.black))
 
     @property
@@ -97,6 +101,17 @@ class ColorPickerHeader(ScreenColorWidget):
     def _show_picking_preview(self, pos: QPoint, unused_color: QColor) -> None:
         """Shows the cursor position while picking a screen color."""
         self._picking_label.setText(PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
+        self._picking_label.setVisible(True)
+
+    def _show_portal_info(self) -> None:
+        """Explains the system picker, which gives no live preview."""
+        if not self.live_preview:
+            self._picking_label.setText(PICK_SCREEN_COLOR_PORTAL_INFO)
+            self._picking_label.setVisible(True)
+
+    def _show_picking_failure(self, reason: str) -> None:
+        """Shows why the system color picker couldn't be used."""
+        self._picking_label.setText(PICK_SCREEN_COLOR_FAILED.format(reason=reason))
         self._picking_label.setVisible(True)
 
     def _clear_picking_preview(self) -> None:
