@@ -414,17 +414,29 @@ def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Arra
 
 
 def np_composite_with_mask(source: NpUInt8Array, destination: NpUInt8Array, mask: NpUInt8Array) -> None:
-    """ Performs an image composition operation on two premultiplied ARGB images of equal size, writing
-    changes directly to the destination image, and using a mask of equal size to further restrict compositing based on
-    the mask alpha channel."""
-    alpha_mask = mask[:, :, 3] / 255.0
+    """Fades a premultiplied ARGB destination image toward a source image of equal size, in place, by a mask's alpha.
 
-    # Where the mask is 100% opaque, the source completely overrides the destination:
-    full_alpha = alpha_mask[:, :] == 1.0
-    destination[full_alpha, :] = source[full_alpha, :]
+    Each channel becomes floor((source * alpha + destination * (255 - alpha)) / 255), computed exactly in integers.
+    Where the mask is opaque, the destination takes the source's value, and where it is transparent, the destination
+    is unchanged. Two valid premultiplied pixels always blend into a valid one.
+    """
+    alpha = mask[:, :, 3:4].astype(np.uint16)
+    blended = source.astype(np.uint16)
+    blended *= alpha
+    np.subtract(255, alpha, out=alpha)
+    inverse_part = destination.astype(np.uint16)
+    inverse_part *= alpha
+    blended += inverse_part
+    destination[:] = div_255(blended)
 
-    # Where the mask has partial alpha, fade between source and destination based on mask alpha level:
-    partial_alpha = (alpha_mask[:, :] > 0) & (~full_alpha)
-    if np.any(partial_alpha):
-        destination[partial_alpha, :] = (source[partial_alpha, :] * alpha_mask[partial_alpha, None]
-                                         + destination[partial_alpha, :] * (1 - alpha_mask[partial_alpha, None]))
+
+def div_255(values: NpAnyArray) -> NpAnyArray:
+    """Divides a uint16 or wider array of values from 0 to 255 * 255 by 255, rounding down, in place, and returns it.
+
+    This is exact over that range, and faster than integer division.
+    """
+    shifted = values >> 8
+    values += shifted
+    values += 1
+    values >>= 8
+    return values
