@@ -1,7 +1,7 @@
 """Tests ColorPickerParts' shared color, ColorControlPanel's planned sections, and ColorDialog."""
-from PySide6.QtCore import QPoint, QPointF, QSize, Qt
+from PySide6.QtCore import QEvent, QEventLoop, QPoint, QPointF, QRect, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QDockWidget, QLabel, QMainWindow, QScrollArea, QWidget
+from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QScrollArea, QWidget
 from PySide6 import QtTest
 
 from src.config.application_config import AppConfig
@@ -9,6 +9,7 @@ from src.config.cache import Cache
 from src.ui.modal.color_dialog import ColorDialog
 from src.ui.layout.panel_fit import FitContent, Orientation
 from src.ui.panel.color_panel import ColorControlPanel
+from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.color_picker.color_comparison import ColorComparison
 from src.ui.widget.color_picker.color_picker_parts import ColorPickerParts
@@ -290,25 +291,37 @@ class ColorControlPanelTest(IntraPaintTestCase):
         self.assertEqual(Cache().get(Cache.RECENT_COLORS)[0], '#ff445566')
 
 
-TABS_SPACE = QSize(260, 340)
+TABS_SPACE = QSize(300, 340)
 SECTIONS_SPACE = QSize(300, 700)
+# A side Color dock with room for Wheel and Sliders but not a full-size ring, narrow enough for 16 recent colors to
+# wrap, and a strip Color dock:
+STANDALONE_SIZE = QSize(300, 620)
+STANDALONE_STRIP_SIZE = QSize(900, 260)
+# A standalone panel in its own window, which first plans as a strip:
+STANDALONE_WINDOW_SIZE = QSize(210, 520)
+# A side dock's widths before and after a resize that a plan applies, in a window this high:
+RESIZED_DOCK_WIDTHS = (320, 240)
+RESIZED_WINDOW_HEIGHT = 900
+# Window room for what isn't the dock:
+DOCK_WINDOW_MARGIN = 300
+SETTLE_PASSES = 4
 
 
 class ColorControlPanelTabsTest(IntraPaintTestCase):
-    """Tests the tabs a `tabs_when_small` panel shows in a small side panel."""
+    """Tests the tabs a `standalone` panel shows in a small side panel."""
 
     def setUp(self) -> None:
         super().setUp()
         Cache().set(Cache.RECENT_COLORS, ['#ff112233', '#ff445566'])
         AppConfig().set(AppConfig.SAVED_COLORS, ['#ffaabbcc'])
-        self.panel = ColorControlPanel(tabs_when_small=True)
+        self.panel = ColorControlPanel(standalone=True)
 
     def _shown_pages(self) -> list[str]:
         wheel, sliders, _, saved = self.panel.sections
         return [page.title for page in (wheel, sliders, saved) if not page.isHidden()]
 
     def test_only_the_dock_panel_has_tabs(self) -> None:
-        """A panel built without `tabs_when_small`, the Color picker tool's, keeps its sections in a small space."""
+        """A panel built without `standalone`, the Color picker tool's, keeps its sections in a small space."""
         panel = ColorControlPanel()
         panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
         self.assertIsNone(panel.tab_bar)
@@ -387,20 +400,171 @@ class ColorControlPanelTabsTest(IntraPaintTestCase):
         assert tab_bar is not None
         tab_bar.setCurrentIndex(2)
         self.assertEqual(Cache().get(Cache.COLOR_PANEL_TAB), 'saved')
-        panel = ColorControlPanel(tabs_when_small=True)
+        panel = ColorControlPanel(standalone=True)
         panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
         assert panel.tab_bar is not None
         self.assertEqual(panel.tab_bar.currentIndex(), 2)
 
     def test_tabs_do_not_change_the_minimum_size(self) -> None:
-        """The smallest plan collapses every section, so tabs leave the panel's minimum size as it was."""
+        """The smallest plan collapses every section, so tabs leave the panel's minimum size as it was, apart from
+        the standalone panel's inset."""
         plain = ColorControlPanel()
+        inset = _inset(self.panel)
         for orientation in (Qt.Orientation.Vertical, Qt.Orientation.Horizontal):
             with self.subTest(orientation=orientation):
                 plain.set_orientation(orientation)
                 self.panel.set_orientation(orientation)
-                self.assertEqual(self.panel.minimumSizeHint(), plain.minimumSizeHint())
-                self.assertEqual(self.panel.fit_base_size(Orientation.SIDE), plain.fit_base_size(Orientation.SIDE))
+                self.assertEqual(self.panel.minimumSizeHint(), plain.minimumSizeHint() + inset)
+                self.assertEqual(self.panel.fit_base_size(Orientation.SIDE),
+                                 plain.fit_base_size(Orientation.SIDE) + inset)
+
+    def test_tabs_show_icons(self) -> None:
+        """Every tab has an icon. Tabs show their titles where they fit, and their icons alone with the titles as
+        tooltips where they don't."""
+        tab_bar = self.panel.tab_bar
+        assert tab_bar is not None
+        titles = ['Wheel', 'Sliders', 'Saved']
+        forms = set()
+        for width in range(TABS_SPACE.width(), 150, -10):
+            self.panel.set_fit_space(Orientation.SIDE, QSize(width, TABS_SPACE.height()))
+            if not self.panel.tabs_shown:
+                break
+            for index, title in enumerate(titles):
+                with self.subTest(width=width, tab=title):
+                    self.assertFalse(tab_bar.tabIcon(index).isNull())
+                    text, tooltip = tab_bar.tabText(index), tab_bar.tabToolTip(index)
+                    self.assertIn((text, tooltip), ((title, ''), ('', title)))
+                    forms.add(text == '')
+        self.assertEqual(forms, {False, True})
+
+
+def _inset(panel: QWidget) -> QSize:
+    """Returns the width and height a panel's layout margins take."""
+    margins = panel.layout().contentsMargins()
+    return QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
+
+
+class StandaloneColorPanelTest(IntraPaintTestCase):
+    """Tests the Color dock's panel, which plans for its own size in a dock with no `DockPanel` around it."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().set(Cache.RECENT_COLORS, [QColor.fromHsv(hue, 200, 200).name(QColor.NameFormat.HexArgb)
+                                          for hue in range(0, 320, 20)])
+        self.window = QMainWindow()
+        self.window.setCentralWidget(QWidget())
+        self.dock = QDockWidget('Color', self.window)
+        self.panel = ColorControlPanel(standalone=True)
+        self.dock.setWidget(self.panel)
+        self.window.show()
+
+    def tearDown(self) -> None:
+        self.window.close()
+        super().tearDown()
+
+    @staticmethod
+    def _settle() -> None:
+        """Applies pending dock sizes, then the layout requests they and the panel's content post.
+
+        `QMainWindow` applies sizes from `resizeDocks` on a zero-length timer that no posted event delivers, so this
+        processes events once. A zero-length timer is due at once, so no wall-clock time decides what runs.
+        """
+        QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+        for _ in range(SETTLE_PASSES):
+            QApplication.sendPostedEvents(None, QEvent.Type.LayoutRequest)
+
+    def _place(self, size: QSize, orientation: Qt.Orientation = Qt.Orientation.Vertical) -> None:
+        """Docks the panel at the right as a side panel `size.width()` wide, or at the bottom as a strip
+        `size.height()` high, in a window as high or as wide as the other side of `size`."""
+        side = orientation == Qt.Orientation.Vertical
+        self.window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea if side else Qt.DockWidgetArea.BottomDockWidgetArea,
+                                  self.dock)
+        self.window.resize(QSize(size.width() + DOCK_WINDOW_MARGIN, size.height()) if side
+                           else QSize(size.width(), size.height() + DOCK_WINDOW_MARGIN))
+        self.window.resizeDocks([self.dock], [size.width() if side else size.height()], orientation)
+        self.panel.set_orientation(orientation)
+        self._settle()
+
+    def _assert_nothing_overlaps(self) -> None:
+        """Asserts that the header and shown sections sit inside the panel without overlapping, the ring sits inside
+        the Wheel section, and the recent colors get every row they wrap to."""
+        panel = self.panel
+        bounds = QRect(QPoint(), panel.size())
+        parts: list[QWidget] = [panel.parts.header, *[section for section in panel.sections if section.isVisible()]]
+        rects = [QRect(part.mapTo(panel, QPoint()), part.size()) for part in parts]
+        for index, rect in enumerate(rects):
+            self.assertTrue(bounds.contains(rect), f'{parts[index]} at {rect} outside {bounds}')
+            for other in rects[index + 1:]:
+                self.assertFalse(rect.intersects(other), f'{rect} overlaps {other}')
+        ring = panel.parts.ring_square
+        wheel = panel.sections[0]
+        self.assertTrue(QRect(wheel.mapTo(panel, QPoint()), wheel.size()).contains(
+            QRect(ring.mapTo(panel, QPoint()), ring.size())))
+        grid = panel.parts.recent_colors_row.grid
+        self.assertGreaterEqual(grid.height(), grid.heightForWidth(grid.width()))
+
+    def test_panel_keeps_off_the_dock_edges(self) -> None:
+        """The standalone panel has a `DockPanel`'s inset on every side, and the Tools panel's copy, which its
+        `DockPanel` insets, has none."""
+        tool_panel = ToolPanel()
+        margin = tool_panel.layout().contentsMargins().left()
+        self.assertGreater(margin, 0)
+        margins = self.panel.layout().contentsMargins()
+        self.assertEqual((margins.left(), margins.top(), margins.right(), margins.bottom()), (margin,) * 4)
+        self.assertEqual(_inset(ColorControlPanel()), QSize(0, 0))
+
+    def test_wrapped_recent_colors_keep_the_wheel_clear(self) -> None:
+        """Recent colors that wrap to a second row get its height, so the ring grows only into room that is left."""
+        self._place(STANDALONE_SIZE)
+        grid = self.panel.parts.recent_colors_row.grid
+        self.assertGreater(grid.heightForWidth(grid.width()), grid.minimumSizeHint().height())
+        self.assertFalse(self.panel.sections[0].is_collapsed())
+        self.assertFalse(self.panel.sections[1].is_collapsed())
+        self._assert_nothing_overlaps()
+
+    def test_picking_message_wraps_and_makes_room(self) -> None:
+        """The screen picking message wraps to the header's width, so a strip's header column keeps its width, and the
+        panel plans again to make room for it."""
+        for size, orientation in ((STANDALONE_SIZE, Qt.Orientation.Vertical),
+                                  (STANDALONE_STRIP_SIZE, Qt.Orientation.Horizontal)):
+            with self.subTest(orientation=orientation):
+                self._place(size, orientation)
+                header = self.panel.parts.header
+                width = header.width()
+                header.color_previewed.emit(QPoint(1234, 567), QColor('#000000'))
+                self._settle()
+                label = header.picking_label
+                self.assertFalse(label.isHidden())
+                self.assertEqual(header.width(), width)
+                self.assertGreaterEqual(label.height(), label.heightForWidth(label.width()))
+                self._assert_nothing_overlaps()
+                header.stopped_color_picking.emit()
+                self._settle()
+
+    def test_resize_during_a_plan_plans_again(self) -> None:
+        """A plan's trial arrangements can apply a pending dock resize, and the panel then plans for its new size."""
+        self._place(QSize(RESIZED_DOCK_WIDTHS[0], RESIZED_WINDOW_HEIGHT))
+        self.window.resizeDocks([self.dock], [RESIZED_DOCK_WIDTHS[1]], Qt.Orientation.Horizontal)
+        self.panel.set_orientation(Qt.Orientation.Vertical)
+        self._settle()
+        planner = self.panel._planner  # pylint: disable=protected-access
+        assert planner is not None
+        self.assertEqual(planner.available, self.panel.size())
+        self._assert_nothing_overlaps()
+
+    def test_first_side_plan_in_its_own_window(self) -> None:
+        """A panel first planned as a strip, then arranged as a side panel, gives each section its full height.
+
+        Rearranging takes the sections out of their layout and adds them again, which leaves stale cached sizes unless
+        the old layout items are deleted."""
+        panel = ColorControlPanel(standalone=True)
+        self.panel = panel
+        panel.resize(STANDALONE_WINDOW_SIZE)
+        panel.show()
+        panel.set_orientation(Qt.Orientation.Vertical)
+        self._settle()
+        self._assert_nothing_overlaps()
+        panel.close()
 
 
 class ColorDialogTest(IntraPaintTestCase):

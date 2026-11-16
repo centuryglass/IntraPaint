@@ -11,23 +11,28 @@ The panel is a `src.ui.panel.tool_control_panels.fit_tool_panel.FitToolPanel`, p
   A side panel's sections are no wider than a strip column either, so they don't stretch across a wide panel, and a
   ring narrower than that is centered in its section.
 
-A panel built with `tabs_when_small`, the Color dock's, shows Wheel, Sliders and Saved as tabs in a side panel too
-small to open both Wheel and Sliders, with Recent below them. The tabs are the `TABS_PRIORITY` planner item, after
-Wheel and Sliders in fill order, so a plan uses them only when it can't open both and the tabs still fit. Below that,
-the panel collapses sections as above, so the tabs don't raise its minimum size. Every tab page has the largest page's
-minimum size, so switching tabs needs no new plan.
+A `standalone` panel, the Color dock's, shows Wheel, Sliders and Saved as tabs in a side panel too small to open both
+Wheel and Sliders, with Recent below them. The tabs are the `TABS_PRIORITY` planner item, after Wheel and Sliders in
+fill order, so a plan uses them only when it can't open both and the tabs still fit. Its forms show each tab's icon
+with its title, then the icon alone, with the title as its tooltip. Below that, the panel collapses sections as above,
+so the tabs don't raise its minimum size. Every tab page has the largest page's minimum size, so switching tabs needs no
+new plan.
 
-The Tools panel hosts the panel as `FitContent`. The Color dock hosts it directly: the dock's area sets the orientation
-through `set_orientation`, the panel plans for its own size, and its minimum size is the smallest plan's for that
-orientation, whatever it shows.
+The Tools panel hosts the panel as `FitContent`, inside its own inset and scroll area. The Color dock hosts a
+standalone panel directly:
+- The dock's area sets the orientation through `set_orientation`, and the panel plans for its own size.
+- Its minimum size is the smallest plan's for that orientation, whatever it shows.
+- It keeps its content off the dock's edges with the same inset as a `DockPanel`.
+- Nothing scrolls, so it plans again whenever its content's minimum size changes outside a plan, such as when the
+  recent colors wrap to another row or the screen picking message shows.
 """
 from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QApplication, QBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QTabBar, QVBoxLayout, \
-    QWidget
+from PySide6.QtWidgets import QApplication, QBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QStyle, QTabBar, \
+    QVBoxLayout, QWidget
 
 from src.config.cache import Cache
 from src.config.config_from_key import get_config_from_key
@@ -37,6 +42,7 @@ from src.ui.layout.panel_fit import (FitItem, FitPlanner, Orientation, Placement
                                      strip_section_max_width)
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.widget.color_pair_widget import ColorPairWidget
+from src.ui.widget.color_picker import tab_icons
 from src.ui.widget.color_picker.color_picker_parts import ColorPickerParts
 from src.ui.widget.color_picker.okhsv_ring_square import MIN_SIZE as RING_MIN_SIZE
 from src.ui.widget.panel_section import PanelSection
@@ -66,8 +72,13 @@ SAVED_PRIORITY = 5
 # The tabs item's index in a placement, after one item per section:
 TABS_INDEX = 4
 
+# How many more plans a panel planning for its own size makes for sizes it was given while planning:
+MAX_RESIZED_PLANS = 3
+
 # `Cache.COLOR_PANEL_TAB` values, in tab order:
 TAB_KEYS = ('wheel', 'sliders', 'saved')
+# The tabs item's form that shows titles. Its other form shows icons alone:
+TABS_WITH_TITLES = 0
 
 
 class _PanelLayout(QBoxLayout):
@@ -83,11 +94,12 @@ class ColorControlPanel(FitToolPanel):
     """The color picker as a panel that edits a config color, planned by fit.
 
     Committed colors go to `color_controller.commit_color`. A panel editing the foreground color shows the
-    foreground/background color pair in its header. No control is optional, so `overflow_content` stays empty. With
-    `tabs_when_small`, a small side panel shows tabs (see this module's docstring).
+    foreground/background color pair in its header. No control is optional, so `overflow_content` stays empty. A
+    `standalone` panel is the Color dock's: it shows tabs when small, and keeps an inset from the dock's edges (see this
+    module's docstring).
     """
 
-    def __init__(self, config_key: Optional[str] = 'last_brush_color', tabs_when_small: bool = False) -> None:
+    def __init__(self, config_key: Optional[str] = 'last_brush_color', standalone: bool = False) -> None:
         super().__init__()
         swatch_widget = ColorPairWidget() if config_key == Cache.LAST_BRUSH_COLOR else None
         self._parts = ColorPickerParts(swatch_widget, section_controls=True, parent=self)
@@ -101,16 +113,22 @@ class ColorControlPanel(FitToolPanel):
         self._base_sizes_stale = True
         self._section_popover: Optional[SectionPopover] = None
         self._measuring = False
+        # The minimum size the latest plan for the panel's own size left, while it plans for its own size, and the
+        # latest need that planned again outside a plan:
+        self._planned_need: Optional[QSize] = None
+        self._replanned_need: Optional[QSize] = None
 
         self._layout = _PanelLayout(QBoxLayout.Direction.TopToBottom, self)
-        self._layout.setContentsMargins(0, 0, 0, 0)
+        # The style supplies the inset, as it does a `DockPanel`'s, so it follows the font size and DPI:
+        inset = self.style().pixelMetric(QStyle.PixelMetric.PM_LayoutLeftMargin, None, self) if standalone else 0
+        self._layout.setContentsMargins(inset, inset, inset, inset)
         # A window's layout would set its minimum size to the arrangement's, in place of `minimumSizeHint`:
         self._layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         self._layout.addWidget(parts.header)
-        # The tab bar, or None without `tabs_when_small`. It shows only while the panel shows tabs:
+        # The tab bar, or None unless `standalone`. It shows only while the panel shows tabs:
         self._tab_bar: Optional[QTabBar] = None
         self._tabs_shown = False
-        if tabs_when_small:
+        if standalone:
             self._tab_bar = QTabBar()
             self._tab_bar.setUsesScrollButtons(False)
             self._tab_bar.setElideMode(Qt.TextElideMode.ElideNone)
@@ -136,7 +154,7 @@ class ColorControlPanel(FitToolPanel):
         self._saved_tab_buttons_layout.setContentsMargins(0, 0, 0, 0)
         self._saved_tab_buttons.hide()
         saved_body: QWidget = parts.saved_colors_panel
-        if tabs_when_small:
+        if standalone:
             saved_body = QWidget()
             saved_layout = QVBoxLayout(saved_body)
             saved_layout.setContentsMargins(0, 0, 0, 0)
@@ -149,8 +167,9 @@ class ColorControlPanel(FitToolPanel):
         self._sections = (self._wheel_section, self._sliders_section, self._recent_section, self._saved_section)
         self._tab_pages = (self._wheel_section, self._sliders_section, self._saved_section)
         if self._tab_bar is not None:
-            for page in self._tab_pages:
-                self._tab_bar.addTab(page.title)
+            for page, icon in zip(self._tab_pages, (tab_icons.wheel_icon(), tab_icons.sliders_icon(),
+                                                    tab_icons.saved_icon())):
+                self._tab_bar.addTab(icon, page.title)
             saved_tab = Cache().get(Cache.COLOR_PANEL_TAB)
             self._tab_bar.setCurrentIndex(TAB_KEYS.index(saved_tab) if saved_tab in TAB_KEYS else 0)
             self._tab_bar.currentChanged.connect(self._tab_changed)
@@ -168,10 +187,9 @@ class ColorControlPanel(FitToolPanel):
         self._saved_section.set_summary(parts.saved_colors_panel.summary())
         self._update_summaries()
 
-        priorities = [WHEEL_PRIORITY, SLIDERS_PRIORITY, RECENT_PRIORITY, SAVED_PRIORITY]
+        items = [FitItem(priority) for priority in (WHEEL_PRIORITY, SLIDERS_PRIORITY, RECENT_PRIORITY, SAVED_PRIORITY)]
         if self._tab_bar is not None:
-            priorities.append(TABS_PRIORITY)
-        items = [FitItem(priority) for priority in priorities]
+            items.append(FitItem(TABS_PRIORITY, form_count=2))
         self._planner = FitPlanner(items, self._apply_fit, self._measure_fit, prepare=self._prepare_fit,
                                    finish=self._plan_finished)
         self._measure_base_sizes()
@@ -196,7 +214,7 @@ class ColorControlPanel(FitToolPanel):
 
     @property
     def tab_bar(self) -> Optional[QTabBar]:
-        """The Wheel, Sliders and Saved tabs, or None without `tabs_when_small`."""
+        """The Wheel, Sliders and Saved tabs, or None unless `standalone`."""
         return self._tab_bar
 
     @property
@@ -282,11 +300,46 @@ class ColorControlPanel(FitToolPanel):
             self._orientation = orientation_in_use
         self._base_sizes_stale = False
 
+    def event(self, event: QEvent) -> bool:
+        """Plans again when the content's minimum size changed outside a plan, while the panel plans for its own size.
+
+        Only the content's own changes do that, such as the screen picking message showing, since a plan records the
+        minimum size it leaves.
+        """
+        handled = super().event(event)
+        if event.type() == QEvent.Type.LayoutRequest and self._planned_need is not None and not self._planning \
+                and self._plans_own_size():
+            need = self._layout.totalMinimumSize()
+            # Plans once for each new need, so a need that planning can't settle doesn't plan in a loop:
+            if need not in (self._planned_need, self._replanned_need):
+                self._replanned_need = need
+                self._plan_own_size(force=True)
+        return handled
+
+    def _plans_own_size(self) -> bool:
+        """Returns whether the panel plans for its own size, with no host giving it space."""
+        return self._space is None and host_dock_panel(self) is None
+
     def _plan_own_size(self, force: bool = False) -> None:
-        """Plans for the space the host gave the panel, or for its own size in the dock's orientation without a
-        host."""
+        """Plans for the space the host gave the panel, or for its own size in the dock's orientation without a host.
+
+        Without a host, the panel plans again for its new size if it was resized while planning. Trial placements
+        activate the layouts of the panel's ancestors, which can apply a pending resize from the dock, and the resize
+        event that delivers arrives while the plan runs, so it starts no plan of its own.
+        """
         if self._planning or self._planner is None:
             return
+        self._plan_once(force)
+        if not self._plans_own_size():
+            self._planned_need = None
+            return
+        for _ in range(MAX_RESIZED_PLANS):
+            if self._planner.available == self.size():
+                break
+            self._plan_once(False)
+        self._planned_need = self._measure_fit()
+
+    def _plan_once(self, force: bool) -> None:
         if self._space is not None or self._dock_orientation is None:
             super()._plan_own_size(force)
             return
@@ -316,7 +369,9 @@ class ColorControlPanel(FitToolPanel):
         else:
             ring.setFixedSize(self._ring_side, self._ring_side)
         tabs = self._uses_tabs(orientation, placement)
-        if not tabs:
+        if tabs:
+            self._show_tab_titles(placement[TABS_INDEX] == TABS_WITH_TITLES)
+        else:
             self._show_tabs(False)
         for section, form in zip(self._sections, placement):
             section.set_forced_collapsed(form is None and not tabs)
@@ -364,6 +419,13 @@ class ColorControlPanel(FitToolPanel):
         for section in order:
             self._section_layout.addWidget(section)
         self._section_layout.addStretch(1)
+
+    def _show_tab_titles(self, shown: bool) -> None:
+        """Shows each tab's title beside its icon, or the icon alone with the title as its tooltip."""
+        assert self._tab_bar is not None
+        for index, page in enumerate(self._tab_pages):
+            self._tab_bar.setTabText(index, page.title if shown else '')
+            self._tab_bar.setTabToolTip(index, '' if shown else page.title)
 
     def _fit_tab_pages(self) -> None:
         """Shows the selected tab's page, at the largest page's minimum size."""

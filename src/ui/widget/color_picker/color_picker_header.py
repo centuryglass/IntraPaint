@@ -2,12 +2,16 @@
 
 The header is the widget that grabs the mouse while picking a screen color, since it shows wherever the picker does. A
 hex entry emits `color_entered`, and a screen pick emits `screen_color_picked`. Both are finished choices.
+
+While picking with a live preview, a message below the row shows the cursor position. It wraps to the header's width,
+so it never widens the header. The desktop portal's picker shows its own instructions, so it gets no message unless it
+fails.
 """
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QSize, Signal
-from PySide6.QtGui import QColor, QIcon
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QBoxLayout, QLabel, QToolButton, QApplication
+from PySide6.QtGui import QColor, QIcon, QResizeEvent
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QBoxLayout, QLabel, QToolButton, QApplication, QSizePolicy
 
 from src.ui.widget.color_picker.hex_field import HexField
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
@@ -24,12 +28,37 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 PICK_SCREEN_COLOR_TOOLTIP = _tr('Pick a color from anywhere on the screen')
-PICK_SCREEN_COLOR_PORTAL_INFO = _tr('Use the system color picker, or press Esc to cancel')
 PICK_SCREEN_COLOR_FAILED = _tr('Screen color picking failed: {reason}')
 PICK_SCREEN_COLOR_INFO = _tr('Cursor at {x},{y}\nClick to pick, or press Esc to cancel')
 
-ICON_PATH_PICK_SCREEN_COLOR = f'{PROJECT_DIR}/resources/icons/tools/eyedropper_icon.svg'
+ICON_PATH_PICK_SCREEN_COLOR = f'{PROJECT_DIR}/resources/icons/pick_color.svg'
 PICK_BUTTON_ICON_SIZE = 24
+
+
+class _WrappedMessage(QLabel):
+    """A word-wrapped message that takes its width from its parent's layout and asks for every line it wraps to.
+
+    A layout gives a wrapped label a height for its width, but measures only its one-line minimum, so a panel planned
+    from minimum sizes would not leave room for the other lines. Its minimum height follows its width instead.
+    """
+
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.setWordWrap(True)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Minimum)
+
+    def setText(self, text: str) -> None:  # pylint: disable=invalid-name
+        """Shows new text, and asks for the height it wraps to."""
+        super().setText(text)
+        self._fit_height()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Asks for the height the text wraps to at the new width."""
+        super().resizeEvent(event)
+        self._fit_height()
+
+    def _fit_height(self) -> None:
+        self.setMinimumHeight(self.heightForWidth(self.width()) if self.text() != '' else 0)
 
 
 class ColorPickerHeader(ScreenColorWidget):
@@ -62,12 +91,11 @@ class ColorPickerHeader(ScreenColorWidget):
         self._pick_button.clicked.connect(self._start_picking)
         self._row.addWidget(self._pick_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self._picking_label = QLabel(self)
+        self._picking_label = _WrappedMessage(self)
         self._picking_label.setVisible(False)
         layout.addWidget(self._picking_label)
         self.color_previewed.connect(self._show_picking_preview)
         self.stopped_color_picking.connect(self._clear_picking_preview)
-        self.started_color_picking.connect(self._show_portal_info)
         self.color_picking_failed.connect(self._show_picking_failure)
         self.set_color(QColor(Qt.GlobalColor.black))
 
@@ -102,12 +130,6 @@ class ColorPickerHeader(ScreenColorWidget):
         """Shows the cursor position while picking a screen color."""
         self._picking_label.setText(PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
         self._picking_label.setVisible(True)
-
-    def _show_portal_info(self) -> None:
-        """Explains the system picker, which gives no live preview."""
-        if not self.live_preview:
-            self._picking_label.setText(PICK_SCREEN_COLOR_PORTAL_INFO)
-            self._picking_label.setVisible(True)
 
     def _show_picking_failure(self, reason: str) -> None:
         """Shows why the system color picker couldn't be used."""

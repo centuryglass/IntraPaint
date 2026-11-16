@@ -12,6 +12,7 @@ from typing import Collection, Optional, Sequence
 
 from PySide6.QtCore import QEvent, QMargins, QSize, Qt
 from PySide6.QtWidgets import QBoxLayout, QGridLayout, QVBoxLayout, QWidget
+from shiboken6 import delete
 
 from src.ui.layout.column_packing import PackedColumns, SectionPacker
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, host_dock_panel
@@ -122,9 +123,15 @@ class FitToolPanel(QWidget):
 
     @staticmethod
     def _take_items(layout: QBoxLayout) -> None:
-        """Takes every item out of a layout, leaving its widgets where they are."""
+        """Takes every item out of a layout and deletes it, leaving its widgets where they are.
+
+        A taken item stays alive unless deleted, and a widget reports size changes only to the first item made for it.
+        Adding the widget to a layout again would leave the new item's cached sizes stale.
+        """
         while layout.count() > 0:
-            layout.takeAt(0)
+            item = layout.takeAt(0)
+            if item is not None:
+                delete(item)
 
     def _pack_grid_columns(self, grid: QGridLayout, sections: Sequence[QWidget], first_column: int = 0,
                            row_span: int = 1, alone: Collection[QWidget] = ()) -> int:
