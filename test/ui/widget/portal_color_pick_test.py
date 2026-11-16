@@ -152,12 +152,13 @@ class ScreenColorPortalTest(IntraPaintTestCase):
         self.picked = SignalRecorder(self.header.screen_color_picked)
 
     def test_no_live_preview(self) -> None:
-        """Wayland picking reports no live preview and explains the system picker."""
+        """Wayland picking reports no live preview, and shows no message, since the system picker gives its own
+        instructions."""
         self.assertFalse(self.header.live_preview)
         self.header.start_screen_color_picking()
         self.assertTrue(self.header.color_picking_active)
         self.assertTrue(FakePortalPicker.instances[0].started)
-        self.assertFalse(self.header.picking_label.isHidden())
+        self.assertTrue(self.header.picking_label.isHidden())
 
     def test_pick_emits_color_and_stops(self) -> None:
         """A portal result is emitted once and ends picking."""

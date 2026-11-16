@@ -208,7 +208,7 @@ class RecentColorsRow(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self._grid = ColorSwatchGrid()
+        self._grid = ColorSwatchGrid(wrapped_minimum=True)
         self._grid.setToolTip(RECENT_COLORS_TOOLTIP)
         self._grid.color_clicked.connect(self.color_clicked)
         if labeled:

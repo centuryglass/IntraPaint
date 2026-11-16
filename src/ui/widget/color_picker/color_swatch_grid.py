@@ -1,8 +1,11 @@
 """A wrapping grid of clickable color swatches.
 
 Swatches wrap to the widget's width, and the height follows through `heightForWidth`, so the grid works in narrow and
-wide panels alike. Colors with alpha show over a checkerboard. The swatch matching `set_current_color` gets a
-highlighted border. A left click emits `color_clicked` on release; callers treat it as a finished choice.
+wide panels alike. A layout measures only the one-row minimum, so a grid built with `wrapped_minimum` raises its
+minimum height to every row it wraps to at its current width, for owners that plan from minimum sizes.
+
+Colors with alpha show over a checkerboard. The swatch matching `set_current_color` gets a highlighted border. A left
+click emits `color_clicked` on release; callers treat it as a finished choice.
 
 Dragging a swatch carries its color as `QMimeData` color data, which other color widgets accept. With
 `accept_drops` set, a dropped color emits `color_dropped` with the insertion index under the drop point.
@@ -11,7 +14,7 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal, QPoint, QEvent
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette, QHelpEvent, \
-    QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent
+    QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QResizeEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy, QToolTip, QApplication
 
 from src.ui.widget.color_picker.color_drag import start_color_drag, accept_color_drag_enter
@@ -36,8 +39,10 @@ class ColorSwatchGrid(QWidget):
     # Emits the dropped color and the index it should be inserted before.
     color_dropped = Signal(QColor, int)
 
-    def __init__(self, parent: Optional[QWidget] = None, accept_drops: bool = False) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, accept_drops: bool = False,
+                 wrapped_minimum: bool = False) -> None:
         super().__init__(parent)
+        self._wrapped_minimum = wrapped_minimum
         self._colors: list[QColor] = []
         self._current_key = ''
         self._press_index = -1
@@ -55,6 +60,7 @@ class ColorSwatchGrid(QWidget):
     def set_colors(self, colors: list[QColor]) -> None:
         """Displays a list of colors, left to right then top to bottom."""
         self._colors = [QColor(color) for color in colors]
+        self._fit_minimum_height()
         self.updateGeometry()
         self.update()
 
@@ -178,6 +184,16 @@ class ColorSwatchGrid(QWidget):
             return
         event.acceptProposedAction()
         self.color_dropped.emit(color, self.insertion_index_at(event.position().toPoint()))
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Raises a `wrapped_minimum` grid's minimum height to the rows it wraps to at its new width."""
+        super().resizeEvent(event)
+        self._fit_minimum_height()
+
+    def _fit_minimum_height(self) -> None:
+        if self._wrapped_minimum:
+            height = self.heightForWidth(self.width())
+            self.setMinimumHeight(height if height > SWATCH_SIZE else 0)
 
     def event(self, event: Optional[QEvent]) -> bool:
         """Shows the hovered swatch's hex value as its tooltip."""
