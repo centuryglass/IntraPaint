@@ -7,9 +7,15 @@ What a panel layout has to do, and where its look comes from. `src/ui/layout/pan
 
 - **The code is the spec.** A panel's own code, its pinned layout snapshots and its sweep sheets define how it looks.
   A design mock-up is a draft that a panel's code can depart from, and is never updated to match the code.
-- **The maintainer approves a new arrangement** by reading its sweep sheets. Each panel's arrangement lives in its own
-  code, adapted to each size by the fit planner's priorities, forms and More. Don't build a general mechanism that
-  picks between arrangements. Where an arrangement isn't obvious from the code, a comment says what it does.
+- **The maintainer approves a new arrangement** by reading its sweep sheets. Where an arrangement isn't obvious from
+  the code, a comment says what it does.
+- **Shared arrangement steps are defaults a panel can override.** A step that most panels repeat, such as capping a
+  column's width or packing a strip's sections into columns, lives in shared code under `src/ui/layout/` or in
+  `FitToolPanel`. A panel whose content suits a different approach overrides the default in its own code, and a
+  comment there says why.
+  - Share a step when panels would otherwise repeat it with only incidental differences.
+  - Keep shared code simple. Where generalizing a step would need an option for each panel's case, the panels keep
+    their own versions.
 - **Look is judged by eye.** No test enforces alignment, spacing or how spare space is spread. The sweep checks report
   those as hints (see "How layouts are checked").
 
@@ -29,6 +35,9 @@ describes its control.
   one label column (`LabelColumnLayout`).
 - **A repeated group is one shared block** with the same order everywhere: `StrokeBlock` for brush-like tools,
   `GeometryBlock` for position and size fields, `SelectionModeBar` for selection tools.
+- **A side panel is one main column.** Content goes to the right of it only when the main column has no room for it
+  and there is plenty of room to the right, as `StrokeBlock`'s preview does. The text and shape tools have more
+  content than most panels, so they split into two columns whenever two fit across.
 - **A control leaves its panel only when it is rarely changed or duplicated elsewhere.** It moves to More, Settings or
   a menu, and nothing is removed (see "Invariants").
 
