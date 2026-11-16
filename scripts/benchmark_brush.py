@@ -1,4 +1,4 @@
-"""Benchmark for the smudge, filter, draw, eraser and MyPaint brushes: times long, fast strokes on a large layer.
+"""Benchmark for the smudge, filter, draw, eraser, clone stamp and MyPaint brushes: times long, fast strokes on a large layer.
 
 The test suite never measures wall-clock time, so brush performance is checked here instead. Each case draws one
 stroke whose input points are far apart, as a fast mouse drag produces. Input arrives every INPUT_INTERVAL_SECONDS,
@@ -12,7 +12,7 @@ brush's buffer timer is its surface's timer for writing changed tiles to the lay
 
 Run it before and after a change to a brush, on the same machine, and compare.
 
-Usage: python scripts/benchmark_brush.py [--brush {smudge,filter,draw,eraser,mypaint,all}] [--repeats N]
+Usage: python scripts/benchmark_brush.py [--brush {smudge,filter,draw,eraser,clone,clone-fixed,mypaint,all}] [--repeats N]
 """
 import argparse
 import os
@@ -32,6 +32,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
+from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.brush.layer_brush import LayerBrush
 from src.image.brush.filter_brush import FilterBrush
 from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
@@ -91,6 +92,18 @@ def _create_draw_brush(layer: ImageLayer) -> LayerBrush:
 def _create_eraser_brush(layer: ImageLayer) -> LayerBrush:
     brush = QtPaintBrush(layer)
     brush.eraser = True
+    return brush
+
+
+def _create_offset_clone_brush(layer: ImageLayer) -> LayerBrush:
+    brush = CloneStampBrush(layer)
+    brush.source_offset = QPoint(-60, 200)
+    return brush
+
+
+def _create_fixed_clone_brush(layer: ImageLayer) -> LayerBrush:
+    brush = CloneStampBrush(layer)
+    brush.source_pos = QPoint(800, 600)
     return brush
 
 
@@ -156,6 +169,18 @@ BENCHMARKS = {
                              _event_count, [
         Case('hard, size 40', 40, 1.0, False, QPoint(100, 400), QPoint(1500, 400), 8),
         Case('soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
+    ]),
+    'clone': BrushBenchmark(QSize(1600, 800), _create_offset_clone_brush, _configure_qt_brush(1.0), _qt_buffer_timer,
+                            _event_count, [
+        Case('offset, hard, size 40', 40, 1.0, False, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('offset, soft, size 40', 40, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('offset, soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
+    ]),
+    'clone-fixed': BrushBenchmark(QSize(1600, 800), _create_fixed_clone_brush, _configure_qt_brush(1.0),
+                                  _qt_buffer_timer, _event_count, [
+        Case('fixed, hard, size 40', 40, 1.0, False, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('fixed, soft, size 40', 40, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('fixed, soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
     ]),
     'mypaint': BrushBenchmark(QSize(1600, 800), _create_mypaint_brush, _configure_mypaint_brush, _mypaint_buffer_timer,
                               _event_count, [

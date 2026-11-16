@@ -12,7 +12,7 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64, \
-    image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
+    image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, div_255, np_composite_with_mask
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
 from test.base_test_case import IntraPaintTestCase
 
@@ -110,3 +110,32 @@ class TestImageUtils(IntraPaintTestCase):
         str64 = image_to_base64(self.qimage_argb)
         img = qimage_from_base64(str64)
         self.assertEqual(img, self.qimage_argb)
+
+    def test_div_255_is_exact(self) -> None:
+        """div_255 matches floor division by 255 for every value a blend of two channels can produce."""
+        values = np.arange(255 * 255 + 1, dtype=np.uint32)
+        np.testing.assert_array_equal(div_255(values.astype(np.uint16)), values // 255)
+
+    def test_composite_with_mask_matches_exact_blend(self) -> None:
+        """np_composite_with_mask gives floor((s * a + d * (255 - a)) / 255) for every source, destination and alpha."""
+        levels = np.arange(256, dtype=np.uint8)
+        # One row per alpha value, one column per (source, destination) pair:
+        source_values, destination_values = (pair.ravel() for pair in np.meshgrid(levels, levels))
+        width = source_values.size
+        source = np.repeat(source_values[None, :, None], 4, axis=2)
+        for alpha in range(256):
+            destination = np.repeat(destination_values[None, :, None], 4, axis=2)
+            mask = np.full((1, width, 4), alpha, dtype=np.uint8)
+            expected = (source.astype(np.uint32) * alpha + destination.astype(np.uint32) * (255 - alpha)) // 255
+            np_composite_with_mask(source, destination, mask)
+            np.testing.assert_array_equal(destination, expected, err_msg=f'alpha {alpha}')
+
+    def test_composite_with_mask_keeps_premultiplied_pixels_valid(self) -> None:
+        """Blending two valid premultiplied pixels never leaves a color channel above alpha."""
+        rng = np.random.default_rng(114)
+        alpha_channels = rng.integers(0, 256, size=(2, 64, 64), dtype=np.uint8)
+        source, destination = (np.concatenate([(rng.random((64, 64, 3)) * alpha[:, :, None]).astype(np.uint8),
+                                               alpha[:, :, None]], axis=2) for alpha in alpha_channels)
+        mask = rng.integers(0, 256, size=(64, 64, 4), dtype=np.uint8)
+        np_composite_with_mask(source, destination, mask)
+        self.assertTrue(np.all(destination[:, :, :3] <= destination[:, :, 3:4]))
