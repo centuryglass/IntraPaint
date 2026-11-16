@@ -1,7 +1,6 @@
 """Tests CloneStampBrush output in both source modes against golden images, and checks properties that must hold for
    any clone stroke."""
 import numpy as np
-import pytest
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QImage
 
@@ -189,9 +188,6 @@ class CloneStampBrushTest(BrushTestCase):
         np_initial = image_data_as_numpy_8bit(initial_image)
         np.testing.assert_array_equal(np_image[0:11, 40], np_initial[57:68, 60])
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/114: fixed-source '
-                                          'interpolation excludes each segment\'s end point, so the final input point '
-                                          'of a stroke is never stamped')
     def test_fixed_source_stroke_reaches_final_point(self) -> None:
         """A fixed-source stroke stamps the source patch at its final point."""
         self.brush.source_pos = QPoint(30, 30)
