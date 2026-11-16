@@ -1,34 +1,20 @@
-"""Tests the portal-based screen color pick used on native Wayland."""
+"""Tests the portal-based screen color pick used on native Wayland, without a bus or compositor."""
+import threading
+from contextlib import contextmanager
+from types import SimpleNamespace
 from unittest.mock import patch
+
+from jeepney import HeaderFields, MessageType
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QColor
 
-from src.ui.widget.color_picker import screen_color
+from src.ui.widget.color_picker import portal_color_pick, screen_color
 from src.ui.widget.color_picker.color_picker_header import ColorPickerHeader
-from src.ui.widget.color_picker.portal_color_pick import parse_portal_response
+from src.ui.widget.color_picker.portal_color_pick import (PortalColorPicker, decode_response, request_color,
+                                                          request_path)
 from test.base_test_case import IntraPaintTestCase
 from test.ui.widget.color_picker_test_utils import SignalRecorder
-
-HEADER = ('signal time=1.5 sender=:1.2 -> destination=:1.9 serial=7 '
-          'path=/org/freedesktop/portal/desktop/request/1_9/tok; interface=org.freedesktop.portal.Request; '
-          'member=Response\n')
-SUCCESS = HEADER + """   uint32 0
-   array [
-      dict entry(
-         string "color"
-         variant             struct {
-               double 1
-               double 0.5
-               double 0
-            }
-      )
-   ]
-"""
-CANCELLED = HEADER + """   uint32 1
-   array [
-   ]
-"""
 
 
 class FakePortalPicker(QObject):
@@ -54,31 +40,101 @@ class FakePortalPicker(QObject):
         self.canceled_quietly = True
 
 
-class ParsePortalResponseTest(IntraPaintTestCase):
-    """Tests parsing of `dbus-monitor` output."""
+class FakeConnection:
+    """A jeepney connection that answers a request with a prepared signal body."""
 
-    def test_success_returns_color(self) -> None:
+    unique_name = ':1.42'
+
+    def __init__(self, body: tuple) -> None:
+        self.body = body
+        self.rules: list = []
+        self.calls: list = []
+        self.closed = False
+
+    @contextmanager
+    def filter(self, rule):
+        """Records the filter rule."""
+        self.rules.append(rule)
+        yield 'queue'
+
+    def send_and_get_reply(self, message):
+        """Records the method call."""
+        self.calls.append(message)
+        return SimpleNamespace(header=SimpleNamespace(message_type=MessageType.method_return), body=('/handle',))
+
+    def recv_until_filtered(self, queue, timeout=None):
+        """Returns the prepared response."""
+        return SimpleNamespace(body=self.body)
+
+    def close(self) -> None:
+        """Records the close."""
+        self.closed = True
+
+
+class RequestColorTest(IntraPaintTestCase):
+    """Tests the portal request and response decoding."""
+
+    def test_request_path(self) -> None:
+        """The request path comes from the bus name and token."""
+        self.assertEqual(request_path(':1.42', 'tok'), '/org/freedesktop/portal/desktop/request/1_42/tok')
+
+    def test_decode_success(self) -> None:
         """A successful response yields its color."""
-        self.assertEqual(parse_portal_response(SUCCESS, 'tok'), (0, QColor.fromRgbF(1.0, 0.5, 0.0)))
+        body = (0, {'color': ('(ddd)', (1.0, 0.5, 0.0))})
+        self.assertEqual(decode_response(body), (0, QColor.fromRgbF(1.0, 0.5, 0.0)))
 
-    def test_cancel_has_no_color(self) -> None:
+    def test_decode_cancel(self) -> None:
         """A cancelled pick has code 1 and no color."""
-        self.assertEqual(parse_portal_response(CANCELLED, 'tok'), (1, None))
+        self.assertEqual(decode_response((1, {})), (1, None))
 
-    def test_partial_output_waits(self) -> None:
-        """Output that stops before the color is complete gives None."""
-        self.assertIsNone(parse_portal_response(SUCCESS[:SUCCESS.index('double 0.5')], 'tok'))
-        self.assertIsNone(parse_portal_response(HEADER, 'tok'))
+    def test_request_sends_pick_color_and_listens_on_request_path(self) -> None:
+        """The call names PickColor with the handle token, and the filter matches the predicted request path."""
+        connection = FakeConnection((0, {'color': ('(ddd)', (0.0, 0.0, 1.0))}))
+        code, color = request_color(connection, 'tok', threading.Event())
+        self.assertEqual((code, color), (0, QColor.fromRgbF(0.0, 0.0, 1.0)))
+        call = connection.calls[0]
+        self.assertEqual(call.header.fields[HeaderFields.member], 'PickColor')
+        self.assertEqual(call.body, ('', {'handle_token': ('s', 'tok')}))
+        self.assertEqual(connection.rules[0].header_fields['path'], request_path(':1.42', 'tok'))
 
-    def test_other_requests_are_ignored(self) -> None:
-        """Responses to other tokens and unrelated output give None."""
-        self.assertIsNone(parse_portal_response(SUCCESS, 'other'))
-        self.assertIsNone(parse_portal_response('signal time=1 path=/a/b; member=NameOwnerChanged\n', 'tok'))
+    def test_stop_ends_wait(self) -> None:
+        """A set stop event ends the wait as a cancel."""
+        stop = threading.Event()
+        stop.set()
+        self.assertEqual(request_color(FakeConnection(()), 'tok', stop), (1, None))
 
-    def test_next_message_is_not_read(self) -> None:
-        """Doubles from a later message are not mistaken for the color."""
-        text = CANCELLED + 'signal time=2 path=/x; interface=a; member=B\n   double 1\n   double 1\n   double 1\n'
-        self.assertEqual(parse_portal_response(text, 'tok'), (1, None))
+
+class PortalColorPickerTest(IntraPaintTestCase):
+    """Tests the picker's thread hand-off."""
+
+    def _run(self, **patches) -> list:
+        events: list = []
+        picker = PortalColorPicker()
+        picker.picked.connect(lambda color: events.append(('picked', color.name())))
+        picker.cancelled.connect(lambda: events.append(('cancelled',)))
+        picker.failed.connect(lambda reason: events.append(('failed', reason)))
+        stop = threading.Event()
+        picker._stop = stop  # pylint: disable=protected-access
+        with patch.object(portal_color_pick, 'run_on_main_thread', lambda fn: fn()):
+            with patch.object(portal_color_pick, 'open_connection', patches['open']):
+                picker._run(stop)  # pylint: disable=protected-access
+        return events
+
+    def test_picked(self) -> None:
+        """A successful pick emits its color and closes the connection."""
+        connection = FakeConnection((0, {'color': ('(ddd)', (0.0, 1.0, 0.0))}))
+        self.assertEqual(self._run(open=lambda: connection), [('picked', '#00ff00')])
+        self.assertTrue(connection.closed)
+
+    def test_cancelled(self) -> None:
+        """A cancelled pick emits cancelled."""
+        self.assertEqual(self._run(open=lambda: FakeConnection((1, {}))), [('cancelled',)])
+
+    def test_failure_reports_reason(self) -> None:
+        """A connection error emits failed with its message."""
+        def fail():
+            raise FileNotFoundError('no bus')
+        self.assertEqual(self._run(open=fail), [('failed', 'no bus')])
 
 
 class ScreenColorPortalTest(IntraPaintTestCase):

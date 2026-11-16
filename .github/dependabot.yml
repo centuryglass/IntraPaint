@@ -22,6 +22,7 @@ updates:
       - dependency-name: platformdirs
       - dependency-name: pydantic
       - dependency-name: sd-backend-client
+      - dependency-name: jeepney
       - dependency-name: cython
       - dependency-name: pytest
       - dependency-name: pytest-random-order
