@@ -993,17 +993,17 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Wheel</source>
+        <source>wheel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Sliders</source>
+        <source>sliders</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Saved</source>
+        <source>saved</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

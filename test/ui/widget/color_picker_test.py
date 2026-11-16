@@ -386,7 +386,7 @@ class ColorControlPanelTabsTest(IntraPaintTestCase):
         tab_bar = self.panel.tab_bar
         assert tab_bar is not None
         tab_bar.setCurrentIndex(2)
-        self.assertEqual(Cache().get(Cache.COLOR_PANEL_TAB), 'Saved')
+        self.assertEqual(Cache().get(Cache.COLOR_PANEL_TAB), 'saved')
         panel = ColorControlPanel(tabs_when_small=True)
         panel.set_fit_space(Orientation.SIDE, TABS_SPACE)
         assert panel.tab_bar is not None

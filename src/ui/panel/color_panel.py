@@ -66,7 +66,7 @@ SAVED_PRIORITY = 5
 TABS_INDEX = 4
 
 # `Cache.COLOR_PANEL_TAB` values, in tab order:
-TAB_KEYS = ('Wheel', 'Sliders', 'Saved')
+TAB_KEYS = ('wheel', 'sliders', 'saved')
 
 
 class _PanelLayout(QBoxLayout):

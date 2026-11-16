@@ -96,8 +96,8 @@
         "category": "Cache",
         "description": "Tab the Color panel shows while it is too small for its sections.",
         "type": "string",
-        "default": "Wheel",
-        "options": ["Wheel", "Sliders", "Saved"],
+        "default": "wheel",
+        "options": ["wheel", "sliders", "saved"],
         "saved": true,
         "translate": false
     },
