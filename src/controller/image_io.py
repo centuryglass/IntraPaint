@@ -46,6 +46,7 @@ from src.util.visual.image_format_utils import save_image_with_metadata, save_im
     load_image_frames, ImageFrame, save_animation, AnimationSaveOptions, ANIMATION_WRITE_FORMATS, \
     ANIMATION_ONLY_FORMATS
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
+from src.util.rich_text import rich_text_format
 
 logger = logging.getLogger(__name__)
 
@@ -286,10 +287,10 @@ class ImageIO:
                 if on_success is not None:
                     on_success()
             else:
-                message = (str(errors[0]) if len(errors) > 0
-                           else SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
-                logger.error(f'save failed: {message}')
-                show_error_dialog(self._window, SAVE_ERROR_TITLE, message)
+                error: str | BaseException = (errors[0] if len(errors) > 0 else
+                                              rich_text_format(SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE, file_path=file_path))
+                logger.error(f'save failed: {error}')
+                show_error_dialog(self._window, SAVE_ERROR_TITLE, error)
             if self._save_wait_loop is not None:
                 self._save_wait_loop.quit()
 
@@ -485,11 +486,11 @@ class ImageIO:
         except (IOError, TypeError, ValueError, RuntimeError) as save_err:
             error_handled = True
             logger.error(f'save failed: {save_err}')
-            show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
+            show_error_dialog(self._window, SAVE_ERROR_TITLE, save_err)
         finally:
             if isinstance(file_path, str) and not os.path.isfile(file_path) and not error_handled:
                 show_error_dialog(self._window, SAVE_ERROR_TITLE,
-                                  SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
+                                  rich_text_format(SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE, file_path=file_path))
             self._window.setUpdatesEnabled(True)
             self._window.update()
             self._window.repaint()
@@ -578,7 +579,7 @@ class ImageIO:
                 add_frame_layers(self._image_stack, frames, f'{name}: ')
         if len(errors) > 0:
             show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE,
-                              LOAD_LAYER_ERROR_MESSAGE.format(file_list=', '.join(errors)))
+                              rich_text_format(LOAD_LAYER_ERROR_MESSAGE, file_list=', '.join(errors)))
         if self._image_stack.has_image:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -614,8 +615,8 @@ class ImageIO:
         frame_bytes = frame_count * frame_size.width() * frame_size.height() * 4  # ARGB32 pixels
         if frame_bytes <= LARGE_ANIMATION_BYTES:
             return True
-        message = LARGE_ANIMATION_MESSAGE.format(file_name=os.path.basename(file_path), frame_count=frame_count,
-                                                 size_gb=frame_bytes / 1024 ** 3)
+        message = rich_text_format(LARGE_ANIMATION_MESSAGE, file_name=os.path.basename(file_path),
+                                   frame_count=frame_count, size_gb=frame_bytes / 1024 ** 3)
         return request_confirmation(self._window, LARGE_ANIMATION_TITLE, message, None,
                                     QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No,
                                     confirm_label=LARGE_ANIMATION_BUTTON)
@@ -628,7 +629,7 @@ class ImageIO:
             return
         if not os.path.isfile(file_path):
             show_error_dialog(self._window, RELOAD_ERROR_TITLE,
-                              RELOAD_ERROR_MESSAGE_INVALID_FILE.format(file_path=file_path))
+                              rich_text_format(RELOAD_ERROR_MESSAGE_INVALID_FILE, file_path=file_path))
             return
         if self.confirm_unsaved_changes(RELOAD_CONFIRMATION_BUTTON):
             self.load(file_path=file_path, confirm_unsaved=False)

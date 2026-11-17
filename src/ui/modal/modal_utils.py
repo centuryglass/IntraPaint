@@ -1,7 +1,6 @@
 """
 Provides simple popup windows for error messages, requesting confirmation, and loading images.
 """
-import html
 import logging
 import os
 import traceback
@@ -17,6 +16,7 @@ from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_parent import modal_parent
 from src.util.pyinstaller import is_pyinstaller_bundle
+from src.util.rich_text import escape_rich_text, rich_text_format
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
 from src.util.visual.image_utils import get_standard_qt_icon
@@ -110,24 +110,29 @@ def _new_message_box(parent: Optional[QWidget]) -> QMessageBox:
 
 
 def _set_title_and_message(message_box: QMessageBox, title: str, message: str) -> None:
-    """Shows `title` as a bold first line in the box, with `message` under it.
+    """Shows plain-text `title` as a bold first line in the box, with rich-text `message` under it.
 
-    Both strings are escaped, since the box renders rich text to get the bold line.
+    `title` is escaped. `message` is rendered as rich text with each newline shown as a line break, so callers escape
+    any value they put into it (`src.util.rich_text.rich_text_format`) and keep newlines out of their markup.
     """
     message_box.setWindowTitle(title)
     message_box.setTextFormat(Qt.TextFormat.RichText)
-    message_box.setText(f'<b>{html.escape(title)}</b>')
-    message_box.setInformativeText(html.escape(message).replace('\n', '<br>'))
+    message_box.setText(f'<b>{escape_rich_text(title)}</b>')
+    message_box.setInformativeText(message.replace('\n', '<br>'))
 
 
 def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException,
                       signal: bool = False) -> None:
-    """Opens a message box to show some text to the user. With `signal` set, the OK button uses the signal color."""
+    """Opens a message box to show an error to the user. With `signal` set, the OK button uses the signal color.
+
+    A string `error` is rich text (see `_set_title_and_message`). An exception's text is escaped.
+    """
     logger.error(f'Error: {error}')
     if isinstance(error, BaseException) and hasattr(error, '__traceback__'):
         traceback.print_exception(type(error), error, error.__traceback__)
     messagebox = _new_message_box(parent)
-    _set_title_and_message(messagebox, title, f'{error}')
+    message = escape_rich_text(error) if isinstance(error, BaseException) else error
+    _set_title_and_message(messagebox, title, message)
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
     messagebox.setIcon(QMessageBox.Icon.Critical)
     messagebox.setStandardButtons(QMessageBox.StandardButton.Ok)
@@ -147,9 +152,9 @@ def request_recovery_choice(parent: Optional[QWidget], original_path: str, saved
     """
     saved_time = QLocale().toString(QDateTime.fromSecsSinceEpoch(int(saved_at)), QLocale.FormatType.ShortFormat)
     if original_path == '':
-        message = MESSAGE_RESTORE_RECOVERY_UNSAVED.format(saved_time=saved_time)
+        message = rich_text_format(MESSAGE_RESTORE_RECOVERY_UNSAVED, saved_time=saved_time)
     else:
-        message = MESSAGE_RESTORE_RECOVERY_FILE.format(file_path=original_path, saved_time=saved_time)
+        message = rich_text_format(MESSAGE_RESTORE_RECOVERY_FILE, file_path=original_path, saved_time=saved_time)
     message_box = _new_message_box(parent)
     _set_title_and_message(message_box, TITLE_RESTORE_RECOVERY, f'{message}\n\n{MESSAGE_RESTORE_RECOVERY_CHOICES}')
     message_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
@@ -203,7 +208,10 @@ def request_unsaved_changes_choice(parent: Optional[QWidget], file_name: str, di
 
 def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
                         reminder_config_key: Optional[str]) -> None:
-    """Show a warning dialog, optionally with a 'don't show again' checkbox"""
+    """Show a warning dialog, optionally with a 'don't show again' checkbox.
+
+    `message` is rich text (see `_set_title_and_message`).
+    """
     if reminder_config_key is not None and not AppConfig().get(reminder_config_key):
         return  # Warning already disabled
     messagebox = _new_message_box(parent)
@@ -227,8 +235,9 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
                          confirm_label: Optional[str] = None) -> bool:
     """Requests confirmation from the user, returns whether that confirmation was granted.
 
-    With `discards_work` set, the confirm button uses the signal color. With `confirm_label` set, the confirm button
-    names the action ("Quit without saving") instead of using the standard button's text.
+    `message` is rich text (see `_set_title_and_message`). With `discards_work` set, the confirm button uses the signal
+    color. With `confirm_label` set, the confirm button names the action ("Quit without saving") instead of using the
+    standard button's text.
     """
     if reminder_config_key is not None:
         reminder_setting = AppConfig().get(reminder_config_key)

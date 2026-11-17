@@ -121,6 +121,7 @@ from src.util.shared_text import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
 from src.util.visual.display_size import get_screen_size
+from src.util.rich_text import rich_text_format
 
 # Optional spacenav support:
 SpacenavManager = optional_import('src.controller.spacenav_manager', attr_name='SpacenavManager')
@@ -593,7 +594,8 @@ class AppController(MenuBuilder):
         # load new generator:
         if not generator.configure_or_connect():
             show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
-                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+                              rich_text_format(GENERATOR_LOAD_ERROR_MESSAGE,
+                                               generator_name=generator.get_display_name()))
             assert generator != self._null_generator
             self.load_image_generator(self._null_generator if last_generator == generator else last_generator)
             return
@@ -1178,7 +1180,8 @@ class AppController(MenuBuilder):
         except KeyError:
             applied = False
         if not applied:
-            show_error_dialog(self._window, TITLE_LAYOUT_ERROR, MESSAGE_LAYOUT_ERROR.format(layout_name=name))
+            show_error_dialog(self._window, TITLE_LAYOUT_ERROR,
+                              rich_text_format(MESSAGE_LAYOUT_ERROR, layout_name=name))
 
     def _update_layout_menu(self) -> None:
         """Lists the saved layouts below the static Layouts actions, rebuilt each time the submenu opens."""

@@ -11,6 +11,7 @@ from src.config.config import Config
 from src.config.generated_keys import KeyConfigKeys
 from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.key_code_utils import get_modifiers, get_key_with_modifiers, key_alternatives
+from src.util.rich_text import escape_rich_text, rich_text_list
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
@@ -235,6 +236,6 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
             # AppConfig explicit initialization is required if running the dynamic import script, otherwise
             # WARN_ON_KEY_ERROR won't be present and any key errors will cause an unexplained failure.
             AppConfig()
-            lines = ['<li>' + err + '</li>\n' for err in errors]
-            error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
+            error_message = (f'<b>{escape_rich_text(KEY_CONFIG_ERROR_MESSAGE.strip())}</b>'
+                             + rich_text_list(errors))
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)

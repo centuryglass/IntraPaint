@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication, QDialog, QLabel, QLineEdit, QVBoxLay
 from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.modal_utils import request_confirmation
 from src.util.shared_constants import APP_ICON_PATH
+from src.util.rich_text import rich_text_format
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.modal.layout_name_modal'
@@ -63,7 +64,7 @@ class LayoutNameModal(QDialog):
 def confirm_overwrite(parent: Optional[QWidget], name: str) -> bool:
     """Asks whether to replace the existing layout with this name."""
     return request_confirmation(parent, TITLE_CONFIRM_OVERWRITE,
-                                MESSAGE_CONFIRM_OVERWRITE.format(layout_name=name), discards_work=True)
+                                rich_text_format(MESSAGE_CONFIRM_OVERWRITE, layout_name=name), discards_work=True)
 
 
 def prompt_layout_name(parent: Optional[QWidget], title: str, default_name: str, existing_names: set[str],

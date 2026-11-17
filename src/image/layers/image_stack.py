@@ -28,6 +28,7 @@ from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
+from src.util.rich_text import escape_rich_text, rich_text_format
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
@@ -514,7 +515,7 @@ class ImageStack(QObject):
 
                 if len(deleted_layer_names) > 0:
                     warning_message = WARNING_MESSAGE_CROP_DELETED_LAYERS.format(
-                        layer_names=' '.join((f'<li>{name}</li>' for name in deleted_layer_names)))
+                        layer_names=''.join(f'<li>{escape_rich_text(name)}</li>' for name in deleted_layer_names))
                     show_warning_dialog(None, WARNING_TITLE_CROP_DELETED_LAYERS, warning_message,
                                         AppConfig.WARN_WHEN_CROP_DELETES_LAYERS)
 
@@ -1097,11 +1098,11 @@ class ImageStack(QObject):
         if len(locked_layers) > 0:
             if len(locked_layers) > 1:
                 layer_names = ', '.join([f'"{layer.name}"' for layer in locked_layers])
-                error_message = ERROR_MESSAGE_LOCK_CONFLICT_PLURAL.format(
-                    comma_separated_layer_names=layer_names)
+                error_message = rich_text_format(ERROR_MESSAGE_LOCK_CONFLICT_PLURAL,
+                                                 comma_separated_layer_names=layer_names)
             else:
-                error_message = ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR.format(
-                    layer_name=f'"{locked_layers[0].name}"')
+                error_message = rich_text_format(ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR,
+                                                 layer_name=f'"{locked_layers[0].name}"')
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, error_message)
             return
         if len(layer_names) > 0:
@@ -1117,7 +1118,7 @@ class ImageStack(QObject):
                         hidden_in_groups.append(child)
         if len(hidden_in_groups) > 0:
             hidden_names = ', '.join([f'"{layer.name}"' for layer in hidden_in_groups])
-            warning_message = WARNING_MESSAGE_HIDDEN_LAYERS_LOST.format(layer_names=hidden_names)
+            warning_message = rich_text_format(WARNING_MESSAGE_HIDDEN_LAYERS_LOST, layer_names=hidden_names)
             if not request_confirmation(None, WARNING_TITLE_HIDDEN_LAYERS_LOST, warning_message, discards_work=True):
                 return
 
@@ -1962,10 +1963,11 @@ class ImageStack(QObject):
         if len(interfering_locked_layers) > 0 and error_title is not None:
             if len(interfering_locked_layers) > 1:
                 layer_names = ', '.join([f'"{layer.name}"' for layer in interfering_locked_layers])
-                error_message = ERROR_MESSAGE_LOCK_CONFLICT_PLURAL.format(comma_separated_layer_names=layer_names)
+                error_message = rich_text_format(ERROR_MESSAGE_LOCK_CONFLICT_PLURAL,
+                                                 comma_separated_layer_names=layer_names)
             else:
                 layer_name = f'"{interfering_locked_layers[0].name}"'
-                error_message = ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR.format(layer_name=layer_name)
+                error_message = rich_text_format(ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR, layer_name=layer_name)
             show_error_dialog(None, error_title, error_message)
         return len(interfering_locked_layers) == 0
 

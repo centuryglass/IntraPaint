@@ -42,6 +42,7 @@ from src.util.shared_text import (URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling
+from src.util.rich_text import rich_text_format
 
 logger = logging.getLogger(__name__)
 
@@ -727,7 +728,7 @@ class SDGenerator(ImageGenerator, ABC):
         def _handle_error(error: Exception) -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             show_error_dialog(self._window, ERROR_TITLE_PREPROCESSOR_PREVIEW_FAILED,
-                              ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED.format(err=error))
+                              rich_text_format(ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED, err=error))
 
         def _load_preview(preview_image: QImage) -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)

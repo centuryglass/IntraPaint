@@ -12,6 +12,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.ora_extensions import OraWriteContext
 from src.ui.modal.modal_utils import request_confirmation
+from src.util.rich_text import rich_text_format
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.non_destructive_layer'
@@ -47,12 +48,12 @@ class NonDestructiveLayer(TransformLayer):
         assert len(layer_names) > 0
         if len(layer_names) == 1:
             title = CONFIRM_SINGLE_CONVERT_TO_IMAGE_TITLE
-            message = CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE.format(action_name=action_name,
-                                                                     layer_name=layer_names[0])
+            message = rich_text_format(CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE, action_name=action_name,
+                                       layer_name=layer_names[0])
         else:
             title = CONFIRM_MULTI_CONVERT_TO_IMAGE_TITLE
-            message = CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE.format(action_name=action_name,
-                                                                    num_layers=len(layer_names))
+            message = rich_text_format(CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE, action_name=action_name,
+                                       num_layers=len(layer_names))
         return request_confirmation(None, title, message, discards_work=True)
 
     def set_qimage(self, image: QImage) -> None:
