@@ -350,8 +350,40 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
 
 - **Open work lives only in [GitHub issues](https://github.com/centuryglass/IntraPaint/issues).** Nothing in the repo
   tracks tasks.
-- **A found bug that isn't a same-pass fix opens an issue**: what was observed, how to reproduce it, and what is ruled
-  out.
+- **Every open issue has exactly one category label,** which says what can happen to it next. `area: ...`,
+  `documentation` and `low priority` go alongside it.
+
+  | Label | Meaning |
+  | --- | --- |
+  | `bug` | Something broken. A fix too big for one PR becomes a `project`. |
+  | `needs planning` | Wanted, but open questions remain. The plan is worked out in the issue's comments. |
+  | `ready` | Fits one PR, can start now, and has no open questions. Any agent can follow it without judgment calls. |
+  | `project` | The parent of multi-PR work. Each step is a sub-issue with its own category. |
+  | `someday` | A long-term idea that isn't practical now. The maintainer reviews these from time to time. |
+
+  - A new issue is `needs planning` unless it is a bug or already meets `ready`. File `someday` only when the
+    maintainer frames the idea that way.
+  - A project's step is `ready` only once it can start. Until then it is `needs planning`.
+  - A found bug that isn't a same-pass fix opens a `bug` issue: what was observed, how to reproduce it, and what is
+    ruled out.
+- **A `ready` or `project` issue's body is its spec.** It gives the goal, the files and symbols to change, the steps,
+  the tests to run or add, the acceptance criteria, the PR type ("Working with GitHub"), and the commit it was written
+  against.
+  - When planning settles, rewrite the body as the spec and move the original text into a
+    `<details><summary>Original request</summary>` block at the end, so the earliest comments keep their context.
+    Then change the label, and post one comment saying what was decided and what was ruled out.
+  - Before following a `ready` issue, check that the code still matches what it describes. If it has moved on, set
+    the issue back to `needs planning` with a comment saying what changed, and don't improvise.
+- **Comment on an issue when a later reader would otherwise choose worse or redo work.** Worth posting:
+  - decisions with their reasons, including the obvious alternative that was rejected. Issues are where the reasoning
+    that code comments leave out ("Comments and docs") belongs.
+  - findings that took real effort: a root cause, a measurement, what was ruled out.
+  - questions only the maintainer can answer.
+  - scope changes: work split off, dropped or deferred.
+
+  Leave out progress narration, drafts, options nobody seriously considered, and anything the PR description says.
+  Post at most one comment per issue per session, when the session's work on it ends, with the footer in "An issue or
+  comment an AI agent writes".
 - **A fact worth knowing is not a task.** It belongs in the owning module's comment, or here.
 - **Open issues are usually already in context.** The `SessionStart` hook (`.claude/hooks/session-start.sh`) runs
   `scripts/issues.py`, which writes `.claude/cache/issues/` and prints its `index.md`. OpenCode's counterpart,
