@@ -119,6 +119,9 @@ class ConfigEntry(Parameter):
                          step)
         self._key = key
         self._value = deepcopy(initial_value)  # Mutating the value in place must not change the default.
+        # `Parameter.set_valid_options` moves `_default_value` onto the first option when options load at runtime.
+        # Saving compares against this copy, so choosing that first option is still saved.
+        self._definition_default = deepcopy(initial_value)
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
@@ -220,12 +223,12 @@ class ConfigEntry(Parameter):
         self.set_valid_options(options)
 
     def is_default_state(self) -> bool:
-        """Returns whether the value matches the definition's default."""
-        return self._value == self._default_value
+        """Returns whether the value matches the definition's default, whatever options have loaded since."""
+        return self._value == self._definition_default
 
     def default_json_value(self) -> Any:
         """Returns the definition's default in its saved JSON form."""
-        return _json_scalar(self._default_value)
+        return _json_scalar(self._definition_default)
 
     def saved_json_value(self, json_value: Any) -> Any:
         """Returns the value part of a saved JSON value, unwrapping the `{min, max, step, value}` form older files use

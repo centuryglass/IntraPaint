@@ -544,6 +544,29 @@ class ConfigTest(IntraPaintTestCase):
         config._write_to_json()  # pylint: disable=protected-access
         self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION})
 
+    def test_first_loaded_option_is_saved(self) -> None:
+        """Choosing the option that loaded first is saved, though loading the options made it the entry's default.
+
+        The entry is defined like `Cache.SD_MODEL`, with an empty default and no options until a generator loads them.
+        """
+        self._change_definition(OPTION_KEY, default='', options=[])
+        config = self._config()
+        config.update_options(OPTION_KEY, ['b', 'c'])
+        self.assertEqual(config.get_default(OPTION_KEY), 'b')
+        config.set(OPTION_KEY, 'b', save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values()[OPTION_KEY], 'b')
+        reloaded = self._config()
+        reloaded.update_options(OPTION_KEY, ['a', 'b', 'c'])
+        self.assertEqual(reloaded.get(OPTION_KEY), 'b')
+
+    def test_definition_default_option_is_not_saved(self) -> None:
+        """An option entry left at its definition's default stays out of the file after other options load."""
+        config = self._config()
+        config.update_options(OPTION_KEY, ['first', 'second', 'third'])
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertNotIn(OPTION_KEY, self._read_saved_values())
+
     def test_saved_range_is_dropped_on_save(self) -> None:
         """A versioned file's saved range doesn't keep a default value saved, and a custom value is rewritten without
         its range."""
