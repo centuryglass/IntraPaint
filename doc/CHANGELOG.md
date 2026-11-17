@@ -2,6 +2,72 @@
 
 ## [1.5.0](https://github.com/centuryglass/IntraPaint/compare/v1.4.0...v1.5.0) (2026-11-17)
 
+1.5.0 is a large release. Most of the interface has been redesigned, there are new file formats and generation options, and many long-standing bugs are fixed. The highlights are below, and the complete list of changes follows them.
+
+### Upgrading from 1.4
+
+- **Default keyboard shortcuts follow common editor conventions.** Old bindings stay as second keys where they are still free. Shortcuts you customized keep your settings. ([#807](https://github.com/centuryglass/IntraPaint/issues/807))
+  - Hold Space and left-drag to pan. Ctrl-drag panning and its modifier setting are gone.
+  - The speed modifier key is gone. Shift+arrow keys move further, brush size steps scale with the brush size, and the 1-0 keys set brush opacity.
+  - Select image generator is Ctrl+F4.
+- **Some controls were renamed:** "Interrogate" is "Describe", "Inpaint full resolution" padding is "Context", the selection fill tool is "Magic wand", and guidance is "CFG scale" everywhere.
+- **Config files keep only the settings you changed**, plus a version number, so a changed default now reaches installs that never customized it. ([#636](https://github.com/centuryglass/IntraPaint/issues/636))
+
+### Interface
+
+- **Dockable panels.** Panels dock to any window edge, tab together, or float. Each edge has an icon rail for switching panels, which you can also drag to move them. Window > Layouts saves named layouts, and the default layout is picked to suit the window size.
+- **Every panel was redesigned** to fit the space it's given, switching between side and strip layouts and collapsing sections to summaries when space is short: tools, generation, layers, color, ControlNet, MyPaint brushes, text, shapes and the selection tools.
+- **Live stroke previews** with the real brush in the Draw, Eraser, Smudge, Clone stamp and Filter panels.
+- **Reorganized menus.** The menu bar has new Layer, Select, Generation, View and Window menus. New items include File > Open Recent, View > Full screen, Edit > Copy merged (Ctrl+Shift+C), Filters > Repeat last filter (Ctrl+F), Edit > Keyboard shortcuts, and About, bug report and release notes entries in Help.
+- **Redesigned dialogs:** settings (with a category sidebar and search), new image, image scale, resize canvas (with an anchor grid and a draggable preview), filters (with a side-by-side preview and compare), and the generated image selector.
+- **Rich tooltips** show key bindings as keycaps. Message boxes have titles, icons and buttons named for their actions.
+- **UI language setting,** with machine-translated languages labeled as such.
+- Images dropped on the window open, and IntraPaint asks to save only when there are unsaved changes.
+
+### Image generation and inpainting
+
+- **Soft inpainting** (WebUI Soft Inpainting script or ComfyUI's DifferentialDiffusion) and a **mask blur** control, so inpainting results blend without a hard edge.
+- **Inpainting results are applied as patches**, so other layers are no longer copied into the target layer. When the target layer can't show a result correctly, the result goes on a new top layer.
+- **Reopen the last batch** of generated options (Shift+F4), keeping the original content, with an option to use the current content instead.
+- **Searchable LoRA card grid** with a weight slider, and a rebuilt ControlNet panel that shows the enabled unit count while it is hidden.
+- The generation area tool, prompt style window and loading indicators were redesigned, and you can type multi-digit numbers to pick generated options past 9.
+
+### Layers, files and metadata
+
+- **Animated images:** GIF, WebP, APNG and AVIF open as one layer per frame, and the top-level layers save back as an animation. Multi-page TIFFs open one layer per page.
+- **Crash recovery:** IntraPaint autosaves a recovery copy while you edit and offers to restore it after a crash.
+- **Metadata is kept:** EXIF, XMP, IPTC, DPI and every A1111 generation field survive saving, including in .ora files. A new window views and edits image metadata, and IntraPaint warns before a save would drop metadata or layers.
+- .ora files keep other programs' data when re-saved, and embedded non-sRGB color profiles are converted on load.
+- Image > Transform flips and rotates the whole image.
+
+### Tools
+
+- Selection tools gain replace and intersect modes with Shift and Alt modifiers, and show the selection's bounds.
+- Brush size shows as an outline with a crosshair, and Alt + right-drag changes it.
+- Right-click picks the background color with the eyedropper, and lists the layers under the cursor in the layer transform tool.
+- The shape, text and new image tools use the foreground and background colors.
+- On native Wayland, the color picker can pick screen colors through the desktop portal.
+
+### Performance
+
+- Layer groups and the canvas re-render only the tiles and areas that changed.
+- Selections trace and edit much faster on large images.
+- Saving and filter previews run off the UI thread.
+- Idle CPU use is lower: the dock tab bar no longer loops on relayout, and hotkeys are polled only while the window is active.
+
+### Notable fixes
+
+- Erasing or merging down onto an alpha-locked layer no longer changes its colors or alpha. Merging down onto a translucent layer keeps the merged layer's strength.
+- Blur and sharpen no longer darken edges next to transparency, and contrast gives the same result on a selection as on the whole image.
+- Hue, Saturation, Color and Luminosity layers no longer darken pixels outside the layer.
+- Clone stamp with a fixed source stays aligned near the left and top edges.
+- Finished group transforms no longer affect layers added to the group later.
+- Opening an image asks about unsaved changes first, and opening or creating an image clears the undo history.
+- Saving keeps XMP, IPTC and the JPEG comment, and warns when a flat save of a lone layer group would lose layers.
+- Shape tool settings survive a language change, and seed field edits are saved as numbers.
+- MyPaint brushes with slow tracking start each stroke at its first point.
+
+<details><summary>All changes in this release</summary>
 
 ### Features
 
@@ -324,6 +390,8 @@
 * **tools:** preview transform tool drags and apply the transform once on release ([#846](https://github.com/centuryglass/IntraPaint/issues/846)) ([20ac2bd](https://github.com/centuryglass/IntraPaint/commit/20ac2bdbe5f99f53b4d0f66635ec87ffa7fbdfde))
 * **ui:** measure each fit placement and dock panel header once per plan ([#568](https://github.com/centuryglass/IntraPaint/issues/568)) ([96a126e](https://github.com/centuryglass/IntraPaint/commit/96a126e0d0d3ba52343f2833d79845c760be8611))
 * **ui:** repaint only the changed area of the canvas view's pixmap ([#904](https://github.com/centuryglass/IntraPaint/issues/904)) ([d2f4e13](https://github.com/centuryglass/IntraPaint/commit/d2f4e13e858b73a10c3109dd006a72b4d1a4ab9a)), closes [#827](https://github.com/centuryglass/IntraPaint/issues/827)
+
+</details>
 
 ## [1.4.0](https://github.com/centuryglass/IntraPaint/compare/v1.3.0...v1.4.0) (2026-10-10)
 
