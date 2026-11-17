@@ -13,6 +13,7 @@ from src.util.shared_text import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_
                                   ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, ERROR_MESSAGE_LAYER_GROUP_LOCKED,
                                   LOCK_ERROR_MESSAGES)
 from src.util.visual.image_utils import image_is_fully_transparent
+from src.util.rich_text import rich_text_format
 
 # Longest a mid-stroke draw should block the event loop. Input left over is drawn on the next event loop pass, so the
 # window can repaint and take input during a long stroke.
@@ -137,7 +138,7 @@ class LayerBrush:
         elif not self._layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
         elif (hidden_parent := self._layer.hidden_parent) is not None:
-            error_message = ERROR_MESSAGE_LAYER_GROUP_HIDDEN.format(group_name=hidden_parent.name)
+            error_message = rich_text_format(ERROR_MESSAGE_LAYER_GROUP_HIDDEN, group_name=hidden_parent.name)
         elif self._layer.locked:
             error_message = ERROR_MESSAGE_LAYER_LOCKED
         elif self._layer.parent_locked:

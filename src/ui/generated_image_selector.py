@@ -38,6 +38,7 @@ from src.util.shared_constants import TIMELAPSE_MODE_FLAG, EDIT_MODE_INPAINT
 from src.util.validation import assert_valid_index
 from src.util.visual.pil_image_utils import pil_image_scaling
 from src.util.visual.key_hint_text import key_hint_text
+from src.util.rich_text import rich_text_format
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.generated_image_selector'
@@ -819,7 +820,7 @@ class GeneratedImageSelector(QWidget):
                            ApplyResult.BLOCKED_HIDDEN: WARNING_MESSAGE_1_LAYER_HIDDEN,
                            ApplyResult.NEEDS_TOP_LAYER_BLENDING: WARNING_MESSAGE_1_LAYER_BLENDING,
                            ApplyResult.NEEDS_TOP_LAYER_COVERED: WARNING_MESSAGE_1_LAYER_COVERED}[outcome.result]
-        warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
+        warning_message += rich_text_format(WARNING_MESSAGE_2_CREATED_NEW, new_layer_name=new_layer_name)
         show_warning_dialog(None, WARNING_TITLE_INSERT_FAILED.format(layer_name=requested_layer.name),
                             warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
 

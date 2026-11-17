@@ -29,6 +29,7 @@ from src.util.visual.image_utils import image_is_fully_transparent
 from src.util.visual.key_hint_text import rich_text_key_hints
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
     vertical_scroll_hint_text
+from src.util.rich_text import rich_text_format
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.base_tool'
@@ -251,7 +252,7 @@ class BaseTool(QObject):
         elif not layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
         elif (hidden_parent := layer.hidden_parent) is not None:
-            error_message = ERROR_MESSAGE_LAYER_GROUP_HIDDEN.format(group_name=hidden_parent.name)
+            error_message = rich_text_format(ERROR_MESSAGE_LAYER_GROUP_HIDDEN, group_name=hidden_parent.name)
         elif (image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY)
               and self._enable_selection_restrictions):
             mask_image = image_stack.selection_layer.image_bits_readonly

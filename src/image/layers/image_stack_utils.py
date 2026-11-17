@@ -24,6 +24,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_content_bounds
+from src.util.rich_text import escape_rich_text
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -130,7 +131,7 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
                 return
         if len(deleted_layer_names) > 0:
             warning_message = WARNING_MESSAGE_CROP_DELETED_LAYERS.format(
-                layer_names=' '.join((f'<li>{name}</li>' for name in deleted_layer_names)))
+                layer_names=''.join(f'<li>{escape_rich_text(name)}</li>' for name in deleted_layer_names))
             show_warning_dialog(None, WARNING_TITLE_CROP_DELETED_LAYERS, warning_message,
                                 AppConfig.WARN_WHEN_CROP_DELETES_LAYERS)
 

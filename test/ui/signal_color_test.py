@@ -147,3 +147,16 @@ class SignalColorTest(IntraPaintTestCase):
         self.assertIn('Quit without saving', confirm[3])
         self.assertEqual(QMessageBox.Icon.Warning, warning[2])
         self.assertEqual(QMessageBox.Icon.Critical, error[2])
+
+    def test_message_boxes_render_message_markup_and_escape_exceptions(self):
+        """A string message keeps its tags, while an exception's text displays as written."""
+        messages: list[str] = []
+
+        def _record(box: QMessageBox) -> int:
+            messages.append(box.informativeText())
+            return 0
+
+        with patch.object(QMessageBox, 'exec', _record, create=True):
+            show_warning_dialog(None, 'title', '<p>Deleted:</p><ul><li>layer</li></ul>', None)
+            show_error_dialog(None, 'title', ValueError('bad <tag> & value'))
+        self.assertEqual(['<p>Deleted:</p><ul><li>layer</li></ul>', 'bad &lt;tag&gt; &amp; value'], messages)

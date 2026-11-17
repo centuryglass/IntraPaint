@@ -9,6 +9,7 @@ from src.ui.modal.layout_name_modal import TITLE_RENAME, prompt_layout_name
 from src.ui.modal.modal_utils import request_confirmation
 from src.ui.window import saved_layouts
 from src.util.shared_constants import APP_ICON_PATH
+from src.util.rich_text import rich_text_format
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.modal.manage_layouts_modal'
@@ -107,7 +108,7 @@ class ManageLayoutsModal(QDialog):
         name = self.selected_name()
         if name is None:
             return
-        if request_confirmation(self, TITLE_CONFIRM_DELETE, MESSAGE_CONFIRM_DELETE.format(layout_name=name),
+        if request_confirmation(self, TITLE_CONFIRM_DELETE, rich_text_format(MESSAGE_CONFIRM_DELETE, layout_name=name),
                                 discards_work=True):
             saved_layouts.delete_layout(name)
             self.refresh()

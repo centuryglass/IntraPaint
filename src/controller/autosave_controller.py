@@ -38,6 +38,7 @@ from src.ui.modal.modal_utils import (request_recovery_choice, show_error_dialog
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
+from src.util.rich_text import rich_text_format
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,8 @@ class AutosaveController(QObject):
                     restored = restore_session(self._image_stack, session)
                 except (OSError, ValueError, KeyError, TypeError, AssertionError) as err:
                     logger.error(f'Restoring {session.session_dir} failed: {err}')
-                    show_error_dialog(self._window, RESTORE_ERROR_TITLE, RESTORE_ERROR_MESSAGE.format(error=err))
+                    show_error_dialog(self._window, RESTORE_ERROR_TITLE,
+                                      rich_text_format(RESTORE_ERROR_MESSAGE, error=err))
                     continue
                 self._image_io.apply_restored_document(restored)
                 self._clean_state = None
