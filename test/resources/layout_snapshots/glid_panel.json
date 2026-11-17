@@ -1,0 +1,49 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      104,
+      171
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: PanelHeader/QWidget/QLabel 'GLID-3-XL' is 30x34, minimum 48x17",
+      "squeezed: QScrollArea is 30x363, minimum 59x59",
+      "squeezed: QWidget[1] is 30x28, minimum 82x28",
+      "squeezed: QWidget[1]/QPushButton 'Generate' is 30x28, minimum 82x28"
+    ],
+    "size": [
+      52,
+      485
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      296,
+      485
+    ]
+  },
+  "short": {
+    "problems": [],
+    "size": [
+      296,
+      85
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      296,
+      1455
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      485
+    ]
+  }
+}

@@ -1,1 +1,1 @@
-"""Utility functions related to rendering, image processing, and layout are defined here."""
+"""Rendering, image processing, color math and geometry helpers."""

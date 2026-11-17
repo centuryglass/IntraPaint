@@ -2,12 +2,10 @@
 import sys
 import unittest
 
-import pytest
 from PySide6.QtCore import QSize, QRect
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_group import TransformGroup
 from src.undo_stack import UndoStack
@@ -19,18 +17,13 @@ GEN_AREA_SIZE = QSize(300, 300)
 MIN_GEN_AREA = QSize(8, 8)
 MAX_GEN_AREA = QSize(999, 999)
 PRECISION = 5
-STALE_GROUP_REASON = ('https://github.com/centuryglass/IntraPaint/issues/178: a finished group transform stays '
-                      'connected to the group')
 app = QApplication.instance() or QApplication(sys.argv)
-
 
 class TransformGroupTest(IntraPaintTestCase):
     """Tests TransformGroup with a layer group holding two image layers, one nested in a child group."""
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each transform change is its own undo entry:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
         self.group = self.image_stack.create_layer_group('group')
         self.first = self.image_stack.create_layer('first', layer_parent=self.group, layer_index=0)
@@ -41,13 +34,9 @@ class TransformGroupTest(IntraPaintTestCase):
         self.second.set_transform(QTransform.fromTranslate(60, 30))
         UndoStack().clear()
         self.transform_group = TransformGroup(self.group)
-        self.menu_transform_groups: list[TransformGroup] = []
 
     def tearDown(self) -> None:
-        # The layer group's lock_changed connection keeps each TransformGroup alive until the layer group is
-        # deleted, and TransformGroup.__del__ then fails to disconnect. Disconnecting here avoids that:
-        for transform_group in (self.transform_group, *self.menu_transform_groups):
-            transform_group.remove_all()
+        self.transform_group.remove_all()
         super().tearDown()
 
     def assert_transforms_equal(self, actual: QTransform, expected: QTransform, msg: str = '') -> None:
@@ -56,10 +45,10 @@ class TransformGroupTest(IntraPaintTestCase):
                         f'{msg}\nexpected:{transform_str(expected)}actual:{transform_str(actual)}')
 
     def _menu_flip(self) -> None:
-        """Flips the group the way the layer menu does, through a new TransformGroup that's discarded after use."""
+        """Flips the group the way the layer menu does, through a new TransformGroup disconnected after use."""
         transform_group = TransformGroup(self.group)
         transform_group.flip_horizontal()
-        self.menu_transform_groups.append(transform_group)
+        transform_group.remove_all()
 
     def test_bounds_cover_layers(self) -> None:
         """A new group's bounds are the union of its layers' transformed bounds, at any nesting depth."""
@@ -112,19 +101,37 @@ class TransformGroupTest(IntraPaintTestCase):
         self.assert_transforms_equal(self.first.transform, QTransform.fromScale(2.0, 2.0))
         self.assert_transforms_equal(self.second.transform, QTransform(2.0, 0.0, 0.0, 2.0, 120.0, 60.0))
 
-    def test_added_layer_joins_transform(self) -> None:
-        """While the group is connected, a layer added to the layer group takes on the group's transform."""
-        scale = QTransform.fromScale(2.0, 2.0)
-        self.transform_group.set_transform(scale)
+    def test_added_layer_keeps_transform(self) -> None:
+        """While the group is connected, a layer added to the layer group keeps its transform, then follows later
+        changes."""
+        self.transform_group.set_transform(QTransform.fromScale(2.0, 2.0))
         added = self.image_stack.create_layer('added', layer_parent=self.inner_group, layer_index=1)
-        self.assertEqual(added.transform, scale)
+        self.assertEqual(added.transform, QTransform())
+        self.assertTrue(self.transform_group.transformed_bounds.contains(added.transformed_bounds))
+        self.transform_group.set_transform(QTransform.fromScale(4.0, 4.0))
+        self.assert_transforms_equal(added.transform, QTransform.fromScale(2.0, 2.0))
 
-    def test_removed_layer_leaves_transform(self) -> None:
-        """While the group is connected, a layer removed from the layer group drops the group's transform."""
+    def test_removed_layer_keeps_transform(self) -> None:
+        """While the group is connected, a layer removed from the layer group keeps its transform and stops following
+        the group."""
+        scaled = QTransform(2.0, 0.0, 0.0, 2.0, 120.0, 60.0)
         self.transform_group.set_transform(QTransform.fromScale(2.0, 2.0))
         self.image_stack.move_layer(self.second, self.image_stack.layer_stack, 0)
-        self.assert_transforms_equal(self.second.transform, QTransform.fromTranslate(60, 30))
+        self.assert_transforms_equal(self.second.transform, scaled)
         self.assertEqual(self.transform_group.bounds, QRect(0, 0, 40, 20))
+        self.transform_group.set_transform(QTransform())
+        self.assert_transforms_equal(self.second.transform, scaled)
+
+    def test_undo_after_remove_all(self) -> None:
+        """A group transform's undo and redo still reach its layers after the group disconnects."""
+        self.transform_group.flip_horizontal()
+        flipped = self.first.transform
+        self.transform_group.remove_all()
+        UndoStack().undo()
+        self.assert_transforms_equal(self.first.transform, QTransform())
+        self.assert_transforms_equal(self.second.transform, QTransform.fromTranslate(60, 30))
+        UndoStack().redo()
+        self.assert_transforms_equal(self.first.transform, flipped)
 
     def test_bounds_follow_layer_changes(self) -> None:
         """The group's bounds update when one of its layers moves or resizes."""
@@ -151,7 +158,6 @@ class TransformGroupTest(IntraPaintTestCase):
         self.second.set_locked(False)
         self.assertFalse(self.transform_group.locked)
 
-    @pytest.mark.xfail(strict=True, reason=STALE_GROUP_REASON)
     def test_finished_group_transform_ignores_added_layer(self) -> None:
         """A layer added after a menu flip of its group is not flipped."""
         self.transform_group.remove_all()
@@ -159,7 +165,6 @@ class TransformGroupTest(IntraPaintTestCase):
         added = self.image_stack.create_layer('added', layer_parent=self.group, layer_index=0)
         self.assertEqual(added.transform, QTransform())
 
-    @pytest.mark.xfail(strict=True, reason=STALE_GROUP_REASON)
     def test_finished_group_transform_ignores_removed_layer(self) -> None:
         """A layer moved out of a group after a menu flip of that group stays flipped."""
         self.transform_group.remove_all()

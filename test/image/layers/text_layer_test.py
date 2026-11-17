@@ -6,7 +6,6 @@ lands within the layer, never individual glyph pixels.
 from PySide6.QtCore import QSize, QRect, QPoint, QPointF, Qt
 from PySide6.QtGui import QTransform, QColor, QFont, QImage
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
@@ -173,8 +172,6 @@ class TextLayerEditTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each change is its own undo entry:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.layer = TextLayer(_text_rect('First'))
 
     def _edited(self, text: str = 'Second', size: QSize = QSize(120, 40)) -> TextRect:
@@ -264,11 +261,12 @@ class TextLayerEditTest(IntraPaintTestCase):
             UndoStack().undo()
             self.assertEqual(self.layer.text_rect.serialize(), original, change.__name__)
 
-    def test_quick_edits_merge(self) -> None:
-        """Text edits closer together than UNDO_MERGE_INTERVAL merge into one entry that restores the original."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+    def test_edits_inside_gesture_merge(self) -> None:
+        """Text edits inside one gesture merge into one entry that restores the original."""
+        UndoStack().begin_gesture('test.typing')
         for text in ('S', 'Se', 'Sec'):
             self.layer.text_rect = self._edited(text)
+        UndoStack().end_gesture()
         self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assertEqual(self.layer.text_rect.text, 'First')
@@ -293,7 +291,6 @@ class TextLayerTransformTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE)
         text_rect = _text_rect('Text')
         text_rect.fill_background = True
@@ -374,7 +371,7 @@ class TextLayerTransformTest(IntraPaintTestCase):
         self.assertEqual(image_layer.image, self.layer.get_qimage())
 
     def test_replace_with_image_in_stack(self) -> None:
-        """ImageStack.replace_text_layer_with_image swaps in an equivalent image layer that renders the same, and
+        """ImageStack.replace_layer_with_image swaps in an equivalent image layer that renders the same, and
            undo brings back the text layer."""
         self.layer.rotate(90)
         self.image_stack.flush_render()
@@ -383,7 +380,7 @@ class TextLayerTransformTest(IntraPaintTestCase):
         assert isinstance(parent, LayerGroup)
         index = parent.get_layer_index(self.layer)
 
-        image_layer = self.image_stack.replace_text_layer_with_image(self.layer)
+        image_layer = self.image_stack.replace_layer_with_image(self.layer)
         self.image_stack.flush_render()
         self.assertEqual(parent.get_layer_index(image_layer), index)
         self.assertEqual(self.image_stack.text_layers, [])
@@ -395,15 +392,3 @@ class TextLayerTransformTest(IntraPaintTestCase):
         self.assertEqual(self.image_stack.text_layers, [self.layer])
         self.assertEqual(parent.get_layer_index(self.layer), index)
         self.assertIs(self.image_stack.active_layer, self.layer)
-
-    def test_replace_with_image_layer(self) -> None:
-        """TextLayer.replace_with_image_layer swaps in an image layer at the same index, and undo swaps back."""
-        parent = self.layer.layer_parent
-        assert isinstance(parent, LayerGroup)
-        index = parent.get_layer_index(self.layer)
-        image_layer = self.layer.replace_with_image_layer()
-        self.assertEqual(parent.get_layer_index(image_layer), index)
-        self.assertIsNone(parent.get_layer_index(self.layer))
-        UndoStack().undo()
-        self.assertEqual(parent.get_layer_index(self.layer), index)
-        self.assertIsNone(parent.get_layer_index(image_layer))

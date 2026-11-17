@@ -3,7 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtWidgets import QPushButton, QApplication, QWidget, QSizePolicy, QColorDialog
+from PySide6.QtWidgets import QPushButton, QApplication, QWidget, QSizePolicy
 
 from src.config.config_from_key import get_config_from_key
 from src.ui.modal.color_dialog import ColorDialog

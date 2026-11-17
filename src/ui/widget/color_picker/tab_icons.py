@@ -1,4 +1,4 @@
-"""Icons for the color picker's tabs, drawn in color so they read on light and dark themes."""
+"""Icons for the Color dock's Wheel, Sliders and Saved tabs, drawn in color so they read on light and dark themes."""
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QConicalGradient, QIcon, QLinearGradient, QPainter, QPen, QPixmap
 
@@ -54,7 +54,7 @@ def sliders_icon() -> QIcon:
     return QIcon(pixmap)
 
 
-def palettes_icon() -> QIcon:
+def saved_icon() -> QIcon:
     """A two by two grid of swatches."""
     pixmap, painter = _new_icon_pixmap()
     gap = ICON_SIZE * 0.08
@@ -66,21 +66,5 @@ def palettes_icon() -> QIcon:
         top = gap + (index // 2) * (side + gap)
         painter.setBrush(QColor(color))
         painter.drawRoundedRect(QRectF(left, top, side, side), side / 6, side / 6)
-    painter.end()
-    return QIcon(pixmap)
-
-
-def alpha_icon() -> QIcon:
-    """A checkerboard faded into an opaque color."""
-    pixmap, painter = _new_icon_pixmap()
-    cell = ICON_SIZE / 4
-    for row in range(4):
-        for column in range(4):
-            color = QColor(Qt.GlobalColor.white) if (row + column) % 2 == 0 else QColor(Qt.GlobalColor.lightGray)
-            painter.fillRect(QRectF(column * cell, row * cell, cell, cell), color)
-    gradient = QLinearGradient(QPointF(0, 0), QPointF(ICON_SIZE, 0))
-    gradient.setColorAt(0.0, QColor(47, 111, 219, 0))
-    gradient.setColorAt(1.0, QColor(47, 111, 219, 255))
-    painter.fillRect(QRectF(0, 0, ICON_SIZE, ICON_SIZE), gradient)
     painter.end()
     return QIcon(pixmap)

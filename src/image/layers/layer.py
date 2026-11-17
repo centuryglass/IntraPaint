@@ -1,70 +1,41 @@
 """Interface for any entity that can exist within an image layer stack."""
+from __future__ import annotations
 import datetime
+from weakref import ref
+from abc import abstractmethod, ABCMeta
 from contextlib import contextmanager
-from typing import Any, Callable, Optional, Generator
+from typing import Any, Callable, Optional, Generator, TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
 from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
-from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
-from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
+from src.undo_stack import UndoStack
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
 
-# The QCoreApplication.translate context for strings in this file
-TR_ID = 'image.layer.layer'
+if TYPE_CHECKING:
+    from src.image.ora_foreign_data import OraForeignLayerData
 
 
-def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, key, disambiguation, n)
+class _LayerMeta(ABCMeta, type(QObject)):
+    """Metaclass allowing for abstract-base support in QObjects."""
 
+    def __call__(cls, *args, **kwargs):
+        if cls.__abstractmethods__:
+            raise TypeError(f"Can't instantiate abstract class {cls.__name__} with abstract "
+                            f"method(s) {', '.join(sorted(cls.__abstractmethods__))}")
+        return super().__call__(*args, **kwargs)
 
-ERROR_TITLE_SHOW_LAYER_FAILED = _tr('Showing layer failed')
-ERROR_MESSAGE_LOCKED_PARENT = _tr('Cannot show layer "{layer_name}", parent layer "{parent_name}" is locked and'
-                                  ' hidden.')
-
-
-class LayerParent:
-    """Defines the interface expected within layer parents.  LayerParent classes should also be Layers."""
-
-    def get_layer_index(self, layer: 'Layer | int') -> Optional[int]:
-        """Returns a layer's index in the stack, or None if it isn't found."""
-        raise NotImplementedError
-
-    def get_layer_by_index(self, index: int) -> 'Layer':
-        """Returns a layer within the parent."""
-        raise NotImplementedError()
-
-    def get_layer_by_id(self, layer_id: Optional[int]) -> Optional['Layer']:
-        """Returns a layer within the parent, or None if no matching layer was found."""
-        raise NotImplementedError()
-
-    def contains(self, child_layer: 'Layer') -> bool:
-        """Returns whether this parent contains a given child layer."""
-        raise NotImplementedError()
-
-    def contains_recursive(self, child_layer: 'Layer') -> bool:
-        """Returns whether child_layer is underneath this parent in the layer tree."""
-        raise NotImplementedError()
-
-    def remove_layer(self, layer: 'Layer') -> None:
-        """Removes a layer."""
-        raise NotImplementedError()
-
-    def insert_layer(self, layer: 'Layer', index: Optional[int]) -> None:
-        """Insert a layer within this parent."""
-        raise NotImplementedError()
-
-
-class Layer(QObject):
+class Layer(QObject, metaclass=_LayerMeta):
     """Interface for any entity that can exist within an image layer stack."""
 
     name_changed = Signal(QObject, str)
+    # Sent when the layer's own visibility changes, with the layer and its new `visible` value. A group's change is
+    # also sent from every layer inside it, with the group and its value as the arguments, so a receiver that needs this
+    # layer's `shown` state reads it from the layer.
     visibility_changed = Signal(QObject, bool)
     # The rect is in the layer's own coordinates: before the transform for a TransformLayer (map it with
     # TransformLayer.map_changed_rect_to_image), and image coordinates for a LayerGroup. Region compositing redraws
@@ -87,10 +58,12 @@ class Layer(QObject):
         self._mode = CompositeMode.NORMAL
         self._pixmap = CachedData(None)
         self._id = Layer._next_layer_id
-        self._parent: Optional[LayerParent] = None
+        self._parent: Optional[ref[LayerParent]] = None
         self._locked = False
         self._z_value = 0
         self._content_change_timestamp = 0.0
+        # Another program's data from the .ora file this layer was loaded from. Only `open_raster` uses it.
+        self.ora_foreign_data: Optional[OraForeignLayerData] = None
         Layer._next_layer_id += 1
 
     # PROPERTY DEFINITIONS:
@@ -109,24 +82,24 @@ class Layer(QObject):
 
     @property
     def layer_parent(self) -> Optional[LayerParent]:
-        """Gets the layer this layer is contained within, if any."""
-        return self._parent
+        """Gets the layer this layer is contained within, if any. The link is weak, since the parent's layer list
+           already holds this layer."""
+        return None if self._parent is None else self._parent()
 
     @layer_parent.setter
     def layer_parent(self, new_parent: Optional[LayerParent]) -> None:
         """Sets or clears this layer's parent layer."""
-        if new_parent is None and self._parent is not None:
-            assert isinstance(self._parent, Layer)
-            assert not self._parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
-                                                     f'parent {self._parent.name}:{self._parent.id} before clearing'
-                                                     ' parent property.')
+        old_parent = self.layer_parent
+        if new_parent is None and old_parent is not None:
+            assert not old_parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
+                                                   f'parent {old_parent.name}:{old_parent.id} before clearing'
+                                                   ' parent property.')
         if new_parent is not None:
             assert new_parent != self
-            assert isinstance(new_parent, Layer)
             assert new_parent.contains(self), (f'Layer {self.name}:{self.id} parent set'
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
                                                'contain this one.')
-        self._parent = new_parent
+        self._parent = None if new_parent is None else ref(new_parent)
 
     @property
     def locked(self) -> bool:
@@ -151,7 +124,6 @@ class Layer(QObject):
         """Return whether any of this layer's parents are locked."""
         parent_iter = self.layer_parent
         while parent_iter is not None:
-            assert isinstance(parent_iter, Layer)
             if parent_iter.locked:
                 return True
             parent_iter = parent_iter.layer_parent
@@ -222,49 +194,44 @@ class Layer(QObject):
 
     @property
     def visible(self) -> bool:
-        """Returns whether this layer is marked as visible."""
-        if not self._visible:
-            return False
-        parent = self.layer_parent
-        if parent is not None:
-            assert isinstance(parent, Layer)
-            return parent.visible
-        return True
+        """Returns whether this layer is marked visible. A visible layer still isn't shown while a group it is in is
+        hidden (see `shown`)."""
+        return self._visible
 
     @visible.setter
     def visible(self, visible: bool):
-        """Sets whether this layer is marked as visible."""
-        if visible == self.visible:
+        """Marks this layer visible or hidden, as one undoable action that changes no other layer."""
+        if visible == self._visible:
             return
-        if visible:  # Un-hide hidden parents without making other child layers visible:
-            toggled_layers: set[Layer] = set()
-            if not self._visible:
-                toggled_layers.add(self)
-            parent = self.layer_parent
-            while parent is not None:
-                assert isinstance(parent, Layer)
-                if not parent._visible:
-                    toggled_layers.add(parent)
-                    i = 0
-                    while True:
-                        try:
-                            assert isinstance(parent, LayerParent)
-                            child = parent.get_layer_by_index(i)
-                            i += 1
-                            if child._visible and not child.locked and child != self:
-                                toggled_layers.add(child)
-                        except ValueError:
-                            break
-                assert isinstance(parent, Layer)
-                parent = parent.layer_parent
 
-            def _toggle_all():
-                for layer in toggled_layers:
-                    layer.set_visible(not layer._visible)
+        # Visibility bypasses `_apply_combinable_change`, which blocks changes to locked layers.
+        def _update(value=visible) -> None:
+            self.set_visible(value)
 
-            UndoStack().commit_action(_toggle_all, _toggle_all, 'layer.visible')
-        else:
-            self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
+        def _undo(value=not visible) -> None:
+            self.set_visible(value)
+
+        UndoStack().commit_action(_update, _undo, 'layer.visible')
+
+    @property
+    def hidden_parent(self) -> Optional[LayerParent]:
+        """Returns the nearest group this layer is in that is marked hidden, or None if every one is visible."""
+        parent_iter = self.layer_parent
+        while parent_iter is not None:
+            if not parent_iter.visible:
+                return parent_iter
+            parent_iter = parent_iter.layer_parent
+        return None
+
+    @property
+    def parent_hidden(self) -> bool:
+        """Returns whether any group this layer is in is marked hidden."""
+        return self.hidden_parent is not None
+
+    @property
+    def shown(self) -> bool:
+        """Returns whether this layer and every group it is in are marked visible, so its content is in the image."""
+        return self._visible and not self.parent_hidden
 
     def is_empty(self, bounds: Optional[QRect] = None) -> bool:
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
@@ -352,10 +319,6 @@ class Layer(QObject):
                 self.visibility_changed.emit(self, visible)
                 self.signal_content_changed(self.bounds)
 
-    def get_visible(self) -> bool:
-        """Returns whether this layer is set to visible. Unlike the visible property, this ignores parent visibility."""
-        return self._visible
-
     def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size, reporting both the old and new areas as changed."""
         if self._size != new_size:
@@ -396,37 +359,29 @@ class Layer(QObject):
 
     # Unimplemented interface:
 
+    @abstractmethod
     def get_qimage(self) -> QImage:
         """Return layer image data as an ARGB32 formatted QImage."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def set_qimage(self, image: QImage) -> None:
         """Update the layer image data."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def copy(self) -> 'Layer':
         """Returns a copy of this layer."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def restore_state(self, saved_state: Any) -> None:
         """Restore the layer state from a previous saved state."""
-        raise NotImplementedError()
-
-    def contains(self, child_layer: 'Layer') -> bool:
-        """Returns whether this layer contains a given child layer."""
-        return False
-
-    def contains_recursive(self, child_layer: 'Layer') -> bool:
-        """Returns whether this layer recursively contains a given child layer."""
-        return False
 
     # Misc. utility:
 
@@ -600,8 +555,9 @@ class Layer(QObject):
                                  last_value: Any,
                                  value_setter: Callable[[Any], None],
                                  change_type: str) -> None:
-        if value_setter != self.set_visible:
-            assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
+        # Visibility changes don't come through here: the `visible` property setter commits its own undo, so showing or
+        # hiding a locked layer is always allowed.
+        assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
         if last_value == new_value:
             return
 
@@ -611,15 +567,41 @@ class Layer(QObject):
         def _undo(value=last_value, setter=value_setter):
             setter(value)
 
-        prev_action: Optional[_UndoAction | _UndoGroup]
-        timestamp = datetime.datetime.now().timestamp()
-        merge_interval = AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
-        with UndoStack().last_action(change_type) as prev_action:
-            if isinstance(prev_action, _UndoAction) and prev_action.type == change_type \
-                    and prev_action.action_data is not None \
-                    and prev_action.action_data['layer'] == self \
-                    and timestamp - prev_action.action_data['timestamp'] < merge_interval:
-                prev_action.redo = _update
-                prev_action.redo()
-                return
-        UndoStack().commit_action(_update, _undo, change_type, {'layer': self, 'timestamp': timestamp})
+        UndoStack().commit_action(_update, _undo, change_type, merge_target=self)
+
+
+class LayerParent(Layer):
+    """Defines the interface expected within layers that can hold child layers."""
+
+    @abstractmethod
+    def get_layer_index(self, layer: 'Layer | int') -> Optional[int]:
+        """Returns a layer's index in the stack, or None if it isn't found."""
+
+    @abstractmethod
+    def get_layer_by_index(self, index: int) -> 'Layer':
+        """Returns a layer within the parent."""
+
+    @abstractmethod
+    def get_layer_by_id(self, layer_id: Optional[int]) -> Optional['Layer']:
+        """Returns a layer within the parent, or None if no matching layer was found."""
+
+    @abstractmethod
+    def contains(self, child_layer: 'Layer') -> bool:
+        """Returns whether this parent contains a given child layer."""
+
+    @abstractmethod
+    def contains_recursive(self, child_layer: 'Layer') -> bool:
+        """Returns whether child_layer is underneath this parent in the layer tree."""
+
+    @abstractmethod
+    def remove_layer(self, layer: 'Layer') -> None:
+        """Removes a layer."""
+
+    @abstractmethod
+    def insert_layer(self, layer: 'Layer', index: Optional[int]) -> None:
+        """Insert a layer within this parent."""
+
+    @property
+    @abstractmethod
+    def count(self) -> int:
+        """Returns the number of layers"""

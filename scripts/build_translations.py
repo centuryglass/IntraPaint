@@ -1,159 +1,997 @@
-"""Generate Qt translation files"""
+"""Builds IntraPaint's translation catalog and translation files, and checks them in CI.
+
+`resources/translations/main.ts` is the catalog: every translatable string, with no translations. It is extracted from
+the `_tr` and `QApplication.translate` calls under `src/` and from the config definition files, by reading them with
+`ast` and `json`. No source file is modified, and no Qt tool runs during extraction.
+
+Every other `.ts` file in `resources/translations/` is a translation into the language its `language` attribute names.
+Each is merged with the catalog: translations of strings still in the catalog are kept, new strings are added
+unfinished, and translations of removed strings are kept as vanished. Each is compiled with `lrelease` (see
+`_find_lrelease`) into the `.qm` file of the same name beside it, which IntraPaint loads at startup.
+
+Output is deterministic, so a rebuild with no source changes leaves the files untouched:
+- Contexts are sorted by name. Messages keep the order they are first found in, reading files in sorted path order.
+- Locations name the file only, so moving a string within a file changes nothing.
+
+Extraction fails, naming the file and line, on calls it can't extract:
+- `_tr`, or `translate(TR_ID, ...)`, in a file with no module-level `TR_ID`.
+- A `_tr` call whose source text or disambiguation isn't a string literal. Text built at runtime has no catalog entry.
+  Pass the variable parts as `str.format` placeholders.
+- A `_tr` call with a plural count, which the catalog doesn't support.
+- A `translate` call whose literal context is neither the file's `TR_ID` nor a config definition context.
+
+A translation file fails when it doesn't match a fresh merge, when its `.qm` file is missing or stale, or when a
+finished translation:
+- drops or adds a `{name}` or `%1` placeholder of its source.
+- has different HTML tags, entities or line breaks than its source. Tags and entities may be reordered.
+- has a different number of `&` accelerators than its source, or writes the accelerator in a form its language's
+  glossary style section doesn't allow (`ACCELERATOR_FORMS`).
+- shares an accelerator with another translation in the same context. Which strings share a menu isn't in the
+  catalog, so a context is the closest approximation. Contexts that mix menus are not caught.
+- breaks a punctuation or spacing rule of its language's style section that can be checked mechanically
+  (`STYLE_RULES`), or ends without its language's colon when its source ends with `:` (`LABEL_COLONS`).
+- lacks the chosen rendering of a glossary term its source contains. The glossaries are `doc/translation/glossary.md`
+  and the translation's language's file there (`glossary_problems`). A `glossary: not "Term"` line in the entry's
+  translator comment exempts that spelling, and fails once the source no longer contains it. A translation with no
+  glossary fails.
+
+A `.qm` file with no `.ts` file also fails. `lrelease` runs with `-nounfinished`, so an unfinished entry falls back to
+English instead of shipping its draft.
+
+`languages.json` needs one entry per translation file, keyed by the file's name without `.ts`, whose
+`machine_translated` value is true or false. The language picker labels a machine-translated language as such
+(`src/util/translation.py`). An entry with no translation file fails.
+
+Usage: python scripts/build_translations.py [--check]
+  Without options, rewrites main.ts, merges every translation file and rebuilds its .qm file.
+  --check changes nothing, and exits with status 1 if a rebuild would change any file or any problem is found.
+"""
+import argparse
+import ast
 import json
 import os
 import re
 import shutil
+import string
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import ElementTree, Element
+from dataclasses import dataclass, field
+from typing import Optional, TypeVar
+from xml.sax.saxutils import escape, quoteattr
 
-TS_PATH = 'resources/translations/main.ts'
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_DIR)
 
-python_files = []
+# pylint: disable=wrong-import-position
+from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS  # noqa: E402
 
-if os.path.isfile(TS_PATH):
-    os.remove(TS_PATH)
+TRANSLATION_DIR = 'resources/translations'
+CATALOG_NAME = 'main.ts'
+MANIFEST_NAME = 'languages.json'
+MANIFEST_MACHINE_TRANSLATED = 'machine_translated'
+GLOSSARY_DIR = 'doc/translation'
+ENGLISH_GLOSSARY_NAME = 'glossary.md'
+SOURCE_DIR = 'src'
+DEFINITION_DIR = 'resources/config'
+SOURCE_LANGUAGE = 'en_US'
+UPDATE_COMMAND = 'python scripts/build_translations.py'
 
-for root, _, files in os.walk('src'):
-    for file in files:
-        if file.endswith('.py'):
-            python_files.append(os.path.join(root, file))
+TRANSLATE_HELPER = '_tr'
+TRANSLATE_CLASSES = ('QApplication', 'QCoreApplication')
+TR_ID_NAME = 'TR_ID'
 
-tr_id_pattern = r"TR_ID = '(.*)'"
+UNFINISHED = 'unfinished'
+VANISHED = 'vanished'
+OBSOLETE = 'obsolete'
 
-translation_files = []
+_PERCENT_PLACEHOLDER = re.compile(r'%(?:\d+|n)')
+_MARKUP = re.compile(r'</?[A-Za-z][^<>]*>|&(?:[A-Za-z]+|#\d+|#x[0-9A-Fa-f]+);|\n')
+_ENTITY = re.compile(r'&(?:[A-Za-z]+|#\d+|#x[0-9A-Fa-f]+);')
+_ACCELERATOR = re.compile(r'&(\w)')
 
-for file in python_files:
-    with open(file, 'r') as py_file:
-        file_text = py_file.read()
-    match = re.search(tr_id_pattern, file_text)
-    if match is None:
-        continue
-    tr_id = match.group(1)
-    translation_files.append(file)
-    try:
-        shutil.copyfile(file, file + '_backup')
-        file_text = file_text.replace("_tr('", f"QApplication.translate('{tr_id}', '")
-        file_text = file_text.replace("_tr(\"\"\"", f"QApplication.translate('{tr_id}', \"\"\"")
-        with open(file, 'w') as py_file:
-            py_file.write(file_text)
-    except Exception as err:
-        print(err)
-
-try:
-    command = ['pylupdate6', *translation_files, '-ts', TS_PATH]
-    subprocess.run(command)
-except Exception as err:
-    print(err)
-
-
-for file in translation_files:
-    assert os.path.exists(file + '_backup')
-    shutil.move(file + '_backup', file)
-
-tree = ElementTree()
-xml_root = tree.parse(TS_PATH)
-assert xml_root.tag == 'TS'
-xml_root.set('language', 'en_US')
+# Where a language puts the `&` accelerator, keyed by language code prefix. A language not listed puts it directly
+# before any letter of the label. The forms come from each language's style section in `doc/translation/`.
+ACCELERATOR_FORMS: dict[str, re.Pattern[str]] = {
+    # Chinese: a bracketed letter at the end, like `滑块(&I)`, optionally followed by an ellipsis or colon.
+    'zh': re.compile(r'\(&\w\)(?:\.\.\.|\u2026)?[:\uff1a]?$'),
+}
 
 
-def find_or_add_context(context_name):
-    for context_elem in xml_root:
-        if not context_elem.tag == 'context':
+@dataclass
+class Message:
+    """One translatable string, and its translation when read from a translation file."""
+    context: str
+    source: str
+    comment: Optional[str] = None
+    locations: list[str] = field(default_factory=list)
+    translation: str = ''
+    translation_type: Optional[str] = UNFINISHED
+    translator_comment: Optional[str] = None
+
+    @property
+    def key(self) -> tuple[str, str, Optional[str]]:
+        """Identifies the message the way Qt's translator does."""
+        return self.context, self.source, self.comment
+
+
+class Catalog:
+    """Messages grouped by context, each group in the order its messages were added."""
+
+    def __init__(self) -> None:
+        self._contexts: dict[str, dict[tuple[str, Optional[str]], Message]] = {}
+
+    def add(self, context: str, source: str, comment: Optional[str], location: str) -> None:
+        """Adds a message, or adds a location to the message already added with the same context, source and comment."""
+        messages = self._contexts.setdefault(context, {})
+        message = messages.get((source, comment))
+        if message is None:
+            message = Message(context, source, comment)
+            messages[(source, comment)] = message
+        if location not in message.locations:
+            message.locations.append(location)
+
+    def add_message(self, message: Message) -> None:
+        """Adds a message as-is, replacing any message with the same key."""
+        self._contexts.setdefault(message.context, {})[(message.source, message.comment)] = message
+
+    def contexts(self) -> list[str]:
+        """Returns every context name, sorted."""
+        return sorted(self._contexts)
+
+    def messages(self, context: str) -> list[Message]:
+        """Returns a context's messages in the order they were added."""
+        return list(self._contexts.get(context, {}).values())
+
+    def all_messages(self) -> list[Message]:
+        """Returns every message, in output order."""
+        return [message for context in self.contexts() for message in self.messages(context)]
+
+
+def _string_literal(node: Optional[ast.expr]) -> Optional[str]:
+    """Returns the value of a string literal, or None for anything else."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+
+def _module_tr_id(tree: ast.Module) -> Optional[str]:
+    """Returns the string a module assigns to `TR_ID` at its top level, if any."""
+    for statement in tree.body:
+        if isinstance(statement, ast.Assign) and len(statement.targets) == 1 \
+                and isinstance(statement.targets[0], ast.Name) and statement.targets[0].id == TR_ID_NAME:
+            return _string_literal(statement.value)
+    return None
+
+
+def _call_argument(call: ast.Call, index: int, name: str) -> Optional[ast.expr]:
+    """Returns a call's argument by position or keyword, or None if it wasn't passed."""
+    if len(call.args) > index:
+        return call.args[index]
+    for keyword in call.keywords:
+        if keyword.arg == name:
+            return keyword.value
+    return None
+
+
+def _is_translate_call(call: ast.Call) -> bool:
+    return isinstance(call.func, ast.Attribute) and call.func.attr == 'translate' \
+        and isinstance(call.func.value, ast.Name) and call.func.value.id in TRANSLATE_CLASSES
+
+
+def extract_python(path: str, display_path: str, location: str, catalog: Catalog, problems: list[str]) -> None:
+    """Adds the strings one Python file translates, and reports the calls it can't extract.
+
+    Parameters
+    ----------
+    path: str
+        The file to read.
+    display_path: str
+        The file name to use in problem reports.
+    location: str
+        The file name to record in the catalog, relative to the translation directory.
+    catalog: Catalog
+        Receives the extracted messages.
+    problems: list[str]
+        Receives a description of each call that can't be extracted.
+    """
+    with open(path, encoding='utf-8') as source_file:
+        tree = ast.parse(source_file.read(), path)
+    tr_id = _module_tr_id(tree)
+    allowed_contexts = set(DEFINITION_TR_CONTEXTS.values())
+    if tr_id is not None:
+        allowed_contexts.add(tr_id)
+
+    def _problem(node: ast.AST, text: str) -> None:
+        line = getattr(node, 'lineno', 0)
+        problems.append(f'{display_path}:{line}: {text}')
+
+    calls = sorted((node for node in ast.walk(tree) if isinstance(node, ast.Call)),
+                   key=lambda call: (call.lineno, call.col_offset))
+    for node in calls:
+        if isinstance(node.func, ast.Name) and node.func.id == TRANSLATE_HELPER:
+            context = tr_id
+            source_arg = _call_argument(node, 0, 'key')
+            comment_arg = _call_argument(node, 1, 'disambiguation')
+            count_arg = _call_argument(node, 2, 'n')
+            if context is None:
+                _problem(node, f'{TRANSLATE_HELPER}() is called, but the file has no module-level {TR_ID_NAME}.')
+                continue
+            source = _string_literal(source_arg)
+            if source is None:
+                _problem(node, f'{TRANSLATE_HELPER}() source text is not a string literal. Pass runtime values as '
+                               'str.format placeholders.')
+                continue
+        elif _is_translate_call(node):
+            context_arg = _call_argument(node, 0, 'context')
+            source_arg = _call_argument(node, 1, 'key')
+            comment_arg = _call_argument(node, 2, 'disambiguation')
+            count_arg = _call_argument(node, 3, 'n')
+            source = _string_literal(source_arg)
+            if source is None:
+                # Translates text known only at runtime, like config labels or the `_tr` helper's own argument.
+                continue
+            if isinstance(context_arg, ast.Name) and context_arg.id == TR_ID_NAME:
+                context = tr_id
+                if context is None:
+                    _problem(node, f'translate() uses {TR_ID_NAME}, but the file has no module-level {TR_ID_NAME}.')
+                    continue
+            else:
+                context = _string_literal(context_arg)
+                if context is None:
+                    _problem(node, 'translate() has literal source text but a context that is not a string literal.')
+                    continue
+                if context not in allowed_contexts:
+                    _problem(node, f'translate() context {context!r} is neither the file\'s {TR_ID_NAME} nor a config '
+                                   'definition context.')
+                    continue
+        else:
             continue
-        name_tag = context_elem[0]
-        assert name_tag.tag == 'name'
-        if name_tag.text == context_name:
-            return context_elem
-    new_context_element = Element('context')
-    name_element = Element('name')
-    name_element.text = context_name
-    new_context_element.append(name_element)
-    xml_root.append(new_context_element)
-    return new_context_element
-
-
-def add_message(context_elem, filename, message, line=None):
-    message_elem = Element('message')
-    location_elem = Element('location', filename=filename)
-    if line is not None:
-        location_elem.set('line', str(line))
-    message_elem.append(location_elem)
-    source_elem = Element('source')
-    source_elem.text = message
-    message_elem.append(source_elem)
-    message_elem.append(Element('translation', type='unfinished'))
-    context_elem.append(message_elem)
-
-
-for content_key, json_prefix in (
-        ('a1111_config', 'a1111_setting'),
-        ('application_config', 'application_config'),
-        ('cache', 'cache_value'),
-        ('key_config', 'key_config')
-        ):
-    full_key = f'config.{content_key}'
-    src_path = f'../../src/config/{content_key}.py'
-    json_path = f'resources/config/{json_prefix}_definitions.json'
-    saved_json_path = f'../config/{json_prefix}_definitions.json'
-
-    context_elem = find_or_add_context(full_key)
-    with open(json_path, encoding='utf-8') as json_file:
-        lines = json_file.readlines()
-        json_data = json.loads('\n'.join(lines))
-
-    def _find_line_num(text):
-        for i, line in enumerate(lines):
-            if text in line:
-                return i + 1
-        return None
-    categories = set()
-    subcategories = set()
-    for entry in json_data.values():
-        if 'translate' in entry and entry['translate'] is False:
+        comment = None
+        if comment_arg is not None and not (isinstance(comment_arg, ast.Constant) and comment_arg.value is None):
+            comment = _string_literal(comment_arg)
+            if comment is None:
+                _problem(node, 'The disambiguation is not a string literal.')
+                continue
+        if count_arg is not None and not (isinstance(count_arg, ast.Constant) and count_arg.value == -1):
+            _problem(node, 'Plural forms are not supported. Format the count into the text instead.')
             continue
-        add_message(context_elem, saved_json_path, entry['label'], _find_line_num(entry['label']))
-        add_message(context_elem, saved_json_path, entry['description'], _find_line_num(entry['description']))
-        if 'options' in entry:
-            for option in entry['options']:
-                add_message(context_elem, saved_json_path, option, _find_line_num(option))
+        catalog.add(context, source, comment, location)
+
+
+def extract_definitions(path: str, display_path: str, location: str, context: str, catalog: Catalog,
+                        problems: list[str]) -> None:
+    """Adds the labels, descriptions, categories and options of one config definition file.
+
+    An entry marked `"translate": false` with no options is internal state that is never shown, so it is skipped. An
+    entry with options is always extracted: its options are stored untranslated, and widgets show their translation
+    (`Config.get_option_display`).
+    """
+    with open(path, encoding='utf-8') as json_file:
+        definitions = json.load(json_file)
+    for key, entry in definitions.items():
+        if entry.get('translate') is False and not entry.get('options'):
+            continue
         if 'category' not in entry:
-            print('missing category in ' + entry['label'])
-            sys.exit(1)
-        if 'category' in entry and entry['category'] not in categories:
-            add_message(context_elem, saved_json_path, entry['category'], _find_line_num(entry['category']))
-            categories.add(entry['category'])
-        if 'subcategory' in entry and entry['subcategory'] not in categories:
-            add_message(context_elem, saved_json_path, entry['subcategory'], _find_line_num(entry['subcategory']))
-            subcategories.add(entry['subcategory'])
-
-
-# Copy sources to translations:
-for context_elem in xml_root:
-    if context_elem.tag != 'context':
-        continue
-    for message_elem in context_elem:
-        if message_elem.tag != 'message':
+            problems.append(f'{display_path}: "{key}" has no category.')
             continue
-        source_elem = message_elem[-2]
-        assert source_elem.tag == 'source'
-        source_text = source_elem.text
-        translate_elem = message_elem[-1]
-        assert translate_elem.tag == 'translation'
-        message_elem.remove(translate_elem)
-        translate_elem = Element('translation')
-        message_elem.append(translate_elem)
-        translate_elem.text = source_text
+        texts = [entry['label'], entry['description'], *entry.get('options', []), entry['category']]
+        if 'subcategory' in entry:
+            texts.append(entry['subcategory'])
+        for text in texts:
+            if isinstance(text, str) and text != '':
+                catalog.add(context, text, None, location)
 
-xml_content = ET.tostring(xml_root, encoding='utf-8').decode('utf-8')
-xml_temp = 'temp.xml'
-with open(xml_temp, 'w', encoding='utf-8') as ts_file:
-    ts_file.write('<?xml version="1.0" encoding="utf-8"?>\n')
-    ts_file.write('<!DOCTYPE TS>\n')
-    ts_file.write(xml_content)
-try:
-    subprocess.run(['xmllint', '--format', xml_temp, '-o', TS_PATH])
-except Exception:
-    if os.path.exists(xml_temp):
-        shutil.move(xml_temp, TS_PATH)
+
+def build_catalog(project_dir: str = PROJECT_DIR) -> tuple[Catalog, list[str]]:
+    """Extracts every translatable string in a project, and returns the catalog and any extraction problems."""
+    catalog = Catalog()
+    problems: list[str] = []
+    translation_dir = os.path.join(project_dir, TRANSLATION_DIR)
+
+    def _location(path: str) -> str:
+        return os.path.relpath(path, translation_dir).replace(os.sep, '/')
+
+    def _display_path(path: str) -> str:
+        return os.path.relpath(path, project_dir).replace(os.sep, '/')
+
+    python_files = []
+    for directory, _, files in os.walk(os.path.join(project_dir, SOURCE_DIR)):
+        python_files.extend(os.path.join(directory, name) for name in files if name.endswith('.py'))
+    for path in sorted(python_files, key=_display_path):
+        extract_python(path, _display_path(path), _location(path), catalog, problems)
+    for file_name, context in sorted(DEFINITION_TR_CONTEXTS.items()):
+        path = os.path.join(project_dir, DEFINITION_DIR, file_name)
+        extract_definitions(path, _display_path(path), _location(path), context, catalog, problems)
+    return catalog, problems
+
+
+def write_ts(catalog: Catalog, language: Optional[str] = None) -> str:
+    """Returns a catalog as the text of a Qt Linguist `.ts` file."""
+    language_attribute = '' if language is None else f' language={quoteattr(language)}'
+    lines = ['<?xml version="1.0" encoding="utf-8"?>',
+             '<!DOCTYPE TS>',
+             f'<TS version="2.1"{language_attribute} sourcelanguage="{SOURCE_LANGUAGE}">']
+    for context in catalog.contexts():
+        lines += ['<context>', f'    <name>{escape(context)}</name>']
+        for message in catalog.messages(context):
+            lines.append('    <message>')
+            for location in sorted(message.locations):
+                lines.append(f'        <location filename={quoteattr(location)}/>')
+            lines.append(f'        <source>{escape(message.source)}</source>')
+            if message.comment is not None:
+                lines.append(f'        <comment>{escape(message.comment)}</comment>')
+            if message.translator_comment:
+                lines.append(f'        <translatorcomment>{escape(message.translator_comment)}</translatorcomment>')
+            type_attribute = '' if message.translation_type is None else f' type="{message.translation_type}"'
+            lines.append(f'        <translation{type_attribute}>{escape(message.translation)}</translation>')
+            lines.append('    </message>')
+        lines.append('</context>')
+    lines.append('</TS>')
+    return '\n'.join(lines) + '\n'
+
+
+def read_ts(path: str) -> tuple[Optional[str], list[Message]]:
+    """Reads a `.ts` file, returning its language and its messages."""
+    root = ET.parse(path).getroot()
+    messages = []
+    for context_element in root.iter('context'):
+        context = context_element.findtext('name', '')
+        for message_element in context_element.iter('message'):
+            translation_element = message_element.find('translation')
+            messages.append(Message(
+                context=context,
+                source=message_element.findtext('source', ''),
+                comment=message_element.findtext('comment'),
+                translation='' if translation_element is None else ''.join(translation_element.itertext()),
+                translation_type=None if translation_element is None else translation_element.get('type'),
+                translator_comment=message_element.findtext('translatorcomment')))
+    return root.get('language'), messages
+
+
+def merge_translations(catalog: Catalog, existing: list[Message]) -> Catalog:
+    """Returns a copy of the catalog carrying the translations of an existing translation file.
+
+    A translation of a string that is no longer in the catalog is kept as vanished, so rewording a string doesn't
+    discard work a translator may reuse. A vanished translation whose string returns comes back unfinished.
+    """
+    previous = {message.key: message for message in existing}
+    merged = Catalog()
+    for message in catalog.all_messages():
+        old = previous.pop(message.key, None)
+        new_message = Message(message.context, message.source, message.comment, list(message.locations))
+        if old is not None:
+            new_message.translation = old.translation
+            new_message.translator_comment = old.translator_comment
+            if old.translation == '' or old.translation_type in (UNFINISHED, VANISHED, OBSOLETE):
+                new_message.translation_type = UNFINISHED
+            else:
+                new_message.translation_type = None
+        merged.add_message(new_message)
+    for old in previous.values():
+        if old.translation != '':
+            merged.add_message(Message(old.context, old.source, old.comment, [], old.translation, VANISHED,
+                                       old.translator_comment))
+    return merged
+
+
+def _placeholders(text: str) -> Optional[list[str]]:
+    """Returns the sorted `{name}` fields and `%1` markers in text, or None if its braces don't parse."""
+    found = _PERCENT_PLACEHOLDER.findall(text)
+    try:
+        for _, field_name, format_spec, conversion in string.Formatter().parse(text):
+            if field_name is not None:
+                found.append('{' + field_name + ('!' + conversion if conversion else '')
+                             + (':' + format_spec if format_spec else '') + '}')
+    except ValueError:
+        return None
+    return sorted(found)
+
+
+_LanguageValue = TypeVar('_LanguageValue')
+
+
+def _for_language(table: dict[str, _LanguageValue], language: str) -> Optional[_LanguageValue]:
+    """Returns the value of the first key of `table` that prefixes `language`, ignoring case."""
+    return next((value for prefix, value in table.items() if language.lower().startswith(prefix)), None)
+
+
+def _finished(catalog: Catalog) -> list[Message]:
+    """Returns the messages the checks apply to: those with a translation that is not vanished."""
+    return [message for message in catalog.all_messages()
+            if message.translation != '' and message.translation_type != VANISHED]
+
+
+def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
+    """Reports each translation whose placeholders differ from its source's."""
+    problems = []
+    for message in _finished(catalog):
+        expected = _placeholders(message.source)
+        actual = _placeholders(message.translation)
+        if expected is not None and actual != expected:
+            found = 'braces that do not parse' if actual is None else f'placeholders {actual}'
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has {found}, '
+                            f'expected {expected}.')
+    return problems
+
+
+def _markup(text: str) -> list[str]:
+    """Returns the sorted HTML tags, entities and line breaks of a string."""
+    return sorted(token.lower() if token != '\n' else '\\n' for token in _MARKUP.findall(text))
+
+
+def markup_problems(file_name: str, catalog: Catalog) -> list[str]:
+    """Reports each translation whose HTML tags, entities or line breaks differ from its source's."""
+    problems = []
+    for message in _finished(catalog):
+        expected, actual = _markup(message.source), _markup(message.translation)
+        if expected != actual:
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has markup '
+                            f'{actual}, expected {expected}.')
+    return problems
+
+
+def _accelerators(text: str) -> list[str]:
+    """Returns the lower-cased accelerator letters in a string, ignoring HTML entities and literal `&&`."""
+    return [letter.lower() for letter in _ACCELERATOR.findall(_ENTITY.sub('', text.replace('&&', '')))]
+
+
+def accelerator_problems(file_name: str, language: str, catalog: Catalog) -> list[str]:
+    """Reports translations that lose, add, misplace or duplicate a `&` accelerator."""
+    form = _for_language(ACCELERATOR_FORMS, language)
+    problems = []
+    used: dict[tuple[str, str], str] = {}
+    for message in _finished(catalog):
+        expected, actual = _accelerators(message.source), _accelerators(message.translation)
+        if len(expected) != len(actual):
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has '
+                            f'{len(actual)} accelerator(s), expected {len(expected)}.')
+            continue
+        if not actual:
+            continue
+        if form is not None and not form.search(message.translation):
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the accelerator is not in the '
+                            f'form {form.pattern!r} that the language\'s style section gives.')
+        for letter in actual:
+            other = used.setdefault((message.context, letter), message.source)
+            if other != message.source:
+                problems.append(f'{file_name}: [{message.context}] {message.source!r}: the accelerator &{letter} is '
+                                f'also used by {other!r}.')
+    return problems
+
+
+# CJK ideographs. Full-width punctuation is not included, so `：80` needs no space.
+_CJK = '\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff'
+
+
+@dataclass(frozen=True)
+class StyleRule:
+    """A mechanical style rule: `pattern` matches where a translation breaks it.
+
+    `problem` describes the match and `fix` says what to do.
+    """
+    pattern: re.Pattern[str]
+    problem: str
+    fix: str
+
+
+# Mechanical rules from each language's style section in `doc/translation/`, keyed by language code prefix.
+STYLE_RULES: dict[str, tuple[StyleRule, ...]] = {
+    # Chinese: full-width punctuation in sentences, and a half-width space between Chinese and Latin letters or digits.
+    # A `...` ellipsis stays half-width, as in the accelerator form.
+    'zh': (
+        StyleRule(re.compile(rf'[{_CJK}](?:[,;:!?]|\.(?!\.))'),
+                  'has half-width punctuation after Chinese text', 'Use full-width punctuation (，；：！？。).'),
+        StyleRule(re.compile(rf'[{_CJK}][A-Za-z0-9]|[A-Za-z0-9][{_CJK}]'),
+                  'has no space between Chinese text and Latin letters or digits', 'Add a half-width space.'),
+    ),
+}
+
+# The colon a translation ends with when its source ends with `:`, keyed by language code prefix. A language not
+# listed is not checked. The colons come from each language's style section in `doc/translation/`.
+LABEL_COLONS: dict[str, str] = {
+    'zh': '\uff1a',
+}
+
+
+def style_problems(file_name: str, language: str, catalog: Catalog) -> list[str]:
+    """Reports translations that break a mechanical rule of their language's style section.
+
+    The rules are `STYLE_RULES` and `LABEL_COLONS`. Each rule reports its first match in a translation only.
+    """
+    rules = _for_language(STYLE_RULES, language) or ()
+    colon = _for_language(LABEL_COLONS, language)
+    problems = []
+    for message in _finished(catalog):
+        prefix = f'{file_name}: [{message.context}] {message.source!r}: the translation'
+        for rule in rules:
+            found = rule.pattern.search(message.translation)
+            if found is not None:
+                problems.append(f'{prefix} {rule.problem} at {found.group()!r}. {rule.fix}')
+        if colon is not None and message.source.rstrip().endswith(':') \
+                and not message.translation.rstrip().endswith(colon):
+            problems.append(f'{prefix} does not end with {colon!r}, as a label ending in \':\' must.')
+    return problems
+
+
+@dataclass(frozen=True)
+class Spelling:
+    """One way a glossary term is written in a source string. `whole` spellings match a whole UI string only."""
+    text: str
+    whole: bool = False
+
+
+@dataclass
+class GlossaryTerm:
+    """A term of one glossary row: its English spellings, and the renderings that translate it."""
+    spellings: list[Spelling]
+    renderings: list[str]
+
+
+@dataclass
+class GlossaryRow:
+    """One row of the glossaries: the English term cell, its terms, and the line it is on."""
+    line: int
+    cell: str
+    terms: list[GlossaryTerm]
+
+
+@dataclass
+class Glossary:
+    """A per-language glossary joined to the English one."""
+    path: str
+    rows: list[GlossaryRow]
+    kept_names: list[str]
+
+
+_GLOSSARY_LABEL = re.compile(r'\s*\(([^()"]*)\)\s*$')
+_NAMES_HEADING = 'Names kept as they are'
+_RENDERING_HEADER = 'Chosen rendering'
+_TERM_HEADERS = ('Term', 'English term')
+
+
+def parse_glossary_cell(text: str, allow_label: bool) -> list[list[Spelling]]:
+    """Parses a Term or Chosen rendering cell into items of spellings, per "Glossary format" in the process doc.
+
+    Commas outside quotes separate items and `/` outside quotes separates the spellings of one item. A quoted spelling
+    is `whole`, and its commas and slashes are literal. A trailing `(label)` is dropped when `allow_label` is set.
+
+    Raises
+    ------
+    ValueError
+        If the cell is empty, holds `—`, has an unbalanced quote or text beside a quoted spelling, or has an empty
+        item or spelling.
+    """
+    text = text.strip()
+    if allow_label and (match := _GLOSSARY_LABEL.search(text)):
+        text = text[:match.start()]
+    if not text or text == '\u2014':
+        raise ValueError('the cell is empty or holds an em dash.')
+    items: list[list[Spelling]] = [[]]
+    buffer = ''
+    quoted: Optional[str] = None
+
+    def _end_spelling() -> None:
+        nonlocal buffer, quoted
+        if quoted is not None:
+            if buffer.strip():
+                raise ValueError(f'text beside the quoted "{quoted}".')
+            spelling = Spelling(quoted, True)
+        else:
+            spelling = Spelling(buffer.strip())
+        if not spelling.text:
+            raise ValueError('an empty term or spelling.')
+        items[-1].append(spelling)
+        buffer, quoted = '', None
+
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == '"':
+            end = text.find('"', index + 1)
+            if end < 0:
+                raise ValueError('an unbalanced quote.')
+            if quoted is not None or buffer.strip():
+                raise ValueError(f'text beside the quoted "{text[index + 1:end]}".')
+            quoted = text[index + 1:end]
+            index = end
+        elif char in ',/':
+            _end_spelling()
+            if char == ',':
+                items.append([])
+        else:
+            buffer += char
+        index += 1
+    _end_spelling()
+    return items
+
+
+def _table_rows(lines: list[str]) -> list[tuple[int, list[str], list[str]]]:
+    """Returns (line number, header cells, row cells) for every body row of every Markdown table in `lines`."""
+    rows = []
+    header: Optional[list[str]] = None
+    for number, line in enumerate(lines, start=1):
+        if not line.startswith('|'):
+            header = None
+            continue
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        if header is None:
+            header = cells
+        elif not all(re.fullmatch(r':?-+:?', cell) for cell in cells):
+            rows.append((number, header, cells))
+    return rows
+
+
+def _kept_names(lines: list[str], problems: list[str], path: str) -> list[str]:
+    """Reads the names after the label of each bullet under the "Names kept as they are" heading.
+
+    A bullet continues on the following lines until a blank line or the next bullet.
+    """
+    bullets: list[tuple[int, str]] = []
+    in_bullet = False
+    in_section = False
+    for number, line in enumerate(lines, start=1):
+        if line.startswith('#'):
+            in_section = _NAMES_HEADING in line
+            in_bullet = False
+        elif not in_section:
+            continue
+        elif line.startswith('- '):
+            bullets.append((number, line[2:].strip()))
+            in_bullet = True
+        elif in_bullet and line.strip():
+            bullets[-1] = (bullets[-1][0], bullets[-1][1] + ' ' + line.strip())
+        else:
+            in_bullet = False
+    names: list[str] = []
+    for number, bullet in bullets:
+        label, colon, rest = bullet.partition(':')
+        listed = [name.strip() for name in rest.strip().rstrip('.').split(',')]
+        if not colon or not label.strip():
+            problems.append(f'{path}:{number}: a "{_NAMES_HEADING}" bullet needs the form "Label: name, name".')
+        elif not all(listed):
+            problems.append(f'{path}:{number}: an empty name in the list.')
+        else:
+            names.extend(listed)
+    return names
+
+
+def _glossary_cells(path: str, term_column: str, problems: list[str]) -> list[tuple[int, str, Optional[str]]]:
+    """Returns (line, term cell, rendering cell or None) for every row of the glossary tables in `path`."""
+    with open(path, encoding='utf-8') as glossary_file:
+        lines = glossary_file.read().splitlines()
+    cells = []
+    for number, header, row in _table_rows(lines):
+        if term_column not in header:
+            continue
+        if len(row) != len(header):
+            problems.append(f'{path}:{number}: {len(row)} cells, expected {len(header)}.')
+            continue
+        rendering_index = next((i for i, name in enumerate(header) if name.endswith(_RENDERING_HEADER)), None)
+        rendering = None if rendering_index is None else row[rendering_index]
+        cells.append((number, row[header.index(term_column)], rendering))
+    return cells
+
+
+def _parse_row_terms(path: str, number: int, cell: str, problems: list[str]) -> Optional[list[GlossaryTerm]]:
+    try:
+        items = parse_glossary_cell(cell, allow_label=True)
+    except ValueError as error:
+        problems.append(f'{path}:{number}: Term cell {cell!r}: {error}')
+        return None
+    return [GlossaryTerm(item, []) for item in items]
+
+
+def parse_english_glossary(path: str) -> tuple[list[GlossaryRow], list[str], list[str]]:
+    """Reads the Term column and the "Names kept as they are" bullets of the English glossary.
+
+    Returns
+    -------
+    rows, names, problems
+        Rows have no renderings. Problems name the file and line.
+    """
+    problems: list[str] = []
+    rows = []
+    for number, cell, _ in _glossary_cells(path, _TERM_HEADERS[0], problems):
+        terms = _parse_row_terms(path, number, cell, problems)
+        if terms is not None:
+            rows.append(GlossaryRow(number, cell, terms))
+    with open(path, encoding='utf-8') as glossary_file:
+        names = _kept_names(glossary_file.read().splitlines(), problems, path)
+    return rows, names, problems
+
+
+def parse_language_glossary(path: str, english_rows: list[GlossaryRow]) -> tuple[Glossary, list[str]]:
+    """Reads a per-language glossary and joins its rows to the English rows.
+
+    Problems name the file and line: a cell that does not parse, a row with no English counterpart or one repeated, an
+    English row with no row here, and a rendering list that is neither one item nor one per term.
+    """
+    problems: list[str] = []
+    english = {row.cell: row for row in english_rows}
+    joined: dict[str, GlossaryRow] = {}
+    for number, cell, rendering_cell in _glossary_cells(path, _TERM_HEADERS[1], problems):
+        if cell not in english:
+            problems.append(f'{path}:{number}: {cell!r} is not a Term in the English glossary.')
+            continue
+        if cell in joined:
+            problems.append(f'{path}:{number}: {cell!r} is already on line {joined[cell].line}.')
+            continue
+        try:
+            items = parse_glossary_cell(rendering_cell or '', allow_label=False)
+        except ValueError as error:
+            problems.append(f'{path}:{number}: Chosen rendering cell {rendering_cell!r}: {error}')
+            continue
+        terms = english[cell].terms
+        if len(items) not in (1, len(terms)):
+            problems.append(f'{path}:{number}: {len(items)} renderings for {len(terms)} terms, expected 1 or '
+                            f'{len(terms)}.')
+            continue
+        renderings = [[spelling.text for spelling in item] for item in items]
+        joined[cell] = GlossaryRow(number, cell, [
+            GlossaryTerm(term.spellings, renderings[0] if len(renderings) == 1 else renderings[i])
+            for i, term in enumerate(terms)])
+    problems.extend(f'{path}: no row for the English term {row.cell!r} (English glossary line {row.line}).'
+                    for row in english_rows if row.cell not in joined)
+    with open(path, encoding='utf-8') as glossary_file:
+        names = _kept_names(glossary_file.read().splitlines(), problems, path)
+    return Glossary(path, [joined[row.cell] for row in english_rows if row.cell in joined], names), problems
+
+
+_SOURCE_NOISE = re.compile(r'<[^<>]*>|&(?:[A-Za-z]+|#\d+|#x[0-9A-Fa-f]+);|%(?:\d+|n)|\{[^{}]*\}')
+_WHOLE_SUFFIX = re.compile(r'(?:\.\.\.|\u2026|:|\s)+$')
+_TARGET_ACCELERATOR = re.compile(r'\(&\w\)')
+_GLOSSARY_EXEMPTION = re.compile(r'glossary:\s*not\s*"([^"]+)"')
+_CONSUMED = '\x00'
+
+
+def _glossary_source_text(source: str) -> str:
+    """Strips markup, entities, placeholders and `&` accelerators from a source string, keeping a literal `&&` as `&`."""
+    text = _SOURCE_NOISE.sub(' ', source)
+    return ' '.join(text.replace('&&', _CONSUMED).replace('&', '').replace(_CONSUMED, '&').split())
+
+
+def _glossary_target_text(text: str) -> str:
+    """Casefolds a translation or rendering and removes whitespace and accelerators, for substring matching."""
+    return ''.join(_TARGET_ACCELERATOR.sub('', text).replace('&', '').casefold().split())
+
+
+def _spelling_pattern(spelling: str) -> re.Pattern[str]:
+    """Returns a case-insensitive pattern for an English spelling on word boundaries, allowing -s, -es, -ed and -ing."""
+    words = spelling.split()
+    last = words[-1]
+    if last.endswith('e'):
+        ending = re.escape(last) + '(?:s|d)?|' + re.escape(last[:-1]) + 'ing'
+    else:
+        ending = re.escape(last) + '(?:s|es|ed|ing)?'
+    body = r'\s+'.join([*(re.escape(word) for word in words[:-1]), f'(?:{ending})'])
+    return re.compile(f'(?<![A-Za-z]){body}(?![A-Za-z])', re.IGNORECASE)
+
+
+def match_glossary_terms(source: str, rows: list[GlossaryRow]) -> list[tuple[GlossaryRow, GlossaryTerm, Spelling]]:
+    """Returns the glossary terms a source string contains, each once, in order of appearance, with the matching spelling.
+
+    A quoted spelling matches when it is the whole string, after removing markup, placeholders, `&` accelerators and a
+    trailing colon or ellipsis. A string that matches one consumes the rest of the matching, so a quoted option value
+    does not also match the words in it. Other spellings match words, longest first, and each match consumes its
+    span, so "Layer group" hides the "layer" in it.
+    """
+    text = _glossary_source_text(source)
+    whole = _WHOLE_SUFFIX.sub('', text)
+    candidates = [(row, term, spelling) for row in rows for term in row.terms for spelling in term.spellings]
+    found: list[tuple[GlossaryRow, GlossaryTerm, Spelling]] = []
+    for row, term, spelling in candidates:
+        if spelling.whole and spelling.text == whole:
+            found.append((row, term, spelling))
+    if found:
+        return found
+    seen: set[int] = set()
+    positions: dict[int, int] = {}
+    for row, term, spelling in sorted((c for c in candidates if not c[2].whole), key=lambda c: -len(c[2].text)):
+        for match in _spelling_pattern(spelling.text).finditer(text):
+            text = text[:match.start()] + _CONSUMED * (match.end() - match.start()) + text[match.end():]
+            if id(term) not in seen:
+                seen.add(id(term))
+                positions[id(term)] = match.start()
+                found.append((row, term, spelling))
+    return sorted(found, key=lambda item: positions[id(item[1])])
+
+
+def find_language_glossary(directory: str, language: str) -> Optional[str]:
+    """Returns the path of `<language>.md` in the directory, or of the file for the language's prefix (`zh.md`)."""
+    for name in (language, re.split(r'[_-]', language)[0]):
+        path = os.path.join(directory, f'{name}.md')
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def glossary_problems(file_name: str, glossary: Glossary, catalog: Catalog) -> list[str]:
+    """Reports each translation that lacks the chosen rendering of a glossary term its source contains.
+
+    A `glossary: not "Term"` line in the entry's translator comment exempts that spelling from the check. An exemption
+    whose spelling the source no longer contains is reported.
+    """
+    problems = []
+    for message in _finished(catalog):
+        target = _glossary_target_text(message.translation)
+        matches = match_glossary_terms(message.source, glossary.rows)
+        exempt = [spelling.casefold() for spelling in _GLOSSARY_EXEMPTION.findall(message.translator_comment or '')]
+        for spelling in exempt:
+            if not any(spelling == match[2].text.casefold() for match in matches):
+                problems.append(f'{file_name}: [{message.context}] {message.source!r}: the exemption '
+                                f'\'glossary: not "{spelling}"\' names a term the source does not contain.')
+        for row, term, spelling in matches:
+            if spelling.text.casefold() in exempt:
+                continue
+            if not any(_glossary_target_text(rendering) in target for rendering in term.renderings):
+                chosen = ' / '.join(term.renderings)
+                problems.append(f'{file_name}: [{message.context}] {message.source!r}: the source contains '
+                                f'{spelling.text!r} (English glossary line {row.line}), but the translation lacks '
+                                f'{chosen!r}. Use it, or exempt the term with a translator comment '
+                                f'\'glossary: not "{spelling.text}"\' and a reason.')
+    return problems
+
+
+def _find_lrelease() -> str:
+    """Locates an lrelease executable, preferring the one bundled with the PySide6 package.
+
+    A PySide6 package installed from a system package manager (e.g. Arch's `pyside6`) may not bundle lrelease,
+    unlike the PyPI wheel. Fall back to a Qt6 lrelease on PATH, such as the one Arch's `qt6-tools` package provides.
+    """
+    import PySide6  # pylint: disable=import-outside-toplevel
+    bundled = os.path.join(os.path.dirname(PySide6.__file__), 'lrelease' + ('.exe' if os.name == 'nt' else ''))
+    if os.path.isfile(bundled):
+        return bundled
+    for name in ('pyside6-lrelease', 'lrelease6', 'lrelease'):
+        found = shutil.which(name)
+        if found is not None:
+            return found
+    raise FileNotFoundError('lrelease not found: install PySide6 from PyPI (it bundles lrelease), or install Qt6\'s'
+                             ' lrelease tools (e.g. Arch\'s qt6-tools package) so lrelease6 or lrelease is on PATH.')
+
+
+def compile_qm(ts_path: str, qm_path: str) -> None:
+    """Compiles a `.ts` file into a `.qm` file with lrelease."""
+    subprocess.run([_find_lrelease(), '-silent', '-nounfinished', ts_path, '-qm', qm_path], check=True)
+
+
+def _read_bytes(path: str) -> Optional[bytes]:
+    if not os.path.isfile(path):
+        return None
+    with open(path, 'rb') as file:
+        return file.read()
+
+
+def manifest_problems(translation_dir: str, translations: list[str]) -> list[str]:
+    """Checks that `languages.json` has a valid entry for each named translation, and none for anything else."""
+    manifest_path = f'{TRANSLATION_DIR}/{MANIFEST_NAME}'
+    try:
+        with open(os.path.join(translation_dir, MANIFEST_NAME), encoding='utf-8') as file:
+            manifest = json.load(file)
+    except FileNotFoundError:
+        manifest = {}
+        if translations:
+            return [f'{manifest_path} is missing.']
+    except json.JSONDecodeError as err:
+        return [f'{manifest_path} is not valid JSON: {err}']
+    if not isinstance(manifest, dict):
+        return [f'{manifest_path} must hold a JSON object.']
+    problems = []
+    for language in translations:
+        entry = manifest.get(language)
+        if not isinstance(entry, dict) or not isinstance(entry.get(MANIFEST_MACHINE_TRANSLATED), bool):
+            problems.append(f'{manifest_path} needs an entry for {language}.ts, like '
+                            f'"{language}": {{"{MANIFEST_MACHINE_TRANSLATED}": true}}.')
+    for language in manifest:
+        if language not in translations:
+            problems.append(f'{manifest_path} has an entry for {language}, which has no {language}.ts.')
+    return problems
+
+
+def _relative_problems(project_dir: str, problems: list[str]) -> list[str]:
+    """Shortens the project directory out of problem messages that name a file."""
+    return [problem.replace(project_dir + os.sep, '') for problem in problems]
+
+
+def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str], list[str]]:
+    """Rebuilds the catalog and translation files, or only checks them.
+
+    Returns
+    -------
+    problems: list[str]
+        Errors that need a source or translation fix.
+    stale: list[str]
+        Project-relative paths of files a rebuild changes. When `check` is False they have been rewritten.
+    """
+    catalog, problems = build_catalog(project_dir)
+    stale: list[str] = []
+    translation_dir = os.path.join(project_dir, TRANSLATION_DIR)
+
+    def _update(relative_path: str, content: bytes) -> None:
+        path = os.path.join(translation_dir, relative_path)
+        current = _read_bytes(path)
+        if current is not None and relative_path.endswith('.ts'):
+            # A Windows checkout may have converted line endings.
+            current = current.replace(b'\r\n', b'\n')
+        if current == content:
+            return
+        stale.append(f'{TRANSLATION_DIR}/{relative_path}')
+        if not check:
+            with open(path, 'wb') as file:
+                file.write(content)
+
+    _update(CATALOG_NAME, write_ts(catalog).encode('utf-8'))
+
+    file_names = sorted(os.listdir(translation_dir))
+    translations = [os.path.splitext(name)[0] for name in file_names if name.endswith('.ts') and name != CATALOG_NAME]
+    problems.extend(manifest_problems(translation_dir, translations))
+    glossary_dir = os.path.join(project_dir, *GLOSSARY_DIR.split('/'))
+    english_rows: list[GlossaryRow] = []
+    if translations:
+        english_path = os.path.join(glossary_dir, ENGLISH_GLOSSARY_NAME)
+        if os.path.isfile(english_path):
+            english_rows, _, english_problems = parse_english_glossary(english_path)
+            problems.extend(_relative_problems(project_dir, english_problems))
+            if english_problems:
+                english_rows = []
+        else:
+            problems.append(f'{GLOSSARY_DIR}/{ENGLISH_GLOSSARY_NAME} is missing.')
+    for file_name in file_names:
+        stem, extension = os.path.splitext(file_name)
+        if extension == '.qm' and f'{stem}.ts' not in file_names:
+            problems.append(f'{TRANSLATION_DIR}/{file_name} has no {stem}.ts to build it from. Remove it.')
+        if extension != '.ts' or file_name == CATALOG_NAME:
+            continue
+        language, existing = read_ts(os.path.join(translation_dir, file_name))
+        if not language:
+            problems.append(f'{TRANSLATION_DIR}/{file_name} has no language attribute.')
+            continue
+        merged = merge_translations(catalog, existing)
+        problems.extend(placeholder_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
+        problems.extend(markup_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
+        problems.extend(accelerator_problems(f'{TRANSLATION_DIR}/{file_name}', language, merged))
+        problems.extend(style_problems(f'{TRANSLATION_DIR}/{file_name}', language, merged))
+        glossary_path = find_language_glossary(glossary_dir, language)
+        if glossary_path is None:
+            problems.append(f'{TRANSLATION_DIR}/{file_name}: no glossary {GLOSSARY_DIR}/{language}.md for {language}.')
+        elif english_rows:
+            glossary, glossary_parse_problems = parse_language_glossary(glossary_path, english_rows)
+            problems.extend(_relative_problems(project_dir, glossary_parse_problems))
+            if not glossary_parse_problems:
+                problems.extend(glossary_problems(f'{TRANSLATION_DIR}/{file_name}', glossary, merged))
+        ts_text = write_ts(merged, language)
+        _update(file_name, ts_text.encode('utf-8'))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_ts = os.path.join(temp_dir, file_name)
+            temp_qm = os.path.join(temp_dir, f'{stem}.qm')
+            with open(temp_ts, 'w', encoding='utf-8') as ts_file:
+                ts_file.write(ts_text)
+            compile_qm(temp_ts, temp_qm)
+            qm_content = _read_bytes(temp_qm)
+            assert qm_content is not None
+        _update(f'{stem}.qm', qm_content)
+    return problems, stale
+
+
+def main() -> int:
+    """Runs the build or check, prints what it found, and returns the exit status."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument('--check', action='store_true', help='change nothing, and fail if anything is stale')
+    args = parser.parse_args()
+    problems, stale = build(check=args.check)
+    for problem in problems:
+        print(problem)
+    if args.check and stale:
+        print('Out of date: ' + ', '.join(stale))
+        print(f'Run `{UPDATE_COMMAND}` and commit the result.')
+    elif stale:
+        print('Updated: ' + ', '.join(stale))
+    if problems:
+        print(f'{len(problems)} translation problem(s).')
+    return 1 if problems or (args.check and stale) else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

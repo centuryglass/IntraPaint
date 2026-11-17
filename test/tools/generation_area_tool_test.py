@@ -1,7 +1,7 @@
 """Tests the generation area tool's left-drag moves and resize handles through mouse input on the canvas."""
-from PySide6.QtCore import QPoint, QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
+from PySide6.QtGui import QKeyEvent
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.undo_stack import UndoStack
@@ -21,7 +21,6 @@ class GenerationAreaToolTestBase(ToolTestCase):
         self.image_stack.min_generation_area_size = QSize(8, 8)
         self.image_stack.max_generation_area_size = self.IMAGE_SIZE
         self.image_stack.generation_area = START_AREA
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.tool = GenerationAreaTool(self.image_stack, self.image_viewer, show_handles=self.SHOW_HANDLES)
         self.tool_controller.add_tool(self.tool)
         self.activate_tool(self.tool)
@@ -68,6 +67,27 @@ class GenerationAreaToolMoveTest(GenerationAreaToolTestBase):
         self.assertEqual(self.image_stack.generation_area, first_drag_area)
         UndoStack().undo()
         self.assertEqual(self.image_stack.generation_area, START_AREA)
+
+
+class GenerationAreaToolKeyMoveTest(GenerationAreaToolTestBase):
+    """Tests moving the area with the arrow keys."""
+
+    def _press(self, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+        self.assertTrue(self.tool.key_event(QKeyEvent(QEvent.Type.KeyPress, key, modifiers)))
+
+    def test_arrow_moves_one_pixel(self) -> None:
+        """An arrow key moves the area by one pixel."""
+        self._press(Qt.Key.Key_Left)
+        self.assertEqual(self.image_stack.generation_area, START_AREA.translated(-1, 0))
+        self._press(Qt.Key.Key_Down)
+        self.assertEqual(self.image_stack.generation_area, START_AREA.translated(-1, 1))
+
+    def test_move_more_keys_move_ten_pixels(self) -> None:
+        """Shift + arrow, the Move more keys, move the area by ten pixels."""
+        self._press(Qt.Key.Key_Right, SHIFT)
+        self.assertEqual(self.image_stack.generation_area, START_AREA.translated(10, 0))
+        self._press(Qt.Key.Key_Up, SHIFT)
+        self.assertEqual(self.image_stack.generation_area, START_AREA.translated(10, -10))
 
 
 class GenerationAreaToolHandleTest(GenerationAreaToolTestBase):

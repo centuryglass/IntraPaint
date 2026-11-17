@@ -10,14 +10,45 @@ from PySide6.QtWidgets import QToolButton, QSizePolicy
 
 from src.tools.base_tool import BaseTool
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.util.visual.geometry_utils import get_scaled_placement
 
 TOOL_ICON_SIZE = 48
-# Space between the icon and the edge of the plate drawn behind it:
+# Space between the icon and the button's edge at `TOOL_ICON_SIZE`, and the least space at smaller sizes:
+ICON_MARGIN = 8
+MIN_ICON_MARGIN = 4
+# Below `TOOL_ICON_SIZE`, the widest key hint shown, as a share of the button's width. A wider hint switches to modifier
+# symbols, then to only its shortest key combination, and stays hidden if it is still too wide:
+MAX_KEY_HINT_SHARE = 0.7
+# Space between the icon and the edge of the plate drawn behind it, at most:
 PLATE_MARGIN = 4
 PLATE_RADIUS = 7.0
 # The active plate's ink shadow drops this far below it. It has to fit inside the button's margin around the icon:
 PLATE_SHADOW_OFFSET = 2
+
+
+def draw_plate_for_state(painter: QPainter, palette: QPalette, plate: QRectF, active: bool, down: bool,
+                         hovered: bool) -> None:
+    """Draws the plate behind a button's icon: raised accent with an ink shadow when active, otherwise a lighter plate
+    while pressed or hovered, otherwise nothing. The shadow drops `PLATE_SHADOW_OFFSET` below `plate`."""
+    ink = palette.color(QPalette.ColorRole.Shadow)
+    if active:
+        _draw_plate(painter, plate.translated(0, PLATE_SHADOW_OFFSET), ink, ink)
+        _draw_plate(painter, plate, palette.color(QPalette.ColorRole.Highlight), ink)
+    elif down:
+        _draw_plate(painter, plate, palette.color(QPalette.ColorRole.Button), ink)
+    elif hovered:
+        _draw_plate(painter, plate, palette.color(QPalette.ColorRole.Midlight), ink)
+
+
+def _draw_plate(painter: QPainter, plate: QRectF, fill: QColor, outline: QColor) -> None:
+    """Draws a rounded plate with a 1px outline inside `plate`."""
+    painter.save()
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(outline, 1))
+    painter.setBrush(fill)
+    painter.drawRoundedRect(plate.adjusted(0.5, 0.5, -0.5, -0.5), PLATE_RADIUS, PLATE_RADIUS)
+    painter.restore()
 
 
 class ToolButton(QToolButton):
@@ -35,10 +66,12 @@ class ToolButton(QToolButton):
         label_text = connected_tool.label
         self._key_hint = KeyHintLabel(None, connected_tool.get_activation_config_key(), parent=self)
         self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self._key_hint.setMinimumSize(self._key_hint.sizeHint())
-        self.setToolTip(label_text)
+        set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key(),
+                             description=connected_tool.get_tooltip_text())
         self._icon_bounds = QRect()
+        self._plate_margin = PLATE_MARGIN
+        self._edge_length = TOOL_ICON_SIZE
+        self._show_key_hint = True
         self._active = False
         self.clicked.connect(self._activate_tool)
 
@@ -47,23 +80,61 @@ class ToolButton(QToolButton):
         """Accesses the tool connected to this button."""
         return self._tool
 
+    def set_edge_length(self, length: int, show_key_hint: bool = False) -> None:
+        """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default, and
+        whether the key hint shows in its corner.
+
+        Below `TOOL_ICON_SIZE`, the icon moves toward the opposite corner to make room for the key hint. A key hint
+        wider than `MAX_KEY_HINT_SHARE` of the button shows modifiers as symbols, then only its shortest key
+        combination, and stays hidden if it is still too wide. The tooltip keeps listing every key.
+        """
+        self._edge_length = length
+        self._show_key_hint = show_key_hint
+        self.setFixedSize(length, length)
+        self.updateGeometry()
+        self.resizeEvent(None)
+
     def sizeHint(self) -> QSize:
-        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
-        return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
+        """Returns a square of the button's edge length, `TOOL_ICON_SIZE` unless `set_edge_length` changed it."""
+        return QSize(self._edge_length, self._edge_length)
 
     def minimumSizeHint(self) -> QSize:
-        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
+        """Returns the same size as `sizeHint`."""
         return self.sizeHint()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
-        self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), 8)
+        edge = min(self.width(), self.height())
+        margin = ICON_MARGIN if edge >= TOOL_ICON_SIZE else max(MIN_ICON_MARGIN, edge // 6 + 1)
+        self._plate_margin = min(PLATE_MARGIN, margin - 1)
+        self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), margin)
+        if edge >= TOOL_ICON_SIZE:
+            self._key_hint.set_compact(False)
+            self._key_hint.set_shortest_only(False)
+            self._place_key_hint()
+            self._key_hint.setVisible(self._show_key_hint)
+            return
+        max_hint_width = round(edge * MAX_KEY_HINT_SHARE)
+        self._key_hint.set_compact(False)
+        self._key_hint.set_shortest_only(False)
+        if self._key_hint.sizeHint().width() > max_hint_width:
+            self._key_hint.set_compact(True)
+        if self._key_hint.sizeHint().width() > max_hint_width:
+            self._key_hint.set_shortest_only(True)
+        hint_size = self._place_key_hint()
+        self._key_hint.setVisible(self._show_key_hint and hint_size.width() <= max_hint_width)
+        if self._key_hint.isVisibleTo(self):
+            # The icon gives up half the key hint's height, so the hint covers only the icon's corner:
+            side = edge - MIN_ICON_MARGIN - hint_size.height() // 2
+            self._plate_margin = MIN_ICON_MARGIN - 1
+            self._icon_bounds = QRect(MIN_ICON_MARGIN, MIN_ICON_MARGIN, side, side)
+
+    def _place_key_hint(self) -> QSize:
+        """Moves the key hint into the bottom right corner at its size hint, returning that size."""
         hint_size = self._key_hint.sizeHint()
-        width = hint_size.width()
-        height = hint_size.height()
-        x = self.width() - width
-        y = self.height() - height
-        self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))
+        corner = QPoint(self.width() - hint_size.width(), self.height() - hint_size.height())
+        self._key_hint.setGeometry(QRect(corner, hint_size))
+        return hint_size
 
     @property
     def is_active(self) -> bool:
@@ -84,24 +155,7 @@ class ToolButton(QToolButton):
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the icon on an accent plate if its tool is active, or a lighter plate while hovered or pressed."""
         painter = QPainter(self)
-        palette = self.palette()
-        ink = palette.color(QPalette.ColorRole.Shadow)
-        plate = QRectF(self._icon_bounds.adjusted(-PLATE_MARGIN, -PLATE_MARGIN, PLATE_MARGIN, PLATE_MARGIN))
-        if self.is_active:
-            self._draw_plate(painter, plate.translated(0, PLATE_SHADOW_OFFSET), ink, ink)
-            self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Highlight), ink)
-        elif self.isDown():
-            self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Button), ink)
-        elif self.underMouse():
-            self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Midlight), ink)
+        margin = self._plate_margin
+        plate = QRectF(self._icon_bounds.adjusted(-margin, -margin, margin, margin))
+        draw_plate_for_state(painter, self.palette(), plate, self.is_active, self.isDown(), self.underMouse())
         self._icon.paint(painter, self._icon_bounds)
-
-    @staticmethod
-    def _draw_plate(painter: QPainter, plate: QRectF, fill: QColor, outline: QColor) -> None:
-        """Draws a rounded plate with a 1px outline inside `plate`."""
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(outline, 1))
-        painter.setBrush(fill)
-        painter.drawRoundedRect(plate.adjusted(0.5, 0.5, -0.5, -0.5), PLATE_RADIUS, PLATE_RADIUS)
-        painter.restore()

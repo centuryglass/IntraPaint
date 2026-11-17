@@ -2,63 +2,60 @@
   "minimum": {
     "problems": [],
     "size": [
-      268,
-      179
+      266,
+      155
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QLabel 'Layer mode:' is 58x25, minimum 72x17",
-      "squeezed: QComboBox is 58x25, minimum 123x25",
-      "clipped: QScrollArea shows 125x146 of 250x146",
-      "clipped: QScrollArea/QWidget[0] shows 124x144 of 248x144",
-      "squeezed: QWidget is 116x31, minimum 192x31",
-      "squeezed: QWidget/QToolButton[0] is 20x31, minimum 32x31",
-      "squeezed: QWidget/QToolButton[1] is 19x31, minimum 32x31",
-      "squeezed: QWidget/QToolButton[2] is 19x31, minimum 32x31",
-      "squeezed: QWidget/QToolButton[3] is 20x31, minimum 32x31",
-      "squeezed: QWidget/QToolButton[4] is 19x31, minimum 32x31",
-      "squeezed: QWidget/QToolButton[5] is 19x31, minimum 32x31"
+      "squeezed: QWidget[1] is 111x31, minimum 224x31",
+      "squeezed: QWidget[1]/QToolButton 'New' is 16x31, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Group' is 16x31, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Duplicate' is 16x31, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Up' is 16x31, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Down' is 16x31, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Merge' is 15x31, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Delete' is 16x31, minimum 32x31"
     ],
     "size": [
-      134,
-      264
+      133,
+      261
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      279,
-      264
+      373,
+      261
     ]
   },
   "short": {
     "problems": [
-      "overlap: QScrollArea and QWidget share 261x13",
-      "squeezed: QLabel 'Opacity:' is 49x14, minimum 49x17",
-      "squeezed: QSlider is 158x14, minimum 12x18",
-      "squeezed: QDoubleSpinBox is 54x14, minimum 54x26",
-      "squeezed: QLabel 'Layer mode:' is 131x13, minimum 72x17",
-      "squeezed: QComboBox is 130x13, minimum 123x25",
-      "clipped: QScrollArea shows 261x41 of 261x61",
-      "clipped: QScrollArea/QWidget[0] shows 259x40 of 259x59",
-      "squeezed: QWidget is 261x13, minimum 192x31",
-      "squeezed: QWidget/QToolButton[0] is 32x13, minimum 32x31",
-      "squeezed: QWidget/QToolButton[1] is 32x13, minimum 32x31",
-      "squeezed: QWidget/QToolButton[2] is 32x13, minimum 32x31",
-      "squeezed: QWidget/QToolButton[3] is 32x13, minimum 32x31",
-      "squeezed: QWidget/QToolButton[4] is 32x13, minimum 32x31",
-      "squeezed: QWidget/QToolButton[5] is 32x13, minimum 32x31"
+      "squeezed: PanelHeader is 351x12, minimum 62x24",
+      "clipped: PanelHeader/_IconLabel shows 18x12 of 18x18",
+      "squeezed: PanelHeader/ElidedLabel 'Layers' is 40x12, minimum 1x17",
+      "squeezed: PanelHeader/QWidget is 251x12, minimum 1x17",
+      "squeezed: PanelHeader/QWidget/QLabel '7 layers' is 251x12, minimum 46x17",
+      "clipped: PanelHeader/GlyphButton[1] shows 24x12 of 24x24",
+      "squeezed: QScrollArea is 351x12, minimum 59x59",
+      "squeezed: QWidget[1] is 351x12, minimum 224x31",
+      "squeezed: QWidget[1]/QToolButton 'New' is 32x12, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Group' is 32x12, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Duplicate' is 32x12, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Up' is 32x12, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Down' is 32x12, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Merge' is 32x12, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton 'Delete' is 32x12, minimum 32x31"
     ],
     "size": [
-      279,
-      89
+      373,
+      77
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      279,
+      373,
       1200
     ]
   },
@@ -66,7 +63,7 @@
     "problems": [],
     "size": [
       1600,
-      264
+      261
     ]
   }
 }

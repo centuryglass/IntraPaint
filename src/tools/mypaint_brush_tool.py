@@ -11,11 +11,14 @@ from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
 from src.image.layers.image_stack import ImageStack
+from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MyPaintBrushToolPanel
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
+from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
 logger = logging.getLogger(__name__)
@@ -46,6 +49,7 @@ class MyPaintBrushTool(BrushTool):
         self._control_panel: Optional[MyPaintBrushToolPanel] = None
         self._active = False
         self._drawing = False
+        self.crosshair_variant = CrosshairVariant.BRUSH
 
         # Load brush and size from cache
         cache = Cache()
@@ -68,6 +72,8 @@ class MyPaintBrushTool(BrushTool):
         def set_active_brush(new_brush_path: str) -> None:
             """Update the active MyPaint brush when it changes in cache."""
             self.brush_path = new_brush_path
+            if self._control_panel is not None:
+                self._control_panel.refresh_dynamics()
         cache.connect(self, Cache.MYPAINT_BRUSH, set_active_brush)
         self.update_brush_cursor()
 
@@ -82,8 +88,15 @@ class MyPaintBrushTool(BrushTool):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
         if self._control_panel is None:
-            self._control_panel = MyPaintBrushToolPanel()
+            self._control_panel = MyPaintBrushToolPanel(self.mypaint_brush)
         return self._control_panel
+
+    @property
+    def mypaint_brush(self) -> MyPaintBrush:
+        """Returns the MyPaint brush whose settings the control panel edits."""
+        brush = self.brush
+        assert isinstance(brush, MyPaintLayerBrush)
+        return brush.brush
 
     @property
     def brush_path(self) -> Optional[str]:

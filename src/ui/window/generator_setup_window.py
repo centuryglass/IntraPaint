@@ -62,8 +62,6 @@ class GeneratorSetupWindow(QWidget):
         self._detail_panel_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
         self._layout.addWidget(self._detail_panel, stretch=50)
 
-        self._title_layout = QHBoxLayout()
-        self._title_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
         self._preview_image = ImageWidget(QImage())
         self._preview_title = QLabel('', parent=self)
         self._preview_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -103,7 +101,7 @@ class GeneratorSetupWindow(QWidget):
         self._generator_list_widgets: list[_GeneratorWidget] = []
         self._selected_generator: Optional[ImageGenerator] = None
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
         """Make sure text doesn't need horizontal scrolling"""
         inner_width = self._detail_panel.width() - SCROLL_CONTENT_MARGIN
         for scroll_widget in (self._description, self._setup, self._status):
@@ -146,8 +144,8 @@ class GeneratorSetupWindow(QWidget):
                 self._update_status_text(ACTIVE_STATUS_TEXT)
         elif generator.is_available():
             self._update_status_text(AVAILABLE_STATUS_TEXT)
-        elif self._status.toPlainText() == '':
-            UNAVAILABLE_STATUS_TEXT.format(error_reason=UNKNOWN_ERROR_REASON)
+        else:
+            self._update_status_text(UNAVAILABLE_STATUS_TEXT.format(error_reason=UNKNOWN_ERROR_REASON))
 
     def mark_active_generator(self, generator: ImageGenerator) -> None:
         """Set which generator the window should show as active."""
@@ -204,6 +202,6 @@ class _GeneratorWidget(QPushButton):
         self._active = is_active
         self._update_text_formatting()
 
-    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mousePressEvent(self, _event: Optional[QMouseEvent]) -> None:
         """Selects this item's generator to show details"""
         self.set_selected(True)

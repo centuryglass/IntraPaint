@@ -8,30 +8,40 @@
 
 All three assertions are also available as IntraPaintTestCase methods.
 
+`press_key` sends a key press the way a window receives one, so `HotkeyFilter` bindings handle it.
+
 Updating a golden image or snapshot: run the failing test, check the `*_tested.png` or `*_tested.json` it wrote next
 to the committed file, then replace the committed file with it. A test that passes deletes any `*_tested` file left
 over from an earlier failure.
 """
 import difflib
+import importlib
 import json
 import os
+import pkgutil
+import sys
 import tempfile
 import unittest
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+from unittest.mock import MagicMock
 
 import numpy as np
-from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, Qt, SignalInstance
+from PySide6.QtGui import QImage, QKeyEvent, QPalette
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
+from shiboken6 import getAllValidWrappers
 
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
+from src.ui.theme import apply_appearance_config
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker
 from src.util.singleton import Singleton
+from test import qt_cycles
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_RESOURCE_DIR = os.path.join(PROJECT_ROOT, 'test', 'resources')
@@ -45,23 +55,122 @@ TESTED_SNAPSHOT_SUFFIX = '_tested.json'
 COMPARISON_FORMAT = QImage.Format.Format_ARGB32_Premultiplied
 
 
-def reset_singletons() -> None:
-    """Discards all changes to config values, undo history and app state, and all connections, hotkey bindings and
-    modifier connections held by those singletons."""
-    # pylint: disable=protected-access
-    AppConfig()._reset()
-    KeyConfig()._reset()
-    Cache()._reset()
+def apply_fixture_appearance() -> None:
+    """Applies the style, theme and font size from the app config fixture to the application."""
+    apply_appearance_config(AppConfig())
+
+
+def app_appearance() -> dict[str, Any]:
+    """Returns the application-wide font, style, stylesheet and palette, which every widget's layout depends on."""
+    app = QApplication.instance()
+    assert isinstance(app, QApplication)
+    style = app.style()
+    return {
+        'font': app.font().toString(),
+        'style': f'{type(style).__name__}({style.name()})',
+        'stylesheet': app.styleSheet(),
+        'palette': QPalette(app.palette())
+    }
+
+
+def held_input() -> list[str]:
+    """Returns the mouse buttons and keyboard modifiers the application still counts as held, by name.
+
+    `QTest` press events set this state and only a matching release clears it, so a test that presses without
+    releasing leaves it set for every later test. Listeners such as `GenerationAreaController.follow_selection` wait
+    while a button is held.
+    """
+    buttons = QApplication.mouseButtons()
+    modifiers = QApplication.keyboardModifiers()
+    held = [button.name for button in Qt.MouseButton if button != Qt.MouseButton.NoButton and button in buttons
+            and button.value & (button.value - 1) == 0]
+    held.extend(modifier.name for modifier in Qt.KeyboardModifier
+                if modifier != Qt.KeyboardModifier.NoModifier and modifier in modifiers
+                and modifier.value & (modifier.value - 1) == 0)
+    return held
+
+
+def release_held_input() -> None:
+    """Clears the held mouse buttons and keyboard modifiers by sending releases to a temporary widget."""
+    widget = QWidget()
+    widget.show()
+    try:
+        for button in Qt.MouseButton:
+            if button != Qt.MouseButton.NoButton and button in QApplication.mouseButtons():
+                QTest.mouseRelease(widget, button)
+        QTest.keyRelease(widget, Qt.Key.Key_unknown, Qt.KeyboardModifier.NoModifier)
+    finally:
+        widget.hide()
+        widget.deleteLater()
+
+
+def _reset_a1111_config() -> None:
     # A1111Config is only created when the WebUI generator connects. Creating it here would leave it in a state no
     # test expects.
     if A1111Config in Singleton._instances:
-        A1111Config()._reset()
-    UndoStack()._reset()
+        A1111Config()._reset()  # pylint: disable=protected-access
+
+
+def _reset_app_state_tracker() -> None:
+    # Constructing it only to reset it would add a QObject no test asked for.
     if AppStateTracker in Singleton._instances:
-        AppStateTracker()._reset()
+        AppStateTracker()._reset()  # pylint: disable=protected-access
+
+
+def _reset_hotkey_filter() -> None:
     # HotkeyFilter needs a QApplication to construct, and an instance that doesn't exist has no state to reset.
     if HotkeyFilter.shared_instance is not None:
-        HotkeyFilter.shared_instance._reset()
+        HotkeyFilter.shared_instance._reset()  # pylint: disable=protected-access
+
+
+# Maps each global service class (a `Singleton` metaclass user, or a class with a `shared_instance` attribute) to the
+# call that discards its test state. A new global service needs an entry, or `global_services_without_reset` reports it.
+SINGLETON_RESETS: dict[type, Callable[[], None]] = {
+    AppConfig: lambda: AppConfig()._reset(),  # pylint: disable=protected-access
+    KeyConfig: lambda: KeyConfig()._reset(),  # pylint: disable=protected-access
+    Cache: lambda: Cache()._reset(),  # pylint: disable=protected-access
+    A1111Config: _reset_a1111_config,
+    UndoStack: lambda: UndoStack()._reset(),  # pylint: disable=protected-access
+    AppStateTracker: _reset_app_state_tracker,
+    HotkeyFilter: _reset_hotkey_filter,
+}
+
+
+def reset_singletons() -> None:
+    """Discards all changes to config values, undo history and app state, and all connections, hotkey bindings and
+    modifier connections held by the global services in `SINGLETON_RESETS`."""
+    for reset in SINGLETON_RESETS.values():
+        reset()
+
+
+def global_services() -> set[type]:
+    """Returns every global service class under `src/`: each class using the `Singleton` metaclass and each class with
+    a `shared_instance` attribute.
+
+    Imports every module under `src/` to find them, since `Singleton._instances` lists only classes already
+    constructed. Modules that fail to import (missing optional dependencies) are skipped."""
+    src_dir = os.path.join(PROJECT_ROOT, 'src')
+    for module_info in pkgutil.walk_packages([src_dir], prefix='src.'):
+        if module_info.name.startswith('src.glid_3_xl'):
+            continue
+        try:
+            importlib.import_module(module_info.name)
+        except ImportError:
+            continue
+    found: set[type] = set()
+    for module_name, module in list(sys.modules.items()):
+        if not module_name.startswith('src.') or module_name.startswith('src.glid_3_xl'):
+            continue
+        for member in list(vars(module).values()):
+            if (isinstance(member, type) and member.__module__ == module_name
+                    and (isinstance(member, Singleton) or 'shared_instance' in vars(member))):
+                found.add(member)
+    return found
+
+
+def global_services_without_reset() -> set[type]:
+    """Returns the global service classes that have no entry in `SINGLETON_RESETS`."""
+    return global_services() - set(SINGLETON_RESETS)
 
 
 def parentless_widgets() -> set[QWidget]:
@@ -82,6 +191,20 @@ def delete_widgets_created_since(existing: set[QWidget]) -> None:
     for widget in parentless_widgets() - existing:
         widget.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+
+def press_key(widget: QWidget, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+    """Sends a key press to the QWindow of a widget's window, which forwards it to that window's focus widget.
+
+    `HotkeyFilter` only sees key presses sent to a QWindow, so this watches the window first. The window doesn't need
+    to be shown or focused.
+    """
+    window = widget.window()
+    window.winId()  # Creates the QWindow.
+    handle = window.windowHandle()
+    assert handle is not None
+    HotkeyFilter.instance().watch_window(handle)
+    QApplication.sendEvent(handle, QKeyEvent(QEvent.Type.KeyPress, key, modifiers))
 
 
 def tested_image_path(golden_path: str) -> str:
@@ -206,14 +329,31 @@ def assert_json_matches_snapshot(actual: Any, snapshot_path: str, msg: Optional[
     raise AssertionError(message if msg is None else f'{msg}: {message}')
 
 
+def layout_item_wrapper_count() -> int:
+    """Returns the number of live Python wrappers of layout items (`QWidgetItem`, `QSpacerItem` and the like).
+
+    Layouts are layout items too, and are not counted. Wrappers come from Python code that constructs an item, from
+    `QLayout.itemAt`, `itemAtPosition` and `takeAt`, and from `addLayout` given a filled child. A test that leaves
+    some behind ran code that wraps items it should not keep. See `test/layout_item_calls_test.py`.
+    """
+    return sum(1 for wrapper in getAllValidWrappers() if isinstance(wrapper, QLayoutItem)
+               and not isinstance(wrapper, QObject))
+
+
 class IntraPaintTestCase(unittest.TestCase):
     """Base class for IntraPaint tests, keeping tests independent of the order they run in.
 
     Config values, config connections, the undo history, app state and hotkey bindings are singletons that persist
     across tests. They're reset before each test, so it starts from the test config defaults, and again after it, so it
     can't leave state behind for tests that don't use this class. Widgets with no parent that the test created are
-    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project root during every test, since resources
-    and the config definitions load from paths relative to it.
+    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project
+    root during every test, since resources and the config definitions load from paths relative to it.
+
+    A test fails if it changes the application's font, style, stylesheet or palette without restoring them, since every
+    later test's layout depends on them. The fixture appearance is reapplied after such a test.
+
+    A test also fails if it leaves a mouse button or keyboard modifier held (`held_input`), since the state is
+    application-wide. It is released after such a test.
 
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.
     """
@@ -223,6 +363,8 @@ class IntraPaintTestCase(unittest.TestCase):
         os.chdir(PROJECT_ROOT)
         reset_singletons()
         self._existing_widgets = parentless_widgets()
+        self._layout_item_wrappers = layout_item_wrapper_count()
+        self._appearance = app_appearance()
 
     def tearDown(self) -> None:
         reset_singletons()
@@ -231,7 +373,37 @@ class IntraPaintTestCase(unittest.TestCase):
         QApplication.clipboard().clear()
         delete_widgets_created_since(self._existing_widgets)
         del self._existing_widgets
+        qt_cycles.collect()
+        leaked = layout_item_wrapper_count() - self._layout_item_wrappers
+        del self._layout_item_wrappers
+        changed_appearance = [key for key, value in app_appearance().items() if value != self._appearance[key]]
+        del self._appearance
+        if len(changed_appearance) > 0:
+            apply_fixture_appearance()
+        held = held_input()
+        if len(held) > 0:
+            release_held_input()
         super().tearDown()
+        self.assertEqual(held, [], 'The test left mouse buttons or keyboard modifiers held without releasing them')
+        self.assertLessEqual(leaked, 0, f'{leaked} layout item wrappers outlived the test (see'
+                                        f' layout_item_wrapper_count)')
+        self.assertEqual(changed_appearance, [], 'The test changed the application appearance without restoring it')
+
+    def connect_mock(self, signal: SignalInstance) -> MagicMock:
+        """Returns a MagicMock connected to `signal`, disconnected and cleared when the test ends.
+
+        Qt holds a connected mock where the garbage collector can't see it, so a mock left connected keeps every
+        argument it recorded alive for the rest of the run. A `MagicMock` is itself a reference cycle, so its recorded
+        arguments are also cleared, or the cycle check counts a recorded wrapper such as the signal's sender.
+        """
+        listener = MagicMock()
+        signal.connect(listener)
+
+        def _release() -> None:
+            signal.disconnect(listener)
+            listener.reset_mock()
+        self.addCleanup(_release)
+        return listener
 
     def assert_image_matches_golden(self, actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:
         """Asserts that an image has the same pixels as a committed golden image. See assert_image_matches_golden."""

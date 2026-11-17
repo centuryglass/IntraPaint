@@ -1,16 +1,16 @@
 """Define image saturation changes."""
-from typing import Callable, Any, Optional
+from typing import Callable, Optional
 
 from PIL import ImageEnhance
-from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_stack import ImageStack
+from src.util.parameter import Parameter, TYPE_FLOAT
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
-from src.util.parameter import Parameter, TYPE_FLOAT
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.filter.saturation'

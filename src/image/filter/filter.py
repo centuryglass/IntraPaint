@@ -1,5 +1,8 @@
-"""Generic interface for image filtering functions. Handles the process of opening modal windows to apply the filter
-and provides the information needed to add the function as a menu action."""
+"""Generic interface for image filtering functions.
+
+Handles the process of opening modal windows to apply the filter and provides the information needed to add the
+function as a menu action.
+"""
 import math
 from typing import Callable, Optional, Any
 
@@ -11,7 +14,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
-from src.image.layers.text_layer import TextLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import UndoStack
@@ -71,7 +74,7 @@ class ImageFilter:
         into account (False)."""
         return True
 
-    def radius(self, parameter_values: list[Any]) -> float:
+    def radius(self, _parameter_values: list[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         return 0.0
 
@@ -81,10 +84,11 @@ class ImageFilter:
         modal = ImageFilterModal(self.get_name(),
                                  self.get_modal_description(),
                                  self.get_parameters(),
-                                 self.get_preview_image,
+                                 self.prepare_preview,
                                  self.apply_filter,
                                  self.selection_only,
-                                 self.active_layer_only)
+                                 self.active_layer_only,
+                                 self.prepare_original_preview)
 
         def _set_active_only(active_only: bool) -> None:
             self.active_layer_only = active_only
@@ -193,6 +197,21 @@ class ImageFilter:
             QImage:
                 The new preview image, possibly downscaled to avoid excess image processing time.
         """
+        return self.prepare_preview(filter_param_values)()
+
+    def prepare_preview(self, filter_param_values: list[Any]) -> Callable[[], QImage]:
+        """
+        Set up a filter preview on the main thread, returning a function that renders it and is safe to run on a
+        worker thread. Anything that needs a QPixmap or reads UI state happens here, not in the returned function.
+        """
+        return self._prepare_render(filter_param_values)
+
+    def prepare_original_preview(self) -> Callable[[], QImage]:
+        """Like `prepare_preview`, for the same region with no filter applied."""
+        return self._prepare_render(None)
+
+    def _prepare_render(self, filter_param_values: Optional[list[Any]]) -> Callable[[], QImage]:
+        """Prepares a preview render, filtered with the given values or, with None, unfiltered."""
         bounds = self._image_stack.layer_stack.bounds
         preview_bounds = QRect(bounds)
         if self.active_layer_only:
@@ -214,7 +233,7 @@ class ImageFilter:
         preview_bounds.setHeight(min(bounds.y() + bounds.height() - preview_bounds.y(),
                                      round(change_size.height() * 1.2)))
         if preview_bounds.isEmpty():
-            return QImage()
+            return QImage
 
         preview_transform = QTransform.fromTranslate(-preview_bounds.x(), -preview_bounds.y())
         preview_image = QImage(preview_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
@@ -225,11 +244,15 @@ class ImageFilter:
 
         def apply_filter(layer: Layer, layer_image: QImage) -> QImage:
             """Apply the filter to each layer image as an intermediate step."""
-            self._filter_layer_image(filter_param_values, layer.id, layer_image)
+            if filter_param_values is not None:
+                self._filter_layer_image(filter_param_values, layer.id, layer_image)
             return layer_image
 
-        self._image_stack.render(base_image=preview_image, transform=preview_transform, image_adjuster=apply_filter)
-        return preview_image
+        def _render_preview() -> QImage:
+            self._image_stack.render(base_image=preview_image, transform=preview_transform,
+                                     image_adjuster=apply_filter)
+            return preview_image
+        return _render_preview
 
     def apply_filter(self, filter_param_values: list[Any]) -> None:
         """
@@ -242,27 +265,29 @@ class ImageFilter:
         """
         updated_layer_images: dict[int, QImage] = {}
 
-        changed_text_layers: list[TextLayer] = []
+        to_convert: list[NonDestructiveLayer] = []
         changed_parent_group: Optional[LayerGroup] = None
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
             if isinstance(active_layer, LayerGroup):
                 changed_parent_group = active_layer
-            elif isinstance(active_layer, TextLayer) and not active_layer.locked and not active_layer.parent_locked:
-                changed_text_layers.append(active_layer)
+            elif isinstance(active_layer, NonDestructiveLayer) \
+                    and not active_layer.locked and not active_layer.parent_locked:
+                to_convert.append(active_layer)
         else:
             changed_parent_group = self._image_stack.layer_stack
         if changed_parent_group is not None:
             for child_layer in changed_parent_group.recursive_child_layers:
-                if isinstance(child_layer, TextLayer) and not child_layer.locked and not child_layer.parent_locked:
-                    changed_text_layers.append(child_layer)
+                if isinstance(child_layer, NonDestructiveLayer) \
+                        and not child_layer.locked and not child_layer.parent_locked:
+                    to_convert.append(child_layer)
 
-        text_layer_names = [layer.name for layer in changed_text_layers]
-        if len(changed_text_layers) > 0 and not TextLayer.confirm_or_cancel_render_to_image(text_layer_names,
-                                                                                            ACTION_NAME_FILTER):
+        layer_names = [layer.name for layer in to_convert]
+        if len(to_convert) > 0 \
+                and not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names, ACTION_NAME_FILTER):
             return
-        for text_layer in changed_text_layers:
-            self._image_stack.replace_text_layer_with_image(text_layer)
+        for non_destructive_layer in to_convert:
+            self._image_stack.replace_layer_with_image(non_destructive_layer)
 
         def _filter_images() -> None:
             layer_images: dict[int, QImage] = {}
@@ -282,9 +307,9 @@ class ImageFilter:
 
         task = AsyncTask(_filter_images, True)
 
+        # _finish must not reference task: the task's connection holds _finish, so that would leave a reference cycle.
         def _finish() -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-            task.finish_signal.disconnect(_finish)
             if len(updated_layer_images) == 0:
                 return
             source_images: dict[int, QImage] = {}

@@ -6,13 +6,12 @@ from typing import Any, Optional
 from unittest import mock
 
 from PySide6.QtCore import Qt
-from sd_backend_client import ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
+from sd_backend_client import ParameterDef, ControlNetPreprocessor, PreprocessorParams, ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
     GenerationResult, GenerationStatus
 from sd_backend_client.api.comfyui_webservice import ComfyEndpoints, ComfyModelType
 
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs, save_value
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
@@ -62,6 +61,17 @@ OBJECT_INFO = {
         'resolution': _int_input(512, 64, 16384, 64)
     })
 }
+
+
+# The largest seed ComfyUI's samplers accept:
+MAX_COMFYUI_SEED = 2 ** 64 - 1
+
+
+def _sampler_seed(arguments: dict[str, Any]) -> int:
+    """Returns the seed of the one node in a queued workflow that has one."""
+    seeds = [node['inputs']['seed'] for node in arguments['body']['prompt'].values() if 'seed' in node['inputs']]
+    assert len(seeds) == 1, seeds
+    return seeds[0]
 
 
 class _CancelledWhileWaitingHandle(GenerationHandle):
@@ -153,7 +163,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
 
     def _set_canny_controlnet_unit(self) -> None:
         Cache().set(Cache.CONTROLNET_ARGS_0_COMFYUI,
-                    self.controlnet_unit(ControlKeyType.COMFYUI, CANNY_MODEL, self._preprocessor(CANNY_PREPROCESSOR)))
+                    self.controlnet_unit(CANNY_MODEL, self._preprocessor(CANNY_PREPROCESSOR)))
 
     def _generate_and_check(self, snapshot_name: str) -> None:
         self.run_generate()
@@ -168,6 +178,17 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         self.generator.upscale_image(self.image_stack.qimage(), UPSCALE_SIZE, self.status, self.status)
         self.assertEqual(self.status.emitted[-1].size(), UPSCALE_SIZE)
 
+    def test_batch_seeds_wrap_at_comfyui_seed_limit(self) -> None:
+        """Batches after one using the largest seed ComfyUI accepts continue from 0, and the first seed is reported."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
+        Cache().set(Cache.SEED, str(MAX_COMFYUI_SEED))
+        Cache().set(Cache.BATCH_COUNT, 3)
+        self.run_generate()
+        queued_seeds = [_sampler_seed(request.arguments) for request in self.backend.posts()
+                        if request.endpoint == ComfyEndpoints.PROMPT]
+        self.assertEqual(queued_seeds, [MAX_COMFYUI_SEED, 0, 1])
+        self.assertEqual(self.status.emitted[-1], {'seed': str(MAX_COMFYUI_SEED)})
+
     def test_txt2img(self) -> None:
         """Text to image queues one workflow per batch, with consecutive seeds and no uploads."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
@@ -179,6 +200,13 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         self._set_canny_controlnet_unit()
         self._generate_and_check('txt2img_controlnet')
 
+
+    def test_img2img_flattens_transparent_source(self) -> None:
+        """Transparent source pixels are sent composited over the generation backdrop color."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
+        self.clear_source_corner()
+        self._generate_and_check('img2img_transparent_source')
+
     def test_img2img(self) -> None:
         """Image to image uploads the generation area once and loads it in every batch's workflow."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
@@ -189,14 +217,27 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._generate_and_check('inpaint')
 
+    def test_inpaint_soft_inpainting(self) -> None:
+        """Soft inpainting samples through the DifferentialDiffusion node, with the saved strength."""
+        cache = Cache()
+        cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, True)
+        cache.set(Cache.SOFT_INPAINTING, True)
+        save_parameter_defs([ParameterDef(key='strength', display_name='Strength', default_value=1.0, min_val=0.05,
+                                          max_val=1.0, step_val=0.05)])
+        save_value('strength', 0.75)
+        self.backend.route('GET', '/object_info/DifferentialDiffusion', {'DifferentialDiffusion': {
+            'input': {'optional': {'strength': ['FLOAT', {'default': 1.0, 'min': 0.0, 'max': 1.0, 'step': 0.01}]}}}})
+        self._generate_and_check('inpaint_soft_inpainting')
+
     def test_inpaint_full_res(self) -> None:
-        """Inpainting at full resolution uploads the selection bounds cropped and scaled to the generation size."""
+        """Limited context uploads the selection bounds cropped and scaled to the generation resolution."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
 
     def test_inpaint_full_res_context_pin(self) -> None:
-        """A context pin stretches the uploaded full-res crop past the selection bounds."""
+        """A context pin stretches the uploaded context crop past the selection bounds."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
@@ -230,7 +271,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         cache.set(Cache.SD_UPSCALING_DENOISING_STRENGTH, 0.25)
         cache.set(Cache.SD_UPSCALING_STEP_COUNT, 15)
         cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS,
-                  self.controlnet_unit(ControlKeyType.COMFYUI, TILE_MODEL, self._preprocessor(TILE_PREPROCESSOR)))
+                  self.controlnet_unit(TILE_MODEL, self._preprocessor(TILE_PREPROCESSOR)))
         self._run_upscale()
         self.assert_requests_match_snapshot('upscale_stable_diffusion', replacements=self._replacements)
 
@@ -238,8 +279,8 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         """A preview queues the preprocessor alone, with the panel's parameter values, and returns its one image."""
         assert isinstance(self.generator, SDComfyUIGenerator)
         Cache().set(Cache.BATCH_SIZE, 1)
-        preprocessor = self._preprocessor(CANNY_PREPROCESSOR)
-        preprocessor.set_value('low_threshold', 80)
+        preprocessor = PreprocessorParams(typedef=self._preprocessor(CANNY_PREPROCESSOR),
+                                          parameter_values={'low_threshold': 80})
         image, mask = self.generator.get_generation_inputs()
         self.generator.load_preprocessor_preview(preprocessor, self.generator.get_gen_area_image(image),
                                                  self.generator.get_gen_area_mask(mask), self.status, self.status)

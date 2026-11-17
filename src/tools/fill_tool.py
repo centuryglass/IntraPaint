@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QBrush
+from PySide6.QtGui import QImage, QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QBrush
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -10,10 +10,12 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
+from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 from src.util.visual.image_fill import flood_fill
 from src.util.visual.text_drawing_utils import left_button_hint_text
@@ -120,11 +122,17 @@ class FillTool(BaseTool):
                     mask_painter.fillRect(QRect(QPoint(), mask.size()), fill_brush)
                 mask_painter.end()
 
-            np_image = image_data_as_numpy_8bit(layer_image)
+            # Any mask coverage fills fully; the color is composited over the layer, so translucent colors blend.
             np_mask = image_data_as_numpy_8bit(mask)
-            masked_pixels = np_mask[:, :, 3] > 0
-            alpha_mult = self._color.alpha() / 255.0
-            np_image[masked_pixels] = [self._color.blue() * alpha_mult, self._color.green() * alpha_mult, self._color.red() * alpha_mult, self._color.alpha()]
+            fill_layer = create_transparent_image(layer_image.size())
+            color_pixel = QImage(1, 1, QImage.Format.Format_ARGB32_Premultiplied)
+            color_pixel.fill(self._color)
+            premultiplied_color = image_data_as_numpy_8bit(color_pixel)[0, 0].copy()
+            image_data_as_numpy_8bit(fill_layer)[np_mask[:, :, 3] > 0] = premultiplied_color
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            painter.drawImage(0, 0, fill_layer)
+            painter.end()
             layer.image = layer_image
             return True
         return False
@@ -137,7 +145,7 @@ class FillTool(BaseTool):
             self._layer_lock_change_slot(self._layer, self._layer.locked or self._layer.parent_locked)
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer)
         should_enable = isinstance(self._layer, ImageLayer) and not locked
         if self._control_panel is not None:
             self._control_panel.setEnabled(should_enable)

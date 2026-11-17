@@ -3,21 +3,21 @@ from argparse import Namespace
 from typing import Optional, Any
 
 import requests
-from PySide6.QtCore import Signal, QThread, QSize
+from PySide6.QtCore import QThread, QSize, SignalInstance
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QInputDialog
+from PySide6.QtWidgets import QApplication, QInputDialog, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.glid3_xl_generator import GLID_PREVIEW_IMAGE, GLID_GENERATOR_DESCRIPTION
+from src.controller.image_generation.glid3_xl_generator import GLID_PREVIEW_IMAGE, GLID_GENERATOR_DESCRIPTION, \
+    GLID_SETUP_PREREQS, GLID_DEP_SETUP
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
-from src.util.shared_constants import EDIT_MODE_INPAINT, URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE
+from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_text import URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, URL_REQUEST_TITLE
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 from src.util.visual.text_drawing_utils import rich_text_code_block
 
@@ -31,71 +31,24 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 DEFAULT_GLID_URL = 'http://localhost:5555'
-GLID_CONFIG_CATEGORY = QApplication.translate('application_config', 'GLID-3-XL')
+GLID_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'GLID-3-XL')
 GLID_WEB_GENERATOR_NAME = _tr('GLID-3-XL image generation server')
-GLID_WEB_GENERATOR_SETUP = _tr("""
-<h2>GLID-3-XL server setup</h2>
-<p>
-     Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the
-    setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this
-    generator to work.
-</p>
-<h3>Prerequisites:</h3>
-<p>
-    Running GLID-3-XL requires a NVIDIA GPU with at least 8GB of VRAM. Other GPUs or slightly less memory might work,
-    but are not tested. You will also need to install the following software:
-</p>
-<ul>
-    <li><a href="https://www.python.org/">Python3</a></li>
-    <li><a href="https://git-scm.com/">Git</a></li>
-    <li>
-        <a href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> (if using a NVIDIA graphics card)
-    </li>
-    <li><a href="https://www.anaconda.com/download/">Anaconda</a></li>
-</ul>
-<p>
-    Depending on your system, you may need to take extra steps to add Python, Git, and Anaconda to your system path, or
-    perform other configuration steps. Refer to the sites linked above for full documentation.
-</p>
 
+GLID_WEB_SETUP_HEADER = _tr('<h2>GLID-3-XL server setup</h2>')
+GLID_WEB_CONDA_SETUP = _tr("""
 <h3>GLID-3-XL server setup:</h3>
 <ol>
     <li>
         If you are running the pre-packaged version of IntraPaint, or if you want to manage the GLID-3-XL server
         separately, run the following to get the required code and set up a new anaconda virtual environment:
-        """ + rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
-                                   'conda create -n intrapaint-server\n'
-                                   'conda activate intrapaint-server\n'
-                                   'conda install pip\n'
-                                   'pip install -r requirements.txt') + """
+        {commands}
     </li>
-    <li> 
-        Next, install the appropriate versions of torch and torchvision using the commands found
-        <a href="https://pytorch.org/get-started/locally/">here</a>.
-    </li>
-    <li>
-        Run the following commands to install additional dependencies:
-        """ + rich_text_code_block('pip install -r requirements-glid.txt\n'
-                                   'git clone https://github.com/CompVis/taming-transformers.git\n'
-                                   'git clone https://github.com/CompVis/latent-diffusion.git') + """
-    </li>
-    <li>
-        Download one or more GLID-3-XL inpainting models, and place them in the "IntraPaint/models/" directory.
-        These are the main options available:
-        <ul>
-            <li>
-                <a href="https://dall-3.com/models/glid-3-xl/">inpaint.pt</a>: The original GLID-3-XL inpainting model.
-            </li>
-            <li>
-                <a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt">ongo.pt</a>: Trained by
-                LAION on paintings from the Wikiart dataset.
-            </li>
-            <li>
-                <a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt">erlich.pt</a>:
-                Trained on the LAION large logo dataset.
-            </li>
-        </ul>
-    </li>
+""").format(commands=rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
+                                          'conda create -n intrapaint-server\n'
+                                          'conda activate intrapaint-server\n'
+                                          'conda install pip\n'
+                                          'pip install -r requirements.txt'))
+GLID_WEB_SERVER_STARTUP = _tr("""
     <li>
         Start the server by running "<code>python IntraPaint_server.py</code>". If you are using a model other than the
         default inpaint.pt, instead run "<code>python Intrapaint_server.py --model_path models/model.pt</code>", replacing
@@ -113,6 +66,8 @@ GLID_WEB_GENERATOR_SETUP = _tr("""
     the ngrok service formerly used to handle external connections. 
 </p>
 """)
+GLID_WEB_GENERATOR_SETUP = GLID_WEB_SETUP_HEADER + GLID_SETUP_PREREQS + GLID_WEB_CONDA_SETUP + GLID_DEP_SETUP \
+    + GLID_WEB_SERVER_STARTUP
 
 # TODO: Colab notebook support is currently broken. The server starts successfully, but flask-ngrok is no longer
 #       working in Colab. Find a new method to provide a temporary external URL for a Colab Flask server.
@@ -254,7 +209,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), GLID_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = GlidPanel()
@@ -262,14 +217,14 @@ class Glid3WebserviceGenerator(ImageGenerator):
         return self._control_panel
 
     def generate(self,
-                 status_signal: Signal,
+                 status_signal: SignalInstance,
                  source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        status_signal : Signal[str]
+        status_signal : SignalInstance[str]
             Signal to emit when status updates are available.
         source_image : QImage
             Image used as a basis for the edited image.

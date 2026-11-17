@@ -2,7 +2,7 @@
 
 Each builder reads `Cache` and `AppConfig` when called and returns a new model, so a caller that runs it on the main
 thread can hand the result to a worker thread unchanged. Images are passed in, already cropped and scaled to the
-generation size.
+generation resolution.
 """
 from typing import Optional
 
@@ -14,10 +14,15 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, load_request_units
 from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import load_parameter_defs, request_values
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 
 # `Cache.COMFYUI_MODEL_CONFIG` value that lets the server pick a config file matching the model name.
 COMFYUI_MODEL_CONFIG_AUTO = 'auto'
+
+# WebUI scheduler value that lets the server choose a scheduler for the sampler. `DiffusionParams.scheduler` defaults to
+# 'normal', which would override the sampler's own default.
+WEBUI_SCHEDULER_AUTOMATIC = 'Automatic'
 
 # Seam-fix padding for WebUI "Ultimate SD Upscale" requests. ComfyUI requests use the library default.
 WEBUI_SEAM_FIX_PADDING = 32
@@ -45,12 +50,12 @@ def _shared_params(params: DiffusionParams, edit_mode: str, source_image: Option
     params.batch_size = cache.get(Cache.BATCH_SIZE)
     params.steps = cache.get(Cache.SAMPLING_STEPS)
     params.cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
-    generation_size = cache.get(Cache.GENERATION_SIZE)
-    params.width = generation_size.width()
-    params.height = generation_size.height()
+    generation_resolution = cache.get(Cache.GENERATION_SIZE)
+    params.width = generation_resolution.width()
+    params.height = generation_resolution.height()
     params.prompt = cache.get(Cache.PROMPT)
     params.negative_prompt = cache.get(Cache.NEGATIVE_PROMPT)
-    params.seed = int(cache.get(Cache.SEED))
+    params.seed = cache.get(Cache.SEED)
     sampler = cache.get(Cache.SAMPLING_METHOD)
     if sampler != '':
         params.sampler = sampler
@@ -63,7 +68,12 @@ def _shared_params(params: DiffusionParams, edit_mode: str, source_image: Option
     if edit_mode == EDIT_MODE_INPAINT:
         assert mask is not None
         params.mask = qimage_to_pil(mask)
-    params.controlnet_units = load_request_units(control_keys, source_image, uses_init_image)
+        params.mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
+        if cache.get(Cache.SOFT_INPAINTING) and cache.get(Cache.SOFT_INPAINTING_AVAILABLE):
+            params.soft_inpainting = True
+            params.soft_inpainting_params = request_values(load_parameter_defs())
+    params.controlnet_units = load_request_units(control_keys, source_image, uses_init_image,
+                                                 edit_mode == EDIT_MODE_INPAINT)
 
 
 def build_comfy_params(edit_mode: str, source_image: Optional[QImage] = None, mask: Optional[QImage] = None,
@@ -79,8 +89,8 @@ def build_comfy_params(edit_mode: str, source_image: Optional[QImage] = None, ma
         Generation area content. Required except for txt2img, where it is used only as the control image of units set
         to `CONTROLNET_REUSE_IMAGE_CODE`.
     mask: Optional[QImage]
-        Inpainting mask, opaque where content changes. Required for inpainting. ComfyUI doesn't blur masks, so apply
-        `AppConfig.MASK_BLUR` before passing it. Don't invert it: the library converts it for ComfyUI.
+        Inpainting mask, opaque where content changes. Required for inpainting. The library applies
+        `AppConfig.MASK_BLUR`, so pass it unblurred. Don't invert it: the library converts it for ComfyUI.
     seed: Optional[int]
         Seed to use in place of `Cache.SEED`, such as the next seed of a multi-batch request.
 
@@ -112,7 +122,8 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
                      mask: Optional[QImage] = None) -> DiffusionRequestBody:
     """Returns a WebUI request body for a txt2img, img2img or inpainting request.
 
-    The body leaves `sd_model_name` empty: the WebUI generator selects the model through the server's settings.
+    The body leaves `sd_model_name` empty, since the WebUI generator selects the model through the server's settings,
+    and sets the scheduler to `WEBUI_SCHEDULER_AUTOMATIC`.
 
     Parameters
     ----------
@@ -135,6 +146,7 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
     cache = Cache()
     body = DiffusionRequestBody()
     _shared_params(body, edit_mode, source_image, mask, _webui_control_keys())
+    body.scheduler = WEBUI_SCHEDULER_AUTOMATIC
     body.n_iter = cache.get(Cache.BATCH_COUNT)
     body.restore_faces = cache.get(Cache.WEBUI_RESTORE_FACES)
     body.tiling = cache.get(Cache.WEBUI_TILING)
@@ -142,9 +154,8 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
         body.include_init_images = False
     if edit_mode == EDIT_MODE_INPAINT:
         body.inpainting_mask_invert = 0
-        body.inpaint_full_res = cache.get(Cache.INPAINT_FULL_RES)
+        body.inpaint_full_res = cache.limited_context_in_effect()
         body.inpaint_full_res_padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
-        body.mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
         body.inpainting_fill = InpaintFillOption(cache.get_option_index(Cache.MASKED_CONTENT))
     else:
         body.inpainting_fill = None

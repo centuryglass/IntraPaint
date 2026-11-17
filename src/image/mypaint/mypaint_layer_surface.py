@@ -1,7 +1,8 @@
 """Connects a libmypaint tiled surface to an ImageLayer."""
 import logging
 import math
-from ctypes import sizeof, pointer, byref, c_float, c_double, c_int
+import weakref
+from ctypes import sizeof, pointer, byref, c_float, c_double
 from typing import Any, Optional
 
 from PySide6.QtCore import QObject, QSize, QRect, QTimer
@@ -24,6 +25,15 @@ TILE_UPDATE_TIMER_MS = 100
 # negative step comes from its own dab interpolation, not from this value.
 STROKE_DTIME_SECONDS = 0.1
 
+# Time passed with a stroke's first input. libmypaint snaps its smoothed position and other state to the input when the
+# time step exceeds about 5 seconds, which a stroke needs so slow tracking doesn't pull its first dabs toward the
+# previous stroke's end. mypaint_brush_reset alone doesn't do this in the bundled libraries.
+STROKE_START_DTIME_SECONDS = 10.0
+
+# Pressure sent for input with no pressure data, such as a mouse. MyPaint brush files usually center their pressure
+# curves near mid pressure, so 0.5 keeps most brushes' dabs near the base radius the brush outline shows.
+MOUSE_PRESSURE = 0.5
+
 
 class MyPaintLayerSurface(QObject):
     """A LibMyPaint surface that connects directly to an ImageLayer."""
@@ -44,6 +54,7 @@ class MyPaintLayerSurface(QObject):
         self._writing_tiles = False
         self._stroke_tiles: set[MyPaintLayerTile] = set()
         self._saved_lock_alpha: Optional[float] = None
+        self._stroke_starting = False
         self._pending_tile_timer = QTimer()
         self._pending_tile_timer.timeout.connect(self.apply_pending_tile_updates)
         self._pending_tile_timer.setSingleShot(True)
@@ -64,7 +75,11 @@ class MyPaintLayerSurface(QObject):
         self._rectangle_buf.rectangles = self._rectangles
         self._rectangle_buf.num_rectangles = RECTANGLE_BUF_SIZE
 
-        # Initialize surface data, starting with empty functions:
+        # Initialize surface data, starting with empty functions. The libmypaint callbacks hold the surface weakly: the
+        # surface owns them through _surface_data, _on_start and _on_end, so a strong reference is a reference cycle.
+        # They can't outlive the surface, because the C struct that calls them is the surface's own member.
+        surface_ref = weakref.ref(self)
+
         def empty_update_function(_unused, _unused2) -> None:
             """No action, to be replaced on tiled_surface_init."""
 
@@ -77,31 +92,14 @@ class MyPaintLayerSurface(QObject):
 
         # libmypaint calls these once per tile per dab for brushes that sample color, so they stay minimal.
         def on_tile_request_start(_, request: Any) -> None:
-            """Pass libmypaint the requested tile's buffer, creating the tile if needed."""
-            tile_request = request.contents
-            tx = tile_request.tx
-            ty = tile_request.ty
-            if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
-                tile = self._tiles.get(tx + ty * self._tiles_width)
-                if tile is None:
-                    tile = self.get_tile_from_idx(tx, ty)
-                tile_request.buffer = tile.buffer_pointer
-            else:
-                tile_request.buffer = self._null_tile.buffer_pointer
+            surface = surface_ref()
+            if surface is not None:
+                surface.handle_tile_request_start(request)
 
         def on_tile_request_end(_, request: Any) -> None:
-            """Mark a tile that libmypaint may have changed, to be written back to the layer."""
-            tile_request = request.contents
-            if tile_request.readonly:
-                return
-            tx = tile_request.tx
-            ty = tile_request.ty
-            if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
-                tile = self._tiles[tx + ty * self._tiles_width]
-                self._pending_changed_tiles.add(tile)
-                self._stroke_tiles.add(tile)
-                if not self._pending_tile_timer.isActive():
-                    self._pending_tile_timer.start()
+            surface = surface_ref()
+            if surface is not None:
+                surface.handle_tile_request_end(request)
 
         self._on_start = MyPaintTileRequestStartFunction(on_tile_request_start)
         self._on_end = MyPaintTileRequestEndFunction(on_tile_request_end)
@@ -109,6 +107,33 @@ class MyPaintLayerSurface(QObject):
         libmypaint.mypaint_tiled_surface_init(byref(self._surface_data), self._on_start, self._on_end)
         if layer is not None:
             self.layer = layer
+
+    def handle_tile_request_start(self, request: Any) -> None:
+        """Pass libmypaint the requested tile's buffer, creating the tile if needed."""
+        tile_request = request.contents
+        tx = tile_request.tx
+        ty = tile_request.ty
+        if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
+            tile = self._tiles.get(tx + ty * self._tiles_width)
+            if tile is None:
+                tile = self.get_tile_from_idx(tx, ty)
+            tile_request.buffer = tile.buffer_pointer
+        else:
+            tile_request.buffer = self._null_tile.buffer_pointer
+
+    def handle_tile_request_end(self, request: Any) -> None:
+        """Mark a tile that libmypaint may have changed, to be written back to the layer."""
+        tile_request = request.contents
+        if tile_request.readonly:
+            return
+        tx = tile_request.tx
+        ty = tile_request.ty
+        if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
+            tile = self._tiles[tx + ty * self._tiles_width]
+            self._pending_changed_tiles.add(tile)
+            self._stroke_tiles.add(tile)
+            if not self._pending_tile_timer.isActive():
+                self._pending_tile_timer.start()
 
     def apply_pending_tile_updates(self) -> None:
         """Write all pending tile updates back to the connected layer."""
@@ -208,7 +233,7 @@ class MyPaintLayerSurface(QObject):
         if self._layer.locked or self._layer.parent_locked:
             logger.warning('attempted to draw to a locked layer.')
             return False
-        if not self._layer.visible:
+        if not self._layer.shown:
             logger.warning('attempted to draw to a hidden layer.')
             return False
         return True
@@ -225,16 +250,18 @@ class MyPaintLayerSurface(QObject):
             self.brush.set_value(MyPaintBrush.LOCK_ALPHA, 1.0)
         libmypaint.mypaint_brush_reset(self.brush.brush_ptr)
         libmypaint.mypaint_brush_new_stroke(self.brush.brush_ptr)
+        self._stroke_starting = True
 
     def stroke_to(self, x: float, y: float, pressure: float, x_tilt: float, y_tilt: float):
         """Continue a brush stroke, providing tablet inputs."""
         if not self._should_allow_stroke():
             return
+        dtime = STROKE_START_DTIME_SECONDS if self._stroke_starting else STROKE_DTIME_SECONDS
+        self._stroke_starting = False
         libmypaint.mypaint_surface_begin_atomic(byref(self._surface_data))
         libmypaint.mypaint_brush_stroke_to(self.brush.brush_ptr, byref(self._surface_data),
                                            c_float(x), c_float(y), c_float(pressure), c_float(x_tilt), c_float(y_tilt),
-                                           c_double(STROKE_DTIME_SECONDS), c_float(1.0), c_float(0.0), c_float(0.0),
-                                           c_int(1))
+                                           c_double(dtime))
         libmypaint.mypaint_surface_end_atomic(byref(self._surface_data), self._roi)
 
     def end_stroke(self) -> None:
@@ -253,10 +280,10 @@ class MyPaintLayerSurface(QObject):
             self._saved_lock_alpha = None
 
     def basic_stroke_to(self, x: float, y: float) -> None:
-        """Continue a brush stroke, without tablet inputs."""
+        """Continue a brush stroke, without tablet inputs, at MOUSE_PRESSURE."""
         if not self._should_allow_stroke():
             return
-        self.stroke_to(x, y, 1.0, 0.0, 0.0)
+        self.stroke_to(x, y, MOUSE_PRESSURE, 0.0, 0.0)
 
     def clear(self) -> None:
         """Disconnects and discards all tiles."""

@@ -1,19 +1,10 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
 import json
 from copy import copy, deepcopy
-from typing import Optional, TypeAlias, cast, Any, TypedDict, NotRequired
+from typing import Optional, TypeAlias, Any, TypedDict, NotRequired, cast
 
 from PySide6.QtCore import QSize
 
-from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.combo_box import ComboBox
-from src.ui.input_fields.dual_toggle import DualToggle
-from src.ui.input_fields.line_edit import LineEdit
-from src.ui.input_fields.plain_text_edit import PlainTextEdit
-from src.ui.input_fields.pressure_curve_input import PressureCurveInput
-from src.ui.input_fields.size_field import SizeField
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.util.shared_constants import INT_MIN, INT_MAX, FLOAT_MIN, FLOAT_MAX
 
 # Accepted parameter types:
@@ -49,9 +40,6 @@ def get_parameter_type(value: Any) -> str:
 ParamType: TypeAlias = int | float | str | bool | QSize | list[Any] | dict[str, Any]
 ParamTypeList: TypeAlias = (list[int] | list[float] | list[str] | list[bool] | list[QSize] | list[list[Any]]
                             | list[dict[str, Any]])
-
-DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | DualToggle | LineEdit | PlainTextEdit |
-                                 SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
 
 
 class SizeDict(TypedDict):
@@ -269,12 +257,31 @@ class Parameter:
             raise TypeError(f'Param {self.name}: invalid step value {single_step} for type {self.type_name}')
         self._step = single_step
 
+    def accepts_int_text(self) -> bool:
+        """Returns whether this is an int parameter whose range exceeds a C int, so it also accepts decimal text.
+
+        `BigIntSpinbox` handles these parameters and emits its value as text, since Qt signals convert ints to C types
+        that overflow.
+        """
+        return self.type_name == TYPE_INT and ((self.minimum is not None and self.minimum < INT_MIN) or
+                                               (self.maximum is not None and self.maximum > INT_MAX))
+
+    def normalize(self, value: Any) -> Any:
+        """Returns `value` as this parameter's type: text converts to int where `accepts_int_text` allows it.
+
+        Any other value, including text that isn't an integer, comes back unchanged for `validate` to judge.
+        """
+        if isinstance(value, str) and self.accepts_int_text():
+            try:
+                return int(value)
+            except ValueError:
+                return value
+        return value
+
     def validate(self, test_value: Any, raise_on_failure=False) -> bool:
-        """Returns whether a test value is acceptable for this parameter"""
+        """Returns whether a test value is acceptable for this parameter, after `normalize` converts it."""
         try:
-            if self.type_name == TYPE_INT and ((self.minimum is not None and self.minimum < INT_MIN) or
-                                               (self.maximum is not None and self.maximum > INT_MAX)):
-                test_value = int(test_value)  # BigIntSpinbox needs to emit as str, so convert before validating.
+            test_value = self.normalize(test_value)
             test_type = get_parameter_type(test_value)
             if test_type != self._type:
                 if raise_on_failure:
@@ -296,86 +303,6 @@ class Parameter:
                                  f' options {self._options}')
             return False
         return True
-
-    def get_input_widget(self, multi_line=False, allow_dual_toggle=True) -> DynamicFieldWidget:
-        """Creates a widget that can be used to set this parameter."""
-        if multi_line and self._type != TYPE_STR:
-            raise ValueError(f'multi_line=True is only valid for text parameters, value {self.name}'
-                             f' is {self.type_name}')
-        if self._options is not None and len(self._options) > 0:
-            if multi_line:
-                raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
-            assert self.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
-            if len(self._options) == 2 and allow_dual_toggle:
-                toggle = DualToggle(parent=None, options=cast(list[str], self.options))
-                assert self._default_value is None or isinstance(self._default_value, str)
-                toggle.setValue(self._default_value)
-                input_field = cast(DynamicFieldWidget, toggle)
-            else:
-                combo_box = ComboBox()
-                for option in self._options:
-                    combo_box.addItem(str(option), userData=option)
-                if self._default_value is not None:
-                    index = combo_box.findText(str(self._default_value))
-                    assert index >= 0
-                    combo_box.setCurrentIndex(index)
-                input_field = cast(DynamicFieldWidget, combo_box)
-        elif self._type == TYPE_INT:
-            if (self._maximum is not None and self._maximum > INT_MAX) or (self._minimum is not None
-                                                                           and self._minimum < INT_MIN):
-                spin_box = BigIntSpinbox()
-            else:
-                spin_box = IntSliderSpinbox()
-            spin_box.setMinimum(cast(int, self._minimum) if self._minimum is not None else INT_MIN)
-            spin_box.setMaximum(cast(int, self._maximum) if self._maximum is not None else INT_MAX)
-            if self._step is not None:
-                spin_box.setSingleStep(int(self._step))
-            assert self._default_value is None or isinstance(self._default_value, int)
-            spin_box.setValue(self._default_value if self._default_value is not None else max(0, spin_box.minimum()))
-            if isinstance(spin_box, IntSliderSpinbox) and (self._minimum is None or self._maximum is None):
-                spin_box.set_slider_included(False)
-            input_field = cast(DynamicFieldWidget, spin_box)
-        elif self._type == TYPE_FLOAT:
-            spin_box = FloatSliderSpinbox()
-            spin_box.setMinimum(cast(float, self._minimum) if self._minimum is not None else FLOAT_MIN)
-            spin_box.setMaximum(cast(float, self._maximum) if self._maximum is not None else FLOAT_MAX)
-            if self._step is not None:
-                spin_box.setSingleStep(float(self._step))
-            assert self._default_value is None or isinstance(self._default_value, float)
-            spin_box.setValue(self._default_value if self._default_value is not None else max(0.0, spin_box.minimum()))
-            if self._minimum is None or self._maximum is None:
-                spin_box.set_slider_included(False)
-            input_field = cast(DynamicFieldWidget, spin_box)
-        elif self._type == TYPE_STR:
-            text_box: PlainTextEdit | LineEdit = PlainTextEdit() if multi_line else LineEdit()
-            if self._default_value is not None:
-                assert isinstance(self._default_value, str)
-                text_box.setValue(self._default_value)
-            input_field = cast(DynamicFieldWidget, text_box)
-        elif self._type == TYPE_BOOL:
-            check_box = CheckBox()
-            if self._default_value is not None:
-                check_box.setChecked(bool(self._default_value))
-            input_field = cast(DynamicFieldWidget, check_box)
-        elif self._type == TYPE_QSIZE:
-            size_field = SizeField()
-            if self._minimum is not None:
-                assert isinstance(self._minimum, QSize)
-                size_field.minimum = self._minimum
-            if self._maximum is not None:
-                assert isinstance(self._maximum, QSize)
-                size_field.maximum = self._maximum
-            if self._step is not None:
-                size_field.set_single_step(int(self._step))
-            if self._default_value is not None:
-                assert isinstance(self._default_value, QSize)
-                size_field.setValue(self._default_value)
-            input_field = cast(DynamicFieldWidget, size_field)
-        else:
-            raise RuntimeError(f'get_input_widget not supported for type {self._type}')
-        if len(self._description) > 0:
-            input_field.setToolTip(self._description)
-        return input_field
 
 
 def _in_range(value: int | float | QSize,

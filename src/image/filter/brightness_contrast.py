@@ -1,6 +1,6 @@
 """Adjust image brightness/contrast."""
 from typing import Callable, Optional
-from PIL import ImageEnhance
+from PIL import Image, ImageEnhance
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
 
@@ -20,11 +20,14 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-BRIGHTNESS_CONTRAST_FILTER_TITLE = _tr('Brightness/Contrast')
+BRIGHTNESS_CONTRAST_FILTER_TITLE = _tr('Brightness/contrast')
 BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION = _tr('Adjust image brightness and contrast.')
 
 BRIGHTNESS_LABEL = _tr('Brightness:')
 CONTRAST_LABEL = _tr('Contrast')
+
+# Contrast scales pixel values away from this gray, so each pixel's result is independent of the rest of the image.
+CONTRAST_PIVOT = 128
 
 ICON_PATH_BRIGHTNESS_CONTRAST_FILTER = f'{PROJECT_DIR}/resources/icons/filter/brightness_contrast_icon.svg'
 
@@ -53,10 +56,11 @@ class BrightnessContrastFilter(ImageFilter):
 
     @staticmethod
     def brightness_contrast_filter(image: QImage, brightness: float, contrast: float) -> QImage:
-        """Adjusts image brightness and contrast."""
-        pil_image = qimage_to_pil_image(image)
+        """Adjusts image brightness, then contrast around a fixed mid-gray."""
+        pil_image = qimage_to_pil_image(image).convert('RGBA')
         pil_image = ImageEnhance.Brightness(pil_image).enhance(brightness)
-        pil_image = ImageEnhance.Contrast(pil_image).enhance(contrast)
+        pivot = Image.new('RGBA', pil_image.size, (CONTRAST_PIVOT,) * 3 + (255,))
+        pil_image = Image.blend(pivot, pil_image, contrast)
         return pil_image_to_qimage(pil_image)
 
     def get_parameters(self) -> list[Parameter]:
@@ -68,12 +72,12 @@ class BrightnessContrastFilter(ImageFilter):
                       '',
                       0.0,
                       50.0,
-                      0.5),
+                      0.05),
             Parameter(CONTRAST_LABEL,
                       TYPE_FLOAT,
                       1.0,
                       '',
                       0.0,
                       50.0,
-                      0.5),
+                      0.05),
         ]

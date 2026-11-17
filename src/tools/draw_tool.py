@@ -10,10 +10,11 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
+from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -26,7 +27,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/icons/tools/pen_icon.svg'
-CURSOR_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/cursors/draw_cursor.svg'
 LABEL_TEXT_DRAW_TOOL = _tr('Draw')
 TOOLTIP_DRAW_TOOL = _tr('Draw into the image')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw')
@@ -44,7 +44,7 @@ class DrawTool(QtPaintBrushTool):
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                          antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_DRAW_TOOL))
+        self.crosshair_variant = CrosshairVariant.DRAW
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -61,8 +61,4 @@ class DrawTool(QtPaintBrushTool):
         if self._control_panel is None:
             self._control_panel = DrawToolPanel()
             self._control_panel.hide()
-
-            def _set_eraser(tool_mode: str) -> None:
-                self.brush.eraser = tool_mode == TOOL_MODE_DESELECT
-            self._control_panel.tool_mode_changed.connect(_set_eraser)
         return self._control_panel

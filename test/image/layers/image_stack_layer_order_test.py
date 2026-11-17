@@ -61,6 +61,15 @@ class LayerOrderTest(ImageStackOpTestCase):
         self.assert_undo_redo(lambda: self.image_stack.move_layer_by_offset(1, self.inner_b))
         self.assertEqual([self.top, self.group, self.inner_b, self.bottom], self.stack.child_layers)
 
+    def test_select_offset_from_root(self) -> None:
+        """With the root group active, 'previous' does nothing and 'next' selects its topmost child."""
+        self.image_stack.active_layer = self.stack
+        self.assertIsNone(self.image_stack.prev_layer(self.stack))
+        self.image_stack.offset_active_selection(-1)
+        self.assertIs(self.stack, self.image_stack.active_layer)
+        self.image_stack.offset_active_selection(1)
+        self.assertIs(self.top, self.image_stack.active_layer)
+
     def test_remove_active_layer(self) -> None:
         """Removing the active layer activates the layer below it."""
         _, after = self.assert_undo_redo(lambda: self.image_stack.remove_layer(self.top))

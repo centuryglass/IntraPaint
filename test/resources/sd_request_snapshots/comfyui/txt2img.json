@@ -4,9 +4,8 @@
       "client_id": "<client id>",
       "prompt": {
         "10": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "sd_backend_client",
             "images": [
               "9",
               0
@@ -113,9 +112,8 @@
       "client_id": "<client id>",
       "prompt": {
         "10": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "sd_backend_client",
             "images": [
               "9",
               0

@@ -2,25 +2,28 @@
 from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, SignalInstance
-from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent
-from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
+from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent, QPixmap
+from PySide6.QtWidgets import (QWidget, QSpinBox, QDoubleSpinBox, QApplication, QMenu, QGraphicsPixmapItem,
+                               QGraphicsItem)
 
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import top_layer_at_point
+from src.image.layers.image_stack_utils import top_layer_at_point, layers_at_point
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
-from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.signals_blocked import signals_blocked
-from src.util.visual.text_drawing_utils import left_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.layer_transform_tool'
@@ -31,15 +34,23 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-TRANSFORM_LABEL = _tr('Transform Layers')
+TRANSFORM_LABEL = _tr('Transform layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
-TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer')
+TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer'
+                             '<br/>{right_mouse_icon}: choose from layers under cursor')
 
 ICON_PATH_TRANSFORM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
 
 
 class LayerTransformTool(BaseTool):
-    """Applies transformations to the active layer."""
+    """Applies transformations to the active layer.
+
+    A mouse drag on a single layer moves a Normal-mode preview item instead of the layer, and sets the layer's
+    transform once on release. The preview ignores blend modes and layers above the dragged one. Layer groups and
+    panel edits change the layer transform on every step.
+    """
+
+    TOOL_GROUP = ToolGroup.EDIT
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.TRANSFORM_TOOL_KEY, TRANSFORM_LABEL, TRANSFORM_TOOLTIP,
@@ -54,10 +65,14 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.angle_changed.connect(self._angle_change_slot)
         self._transform_outline.transform_changed.connect(self._transform_change_slot)
         self._transform_outline.setVisible(False)
-        scene = image_viewer.scene()
-        assert scene is not None
-        scene.addItem(self._transform_outline)
+        image_viewer.canvas_extras.register(self._transform_outline, CanvasExtraCategory.TOOL)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
+        self._layer_menu: Optional[QMenu] = None
+        self._mouse_dragging = False
+        self._drag_preview: Optional[QGraphicsPixmapItem] = None
+        self._drag_transform: Optional[QTransform] = None
+        self._transform_outline.drag_started.connect(self._drag_start_slot)
+        self._transform_outline.drag_finished.connect(self._drag_finish_slot)
 
         # prepare control panel:
         self._control_panel = LayerTransformToolPanel(image_stack)
@@ -86,7 +101,8 @@ class LayerTransformTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        transform_hint = TRANSFORM_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        transform_hint = TRANSFORM_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                       right_mouse_icon=right_button_hint_text())
         return f'{transform_hint}<br/>{super().get_input_hint()}'
 
     def restore_aspect_ratio(self) -> None:
@@ -95,18 +111,40 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.transform_scale = (max_scale, max_scale)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Activate inactive unlocked TransformLayers when they're clicked."""
+        """Left-click activates the top unlocked TransformLayer under the cursor, right-click lists all of them."""
         assert event is not None
-        if event.buttons() == Qt.MouseButton.LeftButton \
-                and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier:
-
+        if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
+            return False
+        if event.buttons() == Qt.MouseButton.LeftButton:
             clicked_layer = top_layer_at_point(self._image_stack, image_coordinates)
             if clicked_layer is not None and isinstance(clicked_layer, TransformLayer) and clicked_layer != self._layer:
-                if clicked_layer.locked or clicked_layer.parent_locked:
-                    LayerLockAlertItem(clicked_layer, self._image_viewer)
-                self._image_stack.active_layer = clicked_layer
+                self._select_layer(clicked_layer)
+            return True
+        if event.buttons() == Qt.MouseButton.RightButton:
+            layers = layers_at_point(self._image_stack, image_coordinates)
+            if len(layers) > 0:
+                self._show_layer_menu(layers, event.globalPosition().toPoint())
             return True
         return False
+
+    def _select_layer(self, layer: TransformLayer) -> None:
+        if layer.locked or layer.parent_locked:
+            LayerLockAlertItem(layer, self._image_viewer)
+        self._image_stack.active_layer = layer
+
+    def _show_layer_menu(self, layers: list[ImageLayer | NonDestructiveLayer], global_pos: QPoint) -> None:
+        """Opens a non-modal menu naming each layer, topmost first, at the given screen position."""
+        if self._layer_menu is not None:
+            self._layer_menu.close()
+            self._layer_menu.deleteLater()
+        menu = QMenu(self._image_viewer)
+        for layer in layers:
+            action = menu.addAction(layer.name)
+            action.setCheckable(True)
+            action.setChecked(layer == self._layer)
+            action.triggered.connect(lambda _checked=False, target=layer: self._select_layer(target))
+        self._layer_menu = menu
+        menu.popup(global_pos)
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
@@ -125,12 +163,16 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.offset = offset
 
     def set_x(self, x_pos: float | int) -> None:
-        """Sets the post-transformation horizontal position of the layer in pixels."""
-        self._transform_outline.x_pos = float(x_pos)
+        """Sets the horizontal scene position of the transformation origin, moving the layer."""
+        origin = self._transform_outline.origin_scene_pos
+        origin.setX(float(x_pos))
+        self._transform_outline.origin_scene_pos = origin
 
     def set_y(self, y_pos: float | int) -> None:
-        """Sets the post-transformation vertical position of the layer in pixels."""
-        self._transform_outline.y_pos = float(y_pos)
+        """Sets the vertical scene position of the transformation origin, moving the layer."""
+        origin = self._transform_outline.origin_scene_pos
+        origin.setY(float(y_pos))
+        self._transform_outline.origin_scene_pos = origin
 
     def set_x_scale(self, x_scale: float) -> None:
         """Sets the x-scale of the layer transformation."""
@@ -157,7 +199,10 @@ class LayerTransformTool(BaseTool):
             self._transform_outline.rotation_angle = rotation
 
     def set_layer(self, layer: Optional[Layer]) -> None:
-        """Connects to a new image layer, or disconnects if the layer parameter is None."""
+        """Connects to a new image layer, or disconnects if the layer parameter is None. Cancels any drag preview, and
+           the rest of an in-progress drag changes the new layer directly."""
+        self._end_drag_preview(apply=False)
+        self._mouse_dragging = False
         last_layer = self._layer
         if last_layer is not None:
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
@@ -165,6 +210,7 @@ class LayerTransformTool(BaseTool):
             last_layer.lock_changed.disconnect(self._layer_lock_change_slot)
             if isinstance(last_layer, TransformGroup):
                 last_layer.bounds_changed.disconnect(self._update_transform_group_bounds)
+                last_layer.remove_all()
         if layer is None or isinstance(layer, TransformLayer):
             self._layer = layer
         else:
@@ -190,13 +236,7 @@ class LayerTransformTool(BaseTool):
             source_transform = self._initial_transform
             if changed_transform != source_transform:
 
-                def _apply(active=layer, matrix=source_transform):
-                    active.set_transform(matrix)
-
-                def _undo(active=layer, matrix=changed_transform):
-                    active.set_transform(matrix)
-
-                UndoStack().commit_action(_apply, _undo, 'LayerTransformTool.reset_transformation')
+                layer.transform = source_transform
             self._transform_outline.setTransform(self._initial_transform)
 
     def _reload_scene_item(self, keep_relative_origin: bool = False):
@@ -222,9 +262,12 @@ class LayerTransformTool(BaseTool):
             else:
                 self._initial_transform = layer.transform
                 self._control_panel.set_preview_bounds(layer.bounds)
-                self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
+                self._transform_outline.setVisible(layer.shown and not layer.size.isEmpty())
                 self._control_panel.set_preview_transform(self._initial_transform)
                 self._transform_outline.setTransform(self._initial_transform)
+                # Resetting the outline unlocks its ratio, and the lock follows the transform just loaded:
+                self._transform_outline.preserve_aspect_ratio = \
+                    self._control_panel.geometry_block.effective_ratio_locked()
             should_enable = (layer is not None and not layer.locked and not layer.parent_locked
                              and not self._layer.size.isEmpty())
             self._control_panel.setEnabled(should_enable)
@@ -245,27 +288,27 @@ class LayerTransformTool(BaseTool):
         self.set_layer(active_layer)
 
     def _update_transform_group_bounds(self, bounds: QRect) -> None:
-        preview_bounds = QRect(round(self._transform_outline.x_pos), round(self._transform_outline.y_pos),
+        top_left = self._transform_outline.bounding_box_top_left
+        preview_bounds = QRect(round(top_left.x()), round(top_left.y()),
                                round(self._transform_outline.width), round(self._transform_outline.height))
         if preview_bounds != bounds:
             self._reload_scene_item(keep_relative_origin=True)
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer) or isinstance(layer, TransformGroup)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))  \
+               or isinstance(layer, TransformGroup)
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
         self._transform_outline.setEnabled(not locked)
         self.set_disabled_cursor(locked)
 
-    # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         assert layer == self._layer
         if transform != self._transform_outline.transform():
             self._transform_outline.setTransform(transform)
 
-    # noinspection PyUnusedLocal
-    def _layer_size_change_slot(self, layer: Layer, size: QSize) -> None:
+    def _layer_size_change_slot(self, layer: Layer, _size: QSize) -> None:
         assert layer == self._layer
         self._reload_scene_item(keep_relative_origin=True)
 
@@ -273,10 +316,58 @@ class LayerTransformTool(BaseTool):
         layer = self._layer
         if layer is None or layer.locked or layer.parent_locked:
             return
-        try:
+        if self._mouse_dragging and isinstance(layer, ImageLayer | NonDestructiveLayer):
+            if self._drag_preview is None:
+                self._start_drag_preview(layer)
+            if self._drag_preview is not None:
+                self._drag_transform = QTransform(transform)
+                self._drag_preview.setTransform(transform)
+                self._control_panel.set_preview_transform(transform)
+                return
+        layer.transform = transform
+        self._control_panel.set_preview_transform(layer.transform)
+
+    def _drag_start_slot(self) -> None:
+        self._mouse_dragging = True
+
+    def _drag_finish_slot(self) -> None:
+        self._mouse_dragging = False
+        self._end_drag_preview(apply=True)
+
+    def _start_drag_preview(self, layer: TransformLayer) -> None:
+        """Hides the layer and shows a Normal-mode copy of its image in the scene to stand in for it."""
+        scene = self._image_viewer.scene()
+        if scene is None or layer.size.isEmpty() or not layer.visible:
+            return
+        preview = QGraphicsPixmapItem(QPixmap.fromImage(layer.get_qimage().copy()))
+        preview.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        preview.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        preview.setOpacity(layer.opacity)
+        preview.setTransform(layer.transform)
+        preview.setZValue(self._transform_outline.zValue() - 1)
+        scene.addItem(preview)
+        self._drag_preview = preview
+        layer.set_visible(False)
+
+    def _end_drag_preview(self, apply: bool) -> None:
+        """Removes the drag preview and shows the layer again, first setting its transform to the dragged one if
+           apply is set."""
+        preview = self._drag_preview
+        if preview is None:
+            return
+        layer = self._layer
+        transform = self._drag_transform
+        self._drag_preview = None
+        self._drag_transform = None
+        scene = preview.scene()
+        if scene is not None:
+            scene.removeItem(preview)
+        if layer is None:
+            return
+        # The layer is still hidden, so the transform change recomposites nothing, and showing it redraws once:
+        if apply and transform is not None:
             layer.transform = transform
-        except RuntimeError:  # undo stack conflict: just don't register this one in the undo history
-            layer.set_transform(transform)
+        layer.set_visible(True)
         self._control_panel.set_preview_transform(layer.transform)
 
     @staticmethod
@@ -292,8 +383,9 @@ class LayerTransformTool(BaseTool):
 
     # noinspection PyUnusedLocal
     def _pos_change_slot(self, *unused_args) -> None:
-        self._control_panel.x_position = self._transform_outline.x_pos
-        self._control_panel.y_position = self._transform_outline.y_pos
+        origin = self._transform_outline.origin_scene_pos
+        self._control_panel.x_position = origin.x()
+        self._control_panel.y_position = origin.y()
 
     def _scale_change_slot(self, x_scale: float, y_scale: float) -> None:
         self._control_panel.layer_width = self._transform_outline.width

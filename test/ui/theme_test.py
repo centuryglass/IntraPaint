@@ -2,12 +2,13 @@
 import json
 import sys
 
-from PySide6.QtGui import QFont, QFontInfo, QPalette
-from PySide6.QtWidgets import QApplication, QPushButton, QStyle
+from PySide6.QtGui import QColor, QFont, QFontInfo, QImage, QPainter, QPalette
+from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption
 
+from src.config.application_config import AppConfig
 from src.ui.ink_style import InkColors, InkStyle, STICKER_OFFSET, set_primary_button
-from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_overlay_scroll_bars, apply_style, apply_theme,
-                          load_theme_palette)
+from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_appearance_config, apply_font_point_size,
+                          apply_overlay_scroll_bars, apply_rounded_popups, apply_style, apply_theme, load_theme_palette)
 from src.util.gc_paused import gc_paused
 from test.base_test_case import IntraPaintTestCase
 
@@ -28,6 +29,7 @@ class ThemeTest(IntraPaintTestCase):
 
     def tearDown(self) -> None:
         apply_overlay_scroll_bars(True)
+        apply_rounded_popups(True)
         apply_style('Fusion')
         apply_theme(THEME_INK)
         super().tearDown()
@@ -116,12 +118,50 @@ class ThemeTest(IntraPaintTestCase):
         apply_overlay_scroll_bars(True)
         self.assertTrue(app.style().styleHint(transient))
 
+    def test_appearance_config_follows_connected_options(self):
+        """With an owner, the config's theme and font size options reapply when they change."""
+        config = AppConfig()
+        owner = object()
+        original_size = config.get(AppConfig.FONT_POINT_SIZE)
+        apply_appearance_config(config, owner)
+        try:
+            self.assertEqual(original_size, app.font().pointSize())
+            self.assertIsInstance(app.style(), InkStyle)
+            config.set(AppConfig.FONT_POINT_SIZE, original_size + 2)
+            self.assertEqual(original_size + 2, app.font().pointSize())
+            config.set(AppConfig.THEME, THEME_SYSTEM)
+            self.assertNotIsInstance(app.style(), InkStyle)
+        finally:
+            config.disconnect_all(owner)
+            apply_font_point_size(original_size)
+
+    def test_appearance_config_without_owner_does_not_connect(self):
+        config = AppConfig()
+        apply_appearance_config(config)
+        config.set(AppConfig.THEME, THEME_SYSTEM)
+        self.assertIsInstance(app.style(), InkStyle)
+
     def test_ink_style_colors_parsed(self):
         colors = InkColors.from_theme_data(_load_theme_data()['style_colors'])
         self.assertEqual('#1e4544', colors.accent_wash.name())
         for color_data in ({}, {**_load_theme_data()['style_colors'], 'accent_wash': 'not a color'}):
             with self.assertRaises(ValueError):
                 InkColors.from_theme_data(color_data)
+
+    def test_dock_edges_use_panel_edge_color(self):
+        """Floating dock frames and main window separators are drawn in the panel edge color."""
+        edge = app.style().colors.panel_edge
+        for element, rect_size, probe in ((QStyle.PrimitiveElement.PE_FrameDockWidget, (20, 20), (0, 10)),
+                                          (QStyle.PrimitiveElement.PE_IndicatorDockWidgetResizeHandle, (6, 20),
+                                           (2, 10))):
+            image = QImage(*rect_size, QImage.Format.Format_ARGB32)
+            image.fill(QColor('black'))
+            option = QStyleOption()
+            option.rect = image.rect()
+            painter = QPainter(image)
+            app.style().drawPrimitive(element, option, painter, None)
+            painter.end()
+            self.assertEqual(edge.name(), image.pixelColor(*probe).name())
 
     def test_primary_button_makes_room_for_its_offset(self):
         """A primary button is taller by its raised offset, and wide enough for its bolder label."""

@@ -2,52 +2,197 @@
   "minimum": {
     "problems": [],
     "size": [
-      212,
-      204
+      215,
+      315
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: ColorPairWidget and CheckBox 'Paint selection only' share 1x22",
-      "squeezed: QLabel 'Size:' is 23x30, minimum 28x17",
-      "squeezed: IntSliderSpinbox is 23x30, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 7x23, minimum 12x23",
-      "squeezed: IntSliderSpinbox/QSpinBox is 7x26, minimum 50x26",
-      "squeezed: CheckBox 'Paint selection only' is 41x22, minimum 140x22",
-      "squeezed: MypaintBrushPanel is 88x141, minimum 127x87"
+      "squeezed: StrokeBlock is 89x372, minimum 156x319",
+      "squeezed: StrokeBlock/PanelSection[0] is 79x50, minimum 110x50",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 79x24, minimum 110x24",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 79x24, minimum 110x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField shows 79x24 of 110x24",
+      "squeezed: StrokeBlock/PanelSection[1] is 79x102, minimum 146x102",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 79x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1] is 79x22, minimum 146x22",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 79x22, minimum 146x22",
+      "squeezed: StrokeBlock/PanelSection[2] is 89x123, minimum 150x123",
+      "squeezed: StrokeBlock/PanelSection[2]/MypaintBrushPanel is 89x97, minimum 150x97",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip shows 89x44 of 150x44",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel 'No brush' shows 82x17 of 89x17",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel[1] shows 82x17 of 89x17",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/StarButton shows 0x0 of 24x24",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel '\u25be' shows 0x0 of 11x34"
     ],
     "size": [
-      106,
-      258
+      107,
+      390
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      249,
-      258
+      269,
+      390
     ]
   },
   "short": {
     "problems": [
-      "overlap: ColorPairWidget and MypaintBrushPanel share 48x21",
-      "squeezed: KeyHintLabel '[' is 13x21, minimum 13x22",
-      "squeezed: KeyHintLabel ']' is 12x21, minimum 12x22",
-      "squeezed: IntSliderSpinbox is 160x21, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 100x17, minimum 12x23",
-      "squeezed: IntSliderSpinbox/QSpinBox is 50x17, minimum 50x26",
-      "squeezed: CheckBox 'Paint selection only' is 177x21, minimum 140x22",
-      "squeezed: MypaintBrushPanel is 231x21, minimum 127x87"
+      "squeezed: StrokeBlock is 251x139, minimum 197x265",
+      "squeezed: StrokeBlock/PanelSection[0] is 239x43, minimum 110x50",
+      "squeezed: StrokeBlock/PanelSection[0]/_HeaderButton 'Stroke' is 235x22, minimum 16x26",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 239x21, minimum 110x24",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 239x21, minimum 110x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField shows 239x21 of 239x24",
+      "squeezed: StrokeBlock/PanelSection[1] is 239x42, minimum 146x102",
+      "squeezed: StrokeBlock/PanelSection[1]/_HeaderButton 'Color and options' is 235x21, minimum 16x26",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 239x21, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[0] is 239x8, minimum 48x48",
+      "clipped: StrokeBlock/PanelSection[1]/QWidget/QWidget[0]/ColorPairWidget shows 48x8 of 48x48",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1] is 239x7, minimum 146x22",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 146x7, minimum 146x22",
+      "squeezed: StrokeBlock/PanelSection[2] is 251x42, minimum 197x101",
+      "squeezed: StrokeBlock/PanelSection[2]/_HeaderButton 'Brush' is 59x21, minimum 16x26",
+      "squeezed: StrokeBlock/PanelSection[2]/MypaintBrushPanel is 251x21, minimum 173x75",
+      "squeezed: StrokeBlock/PanelSection[2]/MypaintBrushPanel/QWidget is 251x21, minimum 173x75",
+      "squeezed: StrokeBlock/PanelSection[2]/MypaintBrushPanel/QWidget/BrushList is 251x21, minimum 173x75",
+      "squeezed: StrokeBlock/PanelSection[2]/BrushHeaderBar is 188x21, minimum 134x25",
+      "clipped: StrokeBlock/PanelSection[2]/BrushHeaderBar/StarButton shows 24x21 of 24x24",
+      "squeezed: StrokeBlock/PanelSection[2]/BrushHeaderBar/QComboBox is 105x21, minimum 105x25"
     ],
     "size": [
-      249,
-      102
+      269,
+      157
+    ]
+  },
+  "strip_minimum": {
+    "problems": [
+      "squeezed: StrokeBlock is 197x297, minimum 329x112",
+      "squeezed: StrokeBlock/QWidget[0] is 94x106, minimum 146x106",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[0] is 94x24, minimum 110x24",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[0]/QWidget is 94x24, minimum 110x24",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[0]/QWidget/QWidget is 94x24, minimum 110x24",
+      "clipped: StrokeBlock/QWidget[0]/PanelSection[0]/QWidget/QWidget/SliderField shows 94x24 of 110x24",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 94x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 94x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1] is 94x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 94x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[1] is 93x297, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection is 93x297, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel is 93x297, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget is 93x266, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget/BrushList is 93x266, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar is 93x25, minimum 134x25",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar/QComboBox is 64x25, minimum 105x25"
+    ],
+    "size": [
+      215,
+      315
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar/StarButton and StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar/QComboBox share 5x24",
+      "squeezed: StrokeBlock is 89x372, minimum 329x112",
+      "squeezed: StrokeBlock/QWidget[0] is 40x106, minimum 146x106",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[0] is 40x24, minimum 110x24",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[0]/QWidget is 40x24, minimum 110x24",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[0]/QWidget/QWidget is 40x24, minimum 110x24",
+      "clipped: StrokeBlock/QWidget[0]/PanelSection[0]/QWidget/QWidget/SliderField shows 40x24 of 110x24",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 40x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 40x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[0] is 40x48, minimum 48x48",
+      "clipped: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[0]/ColorPairWidget shows 40x48 of 48x48",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1] is 40x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 40x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[1] is 39x372, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection is 39x372, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel is 39x372, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget is 39x341, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget/BrushList is 39x341, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar is 39x25, minimum 134x25",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar/QComboBox is 17x25, minimum 105x25"
+    ],
+    "size": [
+      107,
+      390
+    ]
+  },
+  "strip_preferred": {
+    "problems": [
+      "squeezed: StrokeBlock is 251x372, minimum 329x112",
+      "squeezed: StrokeBlock/QWidget[0] is 121x106, minimum 146x106",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 121x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 121x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1] is 121x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 121x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[1] is 120x372, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection is 120x372, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel is 120x372, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget is 120x341, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget/BrushList is 120x341, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar is 120x25, minimum 134x25",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar/QComboBox is 91x25, minimum 105x25"
+    ],
+    "size": [
+      269,
+      390
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "squeezed: StrokeBlock is 251x139, minimum 329x112",
+      "squeezed: StrokeBlock/QWidget[0] is 121x106, minimum 146x106",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 121x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 121x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1] is 121x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 121x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[1] is 120x139, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1] is 120x139, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/MypaintBrushPanel is 120x139, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/MypaintBrushPanel/QWidget is 120x108, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/MypaintBrushPanel/QWidget/BrushList is 120x108, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/MypaintBrushPanel/BrushHeaderBar is 120x25, minimum 134x25",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/MypaintBrushPanel/BrushHeaderBar/QComboBox is 91x25, minimum 105x25"
+    ],
+    "size": [
+      269,
+      157
+    ]
+  },
+  "strip_tall": {
+    "problems": [
+      "squeezed: StrokeBlock is 251x1182, minimum 329x112",
+      "squeezed: StrokeBlock/QWidget[0] is 121x106, minimum 146x106",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 121x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 121x76, minimum 146x76",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1] is 121x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 121x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[1] is 120x1182, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection is 120x1182, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel is 120x1182, minimum 173x106",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget is 120x1151, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/QWidget/BrushList is 120x1151, minimum 173x75",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar is 120x25, minimum 134x25",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/MypaintBrushPanel/BrushHeaderBar/QComboBox is 91x25, minimum 105x25"
+    ],
+    "size": [
+      269,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      390
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      249,
+      269,
       1200
     ]
   },
@@ -55,7 +200,7 @@
     "problems": [],
     "size": [
       1600,
-      258
+      390
     ]
   }
 }

@@ -9,9 +9,8 @@ from PySide6.QtGui import QPainter, QImage
 
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_layer import ImageLayer
-from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, numpy_bounds_index, \
-    NpAnyArray, numpy_intersect, np_composite_with_mask
+    NpAnyArray, np_composite_with_mask
 
 
 class CloneStampBrush(QtPaintBrush):
@@ -80,7 +79,7 @@ class CloneStampBrush(QtPaintBrush):
         if self._source_offset is None or self._source_offset.isNull():
             return
         source_bounds = bounds.translated(self._source_offset.x(), self._source_offset.y())
-        source_image, np_source = self._get_stamp_source_image(source_bounds)
+        _, np_source = self._get_stamp_source_image(source_bounds)
 
         # Use the brush stroke segment as a mask to select between cloned and original content:
         np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), bounds)
@@ -94,49 +93,43 @@ class CloneStampBrush(QtPaintBrush):
                               brush_radius * 2, brush_radius * 2)
         if self._last_segment_params is None:
             return
-        source_image, np_source = self._get_stamp_source_image(source_bounds)
+        _, np_source = self._get_stamp_source_image(source_bounds)
         # When using a fixed source point, the clone stamp tool works basically the same way as the smudge brush,
         # except that the point sampled for drawing is fixed.
-        if self._last_segment_params.last_pt is None:
-            point_list = [QPoint(self._last_segment_params.change_pt.toPoint())]
-        else:
-            point_list = []
-            x0 = round(self._last_segment_params.last_pt.x())
-            y0 = round(self._last_segment_params.last_pt.y())
-            x1 = round(self._last_segment_params.change_pt.x())
-            y1 = round(self._last_segment_params.change_pt.y())
+        # Each segment stamps its end point and the steps leading to it, but not its start point, which the
+        # previous segment stamped. Stamping a point twice would build up opacity there.
+        change_pt = self._last_segment_params.change_pt
+        last_pt = self._last_segment_params.last_pt
+        x1 = round(change_pt.x())
+        y1 = round(change_pt.y())
+        point_list = [QPoint(x1, y1)]
+        if last_pt is not None:
+            x0 = round(last_pt.x())
+            y0 = round(last_pt.y())
             dx = x1 - x0
             dy = y1 - y0
-            if abs(dx) < 2 and abs(dy) < 2:
-                point_list.append(QPoint(self._last_segment_params.last_pt.toPoint()))
-                point_list.append(QPoint(self._last_segment_params.change_pt.toPoint()))
-            else:
+            if abs(dx) >= 2 or abs(dy) >= 2:
                 step_count = max(abs(dx), abs(dy))
-                x_step = clamp(dx / step_count, -1.0, 1.0)
-                y_step = clamp(dy / step_count, -1.0, 1.0)
-                for i in range(0, step_count, 1):
-                    xi = round(x0 + x_step * i)
-                    yi = round(y0 + y_step * i)
-                    point_list.append(QPoint(xi, yi))
+                x_step = dx / step_count
+                y_step = dy / step_count
+                point_list = [QPoint(round(x0 + x_step * i), round(y0 + y_step * i))
+                              for i in range(1, step_count + 1)]
         np_segment_image = image_data_as_numpy_8bit(segment_image)
         np_layer_image = image_data_as_numpy_8bit(layer_image)
         layer = self.layer
         assert layer is not None
         layer_bounds = layer.bounds
         for draw_pt in point_list:
-            pt_bounds = QRect(draw_pt.x() - brush_radius, draw_pt.y() - brush_radius,
-                              brush_radius * 2, brush_radius * 2).intersected(layer_bounds)
+            stamp_bounds = QRect(draw_pt.x() - brush_radius, draw_pt.y() - brush_radius,
+                                 brush_radius * 2, brush_radius * 2)
+            pt_bounds = stamp_bounds.intersected(layer_bounds)
             if pt_bounds.isEmpty():
                 continue
-            np_segment_img_pt: Optional[NpAnyArray] = numpy_bounds_index(np_segment_image, pt_bounds)
-            np_layer_img_pt: Optional[NpAnyArray] = numpy_bounds_index(np_layer_image, pt_bounds)
-            assert np_segment_img_pt is not None and np_layer_img_pt is not None
-            np_segment_img_pt, cropped_np_source = numpy_intersect(np_segment_img_pt, np_source)
-            if np_segment_img_pt is None or cropped_np_source is None:
-                continue
-            np_layer_img_pt, cropped_np_source = numpy_intersect(np_layer_img_pt, cropped_np_source)
-            if np_layer_img_pt is None or cropped_np_source is None:
-                continue
+            np_segment_img_pt = numpy_bounds_index(np_segment_image, pt_bounds)
+            np_layer_img_pt = numpy_bounds_index(np_layer_image, pt_bounds)
+            # The source patch lines up with the unclipped stamp, so clipping at the left or top skips the same
+            # amount of the patch instead of shifting it.
+            src_x = pt_bounds.x() - stamp_bounds.x()
+            src_y = pt_bounds.y() - stamp_bounds.y()
+            cropped_np_source = np_source[src_y:src_y + pt_bounds.height(), src_x:src_x + pt_bounds.width()]
             np_composite_with_mask(cropped_np_source, np_layer_img_pt, np_segment_img_pt)
-
-

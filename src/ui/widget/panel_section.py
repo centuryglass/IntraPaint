@@ -1,0 +1,460 @@
+"""A panel section: a short header over a body, collapsible to one line that still summarizes its values.
+
+- The header shows a chevron, the title, and small actions on its right. While collapsed it also shows a summary of
+  the section's values, such as "512 x 512, batch 4". The owner supplies the summary text with `set_summary`, or with
+  `bind_summary`, which recomputes it when a bound value changes.
+- Two states decide whether the body shows: the remembered choice (`is_expanded`) and a forced collapse
+  (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice. A click on the
+  header while forced emits `forced_header_clicked`, and the owner can show the body elsewhere with `detach_body` and
+  `restore_body`. While detached, a stand-in with the body's size hints takes its place in the layout, so the section
+  measures the same as with the body attached.
+- A section can mark its summary as a caution (`set_summary_caution`), drawing it in the caution color, for a value
+  that changes what an action does.
+- A section can draw its collapsed header as a bar with the summary on a second line (`set_summary_below`), for
+  columns too narrow for the title and summary on one line.
+- A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
+  loses no controls.
+- A title widget (`set_title_widget`) sits right after the title and takes the header's spare width while the body
+  shows. While the section is collapsed it hides, and the summary takes its place.
+- The section holds no config. The owner stores `is_expanded` per section by connecting `expanded_changed`, and calls
+  `set_expanded` to restore it.
+"""
+from typing import Callable, Optional
+
+from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
+from PySide6.QtGui import QFont, QFontMetrics, QKeyEvent, QPainter, QPainterPath, QPaintEvent, QPalette, QPen
+from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
+
+from src.ui.ink_style import caution_color
+from src.ui.layout.panel_fit import held_weakly
+from src.ui.widget.keycap_badge import KeycapBadge
+from src.util.layout import add_layout
+
+HEADER_HEIGHT = 26
+CHEVRON_SIZE = 8.0
+CHEVRON_MARGIN = 4
+TEXT_GAP = 8
+# The summary mixes this much of the background into the text color:
+SUMMARY_DIM_FRACTION = 0.4
+# The collapsed bar's fill mixes this much of the text color into the background:
+BAR_FILL_FRACTION = 0.08
+BAR_RADIUS = 4
+SUMMARY_LINE_PADDING = 4
+ACTION_SPACING = 4
+
+
+def _mix(color, other, other_fraction: float):
+    return type(color).fromRgbF(*(color.getRgbF()[i] + (other.getRgbF()[i] - color.getRgbF()[i]) * other_fraction
+                                  for i in range(3)))
+
+
+class _HeaderButton(QAbstractButton):
+    """The clickable part of a section header: chevron, title and, while collapsed, the summary."""
+
+    def __init__(self, title: str) -> None:
+        super().__init__()
+        self.setText(title)
+        self.setAccessibleName(title)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._summary = ''
+        self._expanded = True
+        self._summary_below = False
+        self._summary_caution = False
+
+    @property
+    def summary_caution(self) -> bool:
+        """Returns whether the summary is drawn in the caution color."""
+        return self._summary_caution
+
+    def set_summary(self, summary: str, expanded: bool) -> None:
+        """Changes the summary text and whether the section looks expanded."""
+        self._summary = summary
+        self._expanded = expanded
+        self.updateGeometry()
+        self.update()
+
+    def set_summary_caution(self, caution: bool) -> None:
+        """Draws the summary in the caution color, or back in the dimmed text color."""
+        if caution != self._summary_caution:
+            self._summary_caution = caution
+            self.update()
+
+    def set_summary_below(self, below: bool) -> None:
+        """Draws the collapsed header as a bar with the summary on a second line, or back as one line."""
+        if below != self._summary_below:
+            self._summary_below = below
+            self.updateGeometry()
+            self.update()
+
+    def _bar_shown(self) -> bool:
+        return self._summary_below and not self._expanded
+
+    def _height(self) -> int:
+        if self._bar_shown() and self._summary != '':
+            return HEADER_HEIGHT + QFontMetrics(self.font()).height() + SUMMARY_LINE_PADDING
+        return HEADER_HEIGHT
+
+    def _title_font(self) -> QFont:
+        font = QFont(self.font())
+        font.setWeight(QFont.Weight.DemiBold)
+        return font
+
+    def sizeHint(self) -> QSize:
+        """Returns the chevron and title width at the header height."""
+        title_width = QFontMetrics(self._title_font()).horizontalAdvance(self.text())
+        return QSize(int(CHEVRON_MARGIN * 2 + CHEVRON_SIZE + TEXT_GAP + title_width), self._height())
+
+    def minimumSizeHint(self) -> QSize:
+        """Returns room for the chevron alone, so a narrow panel can clip the title instead of widening."""
+        return QSize(int(CHEVRON_MARGIN * 2 + CHEVRON_SIZE), self._height())
+
+    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
+        """Draws the chevron, title and summary in palette colors, with a focus underline for keyboard focus."""
+        painter = QPainter(self)
+        palette = self.palette()
+        group = QPalette.ColorGroup.Active if self.isEnabled() else QPalette.ColorGroup.Disabled
+        text = palette.color(group, QPalette.ColorRole.WindowText)
+        background = palette.color(group, QPalette.ColorRole.Window)
+        if self.underMouse():
+            text = palette.color(group, QPalette.ColorRole.Highlight).lighter(130)
+        as_bar = self._bar_shown()
+        if as_bar:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(_mix(background, palette.color(group, QPalette.ColorRole.WindowText), BAR_FILL_FRACTION))
+            painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), BAR_RADIUS, BAR_RADIUS)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        # The title line is the whole header, or the top line of a bar with a summary below it:
+        title_height = HEADER_HEIGHT if as_bar and self._summary != '' else self.height()
+        center_y = title_height / 2
+        left = float(CHEVRON_MARGIN)
+        chevron = QPainterPath()
+        half = CHEVRON_SIZE / 2
+        if self._expanded:
+            chevron.moveTo(left, center_y - half / 2)
+            chevron.lineTo(left + half, center_y + half / 2)
+            chevron.lineTo(left + CHEVRON_SIZE, center_y - half / 2)
+        else:
+            chevron.moveTo(left + half / 2, center_y - half)
+            chevron.lineTo(left + half * 1.5, center_y)
+            chevron.lineTo(left + half / 2, center_y + half)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(text, 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.drawPath(chevron)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+
+        title_font = self._title_font()
+        painter.setFont(title_font)
+        title_x = int(left + CHEVRON_SIZE + TEXT_GAP)
+        title_rect = QRect(title_x, 0, max(0, self.width() - title_x), title_height)
+        painter.setPen(text)
+        title_width = QFontMetrics(title_font).horizontalAdvance(self.text())
+        painter.drawText(title_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                         QFontMetrics(title_font).elidedText(self.text(), Qt.TextElideMode.ElideRight,
+                                                             max(0, title_rect.width())))
+        summary_x = title_x + title_width + TEXT_GAP
+        summary_below = as_bar and self._summary != ''
+        if summary_below:
+            summary_x = title_x
+        if not self._expanded and self._summary != '' and summary_x < self.width():
+            painter.setFont(self.font())
+            caution = caution_color() if self._summary_caution and self.isEnabled() else None
+            painter.setPen(caution if caution is not None else
+                           _mix(palette.color(group, QPalette.ColorRole.WindowText), background, SUMMARY_DIM_FRACTION))
+            summary_rect = self.rect().adjusted(summary_x, title_height if summary_below else 0, 0, 0)
+            painter.drawText(summary_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                             QFontMetrics(self.font()).elidedText(self._summary, Qt.TextElideMode.ElideRight,
+                                                                  summary_rect.width()))
+        if self.hasFocus() and self.isEnabled():
+            painter.setPen(QPen(palette.color(group, QPalette.ColorRole.Highlight), 1))
+            painter.drawLine(CHEVRON_MARGIN, self.height() - 1, self.width() - CHEVRON_MARGIN, self.height() - 1)
+        painter.end()
+
+    def enterEvent(self, event) -> None:  # pylint: disable=invalid-name
+        """Repaints the hover color."""
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
+        """Repaints without the hover color."""
+        self.update()
+        super().leaveEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # pylint: disable=invalid-name
+        """Toggles on Enter and Return, which buttons ignore by default."""
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.click()
+            return
+        super().keyPressEvent(event)
+
+
+class _BodyStandIn(QWidget):
+    """Takes a detached body's place in its section's layout, with the body's size hints read live.
+
+    Measuring a section with a stand-in gives the size the section would have with the body attached, which is what a
+    panel's fit planning needs to decide whether the section's body has room.
+    """
+
+    def __init__(self, body: QWidget, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._body = body
+        self.setSizePolicy(body.sizePolicy())
+        body.installEventFilter(self)
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the body's size hint."""
+        return self._body.sizeHint()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the body's minimum size hint."""
+        return self._body.minimumSizeHint().expandedTo(self._body.minimumSize())
+
+    def hasHeightForWidth(self) -> bool:  # pylint: disable=invalid-name
+        """Returns whether the body's layout trades height for width."""
+        layout = self._body.layout()
+        return layout is not None and layout.hasHeightForWidth()
+
+    def heightForWidth(self, width: int) -> int:  # pylint: disable=invalid-name
+        """Returns the body's height at `width`."""
+        layout = self._body.layout()
+        return layout.heightForWidth(width) if layout is not None else -1
+
+    def eventFilter(self, watched, event) -> bool:  # pylint: disable=invalid-name
+        """Passes the body's layout changes on to the section's layout."""
+        if watched is self._body and event.type() == QEvent.Type.LayoutRequest:
+            self.updateGeometry()
+        return False
+
+    def release(self) -> None:
+        """Stops watching the body, and schedules the stand-in's deletion."""
+        self._body.removeEventFilter(self)
+        self.hide()
+        self.setParent(None)
+        self.deleteLater()
+
+
+class PanelSection(QWidget):
+    """A titled group of controls that collapses to its header line."""
+
+    expanded_changed = Signal(bool)
+    forced_header_clicked = Signal()
+
+    def __init__(self, title: str, body: QWidget, expanded: bool = True, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._title = title
+        self._body = body
+        self._expanded = expanded
+        self._forced_collapsed = False
+        self._body_detached = False
+        self._stand_in: Optional[_BodyStandIn] = None
+        self._header_visible = True
+        self._summary = ''
+        self._summary_fn: Optional[Callable[[], str]] = None
+        self._header_button = _HeaderButton(title)
+        self._header_button.clicked.connect(self._toggle)
+        self._actions = QHBoxLayout()
+        self._action_widgets: list[QWidget] = []
+        self._title_widget: Optional[QWidget] = None
+        self._actions.setContentsMargins(0, 0, CHEVRON_MARGIN, 0)
+        self._actions.setSpacing(ACTION_SPACING)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        header = self._header_layout = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(0)
+        add_layout(layout, header)
+        header.addWidget(self._header_button, stretch=1)
+        add_layout(header, self._actions)
+        layout.addWidget(body)
+        self._apply_state()
+
+    @property
+    def title(self) -> str:
+        """Returns the section title."""
+        return self._title
+
+    def set_title(self, title: str) -> None:
+        """Changes the title shown in the header."""
+        self._title = title
+        self._header_button.setText(title)
+        self._header_button.setAccessibleName(title)
+        self._header_button.updateGeometry()
+        self._header_button.update()
+        # A title widget's minimum width depends on the title:
+        self._apply_state()
+
+    @property
+    def body(self) -> QWidget:
+        """Returns the widget holding the section's controls."""
+        return self._body
+
+    @property
+    def header_button(self) -> QAbstractButton:
+        """Returns the header's toggle button."""
+        return self._header_button
+
+    def is_expanded(self) -> bool:
+        """Returns the remembered choice: whether the user wants the body shown. A forced collapse doesn't change it."""
+        return self._expanded
+
+    def is_collapsed(self) -> bool:
+        """Returns whether the body is hidden now, from a collapsed choice or a forced collapse."""
+        return self._header_visible and (self._forced_collapsed or not self._expanded)
+
+    def set_expanded(self, expanded: bool) -> None:
+        """Sets the remembered choice, and emits `expanded_changed` if it changed."""
+        if expanded != self._expanded:
+            self._expanded = expanded
+            self._apply_state()
+            self.expanded_changed.emit(expanded)
+
+    def set_forced_collapsed(self, forced: bool) -> None:
+        """Collapses the section regardless of the remembered choice, or lifts that. Header clicks emit
+        `forced_header_clicked` instead of toggling while forced."""
+        if forced != self._forced_collapsed:
+            self._forced_collapsed = forced
+            self._apply_state()
+
+    def is_header_visible(self) -> bool:
+        """Returns whether the header row is shown."""
+        return self._header_visible
+
+    def set_header_visible(self, visible: bool) -> None:
+        """Shows or hides the header row. While it is hidden the body shows, whatever the remembered choice."""
+        if visible != self._header_visible:
+            self._header_visible = visible
+            self._header_button.setVisible(visible)
+            for widget in self._action_widgets:
+                widget.setVisible(visible)
+            # A layout with no widget of its own isn't invalidated by its parent's measure pass:
+            self._header_layout.invalidate()
+            self._apply_state()
+
+    def summary(self) -> str:
+        """Returns the summary text shown while the section is collapsed."""
+        return self._summary
+
+    def set_summary_below(self, below: bool) -> None:
+        """Draws the collapsed header as a bar with the summary on a second line, or back as one line."""
+        self._header_button.set_summary_below(below)
+        self._header_layout.invalidate()
+
+    def set_summary_caution(self, caution: bool) -> None:
+        """Draws the summary in the caution color while `caution` is true, for a value that changes what an action
+        does."""
+        self._header_button.set_summary_caution(caution)
+
+    @property
+    def summary_caution(self) -> bool:
+        """Returns whether the summary is drawn in the caution color."""
+        return self._header_button.summary_caution
+
+    def set_summary(self, summary: str) -> None:
+        """Sets the one-line summary of the section's values, such as "Euler a, 30 steps, CFG 7"."""
+        self._summary = summary
+        self._apply_state()
+
+    def bind_summary(self, summary_fn: Callable[[], str], *change_signals) -> None:
+        """Sets the summary from `summary_fn()` now, and again whenever any of the signals is emitted.
+
+        The signals are the controls' value-changed signals, and are emitted on the main thread. A bound method is held
+        weakly, since the section's panel usually owns it.
+        """
+        self._summary_fn = held_weakly(summary_fn)
+        for signal in change_signals:
+            signal.connect(self._refresh_summary)
+        self._refresh_summary()
+
+    def add_header_widget(self, widget: QWidget) -> None:
+        """Adds a small action, such as a flat button, to the right of the header."""
+        self._actions.addWidget(widget)
+        self._action_widgets.append(widget)
+        widget.setVisible(self._header_visible)
+
+    def remove_header_widget(self, widget: QWidget) -> None:
+        """Takes an action added with `add_header_widget` out of the header. It stays a child of the section, for the
+        owner to move elsewhere, and `add_header_widget` puts it back."""
+        self._actions.removeWidget(widget)
+        self._action_widgets.remove(widget)
+
+    @property
+    def title_widget(self) -> Optional[QWidget]:
+        """The widget after the title, if any."""
+        return self._title_widget
+
+    def set_title_widget(self, widget: Optional[QWidget]) -> None:
+        """Puts a widget right after the title, where it takes the header's spare width, or removes the current one with
+        None. A removed widget stays a child of the section, hidden, for the owner to move elsewhere.
+
+        The widget shows while the header shows and the body does. The section sets its visibility, so the owner hides
+        it only by removing it.
+        """
+        if widget is self._title_widget:
+            return
+        if self._title_widget is not None:
+            self._header_layout.removeWidget(self._title_widget)
+            self._title_widget.hide()
+        self._title_widget = widget
+        if widget is not None:
+            self._header_layout.insertWidget(1, widget, 1)
+        self._header_layout.invalidate()
+        self._apply_state()
+
+    def add_header_keycap(self, key_text: str) -> KeycapBadge:
+        """Adds keycaps for the key binding `key_text` to the right of the header and returns them."""
+        badge = KeycapBadge(key_text)
+        self.add_header_widget(badge)
+        return badge
+
+    def _refresh_summary(self, *_args) -> None:
+        if self._summary_fn is not None:
+            self.set_summary(self._summary_fn())
+
+    def detach_body(self) -> QWidget:
+        """Takes the body out of the section for the owner to show elsewhere, and returns it. The section keeps its
+        header, with a stand-in for measuring. `restore_body` puts it back."""
+        if not self._body_detached:
+            self._body_detached = True
+            self.layout().removeWidget(self._body)
+            self._stand_in = _BodyStandIn(self._body, self)
+            self.layout().addWidget(self._stand_in)
+            self._apply_state()
+        return self._body
+
+    def restore_body(self) -> None:
+        """Puts a body taken with `detach_body` back under the header, shown or hidden by the section's state."""
+        if self._body_detached:
+            self._body_detached = False
+            if self._stand_in is not None:
+                self.layout().removeWidget(self._stand_in)
+                self._stand_in.release()
+                self._stand_in = None
+            self._body.setParent(self)
+            self.layout().addWidget(self._body)
+            self._apply_state()
+
+    def _toggle(self) -> None:
+        if self._forced_collapsed:
+            self.forced_header_clicked.emit()
+        else:
+            self.set_expanded(not self._expanded)
+
+    def _apply_state(self) -> None:
+        collapsed = self.is_collapsed()
+        # The header button takes the spare width while it has a summary to show, and the title widget otherwise:
+        title_widget_shown = self._title_widget is not None and self._header_visible and not collapsed
+        if self._title_widget is not None:
+            self._title_widget.setVisible(title_widget_shown)
+        self._header_layout.setStretchFactor(self._header_button, 0 if title_widget_shown else 1)
+        # The title widget gives up width before the title does:
+        self._header_button.setMinimumWidth(self._header_button.sizeHint().width() if title_widget_shown else 0)
+        if self._stand_in is not None:
+            self._stand_in.setVisible(not collapsed)
+        else:
+            self._body.setVisible(not collapsed)
+        self._header_button.set_summary(self._summary, not collapsed)
+        self._header_button.setAccessibleDescription(self._summary)

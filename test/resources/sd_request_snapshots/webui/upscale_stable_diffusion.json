@@ -6,13 +6,17 @@
           "args": [
             {
               "control_mode": "Balanced",
+              "enabled": true,
               "guidance_end": 0.9,
               "guidance_start": 0.1,
+              "low_vram": false,
               "model": "control_v11f1e_sd15_tile [a371b31b]",
               "module": "tile_resample",
+              "pixel_perfect": true,
               "processor_res": 512,
               "resize_mode": "Crop and Resize",
               "threshold_a": 1.0,
+              "use_preview_as_input": false,
               "weight": 0.75
             }
           ]
@@ -22,7 +26,6 @@
       "cfg_scale": 6.5,
       "denoising_strength": 0.25,
       "height": 800,
-      "include_init_images": false,
       "init_images": [
         "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>"
       ],
@@ -32,6 +35,7 @@
       "restore_faces": false,
       "sampler_name": "Euler a",
       "save_images": false,
+      "scheduler": "Automatic",
       "script_args": [
         null,
         512,
@@ -60,6 +64,7 @@
       "width": 1200
     },
     "endpoint": "/sdapi/v1/img2img",
-    "method": "POST"
+    "method": "POST",
+    "timeout": 600.0
   }
 ]

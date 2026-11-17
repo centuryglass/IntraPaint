@@ -389,10 +389,13 @@ class QtPaintBrush(LayerBrush):
         assert isinstance(layer_image, QImage)
         self.draw_segment_to_image(self._paint_buffer, layer_image, layer_painter, bounds)
 
-    def draw_segment_to_image(self, segment_image: QImage, layer_image: QImage, layer_painter: QPainter,
+    def draw_segment_to_image(self, segment_image: QImage, _layer_image: QImage, layer_painter: QPainter,
                               bounds: QRect) -> None:
         """Handles the final drawing operation that copies an input segment to the layer image."""
         if self.eraser:
+            if self.layer is not None and self.layer.alpha_locked:
+                # Erasing only lowers alpha, which the lock would restore, and the round trip shifts color.
+                return
             layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
         layer_painter.drawImage(bounds, segment_image, bounds)
 

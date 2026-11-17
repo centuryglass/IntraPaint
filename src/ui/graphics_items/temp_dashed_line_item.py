@@ -24,23 +24,34 @@ class TempDashedLineItem(AnimatedDashItem):
         self.prepareGeometryChange()
         self._line = QLineF(line)
         self.update()
+        self.sync_animation()
+
+    def has_dashes(self) -> bool:
+        """Returns whether the item has a line to draw."""
+        return not self._line.isNull()
 
     def _line_polygon(self) -> QPolygonF:
         p1 = self._line.p1()
         p2 = self._line.p2()
         perpendicular = QPointF(self._line.dx(), self._line.dy())
         length = (perpendicular.x() ** 2 + perpendicular.y() ** 2) ** 0.5
+        if length == 0:
+            return QPolygonF()
         perpendicular /= length
         offset = perpendicular * (PEN_WIDTH / 2)
         return QPolygonF([p1 + offset, p1 - offset, p2 - offset, p2 + offset])
 
     def boundingRect(self) -> QRectF:
         """Sse the union of all handle bounds as the bounding rect."""
+        if self._line.isNull():
+            return QRectF()
         return self._line_polygon().boundingRect()
 
     def shape(self) -> QPainterPath:
         """Returns the outline's bounds as a shape."""
         path = QPainterPath()
+        if self._line.isNull():
+            return path
         path.addPolygon(self._line_polygon())
         return path
 

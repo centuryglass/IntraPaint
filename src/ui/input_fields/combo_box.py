@@ -15,8 +15,9 @@ class ComboBox(QComboBox):
         self._data_type = str
         self.currentIndexChanged.connect(self._index_change_slot)
 
-    # noinspection PyPep8Naming
-    def addItem(self, text: str, userData: Any = None, **kwargs) -> None:
+    # Naming conventions must match Qt:
+    # pylint: disable=invalid-name
+    def addItem(self, text: str, userData: Any = None, **_kwargs) -> None:
         """Ensure options always have data attached."""
         if userData is None:
             userData = text
@@ -38,7 +39,8 @@ class ComboBox(QComboBox):
                             f' found {data}')
         return data
 
-    # noinspection PyPep8Naming
+    # Naming conventions must match Qt:
+    # pylint: disable=invalid-name
     def setValue(self, new_value: Any) -> None:
         """Updates the current selected item value."""
         index = self.findData(new_value)

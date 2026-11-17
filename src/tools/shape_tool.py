@@ -1,21 +1,24 @@
 """Draws various geometric shapes."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QPen, QCursor, QPainterPathStroker
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon, QPainter, QBrush, QPainterPath, QPen, QPainterPathStroker, QPolygonF
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
+from src.controller import color_controller
 from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.tools.base_tool import BaseTool
-from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
+from src.image.layers.layer_group import LayerGroup
+from src.tools.base_tool import BaseTool, ToolGroup
+from src.tools.shape_drag_tool import ShapeDragTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.pen_join_style_combo_box import PenJoinStyleComboBox
 from src.ui.input_fields.pen_style_combo_box import PenStyleComboBox
+from src.ui.panel.tool_control_panels.shape_preview import parse_dash_pattern
 from src.ui.panel.tool_control_panels.shape_tool_panel import ShapeToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.shape_mode import ShapeMode
@@ -32,25 +35,23 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
 
-SHAPE_TOOL_LABEL = _tr('Draw Shapes')
+SHAPE_TOOL_LABEL = _tr('Draw shapes')
 SHAPE_TOOL_TOOLTIP = _tr('Create rectangles, ellipses, and other polygons')
 SHAPE_TOOL_CONTROL_HINT = _tr('{left_mouse_icon}, drag: draw shape')
 PREVIEW_OPACITY = 0.7
 
 
-class ShapeTool(BaseTool):
+class ShapeTool(ShapeDragTool):
     """Draws various geometric shapes."""
 
+    TOOL_GROUP = ToolGroup.EDIT
+
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(KeyConfig.SHAPE_TOOL_KEY, SHAPE_TOOL_LABEL, SHAPE_TOOL_TOOLTIP, QIcon(ICON_PATH_SHAPE_TOOL))
-        self.cursor = QCursor(Qt.CursorShape.CrossCursor)
+        super().__init__(KeyConfig.SHAPE_TOOL_KEY, SHAPE_TOOL_LABEL, SHAPE_TOOL_TOOLTIP, QIcon(ICON_PATH_SHAPE_TOOL),
+                         image_viewer)
         cache = Cache()
-        scene = image_viewer.scene()
-        assert scene is not None
-        self._scene = scene
         self._image_stack = image_stack
         self._control_panel: Optional[ShapeToolPanel] = None
-        self._selection_handler = ClickAndDragSelection(scene)
         self._selection_handler.opacity = PREVIEW_OPACITY
         self._layer: Optional[ImageLayer] = None
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
@@ -63,7 +64,6 @@ class ShapeTool(BaseTool):
             self._selection_handler.mode = ShapeMode.ELLIPSE
         self._selection_handler.inner_radius_fraction = cache.get(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION)
         self._selection_handler.vertex_count = cache.get(Cache.SHAPE_TOOL_VERTEX_COUNT)
-        self._dragging = False
 
         # load brush:
         self._brush = QBrush()
@@ -71,7 +71,7 @@ class ShapeTool(BaseTool):
             self._brush.setStyle(FillStyleComboBox.get_style(cache.get(Cache.SHAPE_TOOL_FILL_PATTERN)))
         except KeyError:
             self._brush.setStyle(Qt.BrushStyle.SolidPattern)
-        self._brush.setColor(cache.get_color(Cache.SHAPE_TOOL_FILL_COLOR, Qt.GlobalColor.white))
+        self._brush.setColor(color_controller.shape_fill_color())
         self._selection_handler.set_brush(self._brush)
 
         # load pen:
@@ -80,10 +80,10 @@ class ShapeTool(BaseTool):
             self._pen.setStyle(PenStyleComboBox.get_pen_style(cache.get(Cache.SHAPE_TOOL_LINE_STYLE)))
         except KeyError:
             self._pen.setStyle(Qt.PenStyle.SolidLine)
-        self._pen.setColor(cache.get_color(Cache.SHAPE_TOOL_LINE_COLOR, Qt.GlobalColor.black))
+        self._pen.setColor(color_controller.shape_line_color())
         self._pen.setWidth(cache.get(Cache.SHAPE_TOOL_LINE_WIDTH))
         if self._pen.style() == Qt.PenStyle.CustomDashLine:
-            dash_pattern = _parse_dash_pattern(cache.get(Cache.SHAPE_TOOL_DASH_PATTERN))
+            dash_pattern = parse_dash_pattern(cache.get(Cache.SHAPE_TOOL_DASH_PATTERN))
             if len(dash_pattern) > 0 and (len(dash_pattern) % 2) == 0:
                 self._pen.setDashPattern(dash_pattern)
         try:
@@ -97,22 +97,17 @@ class ShapeTool(BaseTool):
                              (Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION,
                               self._shape_mode_inner_radius_fraction_update_slot),
                              (Cache.SHAPE_TOOL_LINE_COLOR, self._line_color_update_slot),
+                             (Cache.SHAPE_TOOL_LINE_SOURCE, self._line_color_update_slot),
+                             (Cache.LAST_BRUSH_COLOR, self._foreground_update_slot),
+                             (Cache.BACKGROUND_COLOR, self._background_update_slot),
                              (Cache.SHAPE_TOOL_LINE_STYLE, self._line_style_update_slot),
                              (Cache.SHAPE_TOOL_LINE_JOIN_STYLE, self._line_join_style_update_slot),
                              (Cache.SHAPE_TOOL_DASH_PATTERN, self._dash_pattern_update_slot),
                              (Cache.SHAPE_TOOL_LINE_WIDTH, self._line_width_update_slot),
                              (Cache.SHAPE_TOOL_FILL_PATTERN, self._fill_pattern_update_slot),
-                             (Cache.SHAPE_TOOL_FILL_COLOR, self._fill_color_update_slot)):
+                             (Cache.SHAPE_TOOL_FILL_COLOR, self._fill_color_update_slot),
+                             (Cache.SHAPE_TOOL_FILL_SOURCE, self._fill_color_update_slot)):
             cache.connect(self, key, handler)
-
-        # When the tool is active, changes to the primary brush color will propagate to the last shape mode tool that
-        # changes.
-        self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
-
-        def _update_last_color(color_str: str) -> None:
-            if self.is_active and QColor(color_str).isValid():
-                cache.set(self._last_color_changed, color_str)
-        cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_last_color)
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -128,41 +123,18 @@ class ShapeTool(BaseTool):
                                            and not self._layer.parent_locked)
         return self._control_panel
 
-    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Start selecting on click."""
-        assert event is not None
-        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True) \
-                or event.buttons() != Qt.MouseButton.LeftButton \
-                or not self.validate_layer(self._layer):
-            return False
+    def _can_start_drag(self) -> bool:
+        """Returns whether the active layer can be drawn on."""
+        return self.validate_layer(self._layer)
+
+    def _prepare_drag(self) -> None:
+        """Previews the drag with the fill brush."""
         self._selection_handler.set_brush(self._brush)
-        self._selection_handler.start_selection(image_coordinates)
-        self._dragging = True
-        return True
 
-    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Continue selection while buttons are held."""
-        assert event is not None
-        if not self._dragging:
-            return False
-        if event.buttons() in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
-            self._selection_handler.drag_to(image_coordinates)
-        else:
-            self._end_drag(image_coordinates)
-        return True
-
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Finishes the selection/deselection."""
-        if not self._dragging:
-            return False
-        self._end_drag(image_coordinates)
-        return True
-
-    def _end_drag(self, image_coordinates: QPoint) -> None:
-        assert self._dragging and self._selection_handler.selecting
-        self._dragging = False
+    def _finish_drag(self, shape: QPolygonF) -> None:
+        """Draws the finished shape onto the active layer."""
         path = QPainterPath()
-        path.addPolygon(self._selection_handler.end_selection(image_coordinates))
+        path.addPolygon(shape)
         if not isinstance(self._layer, ImageLayer):
             return
         line_width = self._pen.width()
@@ -189,11 +161,6 @@ class ShapeTool(BaseTool):
             self._control_panel.setEnabled(self._layer is not None and not self._layer.locked
                                            and not self._layer.parent_locked)
 
-    def _on_deactivate(self) -> None:
-        if self._selection_handler.selecting:
-            self._selection_handler.end_selection(QPoint())
-        self._dragging = False
-
     def _shape_mode_update_slot(self, shape_str: str) -> None:
         try:
             mode = ShapeMode.from_text(shape_str)
@@ -207,14 +174,21 @@ class ShapeTool(BaseTool):
     def _shape_mode_inner_radius_fraction_update_slot(self, radius_fraction: float) -> None:
         self._selection_handler.inner_radius_fraction = radius_fraction
 
-    def _line_color_update_slot(self, color_str: str) -> None:
-        self._last_color_changed = Cache.SHAPE_TOOL_LINE_COLOR
-        if QColor(color_str).isValid():
-            color = QColor(color_str)
-            if self._pen.color() == color:
-                return
-            self._pen.setColor(color)
-            self._selection_handler.set_pen(self._pen)
+    def _line_color_update_slot(self, _=None) -> None:
+        color = color_controller.shape_line_color()
+        if self._pen.color() == color:
+            return
+        self._pen.setColor(color)
+        self._selection_handler.set_pen(self._pen)
+
+    def _foreground_update_slot(self, _=None) -> None:
+        self._line_color_update_slot()
+        if Cache().get(Cache.SHAPE_TOOL_FILL_SOURCE) == color_controller.SOURCE_FOREGROUND:
+            self._fill_color_update_slot()
+
+    def _background_update_slot(self, _=None) -> None:
+        if Cache().get(Cache.SHAPE_TOOL_FILL_SOURCE) == color_controller.SOURCE_BACKGROUND:
+            self._fill_color_update_slot()
 
     def _line_style_update_slot(self, style_str: str) -> None:
         try:
@@ -225,7 +199,7 @@ class ShapeTool(BaseTool):
             return
         self._pen.setStyle(pen_style)
         if self._pen.style() == Qt.PenStyle.CustomDashLine:
-            dash_pattern = _parse_dash_pattern(Cache().get(Cache.SHAPE_TOOL_DASH_PATTERN))
+            dash_pattern = parse_dash_pattern(Cache().get(Cache.SHAPE_TOOL_DASH_PATTERN))
             if len(dash_pattern) > 0 and (len(dash_pattern) % 2) == 0:
                 self._pen.setDashPattern(dash_pattern)
         self._selection_handler.set_pen(self._pen)
@@ -243,7 +217,7 @@ class ShapeTool(BaseTool):
     def _dash_pattern_update_slot(self, pattern_str: str) -> None:
         if self._pen.style() != Qt.PenStyle.CustomDashLine:
             return
-        dash_pattern = _parse_dash_pattern(pattern_str)
+        dash_pattern = parse_dash_pattern(pattern_str)
         if len(dash_pattern) > 0 and (len(dash_pattern) % 2) == 0 and dash_pattern != self._pen.dashPattern():
             self._pen.setDashPattern(dash_pattern)
             self._selection_handler.set_pen(self._pen)
@@ -264,11 +238,8 @@ class ShapeTool(BaseTool):
         self._brush.setStyle(fill_pattern)
         self._selection_handler.set_brush(self._brush)
 
-    def _fill_color_update_slot(self, color_str: str) -> None:
-        self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
-        if not QColor(color_str).isValid():
-            return
-        color = QColor(color_str)
+    def _fill_color_update_slot(self, _=None) -> None:
+        color = color_controller.shape_fill_color()
         if color == self._brush.color():
             return
         self._brush.setColor(color)
@@ -290,14 +261,9 @@ class ShapeTool(BaseTool):
 
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
         self.set_disabled_cursor(locked or not isinstance(self._layer, ImageLayer))
         if self.is_active and self._control_panel is not None:
             self._control_panel.setEnabled(not locked and isinstance(self._layer, ImageLayer))
-        if locked and self._selection_handler.selecting:
-            self._selection_handler.end_selection(QPoint())
-            self._dragging = False
-
-
-def _parse_dash_pattern(pattern_str) -> list[float]:
-    return [float(num) for num in pattern_str.split(' ') if num.isnumeric()]
+        if locked:
+            self._cancel_drag()

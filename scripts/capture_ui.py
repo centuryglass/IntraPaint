@@ -1,14 +1,47 @@
-"""Saves screenshots of the style gallery, the main window and every panel at extreme sizes, with a layout report.
+"""Saves screenshots of the style gallery, the main window and every panel, for checking layouts by eye.
 
-The renders come from `test/ui/ui_capture.py`, the same code the style gallery and panel layout tests compare against
-their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's config setup, so screenshots
-match what the tests check. The output directory gets:
+The captures show each panel at extreme sizes with a layout report, or on sweep sheets across a grid of dock sizes.
+
+The renders come from `test/ui/ui_capture.py` and `test/ui/panel_capture.py`, the same code the style gallery and panel
+layout tests compare against their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's
+config setup, so screenshots match what the tests check. The output directory gets:
 - `index.html`: every image on one page, with each capture's layout problems listed under it.
 - `gallery/<control>.png`: each control in every state, labeled.
-- `panels/<panel>/<size>.png`: each panel at each size `PanelScene.sizes` gives it, the main window included.
+- `panels/<panel>/<capture>.png`: each panel for each capture `PanelScene.captures` gives it, the main window
+  included.
 - `layout_report.json`: the size and layout problems of each capture.
 
-Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...]
+With `--sheet`, it saves sweep sheets instead, for every panel scene and Tools panel scene (`tools_panel_scenes`) except
+the main window:
+- `sheets/<panel>/<orientation>.png`: one image per orientation the panel is told (`host_orientations`), with a cell
+  for each size in `--widths` by `--heights`, all drawn at `--scale` so cells keep their real proportions. Each cell is
+  framed at the panel's bounds and captioned with the orientation planning chose if it differs, and its problem
+  counts from `find_layout_problems` and `find_arrangement_problems`. Red marks problems, which the sweep test fails
+  on. An amber caption marks a cell with only hints (`HINT_KINDS`), which point at layouts worth a look. Gray marks a
+  size below the panel's minimum size hint, which only a squeezed window reaches. `--overlay` outlines every widget
+  `find_layout_problems` checks, and draws the edges `misaligned` compares in orange. For a readable close-up of one size, pass one width and height with `--scale 1`.
+- `sheets/<panel>/<orientation>.json`: each cell's problems and hints, by `<width>x<height>`.
+- `index.html`: every sheet.
+
+With `--windows`, it saves the secondary windows from `test/ui/window_capture.py` instead: dialogs, one message box
+of each form, and the windows opened from menus.
+- `windows/<window>/<size>.png`: each window at the size the app opens it at, its minimum size and, if it is
+  resizable, a large size.
+- `windows/layout_report.json` and `index.html`: each capture's size and layout problems, as above.
+
+`--edit-mode` sets `Cache.EDIT_MODE` before any panel is built, for either kind of capture. Panels that show or hide
+controls by edit mode (the Stable Diffusion panels, the selection tool's controls) render that mode's layout.
+
+`--language CODE` captures in a translated language (any `.qm` in `resources/translations/`), to check translations for
+clipped or overflowing text. The translator is installed before `src/` is imported, as `IntraPaint.py` does. The theme
+fonts have no CJK glyphs and this script doesn't hide the system's fonts, so those characters come from whichever
+system font Qt falls back to. Their metrics, and so the clipping seen, depend on the machine.
+
+Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...] [--edit-mode MODE]
+       python scripts/capture_ui.py --windows [--output DIR] [--only NAME_PART ...]
+       python scripts/capture_ui.py --sheet [--only NAME_PART ...] [--widths W ...] [--heights H ...] [--scale S]
+                                    [--overlay] [--edit-mode MODE]
+Any form also takes --language CODE.
 """
 import argparse
 import html
@@ -27,17 +60,54 @@ os.environ['INTRAPAINT_DATA_DIR'] = os.path.join(_USER_DIR_ROOT, 'data')
 os.environ['INTRAPAINT_LOG_DIR'] = os.path.join(_USER_DIR_ROOT, 'logs')
 
 # pylint: disable=wrong-import-position
+from typing import Optional
+
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
-from PySide6.QtGui import QImage, QPainter, QPalette
+from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QApplication
 
+from src.util.translation import ENGLISH, available_languages, install_translation
+
+
+def _requested_language() -> str:
+    """Returns the `--language` value, read before the full parser runs, or English if there is none."""
+    early_parser = argparse.ArgumentParser(add_help=False)
+    early_parser.add_argument('--language', default=ENGLISH)
+    return early_parser.parse_known_args()[0].language
+
+
+# Config labels and module-level `_tr` constants are translated when `src/` is imported, so the translator has to be
+# installed before the imports below. An unknown language is rejected by the full parser in `main`.
+_APP = QApplication.instance() or QApplication(sys.argv)
+_LANGUAGE = _requested_language()
+_TRANSLATOR = install_translation(_APP, _LANGUAGE) if _LANGUAGE in available_languages() else None
+
+from src.ui.layout.dock_panel import DockPanel
+from src.ui.layout.panel_fit import Orientation
+from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import reset_singletons
-from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, PanelHost, find_layout_problems,
-                                gallery_cell_rect, layout_report, mock_app_controller, panel_scenes,
+from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
+                                   find_layout_problems, is_hint, layout_report, layout_widget_rects, misaligned_edges,
+                                   mock_app_controller, panel_scenes, tools_panel_scenes)
+from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
+from test.ui.window_capture import capture_window, release_window, window_scenes
+
+EDIT_MODES = (EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG)
 
 LABEL_WIDTH = 110
 LABEL_HEIGHT = 20
+
+SHEET_SCALE = 0.5
+SHEET_GAP = 10
+SHEET_AXIS_WIDTH = 48
+SHEET_CAPTION_MIN_WIDTH = 96
+SHEET_CAPTION_LINE = 13
+SHEET_FONT_PIXELS = 11
+PROBLEM_COLOR = QColor('#e0403a')
+HINT_COLOR = QColor('#d89a1c')
+OVERLAY_COLOR = QColor(0, 160, 255, 140)
+MISALIGNED_COLOR = QColor(255, 140, 0, 220)
 
 
 def labeled_gallery_image(control: GalleryControl) -> QImage:
@@ -69,13 +139,16 @@ def _save(image: QImage, output_dir: str, relative_path: str) -> str:
     return relative_path
 
 
-def _write_index(output_dir: str, gallery_paths: list[str], report: dict[str, dict[str, dict]]) -> None:
+def _write_index(output_dir: str, gallery_paths: list[str], report: dict[str, dict[str, dict]],
+                 title: str = 'IntraPaint UI captures') -> None:
     window_color = QApplication.palette().color(QPalette.ColorRole.Window).name()
     text_color = QApplication.palette().color(QPalette.ColorRole.WindowText).name()
-    parts = [f'<!doctype html><meta charset="utf-8"><title>IntraPaint UI captures</title><style>'
+    parts = [f'<!doctype html><meta charset="utf-8"><title>{title}</title><style>'
              f'body{{background:{window_color};color:{text_color};font-family:sans-serif;margin:16px}}'
              f'img{{border:1px dashed #888;display:block;margin:4px 0}}figure{{margin:0 0 24px}}'
-             f'li{{font-family:monospace;font-size:12px}}</style><h1>IntraPaint UI captures</h1><h2>Style gallery</h2>']
+             f'li{{font-family:monospace;font-size:12px}}</style><h1>{title}</h1>']
+    if gallery_paths:
+        parts.append('<h2>Style gallery</h2>')
     parts.extend(f'<figure><img src="{html.escape(path)}" alt=""><figcaption>{html.escape(path)}</figcaption></figure>'
                  for path in gallery_paths)
     for scene_name, captures in report.items():
@@ -95,22 +168,28 @@ def _wanted(name: str, filters: list[str]) -> bool:
     return len(filters) == 0 or any(part in name for part in filters)
 
 
-def capture_all(output_dir: str, filters: list[str]) -> None:
-    """Captures everything into output_dir. See the module docstring for its layout."""
+def _set_up_config(config_dir: str, edit_mode: Optional[str]) -> None:
+    """Sets up config the way the panel layout test does: conftest.py's fixture copies, then IntraPaintTestCase's
+    reset. A non-None edit_mode is stored as `Cache.EDIT_MODE`."""
     # pylint: disable=import-outside-toplevel
     from src.config.application_config import AppConfig
     from src.config.cache import Cache
     from src.config.key_config import KeyConfig
+    for config_class, file_name in ((AppConfig, 'app_config_test.json'), (KeyConfig, 'key_config_test.json'),
+                                    (Cache, 'cache_test.json')):
+        copy_path = os.path.join(config_dir, file_name)
+        shutil.copyfile(os.path.join(PROJECT_ROOT, 'test', 'resources', file_name), copy_path)
+        config_class(copy_path)
+    reset_singletons()
+    if edit_mode is not None:
+        Cache().set(Cache.EDIT_MODE, edit_mode)
 
+
+def capture_all(output_dir: str, filters: list[str], edit_mode: Optional[str]) -> None:
+    """Captures everything into output_dir. See the module docstring for its layout."""
     config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
     try:
-        # The same config setup as the panel layout test: conftest.py's fixture copies, then IntraPaintTestCase's reset.
-        for config_class, file_name in ((AppConfig, 'app_config_test.json'), (KeyConfig, 'key_config_test.json'),
-                                        (Cache, 'cache_test.json')):
-            copy_path = os.path.join(config_dir, file_name)
-            shutil.copyfile(os.path.join(PROJECT_ROOT, 'test', 'resources', file_name), copy_path)
-            config_class(copy_path)
-        reset_singletons()
+        _set_up_config(config_dir, edit_mode)
         controller = mock_app_controller()
 
         gallery_paths = [_save(labeled_gallery_image(control), output_dir, f'gallery/{control.name}.png')
@@ -125,17 +204,183 @@ def capture_all(output_dir: str, filters: list[str]) -> None:
             report[scene.name] = {}
             with scene.context():
                 host = PanelHost(panel)
-                for size_case, size in scene.sizes(panel).items():
-                    image = host.capture(size)
-                    report[scene.name][size_case] = {
+                for name, (size, orientation) in scene.captures(panel).items():
+                    image = host.capture(size, orientation)
+                    report[scene.name][name] = {
                         **layout_report(size, find_layout_problems(panel)),
-                        'image': _save(image, output_dir, f'panels/{scene.name}/{size_case}.png')}
+                        'image': _save(image, output_dir, f'panels/{scene.name}/{name}.png')}
                 host.release()
         with open(os.path.join(output_dir, 'layout_report.json'), 'w', encoding='utf-8') as report_file:
             json.dump(report, report_file, indent=2)
         _write_index(output_dir, gallery_paths, report)
     finally:
         shutil.rmtree(config_dir, ignore_errors=True)
+
+
+def capture_windows(output_dir: str, filters: list[str]) -> None:
+    """Captures every secondary window into output_dir. See the module docstring for its layout."""
+    config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
+    try:
+        _set_up_config(config_dir, None)
+        controller = mock_app_controller()
+        report: dict[str, dict[str, dict]] = {}
+        for scene in window_scenes(controller):
+            if not _wanted(scene.name, filters):
+                continue
+            with scene.context():
+                window = scene.build(controller)
+                report[scene.name] = {}
+                for name, size in scene.sizes(window).items():
+                    image = capture_window(window, size)
+                    report[scene.name][name] = {
+                        **layout_report(window.size(), find_layout_problems(window)),
+                        'image': _save(image, output_dir, f'windows/{scene.name}/{name}.png')}
+                release_window(window)
+        with open(os.path.join(output_dir, 'windows', 'layout_report.json'), 'w', encoding='utf-8') as report_file:
+            json.dump(report, report_file, indent=2)
+        _write_index(output_dir, [], report, 'IntraPaint window captures')
+    finally:
+        shutil.rmtree(config_dir, ignore_errors=True)
+
+
+def _sheet_font() -> QFont:
+    font = QFont(QApplication.font())
+    font.setPixelSize(SHEET_FONT_PIXELS)
+    return font
+
+
+def _draw_overlay(image: QImage, panel) -> None:
+    painter = QPainter(image)
+    painter.setPen(QPen(OVERLAY_COLOR, 1))
+    for rect in layout_widget_rects(panel):
+        painter.drawRect(rect.adjusted(0, 0, -1, -1))
+    painter.setPen(QPen(MISALIGNED_COLOR, 2))
+    for line in misaligned_edges(panel):
+        painter.drawLine(line)
+    painter.end()
+
+
+def _cell_caption(chosen: Optional[Orientation], problem_count: int, hint_count: int, below_minimum: bool
+                  ) -> tuple[str, str]:
+    first = 'below minimum' if below_minimum else ''
+    if chosen is not None:
+        first = f'{first}, as {chosen.value}' if first else f'as {chosen.value}'
+    counts = []
+    if problem_count > 0:
+        counts.append(f'{problem_count} problem(s)')
+    if hint_count > 0:
+        counts.append(f'{hint_count} hint(s)')
+    return first, ', '.join(counts) if counts else 'ok'
+
+
+def sweep_sheet(host: PanelHost, orientation: Optional[Orientation], widths: list[int], heights: list[int],
+                scale: float, overlay: bool) -> tuple[QImage, dict[str, dict]]:
+    """Captures a hosted panel at every width by height and returns the sheet image and each cell's report.
+
+    Rows are heights and columns are widths, swept row by row.
+    """
+    panel = host.panel
+    palette = QApplication.palette()
+    text_color = palette.color(QPalette.ColorRole.WindowText)
+    dim_color = palette.color(QPalette.ColorRole.PlaceholderText)
+    column_widths = [max(round(width * scale), SHEET_CAPTION_MIN_WIDTH) for width in widths]
+    row_heights = [round(height * scale) + 2 * SHEET_CAPTION_LINE for height in heights]
+    lefts = [SHEET_AXIS_WIDTH + sum(column_widths[:i]) + i * SHEET_GAP for i in range(len(widths))]
+    tops = [LABEL_HEIGHT + sum(row_heights[:i]) + i * SHEET_GAP for i in range(len(heights))]
+    sheet = QImage(lefts[-1] + column_widths[-1] + SHEET_GAP, tops[-1] + row_heights[-1] + SHEET_GAP,
+                   QImage.Format.Format_ARGB32_Premultiplied)
+    sheet.fill(palette.color(QPalette.ColorRole.Window))
+    painter = QPainter(sheet)
+    painter.setFont(_sheet_font())
+    painter.setPen(text_color)
+    for left, column_width, width in zip(lefts, column_widths, widths):
+        painter.drawText(QRect(left, 0, column_width, LABEL_HEIGHT), Qt.AlignmentFlag.AlignLeft
+                         | Qt.AlignmentFlag.AlignVCenter, f'w {width}')
+    report: dict[str, dict] = {}
+    for top, height in zip(tops, heights):
+        painter.setPen(text_color)
+        painter.drawText(QRect(0, top, SHEET_AXIS_WIDTH - 4, LABEL_HEIGHT), Qt.AlignmentFlag.AlignRight
+                         | Qt.AlignmentFlag.AlignTop, f'h {height}')
+        for left, column_width, width in zip(lefts, column_widths, widths):
+            size = QSize(width, height)
+            image = host.capture(size, orientation)
+            found = find_layout_problems(panel) + find_arrangement_problems(panel)
+            problems = [problem for problem in found if not is_hint(problem)]
+            hints = [problem for problem in found if is_hint(problem)]
+            minimum = panel.minimumSizeHint()
+            below_minimum = minimum.isValid() and (width < minimum.width() or height < minimum.height())
+            chosen = None
+            if isinstance(panel, DockPanel) and orientation is not None and panel.orientation != orientation:
+                chosen = panel.orientation
+            if overlay:
+                _draw_overlay(image, panel)
+            target = QRect(left, top, max(round(width * scale), 1), max(round(height * scale), 1))
+            if scale != 1:
+                image = image.scaled(target.size(), Qt.AspectRatioMode.IgnoreAspectRatio,
+                                     Qt.TransformationMode.SmoothTransformation)
+            painter.drawImage(target, image)
+            flagged = bool(problems) and not below_minimum
+            painter.setPen(QPen(PROBLEM_COLOR if flagged else dim_color, 2 if flagged else 1, Qt.PenStyle.DashLine))
+            painter.drawRect(target.adjusted(0, 0, -1, -1))
+            first, second = _cell_caption(chosen, len(problems), len(hints), below_minimum)
+            caption_top = target.bottom() + 1
+            painter.setPen(dim_color if below_minimum else text_color)
+            painter.drawText(QRect(left, caption_top, column_width, SHEET_CAPTION_LINE), Qt.AlignmentFlag.AlignLeft,
+                             first)
+            if below_minimum:
+                painter.setPen(dim_color)
+            else:
+                painter.setPen(PROBLEM_COLOR if problems else (HINT_COLOR if hints else text_color))
+            painter.drawText(QRect(left, caption_top + (SHEET_CAPTION_LINE if first else 0), column_width,
+                                   SHEET_CAPTION_LINE), Qt.AlignmentFlag.AlignLeft, second)
+            report[f'{width}x{height}'] = {'below_minimum': below_minimum, 'problems': problems, 'hints': hints,
+                                           **({'chosen_orientation': chosen.value} if chosen is not None else {})}
+    painter.end()
+    return sheet, report
+
+
+def _write_sheet_index(output_dir: str, sheet_paths: list[str]) -> None:
+    window_color = QApplication.palette().color(QPalette.ColorRole.Window).name()
+    text_color = QApplication.palette().color(QPalette.ColorRole.WindowText).name()
+    parts = [f'<!doctype html><meta charset="utf-8"><title>IntraPaint sweep sheets</title><style>'
+             f'body{{background:{window_color};color:{text_color};font-family:sans-serif;margin:16px}}'
+             f'img{{display:block;margin:4px 0}}figure{{margin:0 0 24px}}</style><h1>IntraPaint sweep sheets</h1>']
+    parts.extend(f'<figure><figcaption>{html.escape(path)}</figcaption><img src="{html.escape(path)}" alt="">'
+                 f'</figure>' for path in sheet_paths)
+    with open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8') as index_file:
+        index_file.write('\n'.join(parts))
+
+
+def capture_sheets(output_dir: str, filters: list[str], widths: list[int], heights: list[int], scale: float,
+                   overlay: bool, edit_mode: Optional[str]) -> list[str]:
+    """Saves sweep sheets into output_dir and returns their paths. See the module docstring for its layout."""
+    config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
+    sheet_paths: list[str] = []
+    try:
+        _set_up_config(config_dir, edit_mode)
+        controller = mock_app_controller()
+        scenes: list[PanelScene] = [scene for scene in panel_scenes(controller) + tools_panel_scenes(controller)
+                                    if scene.fixed_sizes is None and _wanted(scene.name, filters)]
+        for scene in scenes:
+            panel = scene.build(controller)
+            if panel is None:
+                continue
+            with scene.context():
+                host = PanelHost(panel)
+                try:
+                    for orientation in scene.orientations(panel):
+                        name = orientation.value if orientation is not None else 'undocked'
+                        sheet, report = sweep_sheet(host, orientation, widths, heights, scale, overlay)
+                        sheet_paths.append(_save(sheet, output_dir, f'sheets/{scene.name}/{name}.png'))
+                        with open(os.path.join(output_dir, 'sheets', scene.name, f'{name}.json'), 'w',
+                                  encoding='utf-8') as report_file:
+                            json.dump(report, report_file, indent=2)
+                finally:
+                    host.release()
+        _write_sheet_index(output_dir, sheet_paths)
+    finally:
+        shutil.rmtree(config_dir, ignore_errors=True)
+    return sheet_paths
 
 
 def main() -> None:
@@ -145,13 +390,33 @@ def main() -> None:
                         help='Directory to write captures into. Existing files there are overwritten.')
     parser.add_argument('--only', nargs='*', default=[],
                         help='Capture only gallery controls and panels whose names contain one of these.')
+    parser.add_argument('--windows', action='store_true',
+                        help='Capture dialogs, message boxes and other secondary windows instead.')
+    parser.add_argument('--sheet', action='store_true',
+                        help='Save sweep sheets of each panel across a grid of sizes instead.')
+    parser.add_argument('--widths', nargs='+', type=int, default=list(SWEEP_WIDTHS), help='Sweep sheet widths.')
+    parser.add_argument('--heights', nargs='+', type=int, default=list(SWEEP_HEIGHTS), help='Sweep sheet heights.')
+    parser.add_argument('--scale', type=float, default=SHEET_SCALE, help='Sweep sheet scale.')
+    parser.add_argument('--overlay', action='store_true', help='Outline each checked widget in sweep sheets.')
+    parser.add_argument('--language', choices=available_languages(), default=ENGLISH,
+                        help='UI language to capture in. Default: English.')
+    parser.add_argument('--edit-mode', choices=EDIT_MODES, default=None,
+                        help='Stable Diffusion edit mode to render panels in. Default: the test config\'s mode.')
     args = parser.parse_args()
-    _ = QApplication.instance() or QApplication(sys.argv)
     os.makedirs(args.output, exist_ok=True)
     try:
-        capture_all(args.output, args.only)
+        if args.sheet:
+            sheet_paths = capture_sheets(args.output, args.only, args.widths, args.heights, args.scale, args.overlay,
+                                   args.edit_mode)
+        elif args.windows:
+            capture_windows(args.output, args.only)
+        else:
+            capture_all(args.output, args.only, args.edit_mode)
     finally:
         shutil.rmtree(_USER_DIR_ROOT, ignore_errors=True)
+    if args.sheet:
+        for path in sheet_paths:
+            print(os.path.join(os.path.abspath(args.output), path))
     index_path = os.path.join(os.path.abspath(args.output), 'index.html')
     print(f'Captures written to {index_path}')
 

@@ -19,7 +19,7 @@ from test.image.layers.image_stack_state import ImageStackOpTestCase, masked_to_
 from test.render_assertions import full_render
 
 SELECTED = QRect(5, 4, 15, 12)
-CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
+CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
 
 
 class CopyPasteTest(ImageStackOpTestCase):
@@ -67,6 +67,34 @@ class CopyPasteTest(ImageStackOpTestCase):
         """Pasting a layer's selected content adds a layer above it, cropped to the copied content."""
         pasted = self.assert_copy_pastes(self.top)
         self.assertEqual(SELECTED.intersected(self.top.transformed_bounds), pasted.transformed_bounds)
+
+    def test_copy_merged_pastes_visible_composite_in_selection(self) -> None:
+        """Copy merged copies every visible layer combined inside the selection, skipping hidden layers."""
+        self.bottom.set_visible(False)
+        expected = masked_to_rect(full_render(self.image_stack), SELECTED)
+        copied = self.image_stack.copy_merged()
+        self.assertIsNotNone(copied)
+        UndoStack().clear()
+        self.image_stack.active_layer = self.top
+        pasted = self.paste()
+        self.assertEqual(CompositeMode.NORMAL, pasted.composition_mode)
+        self.assertEqual(1.0, pasted.opacity)
+        for layer in list(self.stack.child_layers):
+            if layer is not pasted:
+                layer.set_visible(False)
+        self.assert_images_equal(full_render(self.image_stack), expected)
+
+    def test_copy_merged_without_selection_copies_whole_image(self) -> None:
+        """With nothing selected, Copy merged copies the whole visible composite."""
+        self.image_stack.selection_layer.clear()
+        expected = full_render(self.image_stack)
+        self.image_stack.copy_merged()
+        self.image_stack.active_layer = self.top
+        pasted = self.paste()
+        for layer in list(self.stack.child_layers):
+            if layer is not pasted:
+                layer.set_visible(False)
+        self.assert_images_equal(full_render(self.image_stack), masked_to_rect(expected, expected.rect()))
 
     def test_copy_paste_transformed_layer(self) -> None:
         """A rotated, translucent layer's copy keeps its rotation and opacity, and renders the same selected pixels."""

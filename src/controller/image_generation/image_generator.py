@@ -1,45 +1,33 @@
 """Interface for providing image generation capabilities."""
 import logging
+from abc import ABC, abstractmethod
 from typing import Optional, Any
 
-from PIL import Image, ImageFilter
-from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, SignalInstance
-from PySide6.QtGui import QImage, QPainter
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QSize, Signal, QTimer, QObject, SignalInstance
+from PySide6.QtGui import QImage, QColor
+from PySide6.QtWidgets import QWidget
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
-from src.ui.layout.draggable_tabs.tab import Tab
-from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
-from src.util.async_task import AsyncTask
 from src.util.menu_builder import MenuBuilder
-from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
-from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
-
-# The QCoreApplication.translate context for strings in this file
-TR_ID = 'controller.image_generation.image_generator'
-
-
-def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, key, disambiguation, n)
-
-
-GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
-GENERATE_ERROR_TITLE_NO_IMAGE = _tr('Save failed')
-GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
-GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
+from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_text import PIL_SCALING_MODES
+from src.util.visual.image_utils import flatten_onto_color
+from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
 
 
-class ImageGenerator(MenuBuilder):
+# Color that transparent generation area pixels are flattened onto before reaching a backend. Backends otherwise pick
+# their own backdrop (white for the WebUI, whatever RGB is stored under the alpha for ComfyUI).
+GENERATION_BACKDROP_COLOR = QColor(128, 128, 128)
+
+
+class ImageGenerator(MenuBuilder, ABC):
     """Interface for providing image generation capabilities."""
 
     # Used to emit additional information when anything goes wrong with an active generator.
@@ -48,67 +36,74 @@ class ImageGenerator(MenuBuilder):
         super().__init__()
         self._window = window
         self._image_stack = image_stack
-        self._generated_images: list[QImage] = []
-        self._generating = False
 
         class _SignalObject(QObject):
             status_signal = Signal(str)
         self._signal_object = _SignalObject()
 
     @property
+    def _session(self) -> GenerationSession:
+        return self._window.generation_session
+
+    @property
     def status_signal(self) -> SignalInstance:
         """Used to emit additional information when anything goes wrong with an active generator."""
         return self._signal_object.status_signal
 
+    @abstractmethod
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_description(self) -> str:
         """Returns an extended description of this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_preview_image(self) -> QImage:
         """Returns a preview image for this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_setup_text(self) -> str:
         """Returns a rich text description of how to set up this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
-        raise NotImplementedError()
 
+
+    @abstractmethod
     def configure_or_connect(self) -> bool:
         """Handles any required steps necessary to configure the generator, install required components, and/or
            connect to required external services, returning whether the process completed correctly."""
-        raise NotImplementedError()
 
-    def get_extra_tabs(self) -> list[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        return []
+    def get_controlnet_panel(self) -> Optional[QWidget]:
+        """Returns the panel the main window's ControlNet dock shows, or None if the generator has no ControlNet."""
+        return None
 
+    @abstractmethod
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Updates a settings modal to add settings relevant to this generator."""
 
+    @abstractmethod
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Reloads current values for this generator's settings, and updates them in the settings modal."""
 
+    @abstractmethod
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies any changed settings from a SettingsModal that are relevant to the image generator and require
            special handling."""
 
+    @abstractmethod
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    @abstractmethod
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
-        raise NotImplementedError()
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
@@ -119,6 +114,8 @@ class ImageGenerator(MenuBuilder):
             scale_all_layers(self._image_stack, new_size.width(), new_size.height())
         return True
 
+
+    @abstractmethod
     def generate(self,
                  status_signal: SignalInstance,
                  source_image: QImage,
@@ -132,152 +129,61 @@ class ImageGenerator(MenuBuilder):
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
-            mode is text-to-image and there are no ControlNet units using the image generation area.
+            mode is text-to-image and there are no ControlNet units using the generation area.
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
-        raise NotImplementedError()
 
     def get_generation_inputs(self) -> tuple[QImage, Optional[QImage]]:
         """Returns the image and inpainting mask that image generation passes to `generate`.
 
-        Both are taken from the generation area and scaled to the generation size. The mask is None outside of
-        inpainting mode.
+        Both are taken from the generation area and scaled to the generation resolution. The image is flattened onto
+        `GENERATION_BACKDROP_COLOR`, so it has no transparency. The mask is None outside of inpainting mode.
         """
-        generation_size = Cache().get(Cache.GENERATION_SIZE)
-        image = self._image_stack.qimage_generation_area_content().copy()
-        if image.size() != generation_size:
-            image = pil_image_scaling(image, generation_size)
+        generation_resolution = Cache().get(Cache.GENERATION_SIZE)
+        image = flatten_onto_color(self._image_stack.qimage_generation_area_content(), GENERATION_BACKDROP_COLOR)
+        if image.size() != generation_resolution:
+            image = pil_image_scaling(image, generation_resolution)
         if Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT:
             return image, None
         mask = self._image_stack.selection_layer.mask_image
-        if mask.size() != generation_size:
-            mask = pil_image_scaling(mask, generation_size)
+        if mask.size() != generation_resolution:
+            mask = pil_image_scaling(mask, generation_resolution)
         return image, mask
 
     def start_and_manage_image_generation(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
-        if self._generating:
+        if self._session.generating:
             logger.error('Caught and ignored duplicate image generation request.')
             return
-        assert self._window is not None
-        cache = Cache()
-        self._generated_images.clear()
-        self._generating = True
+        image, mask = self.get_generation_inputs()
+        paste_mask = self.get_paste_mask() if mask is not None else None
+        blend_estimate = self.get_blend_estimate(mask) if mask is not None else None
+        source_alpha = self._source_alpha(image.size()) if mask is not None else None
+        self._session.generate(self.generate, image, mask, paste_mask, blend_estimate, source_alpha)
 
-        inpaint_image, inpaint_mask = self.get_generation_inputs()
-        if inpaint_mask is not None:
-            blurred_mask = qimage_to_pil_image(inpaint_mask).filter(ImageFilter.GaussianBlur())
-            blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
-            composite_base = inpaint_image.copy()
-            base_painter = QPainter(composite_base)
-            base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            base_painter.drawImage(QPoint(), blurred_alpha_mask)
-            base_painter.end()
-        else:
-            composite_base = None
+    def _source_alpha(self, size: QSize) -> QImage:
+        """Returns the generation area content's transparency, scaled to `size`, before it was flattened."""
+        content = self._image_stack.qimage_generation_area_content()
+        return pil_image_scaling(content, size) if content.size() != size else content
 
-        class _AsyncInpaintTask(AsyncTask):
-            status_signal = Signal(dict)
-            error_signal = Signal(Exception)
+    def get_blend_estimate(self, mask: QImage) -> Optional[QImage]:  # pylint: disable=unused-argument,useless-return
+        """Returns an estimate of the weight the backend gives generated content in its result, as the alpha of an
+        image the size of `mask`, or None if the generator has none. See `make_result_patch`."""
+        return None
 
-            def signals(self) -> list[SignalInstance]:
-                return [self.status_signal, self.error_signal]
+    def get_paste_mask(self) -> QImage:
+        """Returns the generation-area mask whose alpha clips a generated image when it is applied.
 
-        def _do_inpaint(status_signal: SignalInstance, error_signal: SignalInstance,
-                        image=inpaint_image,
-                        mask=inpaint_mask) -> None:
-            try:
-                self.generate(status_signal, image, mask)
-            except (IOError, ValueError, RuntimeError) as err:
-                error_signal.emit(err)
-            except Exception as unexpected_err:
-                logger.error('Unexpected error:', unexpected_err)
-                error_signal.emit(unexpected_err)
-
-        inpaint_task = _AsyncInpaintTask(_do_inpaint)
-
-        def handle_error(err: BaseException) -> None:
-            """Close sample selector and show an error popup if anything goes wrong."""
-            assert self._window is not None
-            self._window.set_image_selector_visible(False)
-            self._window.set_is_loading(False)
-            self._generating = False
-            show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
-
-        def _finished():
-            assert self._window is not None
-            self._window.set_is_loading(False)
-            self._generating = False
-            inpaint_task.error_signal.disconnect(handle_error)
-            inpaint_task.status_signal.disconnect(self._apply_status_update)
-            inpaint_task.finish_signal.disconnect(_finished)
-            expected_count = Cache().get(Cache.BATCH_COUNT) * Cache().get(Cache.BATCH_SIZE)
-            for idx, image in enumerate(self._generated_images):
-                if image.isNull() or idx >= expected_count:
-                    continue
-                if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
-                    assert composite_base is not None
-                    if composite_base.size() == image.size():
-                        painter = QPainter(image)
-                        painter.drawImage(QPoint(), composite_base)
-                        painter.end()
-                self._window.load_sample_preview(image, idx)
-
-        inpaint_task.error_signal.connect(handle_error)
-        inpaint_task.status_signal.connect(self._apply_status_update)
-        inpaint_task.finish_signal.connect(_finished)
-
-        self._window.set_image_selector_visible(True)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-        inpaint_task.start()
-
-    def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:
-        """Apply an AI-generated image change to the edited image.
-
-        Parameters
-        ----------
-        sample_image : PIL Image
-            Data to be inserted into the edited image generation area bounds.
+        Generators whose backend blends results through a blurred mask override this to cover the blur's reach.
         """
-        if sample_image is not None:
-            if isinstance(sample_image, Image.Image):
-                image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            else:
-                image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if Cache().get(Cache.EDIT_MODE) == 'Inpaint':
-                inpaint_mask = self._image_stack.selection_layer.mask_image
-                painter = QPainter(image)
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
-                painter.end()
-            layer = self._image_stack.active_layer
-            self._image_stack.set_generation_area_content(image, layer)
-            if AppConfig().get(AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING):
-                self._image_stack.selection_layer.clear_context_pins()
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+        return self._image_stack.selection_layer.mask_image
 
     def _load_generated_image_for_selection(self, index: int) -> None:
-        assert len(self._generated_images) > index
-        image = self._generated_images[index]
-        if not image.isNull():
-            self._window.load_sample_preview(image, index)
+        """Shows the generated image at `index` once it arrives. Backends route extra results here by index."""
+        self._session.deliver_result(index)
 
     def _cache_generated_image(self, image: QImage, index: int) -> None:
-        while len(self._generated_images) < index:
-            self._generated_images.append(QImage())
-        if len(self._generated_images) > index:
-            self._generated_images.pop(index)
-        self._generated_images.insert(index, image)
+        self._session.store_result(image, index)
         # Load in main thread:
-        QTimer.singleShot(0, self._window, lambda: self._load_generated_image_for_selection(index))
-
-    def _apply_status_update(self, status_dict: dict[str, str]) -> None:
-        """Show status updates in the UI."""
-        assert self._window is not None
-        if 'seed' in status_dict:
-            Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
-        if 'subseed' in status_dict:
-            Cache().set(Cache.WEBUI_LAST_SUBSEED, str(status_dict['subseed']))
-        if 'progress' in status_dict:
-            self._window.set_loading_message(status_dict['progress'])
+        QTimer.singleShot(0, self._session, lambda: self._load_generated_image_for_selection(index))

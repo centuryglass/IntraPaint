@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.ui.ink_style import signal_color
 from src.util.visual.contrast_color import relative_luminance, LUMINANCE_THRESHOLD
-from src.util.visual.image_utils import image_data_as_numpy_8bit, temp_image_path
+from src.util.visual.image_utils import image_data_as_numpy_8bit, rich_text_image_tag, temp_image_path
 
 # Pixels at or above this HSV saturation keep their color. Less saturated pixels blend toward the recolored value,
 # so antialiased edges between neutral and colored areas stay smooth:
@@ -92,24 +92,29 @@ def palette_icon(icon_path: str, signal: bool = False) -> QIcon:
     return QIcon(_icon_cache[cache_key])
 
 
-def palette_rich_text_image(image_path: str) -> str:
-    """Returns a rich-text inline image of an icon at its natural size, recolored for the application palette if it
-    is dark.
+def palette_rich_text_image(image_path: str, height: Optional[int] = None) -> str:
+    """Returns a rich-text inline image of an icon, recolored for the application palette if it is dark.
 
-    Recolored images are written to temporary files at 1x and 2x scale. Qt's rich text loads the `@2x` file on
-    high-density screens.
+    The image is `height` pixels tall, or the icon's natural size if `height` is None, and keeps the icon's aspect
+    ratio. It is written to temporary files at 1x and 2x scale. Qt's rich text loads the `@2x` file on high-density
+    screens.
     """
+    natural_size = QImageReader(image_path).size()
+    if height is not None and natural_size.height() > 0:
+        size = QSize(round(natural_size.width() * height / natural_size.height()), height)
+    else:
+        size = natural_size
     colors = _palette_colors()
+    name = f'{os.path.splitext(os.path.basename(image_path))[0]}_{size.width()}x{size.height()}'
     if colors is not None:
-        black_color, white_color = colors
-        name = (f'{os.path.splitext(os.path.basename(image_path))[0]}_{black_color.name()[1:]}'
-                f'_{white_color.name()[1:]}')
-        natural_size = QImageReader(image_path).size()
+        name = f'{name}_{colors[0].name()[1:]}_{colors[1].name()[1:]}'
 
-        def _draw_scaled(scale: int) -> QImage:
-            reader = QImageReader(image_path)
-            reader.setScaledSize(natural_size * scale)
-            return recolor_neutral_pixels(reader.read(), black_color, white_color)
-        temp_image_path(f'{name}@2x', lambda: _draw_scaled(2))
-        image_path = temp_image_path(name, lambda: _draw_scaled(1))
-    return f'<img src="{image_path}"/>'
+    def _draw_scaled(scale: int) -> QImage:
+        reader = QImageReader(image_path)
+        reader.setScaledSize(size * scale)
+        image = reader.read()
+        if colors is None:
+            return image
+        return recolor_neutral_pixels(image, *colors)
+    temp_image_path(f'{name}@2x', lambda: _draw_scaled(2))
+    return rich_text_image_tag(temp_image_path(name, lambda: _draw_scaled(1)))

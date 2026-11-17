@@ -19,6 +19,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -34,8 +35,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
-CURSOR_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/cursors/filter_cursor.svg'
-FILTER_LABEL = _tr('Filter Brush')
+FILTER_LABEL = _tr('Filter brush')
 FILTER_TOOLTIP = _tr('Draw to apply an image filter')
 FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter')
 
@@ -85,7 +85,7 @@ class FilterTool(QtPaintBrushTool):
                          antialias_key=Cache.FILTER_TOOL_ANTIALIAS, brush=brush)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_FILTER_TOOL))
+        self.crosshair_variant = CrosshairVariant.FILTER
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -94,10 +94,14 @@ class FilterTool(QtPaintBrushTool):
 
     # noinspection PyMethodMayBeStatic
     def get_control_panel(self) -> Optional[QWidget]:
-        """Returns the blur tool control panel."""
+        """Returns the filter tool control panel."""
         if self._control_panel is None:
             self._control_panel = FilterToolPanel(self._filters)
         return self._control_panel
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns no keys: resetting the brush alone would leave the filter and its parameters as they are."""
+        return []
 
     def _filter_update_slot(self, filter_name: str) -> None:
         new_filter = self._filter_from_name(filter_name)

@@ -1,7 +1,7 @@
 """Extends QGraphicsPixmapItem to add alternate composition modes."""
 from typing import Optional
 
-from PySide6.QtGui import QPainter, QPixmap, Qt, QTransform
+from PySide6.QtGui import QPainter, QPixmap, Qt
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsItem, QStyleOptionGraphicsItem, QWidget
 
 from src.image.composite_mode import CompositeMode
@@ -45,5 +45,12 @@ class PixmapItem(QGraphicsPixmapItem):
             self.setTransformationMode(Qt.TransformationMode.FastTransformation)
         else:
             self.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
-        super().paint(painter, option, widget)
+        self._paint_pixmap(painter, option, widget)
         painter.restore()
+
+    def _paint_pixmap(self,
+                      painter: QPainter,
+                      option: Optional[QStyleOptionGraphicsItem],
+                      widget: Optional[QWidget]) -> None:
+        """Draws the pixmap once paint has set up the painter's composition mode and the transformation mode."""
+        super().paint(painter, option, widget)

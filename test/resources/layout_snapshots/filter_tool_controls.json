@@ -2,95 +2,153 @@
   "minimum": {
     "problems": [],
     "size": [
-      318,
-      383
+      273,
+      364
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 6x30",
-      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 14x30",
-      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 6x30",
-      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 14x30",
-      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 6x30",
-      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 14x30",
-      "overlap: QWidget/FloatSliderSpinbox[0]/QSlider and QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox share 54x23",
-      "overlap: QWidget/FloatSliderSpinbox[1]/QSlider and QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox share 54x23",
-      "overlap: QWidget/FloatSliderSpinbox[2]/QSlider and QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox share 54x23",
-      "overlap: QWidget/FloatSliderSpinbox[3]/QSlider and QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox share 54x23",
-      "squeezed: QWidget is 141x220, minimum 300x220",
-      "squeezed: QWidget/QWidget is 123x58, minimum 240x58",
-      "clipped: QWidget/QWidget/ComboBox shows 72x40 of 180x40",
-      "squeezed: QWidget/FloatSliderSpinbox[0] is 123x30, minimum 282x30",
-      "clipped: QWidget/FloatSliderSpinbox[0]/QSlider shows 81x23 of 180x23",
-      "clipped: QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox shows 39x26 of 54x26",
-      "squeezed: QWidget/FloatSliderSpinbox[1] is 123x30, minimum 282x30",
-      "clipped: QWidget/FloatSliderSpinbox[1]/QSlider shows 81x23 of 180x23",
-      "clipped: QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox shows 39x26 of 54x26",
-      "squeezed: QWidget/FloatSliderSpinbox[2] is 123x30, minimum 282x30",
-      "clipped: QWidget/FloatSliderSpinbox[2]/QSlider shows 81x23 of 180x23",
-      "clipped: QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox shows 39x26 of 54x26",
-      "squeezed: QWidget/FloatSliderSpinbox[3] is 123x30, minimum 282x30",
-      "clipped: QWidget/FloatSliderSpinbox[3]/QSlider shows 81x23 of 180x23",
-      "clipped: QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox shows 39x26 of 54x26",
-      "clipped: IntSliderSpinbox shows 76x30 of 148x30",
-      "clipped: IntSliderSpinbox/QSlider shows 72x23 of 88x23",
-      "clipped: IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
-      "clipped: FloatSliderSpinbox[0] shows 76x30 of 148x30",
-      "clipped: FloatSliderSpinbox[0]/QSlider shows 72x23 of 84x23",
-      "clipped: FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
-      "clipped: FloatSliderSpinbox[1] shows 76x30 of 148x30",
-      "clipped: FloatSliderSpinbox[1]/QSlider shows 72x23 of 84x23",
-      "clipped: FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
-      "squeezed: CheckBox 'Antialiasing' is 68x22, minimum 93x22",
-      "squeezed: CheckBox 'Filter selection only' is 67x22, minimum 141x22"
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] share 118x3",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] share 118x3",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] share 118x3",
+      "squeezed: StrokeBlock is 118x346, minimum 215x374",
+      "squeezed: StrokeBlock/PanelSection[0] is 106x106, minimum 110x106",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 106x80, minimum 110x80",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 106x80, minimum 110x80",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 106x24 of 110x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 106x24 of 110x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 106x24 of 110x24",
+      "squeezed: StrokeBlock/PanelSection[1] is 106x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 106x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 106x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 106x22, minimum 146x22",
+      "squeezed: StrokeBlock/PanelSection[2] is 118x152, minimum 215x180",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 118x126, minimum 215x154",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[0] is 118x40, minimum 215x40",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[0]/ComboBox is 81x40, minimum 178x40",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[1] is 118x80, minimum 110x108",
+      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] shows 118x17 of 118x24"
     ],
     "size": [
-      159,
-      383
+      136,
+      364
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      318,
-      383
+      273,
+      364
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QWidget is 300x30, minimum 300x220",
-      "squeezed: QWidget/QWidget is 282x0, minimum 240x58",
-      "squeezed: QWidget/QWidget/QLabel 'Filter:' is 36x0, minimum 35x17",
-      "squeezed: QWidget/QWidget/ComboBox is 180x0, minimum 180x40",
-      "squeezed: QWidget/FloatSliderSpinbox[0] is 282x0, minimum 282x30",
-      "squeezed: QWidget/FloatSliderSpinbox[0]/QLabel 'Red' is 36x0, minimum 23x17",
-      "squeezed: QWidget/FloatSliderSpinbox[0]/QSlider is 180x0, minimum 12x23",
-      "squeezed: QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox is 54x0, minimum 54x26",
-      "squeezed: QWidget/FloatSliderSpinbox[1] is 282x0, minimum 282x30",
-      "squeezed: QWidget/FloatSliderSpinbox[1]/QLabel 'Green' is 36x0, minimum 36x17",
-      "squeezed: QWidget/FloatSliderSpinbox[1]/QSlider is 180x0, minimum 12x23",
-      "squeezed: QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox is 54x0, minimum 54x26",
-      "squeezed: QWidget/FloatSliderSpinbox[2] is 282x0, minimum 282x30",
-      "squeezed: QWidget/FloatSliderSpinbox[2]/QLabel 'Blue' is 36x0, minimum 27x17",
-      "squeezed: QWidget/FloatSliderSpinbox[2]/QSlider is 180x0, minimum 12x23",
-      "squeezed: QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox is 54x0, minimum 54x26",
-      "squeezed: QWidget/FloatSliderSpinbox[3] is 282x0, minimum 282x30",
-      "squeezed: QWidget/FloatSliderSpinbox[3]/QLabel 'Alpha' is 36x0, minimum 34x17",
-      "squeezed: QWidget/FloatSliderSpinbox[3]/QSlider is 180x0, minimum 12x23",
-      "squeezed: QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox is 54x0, minimum 54x26",
-      "squeezed: FloatSliderSpinbox[0] is 194x29, minimum 76x30",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x25, minimum 54x26"
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] share 243x14",
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] share 243x4",
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] share 243x14",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] share 255x20",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] share 255x17",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] share 255x13",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] share 255x21",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] share 255x17",
+      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] share 255x20",
+      "squeezed: StrokeBlock is 255x164, minimum 215x374",
+      "squeezed: StrokeBlock/PanelSection[0] is 243x51, minimum 110x106",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 243x25, minimum 110x80",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 243x25, minimum 110x80",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 243x15 of 243x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 243x5 of 243x24",
+      "squeezed: StrokeBlock/PanelSection[1] is 243x51, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 243x25, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 243x25, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 146x10, minimum 93x22",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 146x9, minimum 146x22",
+      "squeezed: StrokeBlock/PanelSection[2] is 255x50, minimum 215x180",
+      "squeezed: StrokeBlock/PanelSection[2]/_HeaderButton 'Filter' is 251x25, minimum 16x26",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 255x25, minimum 215x154",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[0] is 255x10, minimum 215x40",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[0]/QLabel 'Filter' is 31x10, minimum 31x17",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[0]/ComboBox is 218x10, minimum 178x40",
+      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget[1] is 255x9, minimum 110x108",
+      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[0] shows 255x9 of 255x24",
+      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] shows 255x5 of 255x24",
+      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] shows 255x2 of 255x24",
+      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] shows 0x0 of 255x24"
     ],
     "size": [
-      318,
-      191
+      273,
+      182
+    ]
+  },
+  "strip_minimum": {
+    "problems": [],
+    "size": [
+      273,
+      364
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "squeezed: StrokeBlock is 118x346, minimum 215x296",
+      "squeezed: StrokeBlock/QWidget[0] is 118x296, minimum 215x296",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 118x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 118x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget is 118x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 118x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2] is 118x154, minimum 215x154",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget is 118x154, minimum 215x154",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/QWidget[0] is 118x40, minimum 215x40",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/QWidget[0]/ComboBox is 81x40, minimum 178x40"
+    ],
+    "size": [
+      136,
+      364
+    ]
+  },
+  "strip_preferred": {
+    "problems": [],
+    "size": [
+      273,
+      364
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "squeezed: StrokeBlock is 255x164, minimum 371x154",
+      "squeezed: StrokeBlock/QWidget[0] is 123x136, minimum 146x136",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1] is 123x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget is 123x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget is 123x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 123x22, minimum 146x22",
+      "squeezed: StrokeBlock/QWidget[1] is 122x154, minimum 215x154",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection is 122x154, minimum 215x154",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/QWidget is 122x154, minimum 215x154",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/QWidget/QWidget[0] is 122x40, minimum 215x40",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection/QWidget/QWidget[0]/ComboBox is 85x40, minimum 178x40"
+    ],
+    "size": [
+      273,
+      182
+    ]
+  },
+  "strip_tall": {
+    "problems": [],
+    "size": [
+      273,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      364
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      318,
+      273,
       1200
     ]
   },
@@ -98,7 +156,7 @@
     "problems": [],
     "size": [
       1600,
-      383
+      364
     ]
   }
 }

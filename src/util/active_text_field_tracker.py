@@ -1,5 +1,7 @@
-"""Track the active widget, see if it's a text input field, and notify when cut/copy/clear/paste/undo/redo
-   action availability change for an active text widget."""
+"""Tracks whether the active widget is a text field, and which of its edit actions are available.
+
+Notifies when cut/copy/clear/paste/undo/redo action availability changes for an active text widget.
+"""
 from typing import TypeAlias, Optional
 
 from PySide6.QtCore import QObject, Signal, SignalInstance
@@ -14,8 +16,10 @@ class ActiveTextFieldTracker(QObject):
 
     status_changed = Signal()
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, parent: Optional[QObject] = None) -> None:
+        """Starts tracking focus and clipboard changes. The connections last as long as this object, so give it a
+        parent that is deleted when its users are, such as their window."""
+        super().__init__(parent)
         self._active_widget: Optional[TextInput] = None
         app = QApplication.instance()
         assert isinstance(app, QApplication)
@@ -73,7 +77,8 @@ class ActiveTextFieldTracker(QObject):
         """Returns whether the focused widget can accept text and the clipboard contains valid text."""
         if self._active_widget is None or self._active_widget.isReadOnly():
             return False
-        return QApplication.clipboard().mimeData().hasText()
+        mime_data = QApplication.clipboard().mimeData()
+        return mime_data is not None and mime_data.hasText()
 
     def _active_has_selection(self) -> bool:
         if self._active_widget is None:

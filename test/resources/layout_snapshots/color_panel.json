@@ -2,48 +2,147 @@
   "minimum": {
     "problems": [],
     "size": [
-      269,
-      249
+      206,
+      198
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QWidget[4] is 132x326, minimum 200x247",
-      "squeezed: QWidget[4]/ColorPickerHeader is 132x48, minimum 149x48",
-      "squeezed: QWidget[4]/ColorPickerHeader/QLabel '#000000' is 44x17, minimum 57x17",
-      "squeezed: QWidget[4]/QTabWidget is 132x241, minimum 196x162",
-      "squeezed: QWidget[4]/AlphaHexRow is 132x25, minimum 200x25",
-      "squeezed: QWidget[4]/AlphaHexRow/GradientSlider is 41x20, minimum 60x20",
-      "clipped: QWidget[4]/AlphaHexRow/QLineEdit shows 41x25 of 90x25"
+      "overlap: ColorPickerHeader/ColorPairWidget and ColorPickerHeader/HexField share 19x25",
+      "overlap: ColorPickerHeader/HexField and ColorPickerHeader/QToolButton share 23x25",
+      "squeezed: ColorPickerHeader is 81x48, minimum 182x48",
+      "clipped: ColorPickerHeader/HexField shows 52x25 of 90x25",
+      "squeezed: ColorPickerHeader/QToolButton is 23x31, minimum 32x31",
+      "squeezed: QWidget is 81x122, minimum 184x122",
+      "squeezed: QWidget/PanelSection[3] is 81x26, minimum 184x26",
+      "squeezed: QWidget/PanelSection[3]/QPushButton 'Save' is 29x25, minimum 80x25",
+      "squeezed: QWidget/PanelSection[3]/QPushButton 'Remove' is 28x25, minimum 80x25"
     ],
     "size": [
-      134,
-      328
+      103,
+      198
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      302,
-      328
+      251,
+      198
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QWidget[4] is 300x122, minimum 200x247",
-      "squeezed: QWidget[4]/ColorPickerHeader is 300x43, minimum 149x48",
-      "clipped: QWidget[4]/ColorPickerHeader/ColorPairWidget shows 48x43 of 48x48",
-      "squeezed: QWidget[4]/QTabWidget is 300x42, minimum 196x162"
+      "squeezed: ColorPickerHeader is 229x36, minimum 182x48",
+      "clipped: ColorPickerHeader/ColorPairWidget shows 48x36 of 48x48",
+      "squeezed: QWidget is 229x36, minimum 184x122",
+      "squeezed: QWidget/PanelSection[0] is 229x5, minimum 20x26",
+      "squeezed: QWidget/PanelSection[0]/_HeaderButton 'Wheel' is 225x5, minimum 16x26",
+      "squeezed: QWidget/PanelSection[1] is 229x4, minimum 20x26",
+      "squeezed: QWidget/PanelSection[1]/_HeaderButton 'Sliders' is 225x4, minimum 16x26",
+      "squeezed: QWidget/PanelSection[2] is 229x5, minimum 20x26",
+      "squeezed: QWidget/PanelSection[2]/_HeaderButton 'Recent' is 225x5, minimum 16x26",
+      "squeezed: QWidget/PanelSection[3] is 229x4, minimum 184x26",
+      "squeezed: QWidget/PanelSection[3]/_HeaderButton 'Saved' is 61x4, minimum 16x26",
+      "squeezed: QWidget/PanelSection[3]/QPushButton 'Save' is 80x4, minimum 80x25",
+      "squeezed: QWidget/PanelSection[3]/QPushButton 'Remove' is 80x4, minimum 80x25"
     ],
     "size": [
-      302,
-      124
+      251,
+      99
+    ]
+  },
+  "strip_minimum": {
+    "problems": [
+      "squeezed: ColorPickerHeader is 89x116, minimum 90x116",
+      "clipped: ColorPickerHeader/HexField shows 89x25 of 90x25",
+      "squeezed: QWidget is 89x176, minimum 184x162",
+      "squeezed: QWidget/QWidget[0] is 89x176, minimum 184x162",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3] is 89x46, minimum 184x46",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Save' is 33x25, minimum 80x25",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Remove' is 32x25, minimum 80x25"
+    ],
+    "size": [
+      206,
+      198
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "squeezed: ColorPickerHeader is 38x116, minimum 90x116",
+      "clipped: ColorPickerHeader/ColorPairWidget shows 38x48 of 48x48",
+      "clipped: ColorPickerHeader/HexField shows 38x25 of 90x25",
+      "squeezed: QWidget is 38x176, minimum 184x162",
+      "squeezed: QWidget/QWidget[0] is 38x176, minimum 184x162",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3] is 38x46, minimum 184x46",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QWidget is 38x20, minimum 59x20",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QWidget/SavedColorsPanel is 38x20, minimum 59x20",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QWidget/SavedColorsPanel/_GridScrollArea is 38x20, minimum 59x20",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Save' is 7x25, minimum 80x25",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Remove' is 7x25, minimum 80x25"
+    ],
+    "size": [
+      103,
+      198
+    ]
+  },
+  "strip_preferred": {
+    "problems": [
+      "squeezed: QWidget is 133x176, minimum 184x162",
+      "squeezed: QWidget/QWidget[0] is 133x176, minimum 184x162",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3] is 133x46, minimum 184x46",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Save' is 55x25, minimum 80x25",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Remove' is 54x25, minimum 80x25"
+    ],
+    "size": [
+      251,
+      198
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "overlap: ColorPickerHeader/ColorPairWidget and ColorPickerHeader/HexField share 48x20",
+      "squeezed: ColorPickerHeader is 90x77, minimum 90x116",
+      "squeezed: ColorPickerHeader/HexField is 90x22, minimum 23x25",
+      "clipped: ColorPickerHeader/QToolButton shows 32x21 of 32x22",
+      "squeezed: ColorPickerHeader/QToolButton is 32x22, minimum 32x31",
+      "squeezed: QWidget is 133x77, minimum 210x58",
+      "squeezed: QWidget/QWidget[1] is 107x77, minimum 184x58",
+      "squeezed: QWidget/QWidget[1]/PanelSection[1] is 107x26, minimum 184x26",
+      "squeezed: QWidget/QWidget[1]/PanelSection[1]/QPushButton 'Save' is 42x25, minimum 80x25",
+      "squeezed: QWidget/QWidget[1]/PanelSection[1]/QPushButton 'Remove' is 41x25, minimum 80x25"
+    ],
+    "size": [
+      251,
+      99
+    ]
+  },
+  "strip_tall": {
+    "problems": [
+      "squeezed: QWidget is 133x1178, minimum 184x422",
+      "squeezed: QWidget/QWidget[0] is 133x1178, minimum 184x422",
+      "squeezed: QWidget/QWidget[0]/PanelSection[1] is 133x166, minimum 171x166",
+      "squeezed: QWidget/QWidget[0]/PanelSection[1]/ColorSliderBlock is 133x140, minimum 171x140",
+      "squeezed: QWidget/QWidget[0]/PanelSection[1]/ColorSliderBlock/SegmentedControl/QComboBox is 133x24, minimum 67x25",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3] is 133x361, minimum 184x46",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Save' is 55x25, minimum 80x25",
+      "squeezed: QWidget/QWidget[0]/PanelSection[3]/QPushButton 'Remove' is 54x25, minimum 80x25"
+    ],
+    "size": [
+      251,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      198
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      302,
+      251,
       1200
     ]
   },
@@ -51,7 +150,7 @@
     "problems": [],
     "size": [
       1600,
-      328
+      198
     ]
   }
 }

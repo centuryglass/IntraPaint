@@ -1,4 +1,4 @@
-"""Minimal horizontal or vertical divider widgets"""
+"""Minimal horizontal or vertical divider widgets."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame
 

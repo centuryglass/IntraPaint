@@ -3,7 +3,7 @@ from contextlib import contextmanager, ExitStack
 from typing import Optional, Any, TypeAlias, Callable, Generator
 
 from PySide6.QtCore import QRect, Signal, QPoint, QSize, QTimer
-from PySide6.QtGui import QPainter, QImage, QTransform
+from PySide6.QtGui import QPainter, QImage, QTransform, QRegion
 
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
@@ -12,18 +12,18 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
-from src.util.cached_data import CachedData
 from src.util.signals_blocked import signals_blocked
 from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_is_fully_transparent
+from src.util.visual.tile_cache import TileCache
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
 RENDER_DELAY_MS = 10
 
 
-class LayerGroup(Layer, LayerParent):
+class LayerGroup(LayerParent):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 
     bounds_changed = Signal(Layer, QRect)
@@ -34,10 +34,15 @@ class LayerGroup(Layer, LayerParent):
     def __init__(self, name: str) -> None:
         """Initialize with no layer data."""
         super().__init__(name)
-        self._image_cache = CachedData(None)
+        self._tiles = TileCache()
+        # The full composite assembled from the tiles, the bounds it covers, and the part of it older than the tiles:
+        self._image: Optional[QImage] = None
+        self._image_bounds = QRect()
+        self._stale_area = QRegion()
         self._layers: list[Layer] = []
         self._bounds = QRect()
         self._isolate = False
+        self._changed_area = QRect()
         self._render_timer = QTimer()
         self._render_timer.setSingleShot(True)
         self._render_timer.setInterval(RENDER_DELAY_MS)
@@ -90,10 +95,17 @@ class LayerGroup(Layer, LayerParent):
         self._bounds = QRect(bounds)
         return bounds
 
-    def _size_change_bounds(self, old_size: QSize) -> QRect:
-        """Returns the group's new bounds. Its old bounds aren't known here: _get_local_bounds updates them after
-           calling set_size."""
-        return self.bounds
+    def set_size(self, new_size: QSize) -> None:
+        """Updates the group's size and schedules a render that resizes its cached image.
+
+        The size follows the children's bounds, and the child change that moved them reports its own area, so a size
+        change adds no changed area.
+        """
+        if self._size != new_size:
+            self._size = QSize(new_size)
+            self.invalidate_pixmap()
+            self.size_changed.emit(self, new_size)
+            self._trigger_render(QRect())
 
     def flip_horizontal(self) -> None:
         """Flip the group horizontally."""
@@ -149,15 +161,17 @@ class LayerGroup(Layer, LayerParent):
     @property
     def recursive_child_layers(self) -> list[Layer]:
         """Returns all child layers or children of child layers, recursively."""
-        flattened_stack = []
-
-        def _unpack_layers(layer_stack: LayerGroup):
-            for idx in range(layer_stack.count):
-                child_layer = layer_stack.get_layer_by_index(idx)
-                flattened_stack.append(child_layer)
-                if isinstance(child_layer, LayerGroup):
-                    _unpack_layers(child_layer)
-        _unpack_layers(self)
+        flattened_stack: list[Layer] = []
+        # Depth-first, in layer order: each pending group's remaining children are visited before its next sibling.
+        pending = [iter(self._layers)]
+        while pending:
+            child_layer = next(pending[-1], None)
+            if child_layer is None:
+                pending.pop()
+                continue
+            flattened_stack.append(child_layer)
+            if isinstance(child_layer, LayerGroup):
+                pending.append(iter(child_layer._layers))  # pylint: disable=protected-access
         return flattened_stack
 
     def copy(self) -> 'LayerGroup':
@@ -211,40 +225,62 @@ class LayerGroup(Layer, LayerParent):
                 self.signal_content_changed(self.bounds)
 
     def get_qimage(self) -> QImage:
-        """Returns combined visible layer content as a QImage object."""
-        if self._image_cache.valid:
-            return self._image_cache.data
+        """Returns combined visible layer content covering the group's bounds, assembled from the tile cache.
+
+        Only tiles that changed since the last call are re-rendered. The returned image is a shallow copy, so painting
+        on it leaves the cache unchanged.
+        """
         bounds = self.bounds
-        image = create_transparent_image(bounds.size())
-        self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
-        self._image_cache.data = image
+        if bounds.isEmpty():
+            return create_transparent_image(bounds.size())
+        self._tiles.discard_outside(bounds)
+        if self._image is None or self._image_bounds != bounds:
+            self._image = create_transparent_image(bounds.size())
+            self._image_bounds = QRect(bounds)
+            stale_area = QRegion(bounds)
+        else:
+            stale_area = self._stale_area.intersected(bounds)
+        self._stale_area = QRegion()
+        self._tiles.draw_region(self._image, stale_area, bounds.topLeft(), self._render_area)
+        return QImage(self._image)
+
+    def cached_image(self, area: QRect, clip: Optional[QRect] = None) -> QImage:
+        """Returns the group's content within area, in image coordinates, read from the tile cache.
+
+        Pixels outside the group's bounds, or outside clip when it is given, are transparent. Only the tiles under the
+        drawn area are rendered. Like `get_qimage`, this reads the cache as of the last render, so a change still
+        waiting on the render timer is missing until `flush_render` runs.
+        """
+        bounds = self.bounds
+        content_area = area.intersected(bounds)
+        if clip is not None:
+            content_area = content_area.intersected(clip)
+        if area == bounds and content_area == bounds:
+            return self.get_qimage()
+        image = create_transparent_image(area.size())
+        if not content_area.isEmpty():
+            self._tiles.draw(image, content_area, area.topLeft(), self._render_area)
         return image
+
+    def _render_area(self, image: QImage, area: QRect) -> None:
+        """Renders the group's content within area, in image coordinates, into a transparent image the size of area."""
+        self.render(base_image=image, transform=QTransform.fromTranslate(-area.x(), -area.y()))
 
     def preview_image(self) -> QImage:
         """Returns the group's own content for its layer panel preview, covering the group's bounds.
 
-        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode, and
-        the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden nested
-        group, stay hidden, so a group whose layers are all hidden has a blank preview.
+        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode. Rendering
+        never reads the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden
+        nested group, stay hidden, so a group whose layers are all hidden has a blank preview.
         """
-        hidden_ancestors: list[Layer] = []
-        ancestor: Optional[Layer] = self
-        while ancestor is not None:
-            if not ancestor.get_visible():
-                hidden_ancestors.append(ancestor)
-            parent = ancestor.layer_parent
-            assert parent is None or isinstance(parent, Layer)
-            ancestor = parent
-        if not hidden_ancestors and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
+        if self._visible and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
             return self.get_qimage()
         bounds = self.bounds
         image = create_transparent_image(bounds.size())
         opacity, mode = self._opacity, self._mode
         # Rendering reads visibility, opacity and mode, so they change without signals and are restored before
         # anything else can read them.
-        with ExitStack() as stack:
-            for hidden_layer in hidden_ancestors:
-                stack.enter_context(hidden_layer.with_visibility_forced())
+        with self.with_visibility_forced():
             self._opacity, self._mode = 1.0, CompositeMode.NORMAL
             try:
                 self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
@@ -428,7 +464,7 @@ class LayerGroup(Layer, LayerParent):
         self._layers.pop(index)
         layer.layer_parent = None
         if layer.visible:
-            self._trigger_render()
+            self._trigger_render(self._layer_image_area(layer))
         last_bounds = self._bounds
         bounds = self._get_local_bounds()  # Ensure size is correct
         if bounds != last_bounds:
@@ -463,7 +499,7 @@ class LayerGroup(Layer, LayerParent):
         if len(self._layers) == 1 and AppStateTracker.app_state() == APP_STATE_NO_IMAGE:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
         if layer.visible and not empty_image:
-            self._trigger_render()
+            self._trigger_render(self._layer_image_area(layer))
         self.layer_added.emit(layer)
         if bounds_changing:
             self._layer_bounds_change_slot(layer)
@@ -482,7 +518,7 @@ class LayerGroup(Layer, LayerParent):
             return
         self._layers.remove(layer)
         self._layers.insert(new_index, layer)
-        self._trigger_render()
+        self._trigger_render(self._layer_image_area(layer))
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
@@ -518,9 +554,12 @@ class LayerGroup(Layer, LayerParent):
             self.remove_layer(extra_layer)
 
     def set_visible(self, visible: bool) -> None:
-        super().set_visible(visible)
-        for layer in self.recursive_child_layers:
-            layer.visibility_changed.emit(layer, layer.visible)
+        """Sets whether this group is visible, sending `visibility_changed` from every layer inside it with this group
+        as the layer argument."""
+        if visible != self._visible:
+            super().set_visible(visible)
+            for layer in self.recursive_child_layers:
+                layer.visibility_changed.emit(self, visible)
 
     def is_empty(self, bounds: Optional[QRect] = None) -> bool:
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
@@ -547,7 +586,7 @@ class LayerGroup(Layer, LayerParent):
         # Cache all signal-relevant non-image data from this layer and all children, recursive.
         content_change_timestamps: dict[Layer, float] = {}
         layer_names: dict[Layer, str] = {}
-        visibility_states: dict[Layer, bool] = {}
+        visibility_states: dict[Layer, tuple[bool, bool]] = {}
         opacity_states: dict[Layer, float] = {}
         layer_sizes: dict[Layer, QSize] = {}
         layer_modes: dict[Layer, CompositeMode] = {}
@@ -564,7 +603,7 @@ class LayerGroup(Layer, LayerParent):
         for layer in all_layers:
             content_change_timestamps[layer] = layer.content_change_timestamp
             layer_names[layer] = layer.name
-            visibility_states[layer] = layer.visible
+            visibility_states[layer] = (layer.visible, layer.shown)
             opacity_states[layer] = layer.opacity
             layer_sizes[layer] = layer.size
             layer_modes[layer] = layer.composition_mode
@@ -605,7 +644,7 @@ class LayerGroup(Layer, LayerParent):
                     layer.content_changed.emit(layer, layer.bounds)
                 if layer_names[layer] != layer.name:
                     layer.name_changed.emit(layer, layer.name)
-                if visibility_states[layer] != layer.visible:
+                if visibility_states[layer] != (layer.visible, layer.shown):
                     layer.visibility_changed.emit(layer, layer.visible)
                 if opacity_states[layer] != layer.opacity:
                     layer.opacity_changed.emit(layer, layer.opacity)
@@ -629,7 +668,7 @@ class LayerGroup(Layer, LayerParent):
 
     def propagate_parent_lock_signal(self, source: Layer) -> None:
         """Pass on the lock signal from a parent layer through all child layers as appropriate."""
-        assert source == self or source.contains_recursive(self)
+        assert source == self or isinstance(source, LayerParent) and source.contains_recursive(self)
         if not source.locked and self.locked:
             return
         for layer in self._layers:
@@ -638,9 +677,11 @@ class LayerGroup(Layer, LayerParent):
             if isinstance(layer, LayerGroup):
                 layer.propagate_parent_lock_signal(source)
 
-    def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
+    def _layer_content_change_slot(self, layer: Layer, changed_rect: QRect) -> None:
         if layer in self._layers and layer.content_change_timestamp > self.content_change_timestamp:
-            self._trigger_render()
+            if isinstance(layer, TransformLayer):
+                changed_rect = layer.map_changed_rect_to_image(changed_rect)
+            self._trigger_render(changed_rect)
 
     def _layer_bounds_change_slot(self, layer: Layer, _=None) -> None:
         if layer in self._layers:
@@ -650,7 +691,9 @@ class LayerGroup(Layer, LayerParent):
                 self.bounds_changed.emit(self, bounds)
                 if bounds.size() != last_bounds.size() and layer.content_change_timestamp \
                         > self.content_change_timestamp:
-                    self._trigger_render()
+                    # The child's content change that moved the bounds reported its own area, so this render only
+                    # resizes the cached image.
+                    self._trigger_render(QRect())
 
     def flush_render(self) -> None:
         """Runs any scheduled render now, so the cached image, the pixmap and content_changed listeners are current.
@@ -663,20 +706,46 @@ class LayerGroup(Layer, LayerParent):
         if self._render_timer.isActive():
             self._start_render()
 
-    def _trigger_render(self) -> None:
+    @staticmethod
+    def _layer_image_area(layer: Layer) -> QRect:
+        """Returns the image area a child layer's content covers, which adding, removing or restacking it changes."""
+        if isinstance(layer, TransformLayer):
+            return layer.map_changed_rect_to_image(layer.bounds)
+        return layer.bounds
+
+    def _trigger_render(self, changed_area: QRect) -> None:
+        """Schedules a render that reports changed_area, in image coordinates, united with every other area scheduled
+           since the last render."""
+        if not changed_area.isEmpty():
+            self._changed_area = QRect(changed_area) if self._changed_area.isEmpty() \
+                else self._changed_area.united(changed_area)
         if not self._render_timer.isActive():
             self._render_timer.start()
 
     def signal_content_changed(self, change_bounds: QRect) -> None:
-        """Invalidates the cached image and pixmap, then sends the content change signal."""
-        self._image_cache.invalidate()
+        """Invalidates the cached tiles within change_bounds and the pixmap, then sends the content change signal.
+
+        Empty change_bounds invalidate every tile. Content outside non-empty change_bounds must be unchanged, or the
+        cache keeps showing the old content there.
+        """
+        if change_bounds.isEmpty():
+            self._tiles.clear()
+            self._image = None
+            self._stale_area = QRegion()
+        else:
+            self._tiles.invalidate(change_bounds)
+            if self._image is not None:
+                self._stale_area += self._tiles.tile_aligned(change_bounds)
         self.invalidate_pixmap()
         super().signal_content_changed(change_bounds)
 
     def _start_render(self) -> None:
+        """Invalidates the cached image and reports the union of the areas scheduled since the last render."""
+        self._get_local_bounds()  # Ensure size is correct. A size change schedules this render again.
         self._render_timer.stop()
-        bounds = self._get_local_bounds()  # Ensure size is correct
-        self.signal_content_changed(bounds)
+        changed_area = self._changed_area
+        self._changed_area = QRect()
+        self.signal_content_changed(changed_area)
 
 
 class LayerGroupState:

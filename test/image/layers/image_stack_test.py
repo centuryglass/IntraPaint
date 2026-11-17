@@ -1,6 +1,5 @@
 """Tests the ImageStack module"""
 import sys
-from unittest.mock import MagicMock
 
 from typing import cast
 
@@ -8,7 +7,6 @@ from PySide6.QtCore import QSize, QRect, QPoint, Qt
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -40,18 +38,12 @@ class ImageStackTest(IntraPaintTestCase):
         super().setUp()
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
 
-        self.generation_area_bounds_changed_mock = MagicMock()
-        self.content_changed_mock = MagicMock()
-        self.size_changed_mock = MagicMock()
-        self.layer_added_mock = MagicMock()
-        self.layer_removed_mock = MagicMock()
-        self.active_layer_changed_mock = MagicMock()
-        self.image_stack.generation_area_bounds_changed.connect(self.generation_area_bounds_changed_mock)
-        self.image_stack.content_changed.connect(self.content_changed_mock)
-        self.image_stack.size_changed.connect(self.size_changed_mock)
-        self.image_stack.layer_added.connect(self.layer_added_mock)
-        self.image_stack.layer_removed.connect(self.layer_removed_mock)
-        self.image_stack.active_layer_changed.connect(self.active_layer_changed_mock)
+        self.generation_area_bounds_changed_mock = self.connect_mock(self.image_stack.generation_area_bounds_changed)
+        self.content_changed_mock = self.connect_mock(self.image_stack.content_changed)
+        self.size_changed_mock = self.connect_mock(self.image_stack.size_changed)
+        self.layer_added_mock = self.connect_mock(self.image_stack.layer_added)
+        self.layer_removed_mock = self.connect_mock(self.image_stack.layer_removed)
+        self.active_layer_changed_mock = self.connect_mock(self.image_stack.active_layer_changed)
 
     def assert_no_signals(self) -> None:
         self.generation_area_bounds_changed_mock.assert_not_called()
@@ -131,20 +123,37 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.flush_render()
         self.assertEqual(image, self.image_stack.qimage())
 
-    def test_load_image_undo_restores_transforms(self) -> None:
-        """Undoing an image load restores the previous image with its transformation."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)  # Keep the two loads as separate undo entries.
+    def test_load_image_replaces_document(self) -> None:
+        """Loading an image clears the undo history and emits `document_changed`, even at the same size."""
+        document_changed = self.connect_mock(self.image_stack.document_changed)
         image = QImage(INIT_IMAGE)
         self.image_stack.load_image(image)
-        first_layer = self.image_stack.active_layer
-        assert isinstance(first_layer, TransformLayer)
-        transform = QTransform().translate(40, 25).scale(0.5, 0.5)
-        first_layer.set_transform(transform)
+        self.image_stack.create_layer()
+        self.assertGreater(UndoStack().undo_count(), 0)
+        self.size_changed_mock.reset_mock()
         self.image_stack.load_image(image)
-        UndoStack().undo()
-        restored = self.image_stack.active_layer
-        assert isinstance(restored, TransformLayer)
-        self.assertEqual(transform, restored.transform)
+        self.size_changed_mock.assert_not_called()
+        self.assertEqual(document_changed.call_count, 2)
+        self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_load_image_restarts_layer_numbering(self) -> None:
+        """Each loaded image's layer gets the first default name, however many images were loaded before."""
+        image = QImage(INIT_IMAGE)
+        for _ in range(3):
+            self.image_stack.load_image(image)
+            self.assertEqual([layer.name for layer in self.image_stack.top_level_layers], ['layer 1'])
+        self.assertEqual(self.image_stack.create_layer().name, 'layer 2')
+
+    def test_load_layer_stack_replaces_document(self) -> None:
+        """Loading a layer stack clears the undo history and emits `document_changed`."""
+        self.image_stack.load_image(QImage(INIT_IMAGE))
+        self.image_stack.create_layer()
+        document_changed = self.connect_mock(self.image_stack.document_changed)
+        new_stack = LayerGroup('loaded')
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        document_changed.assert_called_once()
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_load_layer_stack_resets_selection_transform(self) -> None:
         """Loading a layer stack clears the selection layer's transformation."""
@@ -154,6 +163,14 @@ class ImageStackTest(IntraPaintTestCase):
         new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
+
+    def test_load_layer_stack_keeps_root_isolate(self) -> None:
+        """Loading a layer stack copies the root group's isolate flag."""
+        new_stack = LayerGroup('loaded')
+        new_stack.set_isolate(True)
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        self.assertTrue(self.image_stack.layer_stack.isolate)
 
     def test_layer_create(self) -> None:
         """Test creating new layers and layer groups"""
@@ -171,7 +188,7 @@ class ImageStackTest(IntraPaintTestCase):
         # size wasn't updated, so image will be cropped to initial size:
         self.assertEqual(self.image_stack.qimage(), image.copy(QRect(QPoint(), IMG_SIZE)))
         self.assertEqual(layer_0.image, image)
-        self.assertEqual(layer_0.name, 'layer 0')
+        self.assertEqual(layer_0.name, 'layer 1')
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 
@@ -181,7 +198,7 @@ class ImageStackTest(IntraPaintTestCase):
         # TODO: inserting a transparent layer shouldn't trigger content_changed
         self.content_changed_mock.assert_called_once()
         self.assertTrue(layer_1.empty)
-        self.assertEqual(layer_1.name, 'layer 1')
+        self.assertEqual(layer_1.name, 'layer 2')
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 
@@ -190,7 +207,7 @@ class ImageStackTest(IntraPaintTestCase):
         self.layer_added_mock.assert_called_once()
         self.content_changed_mock.assert_not_called()
         self.assertTrue(layer_group.empty)
-        self.assertEqual(layer_group.name, 'layer 2')
+        self.assertEqual(layer_group.name, 'layer 3')
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 
@@ -327,9 +344,6 @@ class ImageStackTest(IntraPaintTestCase):
 
     def test_borrow_layer_image(self) -> None:
         """Confirm that setting layer images within the stack still works correctly"""
-        # Loading and selecting a layer merge into one undo entry only within UNDO_MERGE_INTERVAL, so a short interval
-        # makes the count below depend on runner speed (#11).
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
         read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
         new_content = QImage(QSize(512, 512), QImage.Format.Format_ARGB32_Premultiplied)
         new_content.fill(Qt.GlobalColor.red)
@@ -339,7 +353,6 @@ class ImageStackTest(IntraPaintTestCase):
         layer_image = first_image_layer.image
         layer_size = first_image_layer.size
         self.assertNotEqual(layer_image, new_content)
-        self.assertEqual(1, UndoStack().undo_count())
         UndoStack().clear()
         self.assertEqual(0, UndoStack().undo_count())
 
@@ -430,7 +443,6 @@ class ImageStackTest(IntraPaintTestCase):
     def test_remove_group_containing_active_layer(self) -> None:
         """Removing a group that contains the active layer activates the layer below the group, and undo restores
         the old active layer."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         group = self.image_stack.create_layer_group('group')
         below = self.image_stack.create_layer('below', layer_parent=self.image_stack.layer_stack, layer_index=1)
         nested_group = self.image_stack.create_layer_group('nested', layer_parent=group, layer_index=0)
@@ -463,3 +475,21 @@ class ImageStackTest(IntraPaintTestCase):
 
         self.image_stack.merge_all_visible()
         self.assertEqual(self.image_stack.active_layer.name, 'Merged')
+
+    def test_batching_content_updates_nested(self) -> None:
+        """Nested batching blocks emit one content change signal, when the outermost block exits."""
+        with self.image_stack.batching_content_updates():
+            with self.image_stack.batching_content_updates():
+                self.image_stack.create_layer('inner')
+            self.content_changed_mock.assert_not_called()
+        self.content_changed_mock.assert_called_once()
+
+    def test_batching_content_updates_exception(self) -> None:
+        """An exception inside a batching block re-enables and emits content change signals."""
+        with self.assertRaises(ValueError):
+            with self.image_stack.batching_content_updates():
+                raise ValueError('test')
+        self.content_changed_mock.assert_called_once()
+        self.content_changed_mock.reset_mock()
+        self.image_stack.create_layer('after')
+        self.content_changed_mock.assert_called()

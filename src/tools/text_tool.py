@@ -14,7 +14,8 @@ from src.image.layers.layer import Layer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.placement_outline import PlacementOutline
@@ -44,7 +45,9 @@ TEXT_CONTROL_HINT = _tr('{left_mouse_icon}: select text layer<br/>{left_mouse_ic
 
 
 class TextTool(BaseTool):
-    """Lets the user fill image areas with solid colors."""
+    """Lets the user create and edit text layers."""
+
+    TOOL_GROUP = ToolGroup.EDIT
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.TEXT_TOOL_KEY, TEXT_LABEL, TEXT_TOOLTIP, QIcon(ICON_PATH_TEXT_TOOL))
@@ -56,12 +59,14 @@ class TextTool(BaseTool):
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._placement_outline = PlacementOutline(QPointF(), QSizeF())
-        scene.addItem(self._placement_outline)
+        image_viewer.canvas_extras.register(self._placement_outline, CanvasExtraCategory.TOOL)
         self._placement_outline.setVisible(False)
         self._text_layer: Optional[TextLayer] = None
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._control_panel.set_image_size(image_stack.size)
+        self._image_stack.size_changed.connect(self._control_panel.set_image_size)
         self._last_brush_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, QColor(Qt.GlobalColor.black))
 
         def _use_fixed_aspect_ratio(modifiers: Qt.KeyboardModifier) -> None:
@@ -118,12 +123,12 @@ class TextTool(BaseTool):
             return True
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """If dragging, finish and create a new text layer."""
         if self._dragging:
             new_bounds = self._selection_handler.end_selection(image_coordinates).boundingRect().toAlignedRect()
             self._dragging = False
-            if new_bounds.width() > MIN_DRAG_SIZE or new_bounds.height() > MIN_DRAG_SIZE:
+            if new_bounds.width() > MIN_DRAG_SIZE and new_bounds.height() > MIN_DRAG_SIZE:
                 if self._text_layer is not None:
                     self._disconnect_text_layer()
                 self._control_panel.offset = new_bounds.topLeft()
@@ -158,6 +163,7 @@ class TextTool(BaseTool):
             self._dragging = False
 
     def _connect_text_layer(self, layer: TextLayer) -> None:
+        UndoStack().end_gesture()
         if self._text_layer is not None:
             self._disconnect_text_layer()
         self._text_layer = layer
@@ -176,6 +182,7 @@ class TextTool(BaseTool):
         self._layer_lock_change_slot(layer, layer.locked)
 
     def _disconnect_text_layer(self) -> None:
+        UndoStack().end_gesture()
         if self._text_layer is not None:
             self._disconnect_signals()
             self._text_layer = None
@@ -214,6 +221,7 @@ class TextTool(BaseTool):
         if not self.is_active:
             return
         if self._text_layer is not None:
+            UndoStack().begin_gesture('TextTool.edit_text')
             self._disconnect_signals()
             self._text_layer.text_rect = text_data
             self._placement_outline.outline_size = text_data.size
@@ -222,12 +230,12 @@ class TextTool(BaseTool):
 
     @staticmethod
     def _layer_panel_position(layer: TextLayer) -> QPoint:
-        """Returns the layer position the panel's X/Y fields show, matching the layer transform tool."""
+        """Returns the layer position the panel's X/Y fields show, the layer's top-left corner in the scene."""
         return panel_position(layer.bounds, layer.transform).toPoint()
 
     def _control_offset_changed_slot(self, offset: QPoint) -> None:
-        """Moves the layer to the panel's X/Y the way the layer transform tool does, changing only the axes that
-           differ from the rounded values the panel shows."""
+        """Moves the layer's top-left corner to the panel's X/Y, changing only the axes that differ from the
+           rounded values the panel shows."""
         if self._text_layer is not None and self.is_active:
             self._disconnect_signals()
             layer = self._text_layer
@@ -300,8 +308,7 @@ class TextTool(BaseTool):
         self._placement_outline.setTransform(transform)
         self._connect_signals()
 
-    # noinspection PyUnusedLocal
-    def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
+    def _layer_lock_change_slot(self, _layer: Layer, _locked: bool) -> None:
         if not self.is_active:
             return
         should_enable = self._text_layer is None or (not self._text_layer.locked and not self._text_layer.parent_locked)

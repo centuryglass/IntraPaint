@@ -4,9 +4,11 @@ from typing import Callable, Optional
 
 import requests
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton, QApplication,
-                               QSizePolicy)
+from PySide6.QtWidgets import (QDialog, QFormLayout, QLabel, QLineEdit, QApplication, QSizePolicy,
+                               QWidget)
 
+from src.ui.modal.dialog_footer import DialogFooter
+from src.ui.modal.modal_parent import modal_parent
 from src.util.shared_constants import APP_ICON_PATH
 
 # The QCoreApplication.translate context for strings in this file
@@ -21,8 +23,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 LOGIN_TITLE = _tr('Enter image generation server credentials:')
 USERNAME_LABEL = _tr('Username:')
 PASSWORD_LABEL = _tr('Password:')
-LOGIN_BUTTON_TEXT = _tr('Log In')
-CANCEL_BUTTON_TEXT = _tr('Cancel')
+LOGIN_BUTTON_TEXT = _tr('Log in')
 
 ERROR_MISSING_INFO = _tr('Username and password cannot be empty.')
 ERROR_UNKNOWN = _tr('Unknown error, try again.')
@@ -31,8 +32,9 @@ ERROR_UNKNOWN = _tr('Unknown error, try again.')
 class LoginModal(QDialog):
     """Popup modal window used for entering login information."""
 
-    def __init__(self, try_login: Callable[[str, str], Optional[requests.Response]]) -> None:
-        super().__init__()
+    def __init__(self, try_login: Callable[[str, str], Optional[requests.Response]],
+                 parent: Optional[QWidget] = None) -> None:
+        super().__init__(modal_parent(parent))
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.user: Optional[str] = None
         self.pw: Optional[str] = None
@@ -55,14 +57,8 @@ class LoginModal(QDialog):
         self._status = QLabel(self)
         self._layout.addRow(self._status)
 
-        self._button_row = QHBoxLayout()
-        self._login_button = QPushButton(self)
-        self._login_button.setText(LOGIN_BUTTON_TEXT)
-        self._button_row.addWidget(self._login_button)
-        self._cancel_button = QPushButton(self)
-        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
-        self._button_row.addWidget(self._cancel_button)
-        self._layout.addRow(self._button_row)
+        self._footer = DialogFooter(LOGIN_BUTTON_TEXT, self)
+        self._layout.addRow(self._footer)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
         def on_login() -> None:
@@ -83,14 +79,14 @@ class LoginModal(QDialog):
                 except json.JSONDecodeError:
                     self._status.setText(ERROR_UNKNOWN)
 
-        self._login_button.clicked.connect(on_login)
+        self._footer.accepted.connect(on_login)
 
         def on_cancel() -> None:
             """Close and set response to none when the cancel button is clicked."""
             self._res = None
             self.hide()
 
-        self._cancel_button.clicked.connect(on_cancel)
+        self._footer.rejected.connect(on_cancel)
         self.setLayout(self._layout)
 
     def clear_password(self) -> None:

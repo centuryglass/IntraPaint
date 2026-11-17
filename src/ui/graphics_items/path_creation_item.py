@@ -51,6 +51,7 @@ class PathCreationItem(AnimatedDashItem):
             scene.addItem(handle)
         handle.setVisible(True)
         self.update()
+        self.sync_animation()
 
     def _remove_handle(self, idx: int) -> None:
         assert 0 <= idx < len(self._handles)
@@ -65,6 +66,7 @@ class PathCreationItem(AnimatedDashItem):
         scene.removeItem(handle)
         handle.setVisible(False)
         self.update()
+        self.sync_animation()
 
     def add_point(self, point: QPointF) -> None:
         """Adds a new point to the path, saving the change to the undo history."""
@@ -114,6 +116,10 @@ class PathCreationItem(AnimatedDashItem):
         self._points[idx] = QPointF(drag_pos)
         self._handles[idx].move_rect_center(drag_pos)
         self.update()
+
+    def has_dashes(self) -> bool:
+        """Returns whether the path has a line to draw between two points."""
+        return len(self._points) > 1
 
     def get_path(self) -> Optional[QPolygonF]:
         """Returns the path formed by all handles."""

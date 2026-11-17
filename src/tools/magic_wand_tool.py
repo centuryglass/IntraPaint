@@ -1,0 +1,156 @@
+"""Fill areas within an image."""
+from typing import Optional
+
+from PySide6.QtCore import Qt, QPoint, QRect
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QImage
+from PySide6.QtWidgets import QWidget, QApplication
+
+from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.config.key_config import KeyConfig
+from src.image.layers.image_stack import ImageStack
+from src.image.layers.transform_layer import TransformLayer
+from src.tools.base_tool import BaseTool, ToolGroup
+from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
+from src.ui.image_viewer import ImageViewer
+from src.ui.panel.tool_control_panels.magic_wand_panel import MagicWandPanel
+from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.image_fill import flood_fill, color_fill
+from src.util.visual.magic_wand_area import FillArea
+from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
+from src.util.visual.text_drawing_utils import left_button_hint_text
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.magic_wand_tool'
+
+
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, key, disambiguation, n)
+
+
+ICON_PATH_MAGIC_WAND_TOOL = f'{PROJECT_DIR}/resources/icons/tools/magic_wand_icon.svg'
+CURSOR_PATH_MAGIC_WAND_TOOL = f'{PROJECT_DIR}/resources/cursors/magic_wand_cursor.svg'
+CURSOR_SIZE = 25
+
+MAGIC_WAND_LABEL = _tr('Magic wand')
+MAGIC_WAND_TOOLTIP = _tr('Select areas of similar color')
+MAGIC_WAND_CONTROL_HINT = _tr('{left_mouse_icon}: select')
+
+
+def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
+    """Returns whether every held modifier belongs to a selection add, subtract or replace modifier."""
+    remaining = held_modifiers
+    for modifier_key in (KeyConfig.SELECTION_ADD_MODIFIER, KeyConfig.SELECTION_SUBTRACT_MODIFIER,
+                         KeyConfig.SELECTION_REPLACE_MODIFIER):
+        if KeyConfig.modifier_held(modifier_key, held_modifiers=held_modifiers):
+            remaining &= ~KeyConfig().get_modifier(modifier_key)
+    return remaining == Qt.KeyboardModifier.NoModifier
+
+
+class MagicWandTool(BaseTool):
+    """Lets the user select image areas with solid colors."""
+
+    TOOL_GROUP = ToolGroup.SELECTION
+
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
+        super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, MAGIC_WAND_LABEL, MAGIC_WAND_TOOLTIP,
+                         QIcon(ICON_PATH_MAGIC_WAND_TOOL))
+        self._image_stack = image_stack
+        self._control_panel = MagicWandPanel(image_stack.selection_layer, self)
+        self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
+        self._color = QColor()
+
+        def _update_color(color_str: str) -> None:
+            if color_str == self._color.name():
+                return
+            self._color = QColor(color_str)
+            self._color.setAlphaF(1.0)
+        _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
+        AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_MAGIC_WAND_TOOL)
+        self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        magic_wand_hint = (MAGIC_WAND_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+                           + context_pin_control_hint(' - '))
+        return f'{magic_wand_hint}<br/>{super().get_input_hint()}'
+
+    def get_control_panel(self) -> Optional[QWidget]:
+        """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
+        return self._control_panel
+
+    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Combines the region under a left-click with the selection, using the selection mode, or starts a context
+           pin drag on right-click."""
+        assert event is not None
+        if event.buttons() == Qt.MouseButton.RightButton:
+            return self._pin_dragger.press(event, image_coordinates)
+        held_modifiers = QApplication.keyboardModifiers()
+        if held_modifiers != Qt.KeyboardModifier.NoModifier and not _only_selection_modifiers(held_modifiers):
+            return True
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            mode = selection_mode_for_gesture(held_modifiers=held_modifiers)
+            layer = self._image_stack.active_layer
+            layer_bounds = layer.bounds
+            mask_pos = self._image_stack.selection_layer.position
+            merged_pos = self._image_stack.merged_layer_bounds.topLeft()
+            threshold = Cache().get(Cache.FILL_THRESHOLD)
+            sample_merged = Cache().get(Cache.SAMPLE_MERGED)
+            fill_area = self._control_panel.fill_area
+            if isinstance(layer, TransformLayer):
+                layer_pos = layer.map_to_image(layer_bounds.topLeft())
+            else:
+                layer_pos = layer_bounds.topLeft()
+            if fill_area == FillArea.HOLES:
+                image = self._image_stack.selection_layer.image
+                paint_transform = QTransform()
+                sample_point = image_coordinates - mask_pos
+            elif sample_merged:
+                image = self._image_stack.qimage(crop_to_image=False)
+                sample_point = image_coordinates - merged_pos
+                offset = -mask_pos + merged_pos
+                paint_transform = QTransform.fromTranslate(offset.x(), offset.y())
+            else:
+                image = layer.image
+                if isinstance(layer, TransformLayer):
+                    sample_point = layer.map_from_image(image_coordinates)
+                    paint_transform = layer.transform
+                else:
+                    paint_transform = QTransform()
+                    sample_point = image_coordinates - layer_bounds.topLeft()
+                layer_pos_in_mask = layer_pos - mask_pos
+                transformed_origin = paint_transform.map(QPoint(0, 0))
+                img_offset = layer_pos_in_mask - transformed_origin
+                paint_transform *= QTransform.fromTranslate(img_offset.x(), img_offset.y())
+            if not QRect(QPoint(), image.size()).contains(sample_point):
+                return True
+            if fill_area == FillArea.BY_COLOR:
+                mask = color_fill(image, image.pixelColor(sample_point), threshold)
+            else:
+                mask = flood_fill(image, sample_point, self._color, threshold, False)
+            selection_image = self._image_stack.selection_layer.image
+            assert mask is not None
+            mask_image = QImage(selection_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+            mask_image.fill(Qt.GlobalColor.transparent)
+            mask_painter = QPainter(mask_image)
+            mask_painter.setTransform(paint_transform)
+            mask_painter.drawImage(QRect(QPoint(), mask.size()), mask)
+            mask_painter.end()
+            compose_selection_image(selection_image, mask_image, mode)
+            self._image_stack.selection_layer.image = selection_image
+            return True
+        return False
+
+    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Continues a context pin drag."""
+        return self._pin_dragger.move(event, image_coordinates)
+
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Finishes a context pin drag."""
+        return self._pin_dragger.release(image_coordinates)
+
+    def _on_deactivate(self) -> None:
+        self._pin_dragger.finish()
+        super()._on_deactivate()

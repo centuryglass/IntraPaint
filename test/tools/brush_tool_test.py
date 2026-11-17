@@ -1,8 +1,14 @@
 import unittest
+from unittest.mock import patch
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, QRectF, Qt
 
+from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
+from src.tools.brush_tool import MIN_OUTLINE_DIAMETER
 from src.tools.mypaint_brush_tool import MyPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant, crosshair_cursor
 from src.undo_stack import UndoStack
 from test.tools.tool_test_case import ToolTestCase
 
@@ -74,6 +80,27 @@ class BrushToolTest(ToolTestCase):
         self.assertNotEqual(initial_image, final_image)
         self.assert_image_matches_golden(final_image, BRUSH_STROKE_IMAGE_PATH)
 
+    def test_stroke_drawn_in_parts_is_one_undo_step(self) -> None:
+        """A stroke whose tiles are written to the layer several times mid-stroke, as the surface's tile timer does
+           during a long stroke, is still one undo step that restores the layer."""
+        layer = self.image_stack.create_layer()
+        self.image_stack.active_layer = layer
+        self.activate_tool(self.brush_tool)
+        self.brush_tool.brush_size = 50
+        self.surface.brush.load_file(BRUSH_PATH)
+        initial_image = layer.image
+        UndoStack().clear()
+        self.mouse_press(QPoint(50, 50))
+        for xy in range(55, 150, 5):
+            self.mouse_move(QPoint(xy, xy))
+            if xy % 25 == 0:
+                self.surface.apply_pending_tile_updates()
+        self.mouse_release(QPoint(150, 150))
+        self.assertNotEqual(layer.image, initial_image)
+        self.assertEqual(1, UndoStack().undo_count())
+        UndoStack().undo()
+        self.assert_images_equal(layer.image, initial_image)
+
     def test_activation_two_layer(self) -> None:
         # Create one layer, confirm that layer property assumptions are true:
         layer1 = self.image_stack.create_layer()
@@ -105,6 +132,118 @@ class BrushToolTest(ToolTestCase):
         self.assertEqual(layer.image, initial_image)
         self.assertEqual(UndoStack().undo_count(), 0)
         self.assertEqual(self.brush_tool.brush_size, 20)
+
+    def _hover_with_layer(self, point: QPoint, brush_size: int = 40):
+        """Activates the tool on a new layer, sets the brush size, and hovers over an image pixel."""
+        layer = self.image_stack.create_layer()
+        self.image_stack.active_layer = layer
+        self.activate_tool(self.brush_tool)
+        self.brush_tool.brush_size = brush_size
+        self.mouse_move(point, Qt.MouseButton.NoButton)
+        return layer
+
+    def assert_outline_under(self, image_point: QPoint) -> None:
+        """Asserts that the brush outline shows, centred within an image pixel and sized to the brush."""
+        outline = self.brush_tool.brush_outline
+        self.assertTrue(outline.isVisible())
+        self.assertTrue(QRectF(image_point.toPointF(), image_point.toPointF() + QPoint(1, 1)).contains(outline.pos()),
+                        f'outline at {outline.pos().toTuple()}, cursor over pixel {image_point.toTuple()}')
+        self.assertEqual(outline.diameter, self.brush_tool.brush_size)
+
+    def test_cursor_is_crosshair(self) -> None:
+        """The active brush tool uses its crosshair variant's cursor."""
+        self._hover_with_layer(QPoint(100, 100))
+        self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(self.brush_tool.crosshair_variant, self.image_viewer.devicePixelRatioF()))
+
+    def test_crosshair_variants_setting_falls_back_to_plain(self) -> None:
+        """Turning off per-tool crosshair variants uses the plain crosshair for every brush tool."""
+        self._hover_with_layer(QPoint(100, 100))
+        self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(self.brush_tool.crosshair_variant, self.image_viewer.devicePixelRatioF()))
+        AppConfig().set(AppConfig.BRUSH_CROSSHAIR_VARIANTS, False)
+        self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(CrosshairVariant.PLAIN, self.image_viewer.devicePixelRatioF()))
+        AppConfig().set(AppConfig.BRUSH_CROSSHAIR_VARIANTS, True)
+        self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(self.brush_tool.crosshair_variant, self.image_viewer.devicePixelRatioF()))
+
+    def test_outline_follows_cursor_at_brush_size(self) -> None:
+        """The outline appears under the hovered pixel at the brush's scene size, and follows the cursor."""
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+        self._hover_with_layer(QPoint(100, 100))
+        self.assert_outline_under(QPoint(100, 100))
+        self.mouse_move(QPoint(300, 200), Qt.MouseButton.NoButton)
+        self.assert_outline_under(QPoint(300, 200))
+        self.brush_tool.brush_size = 90
+        self.assert_outline_under(QPoint(300, 200))
+
+    def test_outline_keeps_brush_size_across_zoom(self) -> None:
+        """At every zoom level the outline's scene diameter is the brush size, centred under the cursor."""
+        self._hover_with_layer(QPoint(256, 256))
+        for scale in (0.5, 2.0, 4.0):
+            with self.subTest(scale=scale):
+                self.image_viewer.scene_scale = scale
+                self.mouse_move(QPoint(256, 256), Qt.MouseButton.NoButton)
+                self.assert_outline_under(QPoint(256, 256))
+                outline = self.brush_tool.brush_outline
+                self.assertEqual(outline.pos(), self.image_viewer.widget_point_to_scene(self.image_viewer.cursor_pos))
+
+    def test_outline_hides_when_no_wider_than_crosshair(self) -> None:
+        """The outline hides once the brush is no wider on screen than the crosshair, and returns above that."""
+        self._hover_with_layer(QPoint(100, 100), brush_size=MIN_OUTLINE_DIAMETER)
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+        self.brush_tool.brush_size = MIN_OUTLINE_DIAMETER + 1
+        self.assertTrue(self.brush_tool.brush_outline.isVisible())
+        self.image_viewer.scene_scale = 0.5
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+
+    def test_outline_hides_while_input_is_disabled(self) -> None:
+        """Locking the layer shows the disabled cursor and hides the outline; unlocking restores both."""
+        layer = self._hover_with_layer(QPoint(100, 100))
+        layer.locked = True
+        self.assertTrue(self.brush_tool.cursor_disabled)
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+        layer.locked = False
+        self.assertFalse(self.brush_tool.cursor_disabled)
+        self.assert_outline_under(QPoint(100, 100))
+
+    def test_outline_hides_on_leave_and_deactivate(self) -> None:
+        """The outline hides when the cursor leaves the viewer, and when the tool stops being active."""
+        self._hover_with_layer(QPoint(100, 100))
+        self.image_viewer.set_cursor_pos(None)
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+        self.mouse_move(QPoint(100, 100), Qt.MouseButton.NoButton)
+        self.assertTrue(self.brush_tool.brush_outline.isVisible())
+        self.brush_tool.is_active = False
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+        self.mouse_move(QPoint(120, 100), Qt.MouseButton.NoButton)
+        self.assertFalse(self.brush_tool.brush_outline.isVisible())
+
+    def _line_preview_after_modifiers(self, modifiers: Qt.KeyboardModifier) -> bool:
+        """Draws a short stroke, then returns whether a modifier change with the cursor over the image shows the line
+        preview."""
+        self.image_stack.active_layer = self.image_stack.create_layer()
+        self.activate_tool(self.brush_tool)
+        self.mouse_press(QPoint(50, 50))
+        self.mouse_release(QPoint(50, 50))
+        cursor = self.image_viewer.mapToGlobal(self.image_point_to_widget(QPoint(150, 150)))
+        with patch('src.tools.brush_tool.QCursor.pos', return_value=cursor):
+            HotkeyFilter.instance().modifiers_changed.emit(modifiers)
+        return self.brush_tool._preview_line.isVisible()
+
+    def test_line_modifier_press_shows_line_preview(self) -> None:
+        """Pressing the line modifier alone after a stroke shows the line preview without moving the mouse."""
+        self.assertTrue(self._line_preview_after_modifiers(Qt.KeyboardModifier.ShiftModifier))
+
+    def test_other_modifiers_hide_line_preview(self) -> None:
+        """Extra modifiers, other modifiers and an unbound line modifier leave the line preview hidden."""
+        for modifiers in (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier,
+                          Qt.KeyboardModifier.ControlModifier):
+            with self.subTest(modifiers=modifiers):
+                self.assertFalse(self._line_preview_after_modifiers(modifiers))
+        KeyConfig().set(KeyConfig.LINE_MODIFIER, '')
+        self.assertFalse(self._line_preview_after_modifiers(Qt.KeyboardModifier.ShiftModifier))
 
 
 if __name__ == '__main__':

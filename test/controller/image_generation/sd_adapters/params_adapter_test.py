@@ -3,10 +3,13 @@ import os
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, QColor
-from sd_backend_client import ComfyUIDiffusionParams, DiffusionRequestBody, InpaintFillOption
+from sd_backend_client import ComfyUIDiffusionParams, ControlNetPreprocessor, ControlNetUnit, DiffusionRequestBody, \
+    InpaintFillOption, PreprocessorParams
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
+    SavedControlNetUnit
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_webui_body, \
     build_upscale_params, WEBUI_SEAM_FIX_PADDING
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
@@ -37,7 +40,7 @@ class ParamsAdapterTest(IntraPaintTestCase):
         cache.set(Cache.GENERATION_SIZE, GENERATION_SIZE)
         cache.set(Cache.PROMPT, 'a lighthouse')
         cache.set(Cache.NEGATIVE_PROMPT, 'blurry')
-        cache.set(Cache.SEED, '1234')
+        cache.set(Cache.SEED, 1234)
         cache.set(Cache.BATCH_SIZE, 2)
         cache.set(Cache.BATCH_COUNT, 3)
         cache.set(Cache.SAMPLING_STEPS, 20)
@@ -74,12 +77,14 @@ class ParamsAdapterTest(IntraPaintTestCase):
         self.assertEqual(params.sd_model_config, 'v1-inference.yaml')
 
     def test_comfy_inpaint(self) -> None:
-        """Inpainting sends the source image, the mask unchanged and the cached denoising strength."""
+        """Inpainting sends the source image, the unblurred mask, the configured mask blur and the denoising
+           strength."""
         params = build_comfy_params(EDIT_MODE_INPAINT, self.source, self.mask)
         assert params.init_images is not None and params.mask is not None
         self.assertEqual(params.init_images[0].getpixel((0, 0)), (10, 20, 30, 255))
         self.assertEqual(params.mask.getpixel((0, 0)), (255, 255, 255, 255))
         self.assertEqual(params.denoising_strength, 0.6)
+        self.assertEqual(params.mask_blur, 4)
 
     def test_missing_images_raise(self) -> None:
         """Img2img needs a source image, and inpainting also needs a mask."""
@@ -87,6 +92,21 @@ class ParamsAdapterTest(IntraPaintTestCase):
             build_comfy_params(EDIT_MODE_IMG2IMG)
         with self.assertRaises(ValueError):
             build_webui_body(EDIT_MODE_INPAINT, self.source)
+
+    def test_inpainting_controlnet_units_only_apply_when_inpainting(self) -> None:
+        """Both backends drop an inpainting preprocessor's unit from txt2img and img2img requests."""
+        preprocessor = PreprocessorParams(typedef=ControlNetPreprocessor(name='InpaintPreprocessor', model_free=True),
+                                          parameter_values={})
+        unit_json = SavedControlNetUnit(True, CONTROLNET_REUSE_IMAGE_CODE,
+                                        ControlNetUnit(preprocessor=preprocessor)).to_json()
+        cache = Cache()
+        cache.set(Cache.CONTROLNET_ARGS_0_COMFYUI, unit_json)
+        cache.set(Cache.CONTROLNET_ARGS_0_WEBUI, unit_json)
+        mask = _image(QColor(255, 255, 255))
+        for build in (build_comfy_params, build_webui_body):
+            self.assertEqual(build(EDIT_MODE_TXT2IMG, self.source).controlnet_units, [], build.__name__)
+            self.assertEqual(build(EDIT_MODE_IMG2IMG, self.source).controlnet_units, [], build.__name__)
+            self.assertEqual(len(build(EDIT_MODE_INPAINT, self.source, mask).controlnet_units), 1, build.__name__)
 
     def test_controlnet_units_use_backend_cache_keys(self) -> None:
         """Each backend reads its own cached units, and the generation area is the control image only for txt2img."""
@@ -120,6 +140,30 @@ class ParamsAdapterTest(IntraPaintTestCase):
         self.assertIsNone(body.mask_blur)
         self.assertIsNone(body.include_init_images)
         self.assertNotIn('denoising_strength', body.to_dict())
+        self.assertEqual(body.to_dict()['scheduler'], 'Automatic', 'the server picks the sampler default scheduler')
+
+    def test_seeds_beyond_c_integers_reach_requests(self) -> None:
+        """Seeds a C integer can't hold, entered as the seed fields' text, reach both backends' requests as ints."""
+        cache = Cache()
+        for seed in (2 ** 31, 2 ** 63, 2 ** 64 - 1):
+            with self.subTest(seed=seed):
+                cache.set(Cache.SEED, str(seed))
+                cache.set(Cache.WEBUI_SUBSEED, str(seed - 1))
+                comfy_params = build_comfy_params(EDIT_MODE_TXT2IMG)
+                self.assertEqual(comfy_params.seed, seed)
+                self.assertIs(type(comfy_params.seed), int)
+                body = build_webui_body(EDIT_MODE_TXT2IMG)
+                self.assertEqual((body.to_dict()['seed'], body.to_dict()['subseed']), (seed, seed - 1))
+
+    def test_webui_random_subseed_from_text_is_omitted(self) -> None:
+        """A variation seed of -1 entered as the seed field's text sends no variation seed or strength."""
+        cache = Cache()
+        cache.set(Cache.WEBUI_SUBSEED, '5')
+        cache.set(Cache.WEBUI_SUBSEED_STRENGTH, 0.3)
+        cache.set(Cache.WEBUI_SUBSEED, '-1')
+        body = build_webui_body(EDIT_MODE_TXT2IMG)
+        self.assertIsNone(body.subseed)
+        self.assertIsNone(body.subseed_strength)
 
     def test_webui_inpaint(self) -> None:
         """WebUI inpainting sends the mask settings, with the server applying the configured mask blur."""

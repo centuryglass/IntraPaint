@@ -1,11 +1,13 @@
 """Represents the option to run IntraPaint without an image generator."""
-from typing import Optional
+from typing import Optional, Any
 
+from PySide6.QtCore import SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
+from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.window.main_window import MainWindow
 from src.util.shared_constants import PROJECT_DIR
@@ -28,6 +30,10 @@ NULL_GENERATOR_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/none.
 
 class NullGenerator(ImageGenerator):
     """Represents the option to run IntraPaint without an image generator."""
+
+    def generate(self, status_signal: SignalInstance, source_image: QImage,
+                 mask_image: Optional[QImage] = None) -> None:
+        """No-op, NullGenerator does not generate images."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         super().__init__(window, image_stack)
@@ -64,3 +70,17 @@ class NullGenerator(ImageGenerator):
     def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         return None
+
+    # All settings methods are no-op:
+
+    def init_settings(self, settings_modal: SettingsModal) -> None:
+        pass
+
+    def refresh_settings(self, settings_modal: SettingsModal) -> None:
+        pass
+
+    def update_settings(self, changed_settings: dict[str, Any]) -> None:
+        pass
+
+    def unload_settings(self, settings_modal: SettingsModal) -> None:
+        pass

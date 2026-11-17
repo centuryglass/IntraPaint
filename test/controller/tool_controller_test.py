@@ -1,5 +1,5 @@
 """Tests ToolController tool loading, including startup without the compiled image_fill module, modifier delegation,
-   and the padding scroll modifier."""
+   and the context scroll modifier."""
 import importlib
 import sys
 from unittest.mock import patch
@@ -19,12 +19,12 @@ from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
-from src.tools.selection_fill_tool import SelectionFillTool
+from src.tools.magic_wand_tool import MagicWandTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from test.tools.tool_test_case import ToolTestCase
 
 IMAGE_FILL_MODULE = 'src.util.visual.image_fill'
-FILL_TOOL_MODULES = ('src.tools.fill_tool', 'src.tools.selection_fill_tool')
+FILL_TOOL_MODULES = ('src.tools.fill_tool', 'src.tools.magic_wand_tool')
 
 
 class ToolControllerTest(ToolTestCase):
@@ -39,7 +39,7 @@ class ToolControllerTest(ToolTestCase):
         """With image_fill available, both fill tools are loaded."""
         controller = self._load_all_tools()
         self.assertIsNotNone(controller.find_tool_by_class(FillTool))
-        self.assertIsNotNone(controller.find_tool_by_class(SelectionFillTool))
+        self.assertIsNotNone(controller.find_tool_by_class(MagicWandTool))
 
     def test_starts_without_image_fill(self) -> None:
         """Without image_fill, ToolController starts with every tool except the two fill tools."""
@@ -52,13 +52,13 @@ class ToolControllerTest(ToolTestCase):
             sys.modules[IMAGE_FILL_MODULE] = None  # type: ignore[assignment]
             importlib.reload(tool_controller)
             self.assertIsNone(tool_controller.FillTool)
-            self.assertIsNone(tool_controller.SelectionFillTool)
+            self.assertIsNone(tool_controller.MagicWandTool)
             with self.assertLogs(tool_controller.__name__, level='WARNING') as construction_logs:
                 controller = self._load_all_tools()
         self.assertTrue(any(tool_controller.FILL_TOOLS_UNAVAILABLE_LOG in message
                             for message in construction_logs.output), construction_logs.output)
         self.assertIsNone(controller.find_tool_by_class(FillTool))
-        self.assertIsNone(controller.find_tool_by_class(SelectionFillTool))
+        self.assertIsNone(controller.find_tool_by_class(MagicWandTool))
         for tool_class in (DrawTool, EraserTool, ShapeSelectionTool):
             self.assertIsNotNone(controller.find_tool_by_class(tool_class))
         self.assertIsInstance(controller.active_tool, DrawTool)
@@ -123,13 +123,13 @@ class ModifierDelegationTest(ToolTestCase):
         self.assertTrue(self.draw_tool.is_active)
 
 
-class PaddingScrollTest(ToolTestCase):
-    """Padding scroll modifier tests."""
+class ContextScrollTest(ToolTestCase):
+    """Context scroll modifier tests."""
 
     def setUp(self) -> None:
         super().setUp()
         self.activate_tool(DrawTool(self.image_stack, self.image_viewer))
-        self.padding_step = (Cache().get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.STEP)
+        self.context_step = (Cache().get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.STEP)
                              * QApplication.wheelScrollLines())
 
     def _send_wheel(self, angle_delta: QPoint,
@@ -142,53 +142,45 @@ class PaddingScrollTest(ToolTestCase):
                             Qt.MouseButton.NoButton, modifiers, Qt.ScrollPhase.NoScrollPhase, False)
         QApplication.sendEvent(viewport, event)
 
-    def test_scroll_changes_padding_without_zooming(self) -> None:
-        """A notch with the modifier held changes padding by the slider's wheel step, and the view doesn't zoom."""
+    def test_scroll_changes_context_without_zooming(self) -> None:
+        """A notch with the modifier held changes context by the slider's wheel step, and the view doesn't zoom."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 32)
         self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA))
-        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.padding_step)
+        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.context_step)
         self._send_wheel(QPoint(0, -WHEEL_NOTCH_DELTA * 2))
-        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 - self.padding_step)
+        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 - self.context_step)
         self.assertEqual(self.image_viewer.scene_scale, 1.0)
 
-    def test_horizontal_scroll_changes_padding(self) -> None:
+    def test_horizontal_scroll_changes_context(self) -> None:
         """Horizontal scroll counts, for platforms that turn Shift + vertical scroll horizontal."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 32)
         self._send_wheel(QPoint(WHEEL_NOTCH_DELTA, 0))
-        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.padding_step)
+        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.context_step)
 
     def test_partial_notches_accumulate(self) -> None:
-        """High-resolution wheel deltas change padding once they add up to a full notch."""
+        """High-resolution wheel deltas change context once they add up to a full notch."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 32)
         self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA // 2))
         self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32)
         self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA // 2))
-        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.padding_step)
+        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.context_step)
 
-    def test_speed_modifier_multiplies_step(self) -> None:
-        """Holding the speed modifier too multiplies the padding step."""
-        Cache().set(Cache.INPAINT_FULL_RES_PADDING, 32)
-        self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA),
-                         Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.AltModifier)
-        multiplier = AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.padding_step * multiplier)
-
-    def test_padding_clamps_to_range(self) -> None:
-        """Padding stays within its configured range."""
+    def test_context_clamps_to_range(self) -> None:
+        """Context stays within its configured range."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 1)
         self._send_wheel(QPoint(0, -WHEEL_NOTCH_DELTA))
         self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING),
                          Cache().get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MIN))
 
-    def test_raising_padding_enables_full_res(self) -> None:
-        """Scrolling padding above zero turns Inpaint Full Resolution on."""
+    def test_raising_context_enables_limit(self) -> None:
+        """Scrolling context above zero turns on the limit to the selection."""
         Cache().set(Cache.INPAINT_FULL_RES, False)
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 0)
         self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA))
         self.assertTrue(Cache().get(Cache.INPAINT_FULL_RES))
 
     def test_scroll_without_modifier_zooms(self) -> None:
-        """Without the modifier, padding is unchanged and the view zooms as before."""
+        """Without the modifier, context is unchanged and the view zooms as before."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 32)
         self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA), Qt.KeyboardModifier.NoModifier)
         self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32)

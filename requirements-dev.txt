@@ -5,15 +5,19 @@
 # `pytest` runs the whole suite headlessly (see pytest.ini and conftest.py).
 pytest==9.1.1
 
-# `coverage run -m pytest` then `coverage report` or `coverage html` measures what the suite covers (see .coveragerc).
-coverage==7.16.2
+# `pytest --random-order` shuffles the test order, to find tests that depend on what ran before them. The
+# random-order workflow runs the suite this way.
+pytest-random-order==1.2.0
 
 # `python scripts/pylint_check.py` is the CI lint gate; `scripts/pylint.sh` shows the full report.
 pylint==4.0.9
 
-# `pyinstaller IntraPaint.spec` (Windows) or `pyinstaller IntraPaint-linux.spec` creates a packaged build in dist/.
-# The specs' splash screen needs tkinter in the building Python. CI's `bundle` job builds and launch-tests both specs,
-# so check it passes after a bump.
+# `python scripts/markdown_lint.py` is CI's Markdown gate, configured by .pymarkdown.yaml.
+pymarkdownlnt==0.9.41
+
+# `pyinstaller IntraPaint.spec` creates a packaged build in dist/.
+# The spec's splash screen needs tkinter in the building Python. CI's `bundle` job builds and launch-tests the spec on
+# Linux and Windows, so check it passes after a bump.
 pyinstaller==6.22.3
 
 # `pur -r requirements.txt` updates the pinned version numbers in place.

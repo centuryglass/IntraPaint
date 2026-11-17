@@ -5,6 +5,7 @@ from typing import Optional
 from PySide6.QtGui import QColor, Qt, QIcon, QBrush
 
 from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.brush.qt_paint_brush import QtPaintBrush
@@ -12,7 +13,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox, BRUSH_PATTERN_SOLID
-from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.math_utils import clamp
 
@@ -39,6 +40,10 @@ class QtPaintBrushTool(BrushTool):
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
+        # The color is shared between tools, so reset leaves it alone:
+        self._reset_keys = [key for key in (size_key, pressure_size_key, opacity_key, pressure_opacity_key,
+                                            hardness_key, pressure_hardness_key, pattern_key, antialias_key)
+                            if key is not None]
 
         # Connect and load all provided cache keys:
         cache = Cache()
@@ -73,11 +78,14 @@ class QtPaintBrushTool(BrushTool):
                     return False
                 self.opacity = float(clamp(self.opacity + offset, 0.0, 1.0))
                 return True
-            key_filter.register_speed_modified_keybinding(down_id,
-                                                          lambda offset: _update_opacity_offset(-offset),
-                                                          KeyConfig.BRUSH_OPACITY_DECREASE)
-            key_filter.register_speed_modified_keybinding(up_id, _update_opacity_offset,
-                                                          KeyConfig.BRUSH_OPACITY_INCREASE)
+            key_filter.register_config_keybinding(down_id, lambda: _update_opacity_offset(-1),
+                                                  KeyConfig.BRUSH_OPACITY_DECREASE)
+            key_filter.register_config_keybinding(up_id, lambda: _update_opacity_offset(1),
+                                                  KeyConfig.BRUSH_OPACITY_INCREASE)
+
+            def _set_opacity(opacity: float) -> None:
+                self.opacity = opacity
+            self._bind_opacity_preset_keys(_set_opacity)
 
         if pressure_opacity_key is not None:
             def _update_pressure_opacity(pressure: bool) -> None:
@@ -103,11 +111,10 @@ class QtPaintBrushTool(BrushTool):
                     return False
                 self.hardness = float(clamp(self.hardness + offset, 0.0, 1.0))
                 return True
-            key_filter.register_speed_modified_keybinding(down_id,
-                                                          lambda offset: _update_hardness_offset(-offset),
-                                                          KeyConfig.BRUSH_HARDNESS_DECREASE)
-            key_filter.register_speed_modified_keybinding(up_id, _update_hardness_offset,
-                                                          KeyConfig.BRUSH_HARDNESS_INCREASE)
+            key_filter.register_config_keybinding(down_id, lambda: _update_hardness_offset(-1),
+                                                  KeyConfig.BRUSH_HARDNESS_DECREASE)
+            key_filter.register_config_keybinding(up_id, lambda: _update_hardness_offset(1),
+                                                  KeyConfig.BRUSH_HARDNESS_INCREASE)
 
         if pressure_hardness_key is not None:
             def _update_pressure_hardness(pressure: bool) -> None:
@@ -148,8 +155,12 @@ class QtPaintBrushTool(BrushTool):
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
-            if isinstance(control_panel, BrushToolPanel):
+            if isinstance(control_panel, StrokeToolPanel):
                 control_panel.show_pressure_checkboxes()
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns the brush's own keys, leaving out the shared color."""
+        return list(self._reset_keys)
 
     @property
     def opacity(self) -> float:
@@ -186,7 +197,10 @@ class QtPaintBrushTool(BrushTool):
             brush.hardness = hardness
 
     def set_brush_size(self, new_size: int) -> None:
-        """Ensure brush size also propagates to the appropriate config key."""
+        """Ensure brush size also propagates to the appropriate config key, clamped to that key's range."""
         if self._size_key is not None:
-            Cache().set(self._size_key, new_size)
+            cache = Cache()
+            new_size = int(clamp(new_size, cache.get(self._size_key, RangeKey.MIN),
+                                 cache.get(self._size_key, RangeKey.MAX)))
+            cache.set(self._size_key, new_size)
         super().set_brush_size(new_size)

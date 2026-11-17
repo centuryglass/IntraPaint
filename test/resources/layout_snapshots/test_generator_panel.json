@@ -1,0 +1,49 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      104,
+      171
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: PanelHeader/QWidget/QLabel '--mode mock' is 30x30, minimum 34x17",
+      "squeezed: QScrollArea is 30x49, minimum 59x59",
+      "squeezed: QWidget[1] is 30x28, minimum 82x28",
+      "squeezed: QWidget[1]/QPushButton 'Generate' is 30x28, minimum 82x28"
+    ],
+    "size": [
+      52,
+      167
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      334,
+      167
+    ]
+  },
+  "short": {
+    "problems": [],
+    "size": [
+      334,
+      85
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      334,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      167
+    ]
+  }
+}

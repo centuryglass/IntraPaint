@@ -1,7 +1,7 @@
 """Tests reading and writing saved ControlNet units, and turning them into sd_backend_client request units.
 
-The `legacy_*` fixtures under `UNIT_DIR` were written by `src.api.controlnet.controlnet_unit.ControlNetUnit.serialize`,
-so they stay readable after that module is removed.
+The `legacy_*` fixtures under `UNIT_DIR` were written by `ControlNetUnit.serialize` in the removed `src.api`, and
+`SavedControlNetUnit.from_json` still has to read them.
 """
 import json
 import os
@@ -12,11 +12,10 @@ from PySide6.QtGui import QImage, QColor
 from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNetUnit, ParameterDef, \
     PreprocessorParams
 
-from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters import controlnet_adapter
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, to_request_unit, \
-    load_request_units, legacy_preprocessor, preprocessor_from_legacy
+    load_request_units, count_enabled_units, needs_inpainting_mask, CONTROLNET_REUSE_IMAGE_CODE
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 UNIT_DIR = os.path.join(TEST_RESOURCE_DIR, 'controlnet_units')
@@ -34,9 +33,9 @@ def _source_image() -> QImage:
 
 
 def _saved_unit(image_string: str = CONTROLNET_REUSE_IMAGE_CODE, model: bool = True,
-                model_free: bool = False) -> SavedControlNetUnit:
+                model_free: bool = False, preprocessor: str = 'canny') -> SavedControlNetUnit:
     """Returns an enabled saved unit with a preprocessor and, optionally, a model."""
-    typedef = ControlNetPreprocessor(name='canny', model_free=model_free,
+    typedef = ControlNetPreprocessor(name=preprocessor, model_free=model_free,
                                      parameters=[ParameterDef(key='threshold_a', default_value=100)])
     unit = ControlNetUnit(preprocessor=PreprocessorParams(typedef=typedef, parameter_values={}),
                           model=ControlNetModel('control_canny') if model else None)
@@ -105,42 +104,6 @@ class ControlNetAdapterTest(IntraPaintTestCase):
             with self.assertRaises(ValueError, msg=data_str):
                 SavedControlNetUnit.from_json(data_str)
 
-    def test_legacy_preprocessor_round_trip(self) -> None:
-        """A library preprocessor converts for the ControlNet panel and back without changing what a request sends."""
-        typedef = ControlNetPreprocessor(
-            name='CannyEdgePreprocessor', category_name='ControlNet Preprocessors/Line Extractors',
-            description='Canny Edge\nFinds edges.', has_mask_input=False,
-            parameters=[ParameterDef(key='low_threshold', default_value=100, description='Lower bound',
-                                     min_val=0, max_val=255, step_val=1),
-                        ParameterDef(key='strength', default_value=0.5, min_val=0.0, max_val=1.0),
-                        ParameterDef(key='safe', default_value=True),
-                        ParameterDef(key='mode', default_value='fast', option_list=['fast', 'slow'])])
-        converted = legacy_preprocessor(typedef)
-        self.assertEqual(converted.name, 'CannyEdgePreprocessor')
-        self.assertEqual(converted.description, 'Finds edges.')
-        self.assertEqual([param.display_name for param in converted.parameters],
-                         ['low_threshold', 'strength', 'safe', 'mode'])
-        converted.set_value('low_threshold', 80)
-        converted.set_value('mode', 'slow')
-
-        params = preprocessor_from_legacy(converted)
-        assert params is not None
-        self.assertEqual(params.parameter_values, {'low_threshold': 80, 'strength': 0.5, 'safe': True, 'mode': 'slow'})
-        round_trip = params.typedef
-        self.assertEqual((round_trip.name, round_trip.category_name, round_trip.has_image_input,
-                          round_trip.has_mask_input, round_trip.model_free),
-                         (typedef.name, typedef.category_name, True, False, False))
-        for original, returned in zip(typedef.parameters, round_trip.parameters):
-            self.assertEqual((returned.key, returned.default_value, returned.min_val, returned.max_val,
-                              returned.step_val, returned.option_list),
-                             (original.key, original.default_value, original.min_val, original.max_val,
-                              original.step_val, original.option_list))
-
-    def test_legacy_none_preprocessor_converts_to_none(self) -> None:
-        """The "None" preprocessor has no library equivalent."""
-        converted = legacy_preprocessor(ControlNetPreprocessor(name='None'))
-        self.assertIsNone(preprocessor_from_legacy(converted))
-
     def test_reuse_image_code(self) -> None:
         """The generation area image is sent only when the request doesn't already send it as the init image."""
         saved = _saved_unit()
@@ -190,3 +153,43 @@ class ControlNetAdapterTest(IntraPaintTestCase):
         with self.assertNoLogs(controlnet_adapter.logger):
             units = load_request_units([Cache.CONTROLNET_ARGS_0_WEBUI], _source_image(), True)
         self.assertEqual(units, [])
+
+    def test_needs_inpainting_mask(self) -> None:
+        """WebUI and ComfyUI inpainting preprocessors need the mask. Other preprocessors and no preprocessor don't."""
+        for name in ('inpaint_only+lama', 'inpaint_global_harmonious', 'InpaintPreprocessor'):
+            self.assertTrue(needs_inpainting_mask(_saved_unit(preprocessor=name).unit), name)
+        self.assertFalse(needs_inpainting_mask(_saved_unit().unit))
+        self.assertFalse(needs_inpainting_mask(ControlNetUnit()))
+
+    def test_skips_inpainting_units_outside_inpainting(self) -> None:
+        """An inpainting unit is sent only with an inpainting request. Other units are sent either way."""
+        inpaint = _saved_unit(preprocessor='InpaintPreprocessor')
+        self.assertIsNotNone(to_request_unit(inpaint, _source_image(), True, inpainting=True))
+        self.assertIsNone(to_request_unit(inpaint, _source_image(), True, inpainting=False))
+        self.assertIsNone(to_request_unit(inpaint, _source_image(), False, inpainting=False))
+        self.assertIsNotNone(to_request_unit(_saved_unit(), _source_image(), True, inpainting=False))
+
+    def test_load_request_units_skips_inpainting_units_outside_inpainting(self) -> None:
+        """Outside inpainting, the other units still load."""
+        cache = Cache()
+        cache.set(Cache.CONTROLNET_ARGS_0_COMFYUI, _saved_unit(preprocessor='InpaintPreprocessor').to_json())
+        cache.set(Cache.CONTROLNET_ARGS_1_COMFYUI, _saved_unit().to_json())
+        keys = [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI]
+        units = load_request_units(keys, _source_image(), True, inpainting=False)
+        self.assertEqual([unit.preprocessor.typedef.name for unit in units if unit.preprocessor is not None],
+                         ['canny'])
+        self.assertEqual(len(load_request_units(keys, _source_image(), True, inpainting=True)), 2)
+
+    def test_count_enabled_units(self) -> None:
+        """Only parseable units with `enabled` set are counted, and enabled inpainting units count as skipped outside
+        inpainting."""
+        on = SavedControlNetUnit(True, '', ControlNetUnit()).to_json()
+        off = SavedControlNetUnit(False, '', ControlNetUnit()).to_json()
+        inpaint_on = _saved_unit(preprocessor='inpaint_only').to_json()
+        inpaint_off_unit = _saved_unit(preprocessor='inpaint_only')
+        inpaint_off_unit.enabled = False
+        inpaint_off = inpaint_off_unit.to_json()
+        self.assertEqual(count_enabled_units([on, off, on, 'not json', '']), (2, 0))
+        self.assertEqual(count_enabled_units([]), (0, 0))
+        self.assertEqual(count_enabled_units([on, inpaint_on, inpaint_off]), (2, 0))
+        self.assertEqual(count_enabled_units([on, inpaint_on, inpaint_off], inpainting=False), (2, 1))

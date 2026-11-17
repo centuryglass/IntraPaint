@@ -13,7 +13,7 @@ from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
-ICON_PATH = 'resources/icons/layer/minus_icon.svg'
+ICON_PATH = 'resources/icons/layer/delete_icon.svg'
 ICON_SIZE = 16
 
 
@@ -127,3 +127,36 @@ class SignalColorTest(IntraPaintTestCase):
             show_error_dialog(None, 'title', 'message', signal=True)
             show_error_dialog(None, 'title', 'message')
         self.assertEqual([True, False], marked)
+
+    def test_message_boxes_show_title_icon_and_action_button(self):
+        seen: list[tuple[str, str, QMessageBox.Icon, list[str]]] = []
+
+        def _record(box: QMessageBox) -> int:
+            buttons = [button.text() for button in box.buttons()]
+            seen.append((box.text(), box.informativeText(), box.icon(), buttons))
+            return 0
+
+        with patch.object(QMessageBox, 'exec', _record, create=True):
+            request_confirmation(None, 'Quit <now>?', 'Line 1\nLine 2', confirm_label='Quit without saving')
+            show_warning_dialog(None, 'title', 'message', None)
+            show_error_dialog(None, 'title', 'message')
+        confirm, warning, error = seen
+        self.assertEqual('<b>Quit &lt;now&gt;?</b>', confirm[0])
+        self.assertEqual('Line 1<br>Line 2', confirm[1])
+        self.assertEqual(QMessageBox.Icon.Question, confirm[2])
+        self.assertIn('Quit without saving', confirm[3])
+        self.assertEqual(QMessageBox.Icon.Warning, warning[2])
+        self.assertEqual(QMessageBox.Icon.Critical, error[2])
+
+    def test_message_boxes_render_message_markup_and_escape_exceptions(self):
+        """A string message keeps its tags, while an exception's text displays as written."""
+        messages: list[str] = []
+
+        def _record(box: QMessageBox) -> int:
+            messages.append(box.informativeText())
+            return 0
+
+        with patch.object(QMessageBox, 'exec', _record, create=True):
+            show_warning_dialog(None, 'title', '<p>Deleted:</p><ul><li>layer</li></ul>', None)
+            show_error_dialog(None, 'title', ValueError('bad <tag> & value'))
+        self.assertEqual(['<p>Deleted:</p><ul><li>layer</li></ul>', 'bad &lt;tag&gt; &amp; value'], messages)

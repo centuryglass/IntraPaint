@@ -1,5 +1,4 @@
-"""Pure helpers for generation area frames, the generation resolution rule, follow-selection placement and handle
-   resizing.
+"""Pure helpers for generation area frames, resolution, follow-selection placement and handle resizing.
 
 Frames are one-click generation area sizes. The resolution rule decides the generation resolution whenever the
 generation area size changes. Follow-selection placement moves the area to contain the selection after selection edits.
@@ -11,18 +10,18 @@ import re
 from typing import Optional
 
 from PySide6.QtCore import QSize, QRect, QPoint, QPointF
-from PySide6.QtWidgets import QApplication
 
-# Values of Cache.GENERATION_RESOLUTION_RULE. They must match the options in cache_value_definitions.json.
-RESOLUTION_RULE_MATCH_AREA = QApplication.translate('cache_value', 'Match area')
-RESOLUTION_RULE_MATCH_AREA_UPSCALED = QApplication.translate('cache_value', 'Match area, upscale small areas')
-RESOLUTION_RULE_MANUAL = QApplication.translate('cache_value', 'Manual')
+# Values of Cache.GENERATION_RESOLUTION_RULE. They must match the options in cache_value_definitions.json and must not
+# be translated.
+RESOLUTION_RULE_MATCH_AREA = 'Match area'
+RESOLUTION_RULE_MATCH_AREA_UPSCALED = 'Match area, upscale small areas'
+RESOLUTION_RULE_MANUAL = 'Manual'
 
 # Values of AppConfig.GENERATION_AREA_FOLLOW_SELECTION. They must match the options in
-# application_config_definitions.json.
-FOLLOW_SELECTION_MINIMAL = QApplication.translate('application_config', 'Minimal move')
-FOLLOW_SELECTION_CENTER = QApplication.translate('application_config', 'Center on selection')
-FOLLOW_SELECTION_OFF = QApplication.translate('application_config', 'Off')
+# application_config_definitions.json and must not be translated.
+FOLLOW_SELECTION_MINIMAL = 'Minimal move'
+FOLLOW_SELECTION_CENTER = 'Center on selection'
+FOLLOW_SELECTION_OFF = 'Off'
 
 # Number of entries kept in Cache.RECENT_GENERATION_AREA_SIZES. It's larger than the number of recent frames shown, so
 # filtering out the full image and square frames still leaves enough to show.
@@ -131,8 +130,8 @@ def previous_frame(recent: list[str], current_size: QSize) -> Optional[QSize]:
 
 
 def follow_selection_target(selection_bounds: Optional[QRect], context_pins: list[QPoint],
-                            padding: int) -> Optional[QRect]:
-    """Returns the bounds the generation area follows: the selection and its context pins, grown by `padding`.
+                            context: int) -> Optional[QRect]:
+    """Returns the bounds the generation area follows: the selection and its context pins, grown by `context`.
 
     Returns None when nothing is selected, since pins only count alongside a selection. The result isn't clamped to
     the image.
@@ -142,7 +141,7 @@ def follow_selection_target(selection_bounds: Optional[QRect], context_pins: lis
     target = QRect(selection_bounds)
     for pin in context_pins:
         target = target.united(QRect(pin, QSize(1, 1)))
-    return target.adjusted(-padding, -padding, padding, padding)
+    return target.adjusted(-context, -context, context, context)
 
 
 def _follow_axis(area_start: int, area_length: int, target_start: int, target_length: int, center: bool,

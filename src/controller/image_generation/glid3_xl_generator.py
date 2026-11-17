@@ -5,16 +5,15 @@ import sys
 from argparse import Namespace
 from typing import Optional, Any
 
-from PySide6.QtCore import Signal, QSize
+from PySide6.QtCore import QSize, SignalInstance
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
 from src.util.optional_import import optional_import, check_import
@@ -47,7 +46,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
-GLID_CONFIG_CATEGORY = QApplication.translate('application_config', 'GLID-3-XL')
+GLID_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'GLID-3-XL')
 GLID_GENERATOR_NAME = _tr('GLID-3-XL image generation')
 GLID_GENERATOR_DESCRIPTION = _tr("""
 <h1>GLID-3-XL</h1>
@@ -65,13 +64,17 @@ GLID_GENERATOR_DESCRIPTION = _tr("""
 </ul>
 """)
 GLID_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/glid-3-xl.png'
-GLID_WEB_GENERATOR_SETUP = _tr("""
+
+# Setup text:
+GLID_SETUP_HEADER = _tr('\n<h2>GLID-3-XL server setup</h2>')
+GLID_SETUP_INTRO = _tr("""
 <h2>GLID-3-XL server setup</h2>
 <p>
      Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the
     setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this
     generator to work.
-</p>
+</p>""")
+GLID_SETUP_PREREQS = _tr("""
 <h3>Prerequisites:</h3>
 <p>
     Running GLID-3-XL requires a NVIDIA GPU with at least 8GB of VRAM. Other GPUs or slightly less memory might work,
@@ -89,23 +92,25 @@ GLID_WEB_GENERATOR_SETUP = _tr("""
     Depending on your system, you may need to take extra steps to add Python, Git, and Anaconda to your system path, or
     perform other configuration steps. Refer to the sites linked above for full documentation.
 </p>
-""" + ('' if not is_pyinstaller_bundle() or '--dev' not in sys.argv else """
+""")
+GLID_GIT_SETUP = _tr("""
 <h3>IntraPaint setup via Git:</h3>
 <p>
     You are currently running the pre-packaged version of IntraPaint, which excludes some of the components needed to
     run GLID-3-XL. You will need to switch to the Git version by running the following commands in a terminal window:
 </p>
-""" + rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
-                           'conda create -n intrapaint-glid\n'
-                           'conda activate intrapaint-glid\n'
-                           'conda install pip\n'
-                           'pip install -r requirements.txt') + """
+{commands}
 <p>
     When following the instructions below, make sure you run all terminal commands in this new IntraPaint folder with
     the "intrapaint-glid" anaconda environment active.
 </p>
-""") + """
-<h3>GLID-3-XL setup:</h3>
+""").format(commands=rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
+                                          'conda create -n intrapaint-glid\n'
+                                          'conda activate intrapaint-glid\n'
+                                          'conda install pip\n'
+                                          'pip install -r requirements.txt'))
+GLID_DEP_SETUP = _tr("""
+<h3>Installing dependencies:</h3>
 <ol>
     <li>
         Within the the terminal in the IntraPaint directory, install the appropriate versions of torch and torchvision
@@ -113,9 +118,7 @@ GLID_WEB_GENERATOR_SETUP = _tr("""
     </li>
     <li>
         Run the following commands to install additional dependencies:
-        """ + rich_text_code_block('pip install -r requirements-glid.txt\n'
-                                   'git clone https://github.com/CompVis/taming-transformers.git\n'
-                                   'git clone https://github.com/CompVis/latent-diffusion.git') + """
+        {commands}
     </li>
     <li>
         Download one or more GLID-3-XL inpainting models, and place them in the "IntraPaint/models/" directory.
@@ -133,7 +136,10 @@ GLID_WEB_GENERATOR_SETUP = _tr("""
                 Trained on the LAION large logo dataset.
             </li>
         </ul>
-    </li>
+    </li>""").format(commands=rich_text_code_block('pip install -r requirements-glid.txt\n'
+                                                   'git clone https://github.com/CompVis/taming-transformers.git\n'
+                                                   'git clone https://github.com/CompVis/latent-diffusion.git'))
+GLID_SETUP_FINAL = _tr("""
     <li>
         Start IntraPaint by running "<code>python IntraPaint.py</code>". If you are using a model other than the default
         inpaint.pt, instead run "<code>python Intrapaint_server.py  --model_path models/model.pt</code>", replacing
@@ -142,6 +148,11 @@ GLID_WEB_GENERATOR_SETUP = _tr("""
 </ol>
 <p>Once these steps are completed, you should be able to activate this generator without any errors.</p>
 """)
+
+GLID_GENERATOR_SETUP = GLID_SETUP_HEADER + GLID_SETUP_INTRO + GLID_SETUP_PREREQS \
+                       + ('' if not is_pyinstaller_bundle() or '--dev' not in sys.argv else GLID_GIT_SETUP) \
+                        + GLID_DEP_SETUP + GLID_SETUP_FINAL
+
 
 MISSING_DEPS_ERROR = _tr('Required dependencies are missing: <code>{dependency_list}</code>')
 NOT_ENOUGH_VRAM_ERROR = _tr('Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at'
@@ -214,7 +225,7 @@ class Glid3XLGenerator(ImageGenerator):
 
     def get_setup_text(self) -> str:
         """Returns a rich text description of how to set up this generator."""
-        return GLID_WEB_GENERATOR_SETUP
+        return GLID_GENERATOR_SETUP
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
@@ -299,7 +310,7 @@ class Glid3XLGenerator(ImageGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), GLID_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = GlidPanel()
@@ -307,14 +318,14 @@ class Glid3XLGenerator(ImageGenerator):
         return self._control_panel
 
     def generate(self,
-                 status_signal: Signal,
+                 status_signal: SignalInstance,
                  source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        status_signal : Signal[str]
+        status_signal : SignalInstance[str]
             Signal to emit when status updates are available.
         source_image : QImage
             Image used as a basis for the edited image.

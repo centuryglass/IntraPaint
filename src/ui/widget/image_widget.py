@@ -45,7 +45,7 @@ class ImageWidget(QWidget):
         """Access the current image bounds within the widget."""
         return get_scaled_placement(self.size(), self.sizeHint(), 2)
 
-    def paintEvent(self, event: Optional[QPaintEvent]) -> None:
+    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:
         """Draws the image scaled to widget size, keeping aspect ratios."""
         if self._image is None:
             return

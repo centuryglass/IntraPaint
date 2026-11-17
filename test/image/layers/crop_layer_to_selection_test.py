@@ -17,7 +17,7 @@ from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCas
 
 ERROR_DIALOG = 'src.image.layers.image_stack_utils.show_error_dialog'
 WARNING_DIALOG = 'src.image.layers.image_stack_utils.show_warning_dialog'
-CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
+CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
 
 SELECTION = QRect(10, 4, 16, 14)
 

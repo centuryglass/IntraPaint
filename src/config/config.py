@@ -12,20 +12,20 @@ import json
 import logging
 import os
 import tempfile
-import threading
+import weakref
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable
 
-from PySide6.QtCore import QSize, QTimer, Qt
+from PySide6.QtCore import QObject, QSize, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QKeySequence, QColor
 from PySide6.QtWidgets import QApplication
+from shiboken6 import isValid
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.combo_box import ComboBox
-from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList, get_parameter_type
-from src.util.signals_blocked import signals_blocked
+from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS
+from src.util.main_thread import assert_main_thread
+from src.util.parameter import ParamType, ParamTypeList, get_parameter_type
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,73 @@ INVALID_OPTION_KEY_ERROR = _tr('Tried to track fixed options for key "{key}", wh
                                ' options.')
 INVALID_KEYCODE_ERROR = _tr('Tried to get key code "{key}", found "{code_string}"')
 DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
+NEWER_VERSION_WARNING = _tr('{path} was written by a newer version of IntraPaint (config version {version}). Its'
+                            ' values will load, but changes won\'t be saved.')
+
+# Top-level key holding the integer version of a saved config file. It isn't a config entry.
+CONFIG_VERSION_KEY = 'config_version'
+
+SAVE_DELAY_MS = 10
+
+
+def _definition_tr_context(definition_path: str) -> str:
+    """Returns the translation context of a definition file's strings (`DEFINITION_TR_CONTEXTS`)."""
+    return DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
+
+
+class _KeyNotifier(QObject):
+    """Emits one config key's change signals. Lives on the thread that constructed the `Config`."""
+    # (new value, inner key or None)
+    value_changed = Signal(object, object)
+    options_changed = Signal(list)
+
+
+class _ConfigConnection(QObject):
+    """One registered callback, connected to a `_KeyNotifier` signal.
+
+    `Config.connect` and `Config.connect_to_option_changes` own these through their registries. A connection is
+    deliberately unparented, so it creates no parent/child reference cycle with a widget owner. When the owner is a
+    `QObject`, its `destroyed` signal removes the connection.
+    """
+
+    def __init__(self, config: 'Config', key: str, owner: Any, callback: Callable[..., None],
+                 options: bool) -> None:
+        super().__init__()
+        self._config = weakref.ref(config)  # A strong reference would cycle with the config's registry.
+        self.key = key
+        self.owner = owner
+        self.options = options
+        self._callback = callback
+        # Connected to the owner's `destroyed` signal. A slot on this object would make PySide hold the connection
+        # from the owner, which cycles with `owner`; this closure holds the connection weakly instead.
+        self.destroyed_handler: Optional[Callable[..., None]] = None
+        if isinstance(owner, QObject):
+            self_ref = weakref.ref(self)
+
+            def _owner_destroyed(*_args: Any) -> None:
+                connection = self_ref()
+                if connection is not None:
+                    connection.on_owner_destroyed()
+            self.destroyed_handler = _owner_destroyed
+
+    @Slot(object, object)
+    def on_value_changed(self, value: Any, inner_key: Optional[str]) -> None:
+        """Runs the callback unless a callback that ran earlier for this change has since changed the value again."""
+        config = self._config()
+        if config is None or config.get(self.key, inner_key) != value:
+            return
+        self._callback(value, inner_key)
+
+    @Slot(list)
+    def on_options_changed(self, options: ParamTypeList) -> None:
+        """Passes a copy of the new option list to the callback."""
+        self._callback([*options])
+
+    def on_owner_destroyed(self) -> None:
+        """Removes the connection when its owner `QObject` is destroyed."""
+        config = self._config()
+        if config is not None:
+            config._remove_connection(self)  # pylint: disable=protected-access
 
 
 class Config:
@@ -63,9 +130,21 @@ class Config:
     RuntimeError
         If a function that interacts with lists of accepted value options is called on a value that doesn't have
         a fixed list of acceptable options.
-    """
 
-    def __init__(self, definition_path: str, saved_value_path: Optional[str], child_class: type) -> None:
+    Saved files hold only entries that differ from their definition's default, plus a `config_version`. Child
+    classes can set these class attributes:
+
+    PREVIOUS_DEFAULTS: dict[str, list[Any]]
+        Maps a key to defaults it had in earlier releases, in their saved JSON form. An unversioned file holding one of
+        them for a non-pinned key sheds it on migration, so the key follows the current default. When a default
+        changes, add the old value here if any release or the integration branch may have written it.
+    RESET_KEYS: tuple[str, ...]
+        Keys dropped from unversioned files whatever they hold.
+    """
+    PREVIOUS_DEFAULTS: dict[str, list[Any]] = {}
+    RESET_KEYS: tuple[str, ...] = ()
+
+    def __init__(self, definition_path: str, saved_value_path: Optional[str]) -> None:
         """Load existing config, or initialize from defaults.
 
         Parameters
@@ -74,26 +153,29 @@ class Config:
             Path to a file defining accepted config values.
         saved_value_path: str, optional
             Path where config values will be saved and read. If the file does not exist, it will be created with
-            default values. Any expected keys not found in the file will be added with default values. Any unexpected
-            values will be removed. If not provided, the Config object won't allow file IO.
-        child_class: class
-            Child class where definition keys should be written as properties when first initialized. Reading one of
-            those properties before the first construction raises `AttributeError`. `conftest.py` constructs every
-            config up front, so tests don't catch this.
+            default values. Only values that differ from their definition's default are saved (plus entries
+            defined with `"pinned": true`), and any expected key not found in the file loads with its current default.
+            Any unexpected values will be removed. If not provided, the Config object won't allow file IO.
         """
         self._entries: dict[str, ConfigEntry] = {}
-        self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
-        self._option_connected: dict[str, dict[Any, Callable[[ParamTypeList], None]]] = {}
+        self._newer_file = False
+        self._notifiers: dict[str, _KeyNotifier] = {}
+        self._connected: dict[str, dict[Any, _ConfigConnection]] = {}
+        self._option_connected: dict[str, dict[Any, _ConfigConnection]] = {}
         self._json_path = saved_value_path
+        self._tr_context = ''
         self._lock = Lock()
         self._save_timer = QTimer()
         self._save_timer.setSingleShot(True)
+        self._save_timer.setInterval(SAVE_DELAY_MS)
+        self._save_timer.timeout.connect(self._write_to_json)
 
         if not os.path.isfile(definition_path):
             raise RuntimeError(MISSING_DEF_ERROR.format(definition_path=definition_path))
         try:
             with open(definition_path, encoding='utf-8') as file:
-                config_text_key = definition_path.replace('_definitions.json', '')
+                self._tr_context = _definition_tr_context(definition_path)
+                config_text_key = self._tr_context
 
                 def _tr_cfg(text: str) -> str:
                     return QApplication.translate(config_text_key, text)
@@ -101,9 +183,6 @@ class Config:
                 json_data = json.load(file)
                 for key, definition in json_data.items():
                     assert isinstance(definition, dict)
-                    init_attr_name = key.upper()
-                    if not hasattr(child_class, init_attr_name):
-                        setattr(child_class, init_attr_name, key)
                     try:
                         if DefinitionKey.DEFAULT in definition:
                             initial_value = definition[DefinitionKey.DEFAULT]
@@ -163,8 +242,10 @@ class Config:
                         save_json = definition[DefinitionKey.SAVED]
                     else:
                         save_json = False
+                    pinned = bool(definition.get(DefinitionKey.PINNED, False))
+                    control_hint = definition.get(DefinitionKey.CONTROL)
                     self._add_entry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
-                                    save_json)
+                                    save_json, pinned, control_hint)
 
         except json.JSONDecodeError as err:
             raise RuntimeError(INVALID_JSON_DEFINITION_ERROR.format(err=err)) from err
@@ -175,25 +256,52 @@ class Config:
                 self._read_from_json()
             else:
                 self._write_to_json()
+        # The state `_reset` restores:
+        self._initial_state = {key: entry.snapshot_state() for key, entry in self._entries.items()}
 
-    # noinspection PyProtectedMember
     def _reset(self) -> None:
-        """Discard all changes and connections, and reload from JSON. For testing use only.
+        """Restores every entry to its state at the end of construction, and discards all connections. For testing use
+        only.
 
-        Option lists shrink to the default value alone, so a test that sets another option calls
-        `restore_default_options` first.
+        Pending saves are cancelled, so a change made before the reset never reaches the JSON file.
         """
+        self._save_timer.stop()
         with self._lock:
-            self._connected = {}
             for key, entry in self._entries.items():
-                self._connected[key] = {}
-                entry._value = entry.default_value
-                if entry._options is not None and len(entry._options) > 0 and entry.default_value is not None:
-                    entry._options = [entry.default_value]
+                entry.restore_state(self._initial_state[key])
+            for registry in (self._connected, self._option_connected):
+                for connections in registry.values():
+                    for connection in [*connections.values()]:
+                        self._remove_connection(connection)
 
     def _adjust_defaults(self) -> None:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
+
+    def _migrate_legacy_keys(self, json_data: dict[str, Any]) -> None:
+        """Override this to rewrite values saved under keys that no longer exist, in place. Runs as part of the
+           migration from unversioned files (version 0 to 1)."""
+
+    def _migrate_unversioned(self, json_data: dict[str, Any]) -> None:
+        """Migration from version 0 to 1: converts legacy keys, then drops saved values that only held a default.
+
+        A non-pinned value is dropped when it equals the current default or one in `PREVIOUS_DEFAULTS`. Keys in
+        `RESET_KEYS` are dropped whatever they hold.
+        """
+        self._migrate_legacy_keys(json_data)
+        for key in self.RESET_KEYS:
+            json_data.pop(key, None)
+        for key, entry in self._entries.items():
+            if key not in json_data or entry.pinned:
+                continue
+            saved_value = entry.saved_json_value(json_data[key])
+            if saved_value == entry.default_json_value() or saved_value in self.PREVIOUS_DEFAULTS.get(key, []):
+                del json_data[key]
+
+    def _migrations(self) -> list[Callable[[dict[str, Any]], None]]:
+        """Returns the ordered migrations over the raw saved dict. Entry N migrates version N to version N + 1, and
+           `CONFIG_VERSION` is the length of the list."""
+        return [self._migrate_unversioned]
 
     @property
     def json_path(self) -> Optional[str]:
@@ -223,6 +331,18 @@ class Config:
         with self._lock:
             return self._entries[key].get_value(inner_key)
 
+    def get_default(self, key: str) -> Any:
+        """Returns the default value the definition file gives a key, or None if it has none.
+
+        Raises
+        ------
+        KeyError
+            If the key isn't tracked by this config file.
+        """
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].default_value
+
     def get_data_type(self, key: str) -> str:
         """Gets the data type associated with a config key, raising KeyError if the key isn't found."""
         if key not in self._entries:
@@ -240,6 +360,12 @@ class Config:
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         return self._entries[key].subcategory
+
+    def get_control_hint(self, key: str) -> Optional[str]:
+        """Returns the `ControlHint` a key's definition names, or None. Raises KeyError for an unknown key."""
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].control_hint
 
     def get_color(self, key: str, default_color: QColor | Qt.GlobalColor) -> QColor:
         """Returns a color value from config.
@@ -269,55 +395,10 @@ class Config:
         """
         self.set(key, QColor(color).name(QColor.NameFormat.HexArgb), save_change)
 
-    def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
-        """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
-        will immediately propagate to the underlying config file."""
+    def get_entry(self, key: str) -> ConfigEntry:
+        """Returns the entry holding a key's value and metadata. Widget factories read it; don't mutate it directly."""
         with self._lock:
-            entry = self._entries[key]
-            control_widget = entry.get_input_widget(multi_line, False)
-            control_widget.setValue(entry.get_value())
-            if isinstance(control_widget, CheckBox):
-                control_widget.setText(entry.name)
-            if connect_to_config:
-                config_key = key
-
-                def _update_config(new_value: Any) -> None:
-                    self.set(config_key, new_value)
-
-                assert hasattr(control_widget, 'valueChanged')
-                control_widget.valueChanged.connect(_update_config)
-
-                def _update_control(new_value: Any) -> None:
-                    if control_widget.value() != new_value:
-                        if isinstance(control_widget, ComboBox):
-                            current_options = self.get_options(config_key)
-                            widget_options = [control_widget.itemText(i) for i in range(control_widget.count())]
-                            if widget_options != current_options:
-                                with signals_blocked(control_widget):
-                                    while control_widget.count() > 0:
-                                        control_widget.removeItem(0)
-                                    for new_option in current_options:
-                                        control_widget.addItem(str(new_option), userData=new_option)
-                        control_widget.setValue(new_value)
-
-                self.connect(control_widget, key, _update_control)
-
-                if isinstance(control_widget, ComboBox):
-                    combobox = control_widget
-
-                    def _update_options(new_options: ParamTypeList) -> None:
-                        last_selected_text = combobox.currentText()
-                        with signals_blocked(combobox):
-                            while combobox.count() > 0:
-                                combobox.removeItem(0)
-                            for option in new_options:
-                                combobox.addItem(str(option), userData=option)
-                            new_index = combobox.findText(last_selected_text)
-                            if new_index >= 0:
-                                combobox.setCurrentIndex(new_index)
-
-                    self.connect_to_option_changes(combobox, key, _update_options)
-            return control_widget
+            return self._entries[key]
 
     def get_keycodes(self, key: str) -> QKeySequence:
         """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""
@@ -333,13 +414,29 @@ class Config:
         """Gets the label text assigned to a config value."""
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        return _tr(self._entries[key].name)
+        return self._entries[key].name
+
+    def get_range(self, key: str) -> tuple[Optional[int | float], Optional[int | float], Optional[int | float]]:
+        """Returns the minimum, maximum and step defined for a numeric key, with None for any that isn't defined."""
+        entry = self._entries[key]
+        return entry.minimum, entry.maximum, entry.single_step
 
     def get_tooltip(self, key: str) -> str:
         """Gets the tooltip text assigned to a config value."""
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        return _tr(self._entries[key].description)
+        return self._entries[key].description
+
+    def get_option_display(self, option: Any) -> str:
+        """Returns the text to show for one of this config's options.
+
+        The stored value is always the untranslated option. This text is for display only, and widgets should keep the
+        option itself as item data. Options with no translation, including ones loaded from a backend, display as
+        written.
+        """
+        if not isinstance(option, str):
+            return str(option)
+        return QApplication.translate(self._tr_context, option)
 
     def set(self,
             key: str,
@@ -347,9 +444,13 @@ class Config:
             save_change: bool = True,
             add_missing_options: bool = False,
             inner_key: Optional[str] = None) -> None:
-        """Updates a saved value.
+        """Updates a saved value. Must be called on the main thread.
 
-        Connected callbacks stop running for this change once one of them changes the value again.
+        Callbacks and the save timer run on the calling thread, and callbacks update widgets. Worker code stages the
+        value and applies it in a finish handler or through `run_on_main_thread`.
+
+        Connected callbacks stop running for this change once one of them changes the value again. An exception
+        raised by a callback goes to `sys.excepthook`, not to the caller, and the remaining callbacks still run.
 
         Parameters
         ----------
@@ -357,7 +458,8 @@ class Config:
             A key tracked by this config file.
         value : int or float or str or bool or list or dict or QSize or None
             The new value to assign to the key. Unless inner_key is not None, this must have the same type as the
-            previous value.
+            previous value. An int key whose range exceeds a C int also accepts decimal text, which it stores as an
+            int (`Parameter.accepts_int_text`).
         save_change: bool, default=True
             If true, save the change to the underlying JSON file. Otherwise, the change will be saved the next time
             any value is set with save_change=True
@@ -375,52 +477,36 @@ class Config:
         RuntimeError
             If `key` has a list of associated valid options, `value` is not one of those options, and
             `add_missing_options` is false.
+        RuntimeError
+            If called from any thread other than the main thread.
         """
+        assert_main_thread('Config.set')
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        new_value = value
         # Update existing value:
         with self._lock:
             value_changed = self._entries[key].set_value(value, add_missing_options, inner_key)
+            # The entry can store a converted value, such as a seed spinbox's text as an int:
+            new_value = self._entries[key].get_value(inner_key)
         if not value_changed:
             return
         # Schedule save to JSON file:
         if save_change:
-            write_now = False
             with self._lock:
                 if not self._save_timer.isActive():
-                    if threading.current_thread() is not threading.main_thread():
-                        write_now = True  # Timers can't be started from other threads.
-                    else:
-                        def write_change() -> None:
-                            """Copy changes to the file and disconnect the timer."""
-                            self._write_to_json()
-                            self._save_timer.timeout.disconnect(write_change)
+                    self._save_timer.start()
+        # Delivered synchronously: set() runs on the main thread, where the connections live.
+        self._notifiers[key].value_changed.emit(new_value, inner_key)
 
-                        self._save_timer.timeout.connect(write_change)
-                        self._save_timer.start(10)
-            if write_now:
-                self._write_to_json()  # Takes `self._lock` itself, so it must run after the block above releases it.
-        # Pass change to connected callback functions:
-        callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
-        for source, callback in callbacks:
-            num_args = len(signature(callback).parameters)
-            try:
-                if num_args == 0 and inner_key is None:
-                    callback()
-                elif num_args == 1 and inner_key is None:
-                    callback(new_value)
-                elif num_args == 2:
-                    callback(new_value, inner_key)
-            except RuntimeError as err:
-                if 'already deleted' in str(err):
-                    logger.warning(f'Disconnecting from {key}, got error={err}')
-                    self.disconnect(source, key)
-                else:
-                    raise err
-            # A callback that set the value again already notified every callback of the newer value.
-            if self.get(key, inner_key) != value:
-                break
+    def save_pending_changes(self) -> None:
+        """Writes changes `set` scheduled to the JSON file immediately.
+
+        Scheduled writes need the event loop, so a value set just before the application exits is lost unless this is
+        called first.
+        """
+        if self._save_timer.isActive():
+            self._save_timer.stop()
+            self._write_to_json()
 
     def connect(self,
                 connected_object: Any,
@@ -438,7 +524,9 @@ class Config:
         key: str
             A key tracked by this config file.
         on_change_fn: function(new_value), function(new_value, inner_key)
-            The function to run when the value changes.
+            The function to run when the value changes. It must be a Python function or method: `inspect.signature`
+            reads its argument count, and before Python 3.13 it raises ValueError for Qt's built-in methods, such as
+            `QAbstractButton.setChecked`.
         inner_key: str, optional
             If not None, assume the value at `key` is a dict and ensure on_change_fn only runs when `inner_key`
             changes within the value.
@@ -449,15 +537,21 @@ class Config:
         if num_args > 2:
             raise RuntimeError(f'callback function connected to {key} value takes {num_args} '
                                'parameters, expected 0-2')
-        if inner_key is None:
-            self._connected[key][connected_object] = on_change_fn
-        else:
-            def wrapper_fn(value: Any, changed_inner_key: str) -> None:
-                """Call connected function only if the inner key changes."""
+
+        def deliver(value: Any, changed_inner_key: Optional[str]) -> None:
+            """Adapts the callback's argument count to the signal's (value, inner_key)."""
+            if inner_key is not None:
                 if changed_inner_key == inner_key:
                     on_change_fn(value)
+            elif num_args == 2:
+                on_change_fn(value, changed_inner_key)
+            elif changed_inner_key is None:
+                if num_args == 1:
+                    on_change_fn(value)
+                else:
+                    on_change_fn()
 
-            self._connected[key][connected_object] = wrapper_fn
+        self._add_connection(connected_object, key, deliver, False)
 
     def connect_to_option_changes(self,
                                   connected_object: Any,
@@ -478,7 +572,7 @@ class Config:
         """
         if key not in self._option_connected:
             raise KeyError(INVALID_OPTION_KEY_ERROR.format(key=key))
-        self._option_connected[key][connected_object] = on_change_fn
+        self._add_connection(connected_object, key, on_change_fn, True)
 
     def disconnect(self, connected_object: Any, key: str) -> None:
         """
@@ -487,16 +581,61 @@ class Config:
         """
         if key not in self._connected:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        self._connected[key].pop(connected_object, None)
-        if key in self._option_connected:
-            self._option_connected[key].pop(connected_object, None)
+        for registry in (self._connected, self._option_connected):
+            connection = registry.get(key, {}).get(connected_object)
+            if connection is not None:
+                self._remove_connection(connection)
 
     def disconnect_all(self, connected_object: Any) -> None:
         """Removes all connections associated with a particular object."""
-        for connection_list in self._connected.values():
-            connection_list.pop(connected_object, None)
-        for option_connection_list in self._option_connected.values():
-            option_connection_list.pop(connected_object, None)
+        for registry in (self._connected, self._option_connected):
+            for connections in registry.values():
+                connection = connections.get(connected_object)
+                if connection is not None:
+                    self._remove_connection(connection)
+
+    def _add_connection(self,
+                        owner: Any,
+                        key: str,
+                        callback: Callable[..., None],
+                        options: bool) -> None:
+        """Connects `callback` to a key's value or option signal, replacing the owner's earlier connection."""
+        registry = self._option_connected if options else self._connected
+        previous = registry[key].get(owner)
+        if previous is not None:
+            self._remove_connection(previous)
+        connection = _ConfigConnection(self, key, owner, callback, options)
+        notifier = self._notifiers[key]
+        if options:
+            notifier.options_changed.connect(connection.on_options_changed)
+        else:
+            notifier.value_changed.connect(connection.on_value_changed)
+        if connection.destroyed_handler is not None:
+            owner.destroyed.connect(connection.destroyed_handler)
+        registry[key][owner] = connection
+
+    def _remove_connection(self, connection: _ConfigConnection) -> None:
+        """Disconnects a connection and drops it from its registry. Safe to call more than once."""
+        registry = self._option_connected if connection.options else self._connected
+        connections = registry.get(connection.key, {})
+        if connections.get(connection.owner) is connection:
+            del connections[connection.owner]
+        # At application shutdown Qt can delete the notifier, the connection or the owner before this runs. Their
+        # signals are gone with them, so there is nothing left to disconnect.
+        notifier = self._notifiers.get(connection.key)
+        if notifier is not None and isValid(notifier) and isValid(connection):
+            try:
+                if connection.options:
+                    notifier.options_changed.disconnect(connection.on_options_changed)
+                else:
+                    notifier.value_changed.disconnect(connection.on_value_changed)
+            except (RuntimeError, SystemError):
+                pass
+        if connection.destroyed_handler is not None and isValid(connection.owner):
+            try:
+                connection.owner.destroyed.disconnect(connection.destroyed_handler)
+            except (RuntimeError, SystemError):
+                pass
 
     def get_option_index(self, key: str) -> int:
         """Returns the index of the selected option for a given key.
@@ -555,16 +694,7 @@ class Config:
         last_value = self.get(key)
         self._entries[key].set_valid_options(options_list)
 
-        callbacks = [*self._option_connected[key].items()]  # <- So callbacks can disconnect or replace themselves
-        for source, callback in callbacks:
-            try:
-                callback([*options_list])
-            except RuntimeError as err:
-                if 'already deleted' in str(err):
-                    logger.warning(f'Disconnecting from {key}, got error={err}')
-                    self.disconnect(source, key)
-                else:
-                    raise err
+        self._notifiers[key].options_changed.emit([*options_list])
         if last_value not in options_list and len(options_list) > 0:
             self.set(key, options_list[0])
 
@@ -643,20 +773,23 @@ class Config:
                    tooltip: str,
                    options: Optional[list[ParamType]] = None,
                    range_options: Optional[dict[str, int | float]] = None,
-                   save_json: bool = True) -> None:
+                   save_json: bool = True,
+                   pinned: bool = False,
+                   control_hint: Optional[str] = None) -> None:
         if key in self._entries:
             raise KeyError(DUPLICATE_KEY_ERROR.format(key=key))
         entry = ConfigEntry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
-                            save_json)
+                            save_json, pinned, control_hint)
         self._entries[key] = entry
+        self._notifiers[key] = _KeyNotifier()
         self._connected[key] = {}
         if options is not None:
             self._option_connected[key] = {}
 
     def _write_to_json(self) -> None:
-        if self._json_path is None:
+        if self._json_path is None or self._newer_file:
             return
-        converted_dict: dict[str, Any] = {}
+        converted_dict: dict[str, Any] = {CONFIG_VERSION_KEY: len(self._migrations())}
         with self._lock:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)
@@ -683,6 +816,21 @@ class Config:
         if json_data is None:  # Invalid JSON, replace it with defaults
             self._write_to_json()
             return
+        if not isinstance(json_data, dict):
+            logger.error(INVALID_JSON_ERROR.format(err='expected a JSON object'))
+            self._write_to_json()
+            return
+        migrations = self._migrations()
+        file_version = json_data.pop(CONFIG_VERSION_KEY, 0)
+        if not isinstance(file_version, int) or isinstance(file_version, bool) or file_version < 0:
+            file_version = 0
+        if file_version > len(migrations):
+            logger.warning(NEWER_VERSION_WARNING.format(path=self._json_path, version=file_version))
+            self._newer_file = True
+        for migration in migrations[file_version:]:
+            migration(json_data)
         with self._lock:
             for entry in self._entries.values():
                 entry.load_from_json_dict(json_data)
+        if file_version < len(migrations):
+            self._write_to_json()

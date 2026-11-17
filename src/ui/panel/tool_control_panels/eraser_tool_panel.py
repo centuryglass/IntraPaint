@@ -4,7 +4,8 @@ from typing import Optional
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_preview import EraseStrokePreview
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.eraser_tool_panel'
@@ -15,17 +16,22 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-SELECTION_ONLY_LABEL = _tr('Erase in selection only')
+# Matches the Size field in every other stroke block, so it stays put when switching tools:
+_SIZE_LABEL = _tr('Size')
 
 
-class EraserToolPanel(BrushToolPanel):
-    """Control panel for the eraser tool."""
+class EraserToolPanel(StrokeToolPanel):
+    """Control panel for the eraser tool: the stroke block without a color row, and a preview of erasing."""
+
     def __init__(self):
-        super().__init__(size_key=Cache.ERASER_TOOL_SIZE,
-                         pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE,
-                         opacity_key=Cache.ERASER_TOOL_OPACITY,
-                         pressure_opacity_key=Cache.ERASER_TOOL_PRESSURE_OPACITY,
-                         hardness_key=Cache.ERASER_TOOL_HARDNESS,
-                         pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS,
-                         antialias_key=Cache.ERASER_TOOL_ANTIALIAS,
-                         selection_only_label=SELECTION_ONLY_LABEL)
+        super().__init__(StrokeBlock(size_key=Cache.ERASER_TOOL_SIZE,
+                                     size_label=_SIZE_LABEL,
+                                     pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE,
+                                     opacity_key=Cache.ERASER_TOOL_OPACITY,
+                                     pressure_opacity_key=Cache.ERASER_TOOL_PRESSURE_OPACITY,
+                                     hardness_key=Cache.ERASER_TOOL_HARDNESS,
+                                     pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS,
+                                     antialias_key=Cache.ERASER_TOOL_ANTIALIAS,
+                                     preview=EraseStrokePreview(Cache.ERASER_TOOL_SIZE, Cache.ERASER_TOOL_OPACITY,
+                                                                Cache.ERASER_TOOL_HARDNESS,
+                                                                Cache.ERASER_TOOL_ANTIALIAS)))

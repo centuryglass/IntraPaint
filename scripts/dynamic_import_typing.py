@@ -15,7 +15,8 @@ app = QApplication(sys.argv)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 module_path = sys.argv[-1]
-DYNAMIC_PROP_LINE = f'\n\n    # DYNAMIC PROPERTIES:\n    # Generate with `python {__file__} {module_path}`\n'
+script_path = os.path.relpath(__file__, os.path.abspath('.'))
+DYNAMIC_PROP_LINE = f'\n\n    # DYNAMIC PROPERTIES:\n    # Generate with `python {script_path} {module_path}`\n'
 
 assert module_path.endswith('.py') and os.path.isfile(module_path),  f'Expected Python file argument, got {module_path}'
 module_name = os.path.basename(module_path)[:-3]

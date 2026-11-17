@@ -21,7 +21,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-COLOR_BALANCE_TITLE = _tr('RGBA Color Balance')
+COLOR_BALANCE_TITLE = _tr('RGBA color balance')
 COLOR_BALANCE_DESCRIPTION = _tr('Adjust color balance')
 
 RED_LABEL = _tr('Red')
@@ -80,8 +80,8 @@ class RGBColorBalanceFilter(ImageFilter):
     def get_parameters(self) -> list[Parameter]:
         """Returns definitions for the non-image parameters passed to the filtering function."""
         return [
-            Parameter(RED_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 1.0),
-            Parameter(GREEN_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 1.0),
-            Parameter(BLUE_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 1.0),
-            Parameter(ALPHA_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 1.0),
+            Parameter(RED_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 0.1),
+            Parameter(GREEN_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 0.1),
+            Parameter(BLUE_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 0.1),
+            Parameter(ALPHA_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 0.1),
         ]

@@ -12,17 +12,19 @@ import threading
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QLabel
+from shiboken6 import delete
 
 from src.config import application_config
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.config import Config
+from src.config.config import Config, CONFIG_VERSION_KEY
 from src.config.config_entry import RangeKey
 from src.config.config_from_key import get_config_from_key
 from src.config.key_config import KeyConfig
+from src.ui.theme import THEME_INK, THEME_SYSTEM
 from src.util.singleton import Singleton
 from test.base_test_case import IntraPaintTestCase, PROJECT_ROOT
 
@@ -31,9 +33,16 @@ THREAD_JOIN_TIMEOUT_SECONDS = 10.0
 
 TEST_KEY = 'test_flag'
 
+# The version `_ScratchConfig` writes: one migration, from unversioned files.
+CURRENT_VERSION = 1
+
+# The largest seed the seed fields accept, beyond the range of a signed 64-bit int:
+BIG_INT_MAX = 2 ** 64 - 1
+
 # Definitions for _ScratchConfig, one or more for each value type the definition format supports:
 BOOL_KEY = 'test_flag'
 INT_KEY = 'test_int'
+BIG_INT_KEY = 'test_big_int'
 FLOAT_KEY = 'test_float'
 STR_KEY = 'test_str'
 OPTION_KEY = 'test_option'
@@ -44,6 +53,7 @@ UNSAVED_KEY = 'test_unsaved'
 SCRATCH_DEFINITIONS: dict[str, dict[str, Any]] = {
     BOOL_KEY: {'type': 'bool', 'default': False},
     INT_KEY: {'type': 'int', 'default': 5, 'range_options': {'min': 1, 'max': 10, 'step': 1}},
+    BIG_INT_KEY: {'type': 'int', 'default': -1, 'range_options': {'min': -1, 'max': BIG_INT_MAX, 'step': 1}},
     FLOAT_KEY: {'type': 'float', 'default': 0.5, 'range_options': {'min': 0.0, 'max': 1.0, 'step': 0.1}},
     STR_KEY: {'type': 'string', 'default': 'text'},
     OPTION_KEY: {'type': 'string', 'default': 'first', 'options': ['first', 'second']},
@@ -55,6 +65,7 @@ SCRATCH_DEFINITIONS: dict[str, dict[str, Any]] = {
 DEFAULT_VALUES: dict[str, Any] = {
     BOOL_KEY: False,
     INT_KEY: 5,
+    BIG_INT_KEY: -1,
     FLOAT_KEY: 0.5,
     STR_KEY: 'text',
     OPTION_KEY: 'first',
@@ -67,6 +78,7 @@ DEFAULT_VALUES: dict[str, Any] = {
 CHANGED_VALUES: dict[str, Any] = {
     BOOL_KEY: True,
     INT_KEY: 10,
+    BIG_INT_KEY: BIG_INT_MAX,
     FLOAT_KEY: 0.25,
     STR_KEY: 'changed',
     OPTION_KEY: 'second',
@@ -79,6 +91,7 @@ CHANGED_VALUES: dict[str, Any] = {
 WRONG_TYPE_VALUES: dict[str, Any] = {
     BOOL_KEY: 1,
     INT_KEY: 2.0,
+    BIG_INT_KEY: 2.0,
     FLOAT_KEY: 1,
     STR_KEY: 3,
     OPTION_KEY: 3,
@@ -101,7 +114,7 @@ class _ScratchConfig(Config):
     """A `Config` that isn't one of the shared singletons, backed by files in a temporary directory."""
 
     def __init__(self, definition_path: str, json_path: str) -> None:
-        super().__init__(definition_path, json_path, _ScratchConfig)
+        super().__init__(definition_path, json_path)
 
 
 class ConfigTest(IntraPaintTestCase):
@@ -122,11 +135,21 @@ class ConfigTest(IntraPaintTestCase):
         """Creates a scratch config from the definition file, loading the saved JSON file if it exists.
 
         Its save timer stops at cleanup. Otherwise a save scheduled by `set` would fire in a later test, after the
-        temporary directory is gone.
+        temporary directory is gone. Cleanup also drops its connections, whose callbacks often refer back to the
+        config and would leave Qt objects in a reference cycle.
         """
         config = _ScratchConfig(self.definition_path, self.json_path)
+        self.addCleanup(config._reset)  # pylint: disable=protected-access
         self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
         return config
+
+    def _change_definition(self, key: str, **fields: Any) -> None:
+        """Updates fields of a key in the scratch definition file, as if a later release had edited it."""
+        with open(self.definition_path, encoding='utf-8') as file:
+            definitions = json.load(file)
+        definitions[key].update(fields)
+        with open(self.definition_path, 'w', encoding='utf-8') as file:
+            json.dump(definitions, file)
 
     def _write_saved_values(self, values: dict[str, Any]) -> None:
         with open(self.json_path, 'w', encoding='utf-8') as file:
@@ -216,6 +239,7 @@ class ConfigTest(IntraPaintTestCase):
         """Numeric keys accept their range limits, reject values outside them, and report them through `get`."""
         config = self._config()
         for key, minimum, maximum, step, below, above in ((INT_KEY, 1, 10, 1, 0, 11),
+                                                          (BIG_INT_KEY, -1, BIG_INT_MAX, 1, -2, BIG_INT_MAX + 1),
                                                           (FLOAT_KEY, 0.0, 1.0, 0.1, -0.01, 1.01)):
             with self.subTest(key=key):
                 self.assertEqual(config.get(key, RangeKey.MIN), minimum)
@@ -228,6 +252,51 @@ class ConfigTest(IntraPaintTestCase):
                     with self.assertRaises(ValueError):
                         config.set(key, invalid_value, save_change=False)
                     self.assertEqual(config.get(key), maximum)
+
+    def test_big_int_key_stores_text_as_int(self) -> None:
+        """An int key whose range exceeds a C int stores decimal text as an int, and passes the int to callbacks, at
+        every magnitude a seed field accepts."""
+        config = self._config()
+        calls: list[Any] = []
+        config.connect(self, BIG_INT_KEY, calls.append)
+        for value in (5, -1, 2 ** 31, 2 ** 63, BIG_INT_MAX):
+            with self.subTest(value=value):
+                config.set(BIG_INT_KEY, str(value), save_change=False)
+                self.assertEqual(config.get(BIG_INT_KEY), value)
+                self.assertIs(type(config.get(BIG_INT_KEY)), int)
+                self.assertEqual(calls[-1], value)
+                self.assertIs(type(calls[-1]), int)
+
+    def test_big_int_key_rejects_invalid_text(self) -> None:
+        """Text that isn't an integer raises TypeError, and an integer outside the range raises ValueError. Neither
+        changes the value. Ordinary int keys still reject text."""
+        config = self._config()
+        for text in ('', '12.5', 'seed'):
+            with self.subTest(text=text):
+                with self.assertRaises(TypeError):
+                    config.set(BIG_INT_KEY, text, save_change=False)
+        with self.assertRaises(ValueError):
+            config.set(BIG_INT_KEY, str(BIG_INT_MAX + 1), save_change=False)
+        self.assertEqual(config.get(BIG_INT_KEY), DEFAULT_VALUES[BIG_INT_KEY])
+        with self.assertRaises(TypeError):
+            config.set(INT_KEY, '7', save_change=False)
+
+    def test_big_int_saved_as_text_loads_as_int(self) -> None:
+        """A big int key saved as text loads as an int, and a saved default in text form is dropped on the next
+        write."""
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION,
+                                  BIG_INT_KEY: {'min': -1, 'max': BIG_INT_MAX, 'step': 1, 'value': str(BIG_INT_MAX)},
+                                  INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 7}})
+        config = self._config()
+        self.assertEqual(config.get(BIG_INT_KEY), BIG_INT_MAX)
+        self.assertIs(type(config.get(BIG_INT_KEY)), int)
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION,
+                                  BIG_INT_KEY: {'min': -1, 'max': BIG_INT_MAX, 'step': 1, 'value': '-1'},
+                                  INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 7}})
+        config = self._config()
+        config.set(INT_KEY, 8, save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertNotIn(BIG_INT_KEY, self._read_saved_values())
 
     def test_options(self) -> None:
         """A key with an options list rejects other values, unless `add_missing_options` adds them to the list."""
@@ -255,6 +324,96 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(option_lists, [['x', 'y']])
         self.assertEqual(config.get(OPTION_KEY), 'x')
         self.assertEqual(values, ['x'])
+
+    def test_callback_setting_the_value_again_leaves_no_stale_callback(self) -> None:
+        """When a callback sets its key again, no callback is left holding the value it replaced."""
+        config = self._config()
+        last_seen: dict[str, Any] = {}
+
+        def _clamp(value: int) -> None:
+            last_seen['clamp'] = value
+            if value > 7:
+                config.set(INT_KEY, 7, save_change=False)
+
+        config.connect('before', INT_KEY, lambda value: last_seen.__setitem__('before', value))
+        config.connect('clamp', INT_KEY, _clamp)
+        config.connect('after', INT_KEY, lambda value: last_seen.__setitem__('after', value))
+        config.set(INT_KEY, 9, save_change=False)
+        self.assertEqual(config.get(INT_KEY), 7)
+        self.assertEqual(last_seen, {'before': 7, 'clamp': 7, 'after': 7})
+
+    def test_callback_disconnecting_itself_stops_later_calls(self) -> None:
+        """A callback that disconnects itself during a change doesn't run again, and the other callbacks still do."""
+        config = self._config()
+        once_calls: list[Any] = []
+        other_calls: list[Any] = []
+
+        def _once(value: str) -> None:
+            once_calls.append(value)
+            config.disconnect('once', STR_KEY)
+
+        config.connect('once', STR_KEY, _once)
+        config.connect('other', STR_KEY, other_calls.append)
+        config.set(STR_KEY, 'first', save_change=False)
+        config.set(STR_KEY, 'second', save_change=False)
+        self.assertEqual(once_calls, ['first'])
+        self.assertEqual(other_calls, ['first', 'second'])
+
+    def test_deleted_owner_is_disconnected(self) -> None:
+        """Once an owner widget is deleted, `set` and `update_options` don't raise, and its callbacks stop running.
+
+        The first change after the deletion may still call a callback, so only later changes are checked.
+        """
+        config = self._config()
+        label = QLabel()
+        value_calls: list[Any] = []
+        option_calls: list[Any] = []
+
+        def _show_value(value: str) -> None:
+            value_calls.append(value)
+            label.setText(value)
+
+        def _show_options(options: list[Any]) -> None:
+            option_calls.append(options)
+            label.setText(', '.join(options))
+
+        config.connect(label, STR_KEY, _show_value)
+        config.connect_to_option_changes(label, OPTION_KEY, _show_options)
+        delete(label)
+        config.set(STR_KEY, 'first', save_change=False)
+        config.update_options(OPTION_KEY, ['x', 'y'])
+        value_call_count = len(value_calls)
+        option_call_count = len(option_calls)
+        config.set(STR_KEY, 'second', save_change=False)
+        config.update_options(OPTION_KEY, ['y', 'z'])
+        self.assertEqual(len(value_calls), value_call_count)
+        self.assertEqual(len(option_calls), option_call_count)
+        self.assertEqual(config.get(STR_KEY), 'second')
+        self.assertEqual(config.get(OPTION_KEY), 'y')
+
+    def test_remove_connection_after_qt_deleted_its_objects(self) -> None:
+        """Removing a connection whose notifier, connection or owner Qt already deleted (as at quit) doesn't raise."""
+        for deleted in ('notifier', 'connection', 'owner'):
+            with self.subTest(deleted=deleted):
+                config = _ScratchConfig(self.definition_path, self.json_path)
+                self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
+                self.addCleanup(config._reset)  # pylint: disable=protected-access
+                owner = QLabel()
+                config.connect(owner, STR_KEY, lambda _value: None)
+                config.connect_to_option_changes(owner, OPTION_KEY, lambda _options: None)
+                connections = [config._connected[STR_KEY][owner],  # pylint: disable=protected-access
+                               config._option_connected[OPTION_KEY][owner]]  # pylint: disable=protected-access
+                if deleted == 'notifier':
+                    delete(config._notifiers[STR_KEY])  # pylint: disable=protected-access
+                    delete(config._notifiers[OPTION_KEY])  # pylint: disable=protected-access
+                elif deleted == 'connection':
+                    for connection in connections:
+                        delete(connection)
+                else:
+                    delete(owner)
+                for connection in connections:
+                    config._remove_connection(connection)  # pylint: disable=protected-access
+                self.assertNotIn(owner, config._connected[STR_KEY])  # pylint: disable=protected-access
 
     def test_inner_key(self) -> None:
         """`set` with an inner key changes one entry of a dict value, and only callbacks for that entry run."""
@@ -295,17 +454,28 @@ class ConfigTest(IntraPaintTestCase):
             get_config_from_key('not_a_config_key')
 
     def test_new_config_writes_defaults(self) -> None:
-        """A config with no saved file creates one holding every saved default, in the saved file format."""
+        """A config with no saved file creates one holding only its version, since nothing differs from the
+        defaults."""
         self._config()
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION})
+
+    def test_saved_file_format(self) -> None:
+        """Changed values are written in the saved file format. Ranged values are saved without their ranges."""
+        config = self._config()
+        for key, new_value in CHANGED_VALUES.items():
+            config.set(key, new_value, save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
         self.assertEqual(self._read_saved_values(), {
-            BOOL_KEY: False,
-            INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 5},
-            FLOAT_KEY: {'min': 0.0, 'max': 1.0, 'step': 0.1, 'value': 0.5},
-            STR_KEY: 'text',
-            OPTION_KEY: 'first',
-            SIZE_KEY: '64x32',
-            LIST_KEY: ['a'],
-            DICT_KEY: {'inner': 1},
+            CONFIG_VERSION_KEY: CURRENT_VERSION,
+            BOOL_KEY: True,
+            INT_KEY: 10,
+            BIG_INT_KEY: BIG_INT_MAX,
+            FLOAT_KEY: 0.25,
+            STR_KEY: 'changed',
+            OPTION_KEY: 'second',
+            SIZE_KEY: '16x8',
+            LIST_KEY: ['b', 'c'],
+            DICT_KEY: {'inner': 2, 'other': 'x'},
         })
 
     def test_save_and_reload(self) -> None:
@@ -321,10 +491,20 @@ class ConfigTest(IntraPaintTestCase):
             with self.subTest(key=key):
                 self.assertEqual(reloaded.get(key), DEFAULT_VALUES[key] if key == UNSAVED_KEY else expected)
 
+    def test_save_pending_changes_writes_without_event_loop(self) -> None:
+        """`save_pending_changes` writes a change `set` scheduled, without waiting for the save timer, and cancels
+        the timer."""
+        config = self._config()
+        config.set(STR_KEY, CHANGED_VALUES[STR_KEY])
+        self.assertNotIn(STR_KEY, self._read_saved_values())
+        config.save_pending_changes()
+        self.assertEqual(self._read_saved_values()[STR_KEY], CHANGED_VALUES[STR_KEY])
+        self.assertFalse(config._save_timer.isActive())  # pylint: disable=protected-access
+
     def test_load_with_unknown_and_missing_keys(self) -> None:
         """Loading a file ignores keys the definitions don't have, and uses defaults for keys the file lacks. The next
-        save drops the unknown keys and adds the missing ones."""
-        self._write_saved_values({STR_KEY: 'saved', 'removed_key': 'stale'})
+        save drops the unknown keys and doesn't write the missing ones."""
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION, STR_KEY: 'saved', 'removed_key': 'stale'})
         config = self._config()
         self.assertEqual(config.get(STR_KEY), 'saved')
         self.assertEqual(config.get(INT_KEY), DEFAULT_VALUES[INT_KEY])
@@ -334,7 +514,160 @@ class ConfigTest(IntraPaintTestCase):
         saved = self._read_saved_values()
         self.assertNotIn('removed_key', saved)
         self.assertEqual(saved[STR_KEY], 'saved')
-        self.assertEqual(saved[INT_KEY]['value'], DEFAULT_VALUES[INT_KEY])
+        self.assertNotIn(INT_KEY, saved)
+
+    def test_default_follows_definition_change(self) -> None:
+        """A value that was never changed follows a changed default after reload."""
+        config = self._config()
+        config.set(STR_KEY, CHANGED_VALUES[STR_KEY], save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        config.set(INT_KEY, 7, save_change=False)
+        config.set(INT_KEY, DEFAULT_VALUES[INT_KEY], save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self._change_definition(STR_KEY, default='new text')
+        self._change_definition(INT_KEY, default=6)
+        reloaded = self._config()
+        self.assertEqual(reloaded.get(STR_KEY), CHANGED_VALUES[STR_KEY])
+        self.assertEqual(reloaded.get(INT_KEY), 6)
+        self.assertEqual(reloaded.get(BOOL_KEY), DEFAULT_VALUES[BOOL_KEY])
+
+    def test_resetting_to_default_removes_saved_value(self) -> None:
+        """Setting a value back to its default removes it from the file."""
+        config = self._config()
+        config.set(STR_KEY, CHANGED_VALUES[STR_KEY], save_change=False)
+        config.set(INT_KEY, 7, save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertIn(STR_KEY, self._read_saved_values())
+        self.assertIn(INT_KEY, self._read_saved_values())
+        config.set(STR_KEY, DEFAULT_VALUES[STR_KEY], save_change=False)
+        config.set(INT_KEY, DEFAULT_VALUES[INT_KEY], save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION})
+
+    def test_first_loaded_option_is_saved(self) -> None:
+        """Choosing the option that loaded first is saved, though loading the options made it the entry's default.
+
+        The entry is defined like `Cache.SD_MODEL`, with an empty default and no options until a generator loads them.
+        """
+        self._change_definition(OPTION_KEY, default='', options=[])
+        config = self._config()
+        config.update_options(OPTION_KEY, ['b', 'c'])
+        self.assertEqual(config.get_default(OPTION_KEY), 'b')
+        config.set(OPTION_KEY, 'b', save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values()[OPTION_KEY], 'b')
+        reloaded = self._config()
+        reloaded.update_options(OPTION_KEY, ['a', 'b', 'c'])
+        self.assertEqual(reloaded.get(OPTION_KEY), 'b')
+
+    def test_definition_default_option_is_not_saved(self) -> None:
+        """An option entry left at its definition's default stays out of the file after other options load."""
+        config = self._config()
+        config.update_options(OPTION_KEY, ['first', 'second', 'third'])
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertNotIn(OPTION_KEY, self._read_saved_values())
+
+    def test_saved_range_is_dropped_on_save(self) -> None:
+        """A versioned file's saved range doesn't keep a default value saved, and a custom value is rewritten without
+        its range."""
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION,
+                                  INT_KEY: {'min': 2, 'max': 20, 'step': 1, 'value': DEFAULT_VALUES[INT_KEY]},
+                                  FLOAT_KEY: {'min': 0.0, 'max': 5.0, 'step': 1.0, 'value': 0.25}})
+        config = self._config()
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION, FLOAT_KEY: 0.25})
+
+    def test_pinned_value_keeps_saved_default(self) -> None:
+        """A pinned value is saved even when it equals the default, so a changed default doesn't alter it."""
+        self._change_definition(STR_KEY, pinned=True)
+        config = self._config()
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values()[STR_KEY], DEFAULT_VALUES[STR_KEY])
+        self.assertNotIn(BOOL_KEY, self._read_saved_values())
+        self._change_definition(STR_KEY, default='new text')
+        self.assertEqual(self._config().get(STR_KEY), DEFAULT_VALUES[STR_KEY])
+
+    def test_unversioned_file_sheds_default_values(self) -> None:
+        """Migrating an unversioned file drops values equal to the default or to a previous default, whatever range
+        is saved with them, keeps custom values, and rewrites the file with the version and without ranges."""
+        self._write_saved_values({
+            STR_KEY: 'old text',
+            OPTION_KEY: DEFAULT_VALUES[OPTION_KEY],
+            INT_KEY: {'min': 1, 'max': 10, 'step': 1, 'value': 3},
+            FLOAT_KEY: {'min': 0.0, 'max': 30.0, 'step': 10.0, 'value': 0.5},
+            SIZE_KEY: '64x32',
+            BOOL_KEY: True})
+        _ScratchConfig.PREVIOUS_DEFAULTS = {STR_KEY: ['old text']}
+        self.addCleanup(setattr, _ScratchConfig, 'PREVIOUS_DEFAULTS', {})
+        self._change_definition(STR_KEY, default='new text')
+        config = self._config()
+        self.assertEqual(config.get(STR_KEY), 'new text')
+        self.assertEqual(config.get(INT_KEY), 3)
+        self.assertTrue(config.get(BOOL_KEY))
+        self.assertEqual(self._read_saved_values(), {
+            CONFIG_VERSION_KEY: CURRENT_VERSION,
+            INT_KEY: 3,
+            BOOL_KEY: True})
+
+    def test_unversioned_file_keeps_custom_value_over_previous_default(self) -> None:
+        """A custom value survives migration even when the default changed."""
+        self._write_saved_values({STR_KEY: 'custom'})
+        _ScratchConfig.PREVIOUS_DEFAULTS = {STR_KEY: ['old text']}
+        self.addCleanup(setattr, _ScratchConfig, 'PREVIOUS_DEFAULTS', {})
+        self._change_definition(STR_KEY, default='new text')
+        self.assertEqual(self._config().get(STR_KEY), 'custom')
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION, STR_KEY: 'custom'})
+
+    def test_unversioned_file_keeps_pinned_default(self) -> None:
+        """Migration doesn't drop a pinned value that equals the default."""
+        self._change_definition(STR_KEY, pinned=True)
+        self._write_saved_values({STR_KEY: DEFAULT_VALUES[STR_KEY]})
+        self._config()
+        self.assertEqual(self._read_saved_values()[STR_KEY], DEFAULT_VALUES[STR_KEY])
+
+    def test_reset_keys_drop_whatever_they_hold(self) -> None:
+        """Keys in `RESET_KEYS` return to their defaults when an unversioned file migrates, but a versioned file
+        keeps them."""
+        _ScratchConfig.RESET_KEYS = (STR_KEY,)
+        self.addCleanup(setattr, _ScratchConfig, 'RESET_KEYS', ())
+        self._write_saved_values({STR_KEY: 'custom', BOOL_KEY: True})
+        config = self._config()
+        self.assertEqual(config.get(STR_KEY), DEFAULT_VALUES[STR_KEY])
+        self.assertTrue(config.get(BOOL_KEY))
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION, STR_KEY: 'custom'})
+        self.assertEqual(self._config().get(STR_KEY), 'custom')
+
+    def test_newer_version_loads_without_rewrite(self) -> None:
+        """A file from a newer version loads its values and is never rewritten."""
+        saved = {CONFIG_VERSION_KEY: CURRENT_VERSION + 1, STR_KEY: 'custom', 'future_key': 5}
+        self._write_saved_values(saved)
+        config = self._config()
+        self.assertEqual(config.get(STR_KEY), 'custom')
+        config.set(BOOL_KEY, True, save_change=False)
+        config._write_to_json()  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values(), saved)
+
+    def test_version_is_not_a_config_key(self) -> None:
+        """The version key in a saved file isn't an entry."""
+        self._write_saved_values({CONFIG_VERSION_KEY: CURRENT_VERSION})
+        with self.assertRaises(KeyError):
+            self._config().get(CONFIG_VERSION_KEY)
+
+    def test_migrations_run_in_order_from_the_file_version(self) -> None:
+        """Each migration applies once, in order, starting from the file's version."""
+        calls: list[str] = []
+
+        class _TwoStepConfig(_ScratchConfig):
+            def _migrations(self):
+                return [*super()._migrations(),
+                        lambda data: (calls.append('1 to 2'), data.update({STR_KEY: 'migrated'}))]
+
+        self._write_saved_values({CONFIG_VERSION_KEY: 1, STR_KEY: 'old'})
+        config = _TwoStepConfig(self.definition_path, self.json_path)
+        self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
+        self.assertEqual(calls, ['1 to 2'])
+        self.assertEqual(config.get(STR_KEY), 'migrated')
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: 2, STR_KEY: 'migrated'})
 
     def test_load_skips_invalid_saved_values(self) -> None:
         """A saved value with the wrong type, outside its range, or not in its options keeps the default."""
@@ -344,22 +677,74 @@ class ConfigTest(IntraPaintTestCase):
             with self.subTest(key=key):
                 self.assertEqual(config.get(key), DEFAULT_VALUES[key])
 
-    def test_load_reads_saved_range(self) -> None:
-        """Range limits in the saved file replace the definition's limits."""
-        self._write_saved_values({INT_KEY: {'min': 2, 'max': 20, 'step': 2, 'value': 15}})
+    def test_load_ignores_saved_range(self) -> None:
+        """A range saved with a value doesn't replace the definition's range, and a value outside the definition's
+        range keeps the default."""
+        self._write_saved_values({INT_KEY: {'min': 2, 'max': 20, 'step': 2, 'value': 8},
+                                  FLOAT_KEY: {'min': 0.0, 'max': 30.0, 'step': 10.0, 'value': 20.0}})
         config = self._config()
-        self.assertEqual(config.get(INT_KEY), 15)
-        self.assertEqual(config.get(INT_KEY, RangeKey.MIN), 2)
-        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 20)
-        self.assertEqual(config.get(INT_KEY, RangeKey.STEP), 2)
+        self.assertEqual(config.get(INT_KEY), 8)
+        self.assertEqual(config.get_range(INT_KEY), (1, 10, 1))
+        self.assertEqual(config.get(FLOAT_KEY), DEFAULT_VALUES[FLOAT_KEY])
+        self.assertEqual(config.get_range(FLOAT_KEY), (0.0, 1.0, 0.1))
+
+    def test_reset_restores_loaded_state(self) -> None:
+        """`_reset` restores the values and options the config had once constructed, not the definition's, and the
+        definition's ranges."""
+        saved_values = {STR_KEY: 'saved', OPTION_KEY: 'second', INT_KEY: 7}
+        self._write_saved_values(saved_values)
+        config = self._config()
+        config.set(STR_KEY, 'changed', save_change=False)
+        config.update_options(OPTION_KEY, ['x', 'y'])
+        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
+        config._entries[INT_KEY].maximum = 30  # pylint: disable=protected-access
+        config._reset()  # pylint: disable=protected-access
+        self.assertEqual(config.get(STR_KEY), 'saved')
+        self.assertEqual(config.get(OPTION_KEY), 'second')
+        self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
+        self.assertEqual(config.get_default(OPTION_KEY), 'first')
+        self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
+        self.assertEqual(config.get(INT_KEY), 7)
+        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 10)
+
+    def test_reset_survives_changes_to_restored_values(self) -> None:
+        """A change after one `_reset` doesn't reach the state the next `_reset` restores."""
+        config = self._config()
+        config._reset()  # pylint: disable=protected-access
+        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
+        config.add_option(OPTION_KEY, 'third')
+        config._reset()  # pylint: disable=protected-access
+        self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
+        self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
+
+    def test_reset_discards_connections(self) -> None:
+        """Value and option callbacks connected before `_reset` don't run after it."""
+        config = self._config()
+        values: list[Any] = []
+        option_lists: list[list[Any]] = []
+        config.connect(self, OPTION_KEY, values.append)
+        config.connect_to_option_changes(self, OPTION_KEY, option_lists.append)
+        config._reset()  # pylint: disable=protected-access
+        config.update_options(OPTION_KEY, ['x', 'y'])
+        self.assertEqual(values, [])
+        self.assertEqual(option_lists, [])
+
+    def test_reset_cancels_pending_save(self) -> None:
+        """A change saved before `_reset` never reaches the JSON file."""
+        config = self._config()
+        saved_values = self._read_saved_values()
+        config.set(STR_KEY, 'changed')
+        config._reset()  # pylint: disable=protected-access
+        self.assertFalse(config._save_timer.isActive())  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values(), saved_values)
 
     def test_load_invalid_json_restores_defaults(self) -> None:
-        """A saved file that isn't valid JSON loads as defaults, and is replaced with the defaults."""
+        """A saved file that isn't valid JSON loads as defaults, and is replaced with a file of just the version."""
         with open(self.json_path, 'w', encoding='utf-8') as file:
             file.write('{"test_str": "trunc')
         config = self._config()
         self.assertEqual(config.get(STR_KEY), DEFAULT_VALUES[STR_KEY])
-        self.assertEqual(self._read_saved_values()[STR_KEY], DEFAULT_VALUES[STR_KEY])
+        self.assertEqual(self._read_saved_values(), {CONFIG_VERSION_KEY: CURRENT_VERSION})
 
     def test_failed_write_keeps_previous_file(self) -> None:
         """A save that fails partway through leaves the previous file intact and no temporary file behind."""
@@ -380,50 +765,28 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(sorted(os.listdir(self.temp_dir)), sorted([os.path.basename(self.definition_path),
                                                                     os.path.basename(self.json_path)]))
 
-    def test_set_with_save_from_worker_thread_does_not_deadlock(self) -> None:
-        """`Config.set` with `save_change=True` off the main thread finishes and writes the change to the JSON file.
-
-        This uses a private `Config` instead of `AppConfig`: a deadlocked `set` keeps its lock forever, and
-        `IntraPaintTestCase.tearDown` resets the shared singletons, which would block on that lock and hang the suite
-        instead of failing this test.
-        """
+    def test_set_from_worker_thread_raises_without_changing_value(self) -> None:
+        """`Config.set` off the main thread raises RuntimeError, leaving the value alone and running no callbacks."""
         config = self._config()
+        callback_threads: list[threading.Thread] = []
+        config.connect(self, STR_KEY, lambda: callback_threads.append(threading.current_thread()))
+        original = config.get(STR_KEY)
         errors: list[BaseException] = []
 
         def set_value() -> None:
             try:
-                config.set(TEST_KEY, True, save_change=True)
+                config.set(STR_KEY, 'changed', save_change=True)
             except BaseException as err:  # pylint: disable=broad-exception-caught
                 errors.append(err)
-
-        # Daemon, so a deadlocked worker can't keep the process alive after the test fails.
-        worker = threading.Thread(target=set_value, daemon=True)
-        worker.start()
-        worker.join(THREAD_JOIN_TIMEOUT_SECONDS)
-        self.assertFalse(worker.is_alive(), 'Config.set deadlocked when saving from a worker thread')
-        self.assertEqual([], errors)
-        self.assertTrue(config.get(TEST_KEY))
-        self.assertTrue(self._read_saved_values()[TEST_KEY])
-
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/28')
-    def test_set_from_worker_thread_does_not_run_callbacks_there(self) -> None:
-        """A `set` call on a worker thread doesn't run connected callbacks on that thread, where they could change
-        widgets."""
-        config = self._config()
-        callback_threads: list[threading.Thread] = []
-        config.connect(self, STR_KEY, lambda: callback_threads.append(threading.current_thread()))
-
-        def set_value() -> None:
-            try:
-                config.set(STR_KEY, 'changed', save_change=False)
-            except AssertionError:  # The main-thread assertion #28 proposes is an acceptable fix.
-                pass
 
         worker = threading.Thread(target=set_value, daemon=True)
         worker.start()
         worker.join(THREAD_JOIN_TIMEOUT_SECONDS)
         self.assertFalse(worker.is_alive())
-        self.assertNotIn(worker, callback_threads)
+        self.assertEqual(1, len(errors))
+        self.assertIsInstance(errors[0], RuntimeError)
+        self.assertEqual(original, config.get(STR_KEY))
+        self.assertEqual([], callback_threads)
 
 
 class AppConfigDataDirTest(IntraPaintTestCase):
@@ -447,6 +810,57 @@ class AppConfigDataDirTest(IntraPaintTestCase):
         for key, dir_name in keys_and_names:
             with self.subTest(key=key):
                 self.assertEqual(config.get(key), os.path.join(data_dir, dir_name))
+
+
+class ConfigMigrationTest(IntraPaintTestCase):
+    """Loads unversioned files into the real `AppConfig` and `Cache`, to check the version 0 to 1 migration."""
+
+    def _load(self, config_class: type[Config], saved: dict[str, Any]) -> tuple[Config, dict[str, Any]]:
+        """Creates a temporary instance of a shared config from a saved file, returning it and the rewritten file."""
+        temp_dir = tempfile.mkdtemp(prefix='intrapaint-config-migration-test-')
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
+        path = os.path.join(temp_dir, 'saved.json')
+        with open(path, 'w', encoding='utf-8') as file:
+            json.dump(saved, file)
+        # pylint: disable=protected-access
+        previous = Singleton._instances.pop(config_class)
+        self.addCleanup(Singleton._instances.__setitem__, config_class, previous)
+        config = config_class(path)
+        self.addCleanup(config._save_timer.stop)
+        self.addCleanup(Singleton._instances.pop, config_class, None)
+        with open(path, encoding='utf-8') as file:
+            return config, json.load(file)
+
+    def test_theme_and_style_reset_once(self) -> None:
+        """An unversioned file's theme and style return to the Ink defaults, and a versioned file keeps its own."""
+        custom = {AppConfig.THEME: THEME_SYSTEM, AppConfig.STYLE: 'Windows'}
+        self.assertNotEqual(AppConfig().get_default(AppConfig.THEME), THEME_SYSTEM)
+        config, saved = self._load(AppConfig, dict(custom))
+        self.assertEqual(config.get(AppConfig.THEME), THEME_INK)
+        self.assertEqual(config.get(AppConfig.STYLE), 'Fusion')
+        self.assertEqual(saved[CONFIG_VERSION_KEY], 1)
+        self.assertNotIn(AppConfig.THEME, saved)
+        self.assertNotIn(AppConfig.STYLE, saved)
+        config, saved = self._load(AppConfig, {CONFIG_VERSION_KEY: 1, **custom})
+        self.assertEqual(config.get(AppConfig.THEME), THEME_SYSTEM)
+        self.assertEqual(config.get(AppConfig.STYLE), 'Windows')
+        self.assertEqual({key: saved[key] for key in custom}, custom)
+
+    def test_old_selection_color_default_follows_new_default(self) -> None:
+        """An unversioned file holding the previous selection color default loads the current default, and a custom
+        color is kept."""
+        old_default = AppConfig.PREVIOUS_DEFAULTS[AppConfig.SELECTION_COLOR][0]
+        config, saved = self._load(AppConfig, {AppConfig.SELECTION_COLOR: old_default})
+        self.assertEqual(config.get(AppConfig.SELECTION_COLOR), config.get_default(AppConfig.SELECTION_COLOR))
+        self.assertNotIn(AppConfig.SELECTION_COLOR, saved)
+        config, saved = self._load(AppConfig, {AppConfig.SELECTION_COLOR: '#8800ff00'})
+        self.assertEqual(config.get(AppConfig.SELECTION_COLOR), '#8800ff00')
+        self.assertEqual(saved[AppConfig.SELECTION_COLOR], '#8800ff00')
+
+    def test_color_select_mode_migrates_with_the_file(self) -> None:
+        """The `color_select_mode` conversion runs when an unversioned Cache file loads."""
+        config, _ = self._load(Cache, {'color_select_mode': True})
+        self.assertEqual(config.get(Cache.SELECTION_FILL_AREA), 'By color')
 
 
 class ConfigKeyOwnershipTest(IntraPaintTestCase):

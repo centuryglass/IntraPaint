@@ -2,7 +2,9 @@
 # Source: http://blog.ssokolow.com/archives/2019/06/01/gui-error-handler-for-pyqt-5-x/
 # I removed a @pyqtSlot annotation from _cb_copy_to_clipboard, blocked activation outside the main thread, and
 # ported to PySide6, but it's otherwise unchanged.
-"""Qt Exception Handler for Python 3.5+
+"""Shows uncaught exceptions in an error dialog, from Stephan Sokolow's Qt exception handler.
+
+Qt Exception Handler for Python 3.5+
 
 Additions copyright 2019, 2020 Stephan Sokolow
 
@@ -56,15 +58,14 @@ import traceback
 from gettext import gettext as _
 from smtplib import SMTP, SMTPException
 from typing import Callable, Optional
+# pylint: disable=unused-import,wrong-import-order
+from typing import Dict  # noqa
 
 # pylint: disable=no-name-in-module
-from PySide6.QtCore import (QCommandLineOption, QCommandLineParser, QEvent,
+from PySide6.QtCore import (QEvent,
                             Slot)
 from PySide6.QtGui import QTextOption
 from PySide6.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
-
-# pylint: disable=unused-import,wrong-import-order
-from typing import Dict  # noqa
 from PySide6.QtWidgets import QPushButton  # noqa
 
 #: The :meth:`QCoreApplication.translate` context for strings in this file
@@ -119,21 +120,29 @@ class ResizableMessageBox(QMessageBox):  # pylint: disable=R0903
         return res
 
 
-class QtExceptHook(object):
+class QtExceptHook():
     """GUI exception hook for PyQt 5.x applications
 
-    :param reporting_cb: If provided, a :guilabel:`Report Bug...` button will
+    :param reporting_cb: If provided, a :guilabel:`Report bug...` button will
         be added which will call ``reporting_cb`` when clicked.
+    :param recovery_cb: If provided, called before the :guilabel:`Quit` button quits. It should preserve the
+        user's work for the next launch and return whether it did. The quit button's label says which.
+    :param recovery_enabled_cb: Returns whether ``recovery_cb`` can preserve work, for the quit button's label.
     """
 
-    def __init__(self, reporting_cb: Optional[Callable[[str], None]]=None): # type: ignore
+    def __init__(self, reporting_cb: Optional[Callable[[str], None]]=None, # type: ignore
+                 recovery_cb: Optional[Callable[[], bool]] = None,
+                 recovery_enabled_cb: Optional[Callable[[], bool]] = None):
         """Initialize as much as possible on application startup.
 
         (Maximize the chance that a bug in the exception handling system will
         show up as early as possible.)
         """
         self._extra_info = ''
+        self._showing = False
         self._reporting_cb = reporting_cb
+        self._recovery_cb = recovery_cb
+        self._recovery_enabled_cb = recovery_enabled_cb
 
         self._dialog = ResizableMessageBox(QMessageBox.Icon.Warning,
             _tr('Bug Detected'),
@@ -144,11 +153,11 @@ class QtExceptHook(object):
                         'reported to the developers nonetheless.')
 
         if self._reporting_cb is not None:
-            btn_report = self._dialog.addButton(_tr('Report Bug...'), QMessageBox.ButtonRole.ActionRole)
+            btn_report = self._dialog.addButton(_tr('Report bug...'), QMessageBox.ButtonRole.ActionRole)
             btn_report.clicked.disconnect()
             btn_report.clicked.connect(self._cb_report_bug)
         else:
-            btn_copy = self._dialog.addButton(_tr('Copy Traceback...'),
+            btn_copy = self._dialog.addButton(_tr('Copy traceback...'),
                                               QMessageBox.ButtonRole.ActionRole)
             btn_copy.clicked.disconnect()
             btn_copy.clicked.connect(self._cb_copy_to_clipboard)
@@ -163,11 +172,11 @@ class QtExceptHook(object):
         btn_close = self._dialog.addButton(QMessageBox.StandardButton.Close)
         self._dialog.setEscapeButton(btn_close)
 
-        self.b_quit = self._dialog.addButton(_('Quit'), QMessageBox.ButtonRole.RejectRole)
+        self.b_quit = self._dialog.addButton(_tr('Quit'), QMessageBox.ButtonRole.RejectRole)
 
 
     def _cb_copy_to_clipboard(self):
-        """Qt slot for the :guilabel:`Copy Traceback...` button."""
+        """Qt slot for the :guilabel:`Copy traceback...` button."""
         QApplication.instance().clipboard().setText(
             self._dialog.detailedText())
 
@@ -178,7 +187,7 @@ class QtExceptHook(object):
 
     @Slot()
     def _cb_report_bug(self):
-        """Qt slot for the :guilabel:`Report Bug...` button. """
+        """Qt slot for the :guilabel:`Report bug...` button. """
         self._reporting_cb(self._dialog.detailedText())
 
     def _excepthook(self, exc_type, exc_value, exc_traceback):
@@ -186,19 +195,43 @@ class QtExceptHook(object):
         if threading.current_thread() is not threading.main_thread():
             return  # Qt UI actions outside the main thread cause segfaults, let threading code handle it.
 
+        # Always reach the console: Qt prints only "Error calling Python override of ..." for exceptions raised in
+        # virtual overrides such as QStyle.styleHint, and the dialog is the only other place the traceback appears.
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+        # Showing the dialog runs style and paint callbacks. If one of them raises, it re-enters this hook while
+        # the dialog is open, and a nested exec() call fails with "Recursive call detected", so the first dialog's
+        # details are kept and the repeat is only logged.
+        if self._showing:
+            return
+
         # Construct the text of the bug report
         t_exception = traceback.TracebackException(
             exc_type, exc_value, exc_traceback, capture_locals=True)
         traceback_text = '\n'.join(t_exception.format())
         if self._extra_info:
-            traceback_text += '\n{}'.format(self._extra_info)
+            traceback_text += f'\n{self._extra_info}'
 
         # Store it in the dialog where *everything* will retrieve it from
         self._dialog.setDetailedText(traceback_text)
 
+        if self._recovery_cb is not None:
+            recoverable = self._recovery_enabled_cb is None or self._recovery_enabled_cb()
+            self.b_quit.setText(_tr('Quit (your work can be recovered next launch)') if recoverable
+                                else _tr('Quit (unsaved changes will be lost)'))
+
         # Show the dialog
-        self._dialog.exec()
+        self._showing = True
+        try:
+            self._dialog.exec()
+        finally:
+            self._showing = False
         if self._dialog.clickedButton() == self.b_quit:
+            if self._recovery_cb is not None:
+                try:
+                    self._recovery_cb()
+                except Exception as err:  # pylint: disable=broad-exception-caught
+                    print(f'Failed to keep the recovery copy: {err}', file=sys.stderr)
             QApplication.instance().quit()
 
     def enable(self):

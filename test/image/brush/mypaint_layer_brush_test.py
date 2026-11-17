@@ -19,6 +19,7 @@ BULK_BRUSH = f'{BRUSH_DIR}/classic/bulk.myb'
 BLEND_BRUSH = f'{BRUSH_DIR}/classic/blend+paint.myb'
 ERASER_BRUSH = f'{BRUSH_DIR}/classic/ink_eraser.myb'
 TEXTURED_BRUSH = f'{BRUSH_DIR}/classic/charcoal.myb'
+PRESSURE_SIZED_BRUSH = f'{BRUSH_DIR}/classic/brush.myb'
 BRUSH_COLOR = QColor(30, 90, 200)
 
 
@@ -81,12 +82,52 @@ class MyPaintLayerBrushTest(BrushTestCase):
         image = self.stroke(pressure_points)
         self.assert_stroke_matches_golden(image, 'bulk_pressure')
 
+    def test_mouse_stroke_stays_inside_outline(self) -> None:
+        """A stroke without pressure data stays within the brush outline, on a brush whose radius grows with pressure."""
+        self.brush.brush_path = PRESSURE_SIZED_BRUSH
+        start, end = QPoint(40, 64), QPoint(150, 64)
+        radius = self.brush.brush_size // 2
+        initial_image = self.layer.image
+        image = self.stroke(line_points(start, end, 8))
+        # One extra pixel covers anti-aliasing.
+        outline_bounds = QRect(start, end).adjusted(-radius - 1, -radius - 1, radius + 1, radius + 1)
+        self.assert_changes_inside(image, initial_image, outline_bounds)
+
+    def test_slow_tracking_stroke_starts_at_first_point(self) -> None:
+        """With slow tracking, a stroke's first dabs land on its path, not toward the previous stroke's end."""
+        self.brush.brush_path = PRESSURE_SIZED_BRUSH
+        self.use_layer(create_transparent_image(LAYER_SIZE))
+        radius = self.brush.brush_size // 2
+        for start, end in ((QPoint(40, 64), QPoint(150, 64)), (QPoint(60, 30), QPoint(170, 30))):
+            with self.subTest(start=start):
+                initial_image = self.layer.image
+                image = self.stroke(line_points(start, end, 8))
+                outline_bounds = QRect(start, end).adjusted(-radius - 1, -radius - 1, radius + 1, radius + 1)
+                self.assert_changes_inside(image, initial_image, outline_bounds)
+
     def test_blending_brush_on_pattern(self) -> None:
         """A brush that picks up and smudges the color under it."""
         self.brush.brush_path = BLEND_BRUSH
         self.brush.brush_size = 30
         image = self.stroke(zigzag_points())
         self.assert_stroke_matches_golden(image, 'blend_pattern')
+
+    def test_pixel_brushes_paint(self) -> None:
+        """The experimental pixel brushes, which set anti_aliasing to 0, paint on blank layers and keep content."""
+        for name in ('1pixel', 'pixel_hardink', 'pixelblocking'):
+            with self.subTest(brush=name):
+                self.brush.brush_path = f'{BRUSH_DIR}/experimental/{name}.myb'
+                self.use_layer(create_transparent_image(LAYER_SIZE))
+                image = self.stroke(zigzag_points())
+                painted = sum(1 for y in range(image.height()) for x in range(image.width())
+                              if image.pixelColor(x, y).alpha() > 0)
+                self.assertGreater(painted, 0)
+                pattern = brush_test_pattern()
+                self.use_layer(pattern.copy())
+                image = self.stroke(zigzag_points())
+                lost = sum(1 for y in range(image.height()) for x in range(image.width())
+                           if pattern.pixelColor(x, y).alpha() > 0 and image.pixelColor(x, y).alpha() == 0)
+                self.assertEqual(lost, 0)
 
     def test_eraser_brush_on_pattern(self) -> None:
         """A brush file that erases."""

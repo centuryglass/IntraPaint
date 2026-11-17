@@ -1,16 +1,16 @@
 {
     "edit_size": {
-        "label": "Editing size:",
+        "label": "Generation area size:",
         "category": "Cache",
-        "description": "Current/initial size in pixels of the area selected for editing",
+        "description": "Current size in pixels of the generation area",
         "type": "Size",
         "default": "512x512",
         "saved": true
     },
     "generation_size": {
-        "label": "Generation size:",
+        "label": "Generation resolution:",
         "category": "Cache",
-        "description": "Current/initial size in pixels used for AI image generation",
+        "description": "Current/initial generation resolution: the size in pixels the AI image generator works at",
         "type": "Size",
         "default": "512x512",
         "saved": true
@@ -26,7 +26,17 @@
             "Match area, upscale small areas",
             "Manual"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
+    },
+    "recent_files": {
+        "label": "Recent files:",
+        "category": "Cache",
+        "description": "Image files opened or saved most recently, newest first, as absolute paths",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
     },
     "recent_generation_area_sizes": {
         "label": "Recent generation area sizes:",
@@ -34,33 +44,6 @@
         "description": "Generation area sizes used most recently, newest first, as \"WxH\" strings",
         "type": "list",
         "default": [],
-        "saved": true,
-        "translate": false
-    },
-    "tool_tab_bar": {
-        "label": "Tool tab bar:",
-        "category": "Cache",
-        "description": "Toolbar where the tool tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
-        "type": "string",
-        "default": "",
-        "saved": true,
-        "translate": false
-    },
-    "generation_tab_bar": {
-        "label": "Image generation tab bar:",
-        "category": "Cache",
-        "description": "Toolbar where the image generation tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
-        "type": "string",
-        "default": "",
-        "saved": true,
-        "translate": false
-    },
-    "controlnet_tab_bar": {
-        "label": "ControlNet tab bar:",
-        "category": "Cache",
-        "description": "Toolbar where the ControlNet tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
-        "type": "string",
-        "default": "",
         "saved": true,
         "translate": false
     },
@@ -108,13 +91,13 @@
         "saved": true,
         "translate": false
     },
-    "color_slider_mode_secondary": {
-        "label": "Second color slider mode:",
+    "color_panel_tab": {
+        "label": "Color panel tab:",
         "category": "Cache",
-        "description": "Color model of the second slider block, shown in wide color picker layouts.",
+        "description": "Tab the Color panel shows while it is too small for its sections.",
         "type": "string",
-        "default": "OKLCH",
-        "options": ["RGB", "HSV", "OKLCH"],
+        "default": "wheel",
+        "options": ["wheel", "sliders", "saved"],
         "saved": true,
         "translate": false
     },
@@ -124,6 +107,14 @@
         "description": "Last new image background color",
         "type": "string",
         "default": "#ffffffff",
+        "saved": true
+    },
+    "new_image_uses_background_color": {
+        "label": "New image uses the background color",
+        "category": "Cache",
+        "description": "Whether new images are filled with the current background color instead of the last new image background color.",
+        "type": "bool",
+        "default": false,
         "saved": true
     },
     "text_background_color": {
@@ -181,7 +172,7 @@
         "range_options": {
             "min": 0.0,
             "max": 300.0,
-            "step": 5.0
+            "step": 1.0
         },
         "saved": true
     },
@@ -195,20 +186,27 @@
         "saved": true
     },
     "sample_merged": {
-        "label": "Sample Merged",
+        "label": "Sample merged",
         "category": "Cache",
         "description": "If checked, fill based on the entire image contents, not just the current layer",
         "type": "bool",
         "default": false,
         "saved": true
     },
-    "color_select_mode": {
-        "label": "Select all by color",
+    "selection_fill_area": {
+        "label": "Fill area",
         "category": "Cache",
-        "description": "If checked, ignore boundaries and select all content within the color threshold",
-        "type": "bool",
-        "default": false,
-        "saved": true
+        "subcategory": "Selection",
+        "description": "Which area the magic wand selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.",
+        "type": "string",
+        "default": "Connected",
+        "options": [
+            "Connected",
+            "By color",
+            "Holes"
+        ],
+        "saved": true,
+        "translate": false
     },
     "paint_selection_only": {
         "label": "Paint selection only",
@@ -241,6 +239,31 @@
             "max": 300,
             "step": 1
         }
+    },
+    "selection_mode": {
+        "label": "Selection mode:",
+        "category": "Cache",
+        "subcategory": "Selection",
+        "description": "How new selection shapes combine with the existing selection: 'Add' adds to it, 'Subtract' removes from it, 'Replace' discards it, and 'Intersect' keeps only the overlap. The selection add and subtract modifiers override this for one gesture.",
+        "type": "string",
+        "default": "Add",
+        "options": [
+            "Add",
+            "Subtract",
+            "Replace",
+            "Intersect"
+        ],
+        "saved": true,
+        "translate": false
+    },
+    "shape_selection_fixed_aspect": {
+        "label": "Fixed 1:1 aspect ratio",
+        "category": "Cache",
+        "subcategory": "Selection",
+        "description": "If checked, rectangle and ellipse selections are always square or circular, as if the fixed aspect ratio modifier were held.",
+        "type": "bool",
+        "default": false,
+        "saved": true
     },
     "selection_brush_size": {
         "label": "Size:",
@@ -686,10 +709,11 @@
             "Dynamic offset",
             "Fixed position"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "shape_tool_mode": {
-        "label": "Shape Type:",
+        "label": "Shape type:",
         "category": "Cache",
         "subcategory": "Shape Tool",
         "description": "Type of shape to draw.",
@@ -725,11 +749,25 @@
             "step": 0.05
         }
     },
-    "shape_tool_line_color": {
-        "label": "Line color",
+    "shape_tool_line_source": {
+        "label": "Line color source:",
         "category": "Cache",
         "subcategory": "Shape Tool",
-        "description": "Shape outline color.",
+        "description": "Where the shape outline color comes from: the foreground color, or the custom line color.",
+        "type": "string",
+        "default": "From foreground",
+        "options": [
+            "From foreground",
+            "Custom color"
+        ],
+        "saved": true,
+        "translate": false
+    },
+    "shape_tool_line_color": {
+        "label": "Custom line color",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape outline color when the line color source is custom.",
         "type": "string",
         "default": "#FF000000",
         "saved": true
@@ -784,11 +822,26 @@
         "default": "",
         "saved": true
     },
-    "shape_tool_fill_color": {
-        "label": "Fill Color",
+    "shape_tool_fill_source": {
+        "label": "Fill color source:",
         "category": "Cache",
         "subcategory": "Shape Tool",
-        "description": "Shape fill color.",
+        "description": "Where the shape fill color comes from: the background color, the foreground color, or the custom fill color.",
+        "type": "string",
+        "default": "From background",
+        "options": [
+            "From background",
+            "From foreground",
+            "Custom color"
+        ],
+        "saved": true,
+        "translate": false
+    },
+    "shape_tool_fill_color": {
+        "label": "Custom fill color",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape fill color when the fill color source is custom.",
         "type": "string",
         "default": "#FFFFFFFF",
         "saved": true
@@ -802,34 +855,44 @@
         "default": true,
         "saved": true
     },
-    "saved_main_window_pos": {
-        "label": "Saved main window placement",
+    "saved_main_window_geometry": {
+        "label": "Saved main window geometry",
         "category": "Cache",
         "subcategory": "Window placement",
-        "description": "display, position, and size where the main window last was.",
+        "description": "JSON with the main window's normal bounds, window state and display when it last closed.",
         "type": "string",
         "default": "",
         "saved": true
     },
-    "saved_layer_window_pos": {
-        "label": "Saved layer window placement",
+    "saved_main_window_state": {
+        "label": "Saved panel layout",
         "category": "Cache",
         "subcategory": "Window placement",
-        "description": "display, position, and size where the layer window last was.",
+        "description": "Base64 QMainWindow.saveState data with the panel docks' placement when the window last closed.",
         "type": "string",
         "default": "",
         "saved": true
     },
-    "saved_navigation_window_pos": {
-        "label": "Saved navigation window placement",
+    "saved_layouts": {
+        "label": "Named panel layouts",
         "category": "Cache",
         "subcategory": "Window placement",
-        "description": "display, position, and size where the navigation window was last.",
+        "description": "Panel layouts the user saved by name, each holding the dock arrangement only: base64 QMainWindow.saveState data under 'state'.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "layer_thumbnail_size": {
+        "label": "Layer thumbnail size:",
+        "category": "Cache",
+        "description": "Size of the previews in the layer panel's rows. 'Auto' uses large previews when the panel has room for them.",
         "type": "string",
-        "default": "",
+        "default": "Auto",
+        "options": ["Auto", "Small", "Medium", "Large"],
         "saved": true,
         "translate": false
-    },"prompt": {
+    },
+    "prompt": {
         "label": "Prompt:",
         "category": "Cache",
         "subcategory": "Image generation",
@@ -848,10 +911,10 @@
         "saved": false
     },
     "guidance_scale": {
-        "label": "Guidance scale:",
+        "label": "CFG scale:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Controls how strongly the prompt and negative prompt are applied.",
+        "description": "Controls how strongly the prompt and negative prompt are applied, through classifier-free guidance (CFG).",
         "type": "float",
         "default": 9.0,
         "saved": true,
@@ -901,7 +964,8 @@
             "Image to Image",
             "Text to Image"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "masked_content": {
         "label": "Masked content:",
@@ -916,13 +980,14 @@
             "latent noise",
             "latent nothing"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "sampling_steps": {
-        "label": "Sampling steps:",
+        "label": "Steps:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
+        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cases setting this higher than 30 has only minimal benefits",
         "type": "int",
         "default": 30,
         "saved": true,
@@ -964,7 +1029,8 @@
         "type": "string",
         "default": "default",
         "options": ["default"],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "canvas_resize_layer_mode": {
         "label": "Layer expand mode:",
@@ -979,7 +1045,8 @@
             "Do not expand layers"
 
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "canvas_resize_crop_layers": {
         "label": "Crop layers to new image bounds",
@@ -989,6 +1056,52 @@
         "type": "bool",
         "default": true,
         "saved": true
+    },
+    "animation_save_as_animation": {
+        "label": "Save as an animation",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Saves each top-level layer as one frame of the animation. When unchecked, the image is saved flattened.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "animation_frame_duration": {
+        "label": "Default frame duration (ms):",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Display time in milliseconds for frames whose layer names have no duration tag like \"(120ms)\".",
+        "type": "int",
+        "default": 100,
+        "saved": true,
+        "range_options": {
+            "min": 0,
+            "max": 60000,
+            "step": 10
+        }
+    },
+    "animation_loop_forever": {
+        "label": "Loop forever",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Repeats the animation until it is stopped.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "animation_loop_count": {
+        "label": "Loop count:",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Number of times the animation repeats when it doesn't loop forever.",
+        "type": "int",
+        "default": 1,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 65535,
+            "step": 1
+        }
     },
     "seed": {
         "label": "Seed:",
@@ -1013,30 +1126,40 @@
         "default": "-1",
         "saved": true
     },
+    "image_generation_available": {
+        "label": "Image generation available",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Whether an image generator other than the null generator is loaded. Context pin controls show only while it is.",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
     "inpaint_options_available": {
         "label": "Inpaint options available",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Whether the \"inpaint full resolution\" and \"inpaint full resolution padding\" features are available.",
+        "description": "Whether the inpaint context options are available.",
         "type": "bool",
         "default": false,
         "saved": false,
         "translate": false
     },
     "inpaint_full_res": {
-        "label": "Inpaint Full Resolution",
+        "label": "Limit context to the selection",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.",
+        "description": "On: generate only the selection and the context around it, at the full generation resolution, for finer detail. Off: generate the whole generation area.",
         "type": "bool",
         "default": true,
         "saved": true
     },
     "inpaint_full_res_padding": {
-        "label": "Padding:",
+        "label": "Context:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.",
+        "description": "How far past the selection, in pixels, the generator sees while context is limited. Less context gives finer detail, and more gives better awareness of the surrounding image. Context pins stretch it further.",
         "type": "int",
         "default": 32,
         "range_options": {
@@ -1127,6 +1250,7 @@
         "type": "string",
         "default": "http://localhost:7860",
         "saved": true,
+        "pinned": true,
         "translate": false
     },
     "sd_comfyui_server_url": {
@@ -1137,6 +1261,7 @@
         "type": "string",
         "default": "http://localhost:8188",
         "saved": true,
+        "pinned": true,
         "translate": false
     },
     "glid_server_url": {
@@ -1174,7 +1299,7 @@
         }
     },
     "controlnet_args_0_webui": {
-        "label": "ControlNet Settings (first layer, WebUI API)",
+        "label": "ControlNet settings (first layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "WebUI API first layer ControlNet extension settings.",
@@ -1184,7 +1309,7 @@
         "translate": false
     },
     "controlnet_args_1_webui": {
-        "label": "ControlNet Settings (second layer, WebUI API)",
+        "label": "ControlNet settings (second layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "WebUI API second layer ControlNet extension settings.",
@@ -1194,7 +1319,7 @@
         "translate": false
     },
     "controlnet_args_2_webui": {
-        "label": "ControlNet Settings (third layer, ComfyUI API)",
+        "label": "ControlNet settings (third layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API third layer ControlNet extension settings.",
@@ -1204,7 +1329,7 @@
         "translate": false
     },
     "controlnet_args_0_comfyui": {
-        "label": "ControlNet Settings (first layer, ComfyUI API)",
+        "label": "ControlNet settings (first layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API first layer ControlNet extension settings.",
@@ -1214,7 +1339,7 @@
         "translate": false
     },
     "controlnet_args_1_comfyui": {
-        "label": "ControlNet Settings (second layer, ComfyUI API)",
+        "label": "ControlNet settings (second layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API second layer ControlNet extension settings.",
@@ -1224,7 +1349,7 @@
         "translate": false
     },
     "controlnet_args_2_comfyui": {
-        "label": "ControlNet Settings (third layer, WebUI API)",
+        "label": "ControlNet settings (third layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API third layer ControlNet extension settings.",
@@ -1251,7 +1376,8 @@
         "type": "string",
         "default": "auto",
         "options" : ["auto"],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "comfyui_inpainting_model": {
         "label": "Load checkpoint as inpainting model",
@@ -1296,7 +1422,7 @@
         "translate": false
     },
     "webui_cached_scaling_mode": {
-        "label": "Cached ComfyUI scaling mode",
+        "label": "Cached WebUI scaling mode",
         "category": "Cache",
         "subcategory": "ComfyUI",
         "description": "Last generator upscale mode used with the ComfyUI image generator",
@@ -1309,10 +1435,20 @@
         "label": "Tiling",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Generate tiling images that can be seamlessly repeated.",
+        "description": "Generate tiling images that can be seamlessly repeated. Inpainting ignores the context limit while tiling is on.",
         "type": "bool",
         "default": false,
         "saved": true
+    },
+    "webui_tiling_available": {
+        "label": "Tiling available",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Whether the WebUI generator is connected, so its tiling option applies.",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
     },
     "webui_restore_faces": {
         "label": "Restore faces",
@@ -1327,7 +1463,7 @@
         "label": "Variation seed:",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Controls randomness across imagees generated in the same batch.",
+        "description": "Controls randomness across images generated in the same batch.",
         "type": "int",
         "default": -1,
         "range_options": {
@@ -1373,7 +1509,7 @@
         "label": "Resize from resolution:",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation size.",
+        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation resolution.",
         "type": "Size",
         "default": "512x512",
         "saved": true
@@ -1389,7 +1525,7 @@
         "saved": true
     },
     "generator_scaling_modes": {
-        "label": "Image generator caling modes:",
+        "label": "Image generator scaling modes:",
         "category": "Cache",
         "subcategory": "Image generation",
         "description": "Scaling modes provided by the connected image generator",
@@ -1410,7 +1546,8 @@
             "Scale merged, keep source layers",
             "Scale merged, discard source layers"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "sd_upscaling_available": {
         "label": "Stable Diffusion upscaling available",
@@ -1456,10 +1593,10 @@
         }
     },
     "sd_upscaling_step_count": {
-        "label": "Step count:",
+        "label": "Steps:",
         "category": "Cache",
         "subcategory": "Stable Diffusion Upscale",
-        "description": "Number of diffusion steps to use when upscaling with Stable Diffusion",
+        "description": "Number of denoising steps to use when upscaling with Stable Diffusion",
         "type": "int",
         "default": 30,
         "saved": true,
@@ -1506,5 +1643,44 @@
         "type": "bool",
         "default": true,
         "saved": true
+    },
+    "soft_inpainting": {
+        "label": "Soft inpainting",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "Treat the blurred edge of the inpainting mask as a gradual, per-pixel change, so inpainted content blends into its surroundings at high denoising strength. A wider mask blur widens the gradual band.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "soft_inpainting_available": {
+        "label": "Soft inpainting available",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "Whether the connected backend supports soft inpainting",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
+    "soft_inpainting_parameters": {
+        "label": "Soft inpainting parameters",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "Serialized definitions of the connected backend's soft inpainting settings",
+        "type": "list",
+        "default": [],
+        "saved": false,
+        "translate": false
+    },
+    "soft_inpainting_values": {
+        "label": "Soft inpainting settings",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "JSON object holding the soft inpainting settings the user changed, by parameter key",
+        "type": "string",
+        "default": "{}",
+        "saved": true,
+        "translate": false
     }
 }

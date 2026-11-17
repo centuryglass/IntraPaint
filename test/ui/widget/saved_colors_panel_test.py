@@ -119,20 +119,20 @@ class ColorPanelSavedColorsTest(IntraPaintTestCase):
         Cache().set(Cache.RECENT_COLORS, ['#ff112233', '#ff445566'])
         AppConfig().set(AppConfig.SAVED_COLORS, ['#ffaabbcc'])
         self.panel = ColorControlPanel()
-        self.saved_grid = self.panel.saved_colors_panel.grid
+        self.saved_grid = self.panel.parts.saved_colors_panel.grid
         self.saved_grid.resize(300, 100)
-        self.recent_grid = self.panel.recent_colors_row.grid
+        self.recent_grid = self.panel.parts.recent_colors_row.grid
         self.recent_grid.resize(300, 100)
 
     def test_save_button_saves_current_color(self) -> None:
         """The save button adds the current color to the saved colors and their grid."""
-        self.panel.saved_colors_panel.save_button.click()
+        self.panel.parts.saved_colors_panel.save_button.click()
         self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ffaabbcc', '#ff336699'])
         self.assertEqual(_names(self.saved_grid.colors()), ['#ffaabbcc', '#ff336699'])
 
     def test_remove_button_removes_current_color(self) -> None:
         """The remove button is enabled only when the current color is saved, and removes it."""
-        saved_panel = self.panel.saved_colors_panel
+        saved_panel = self.panel.parts.saved_colors_panel
         self.assertFalse(saved_panel.remove_button.isEnabled())
         self.assertTrue(saved_panel.save_button.isEnabled())
         Cache().set(Cache.LAST_BRUSH_COLOR, '#ffaabbcc')
@@ -146,16 +146,16 @@ class ColorPanelSavedColorsTest(IntraPaintTestCase):
     def test_full_list_disables_save_and_scrolls(self) -> None:
         """A full list shows its count, disables saving with a tooltip saying why, and scrolls past
         MAX_VISIBLE_ROWS rows."""
-        saved_panel = self.panel.saved_colors_panel
+        saved_panel = self.panel.parts.saved_colors_panel
         AppConfig().set(AppConfig.SAVED_COLORS, [f'#ff0000{index:02x}' for index in range(MAX_SAVED_COLORS)])
         self.assertIn(f'{MAX_SAVED_COLORS}/{MAX_SAVED_COLORS}', saved_panel.label.text())
+        self.assertEqual(self.panel.sections[3].summary(), f'{MAX_SAVED_COLORS} of {MAX_SAVED_COLORS}')
         self.assertFalse(saved_panel.save_button.isEnabled())
         self.assertEqual(saved_panel.save_button.toolTip(), SAVE_BUTTON_FULL_TOOLTIP)
         # A hidden widget gets its resize event only once shown.
+        self.panel.resize(240, 1000)
         self.panel.show()
-        self.panel.resize(240, 600)
-        tabs = self.panel.tab_widget
-        tabs.setCurrentIndex(tabs.indexOf(saved_panel.parentWidget()))
+        self.assertFalse(self.panel.sections[3].is_collapsed())
         max_height = MAX_VISIBLE_ROWS * (SWATCH_SIZE + SWATCH_SPACING) - SWATCH_SPACING
         self.assertEqual(saved_panel.scroll_area.maximumHeight(), max_height)
         self.assertGreater(saved_panel.grid.heightForWidth(saved_panel.scroll_area.viewport().width()), max_height)
@@ -166,7 +166,7 @@ class ColorPanelSavedColorsTest(IntraPaintTestCase):
         _click(self.saved_grid, _center(self.saved_grid, 0))
         self.assertEqual(Cache().get(Cache.LAST_BRUSH_COLOR), '#ffaabbcc')
         self.assertEqual(Cache().get(Cache.RECENT_COLORS), ['#ffaabbcc', '#ff112233', '#ff445566'])
-        self.assertEqual(self.panel.ring_square.color(), QColor('#ffaabbcc'))
+        self.assertEqual(self.panel.parts.ring_square.color(), QColor('#ffaabbcc'))
 
     def test_recent_row_follows_cache_and_click_moves_color_to_front(self) -> None:
         """The recent row shows the recent colors, and clicking one makes it the foreground and the newest."""

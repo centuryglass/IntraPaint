@@ -14,7 +14,6 @@ from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -152,8 +151,6 @@ class ImageStackOpTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each committed operation is its own undo step.
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
 
     def add_layer(self, name: str, seed: int, size: Optional[QSize] = None, offset: QPoint = QPoint(),

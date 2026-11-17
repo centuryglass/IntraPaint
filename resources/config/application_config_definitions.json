@@ -1,4 +1,15 @@
 {
+    "language": {
+        "label": "Language:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "Language of the user interface (requires restart). \"System language\" uses the system's language when IntraPaint has a translation for it, and English otherwise. Languages marked machine-translated were translated by AI models, not people: report wrong or confusing wording at https://github.com/centuryglass/IntraPaint/issues.",
+        "type": "string",
+        "default": "System language",
+        "options": ["System language"],
+        "saved": true,
+        "translate": false
+    },
     "style": {
         "label": "Style:",
         "category": "Interface",
@@ -7,7 +18,8 @@
         "type": "string",
         "default": "Fusion",
         "options": ["Fusion"],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "theme": {
         "label": "Theme:",
@@ -17,13 +29,23 @@
         "type": "string",
         "default": "intrapaint_ink",
         "options": ["intrapaint_ink", "None"],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "overlay_scroll_bars": {
         "label": "Overlay scroll bars:",
         "category": "Interface",
         "subcategory": "Appearance",
         "description": "With the IntraPaint Ink theme, draw thin scroll bars over the content they scroll, instead of beside it.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "rounded_popups": {
+        "label": "Rounded menus and tooltips:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "With the IntraPaint Ink theme, draw menus and tooltips with rounded corners and a shadow. This needs a compositing window manager: turn it off if they show black corners on X11 (may require restart).",
         "type": "bool",
         "default": true,
         "saved": true
@@ -46,7 +68,7 @@
         "label": "Tab font size:",
         "category": "Interface",
         "subcategory": "Appearance",
-        "description": "Font point size to use for user interface tab labels (may require restart)",
+        "description": "Font point size to use for panel rail labels (may require restart)",
         "type": "int",
         "default": 12,
         "saved": true,
@@ -70,11 +92,20 @@
             "step": 1
         }
     },
+    "brush_crosshair_variants": {
+        "label": "Per-tool brush crosshairs:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "Give each variable-size brush tool its own crosshair shape, so the active tool can be told apart at the pointer. Turn this off to use the same crosshair for all of them.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "toolbar_tool_button_count": {
-        "label": "Recent tool toolbar icon count:",
+        "label": "Maximum recent tool icons:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Number of tool selection buttons to show on the toolbar when the tool tab is closed or inactive.",
+        "description": "Most recent-tool buttons to show in the panel rail. Fewer show when the window is too short for them.",
         "type": "int",
         "default": 4,
         "saved": true,
@@ -106,16 +137,17 @@
         "label": "Highlight generation area and selection on rulers:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Mark the image generation area and the selection's bounds with bars along the rulers.",
+        "description": "Mark the generation area and the selection's bounds with bars along the rulers.",
         "type": "bool",
         "default": true,
         "saved": true
     },
     "ruler_generation_area_color": {
+        "control": "color",
         "label": "Ruler generation area color:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
+        "description": "Color of the generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
         "type": "string",
         "default": "",
         "saved": true
@@ -145,7 +177,23 @@
     "animate_outlines_and_previews": {
         "label": "Animate area outlines and preview lines",
         "category": "Interface",
-        "description": "Enable or disable animation on the image generation area outline, selected content area outline, and line previews.",
+        "description": "Enable or disable animation on the generation area outline, selected content area outline, and line previews.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "static_loading_indicator": {
+        "label": "Use a static loading indicator:",
+        "category": "Interface",
+        "description": "Show a still frame for the whole load instead of an animated loading indicator.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "show_selection_overlay": {
+        "label": "Show selected content overlay:",
+        "category": "Interface",
+        "description": "Fill selected image areas with the selection overlay. When off, only the selection outline is drawn, which stays animated if outline animation is on.",
         "type": "bool",
         "default": true,
         "saved": true
@@ -159,11 +207,12 @@
         "saved": true
     },
     "selection_color": {
+        "control": "color_required",
         "label": "Selection overlay color:",
         "category": "Interface",
         "description": "Overlay color used to highlight selected image areas",
         "type": "string",
-        "default": "#55ff0000",
+        "default": "#995F5555",
         "saved": true
     },
     "show_selections_in_generation_options": {
@@ -196,7 +245,8 @@
         "description": "Use OpenGL to accelerate image rendering.  Currently somewhat buggy, breaks several layer rendering modes.",
         "type": "bool",
         "default": false,
-        "saved": true
+        "saved": true,
+        "pinned": true
     },
     "default_image_size": {
         "label": "Default image size:",
@@ -217,10 +267,10 @@
         "saved": true
     },
     "max_edit_size": {
-        "label": "Maximum editing size:",
+        "label": "Maximum generation area size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Maximum size in pixels of the area selected for editing",
+        "description": "Maximum size in pixels of the generation area",
         "type": "Size",
         "default": "10240x10240",
         "saved": true
@@ -229,16 +279,16 @@
         "label": "Minimum generation area size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Minimum size in pixels of the AI image generation area",
+        "description": "Minimum size in pixels of the generation area",
         "type": "Size",
         "default": "8x8",
         "saved": true
     },
     "max_generation_size": {
-        "label": "Maximum generation area size:",
+        "label": "Maximum generation resolution:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Maximum size in pixels of the AI image generation area",
+        "description": "The largest generation resolution, in pixels, that the \"Match area, upscale small areas\" rule scales a small generation area up to. Areas larger than this keep their own size.",
         "type": "Size",
         "default": "2048x2048",
         "saved": true
@@ -270,7 +320,7 @@
         "label": "Generation area follows selection:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and padding. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.",
+        "description": "In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and inpaint context. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.",
         "type": "string",
         "default": "Minimal move",
         "options": [
@@ -278,6 +328,16 @@
             "Center on selection",
             "Off"
         ],
+        "saved": true,
+        "translate": false
+    },
+    "show_manual_resolution_label": {
+        "label": "Label the generation area under the Manual resolution rule",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "While the resolution rule is 'Manual', show the generation resolution in a label on the generation area's top edge. The rule is saved between sessions, so the label keeps a resolution that no longer follows the generation area in view.",
+        "type": "bool",
+        "default": true,
         "saved": true
     },
     "brush_favorites": {
@@ -310,25 +370,9 @@
     "max_undo": {
         "label": "Maximum undo count:",
         "category": "Editing",
-        "description": "Number of actions that can be reversed using the 'undo' option.",
+        "description": "Number of actions that can be reversed using the 'undo' option. Changes apply after restarting IntraPaint.",
         "type": "int",
         "default": 30,
-        "saved": true
-    },
-    "undo_merge_interval": {
-        "label": "Undo merge interval (seconds):",
-        "category": "Editing",
-        "description": "Similar actions will be combined in the undo history if the time between them is less than this.",
-        "type": "float",
-        "default": 0.2,
-        "saved": true
-    },
-    "speed_modifier_multiplier": {
-        "label": "'Speed modifier' key multiplier:",
-        "category": "Editing",
-        "description": "Controls how much faster keyboard and mouse wheel changes happen when the 'speed modifier' key is held down",
-        "type": "int",
-        "default": 5,
         "saved": true
     },
     "saved_colors": {
@@ -342,7 +386,7 @@
     "pil_upscale_mode": {
         "label": "Upscale mode:",
         "category": "Editing",
-        "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "description": "Upscaling mode used when the inpainting resolution doesn't match the generation area size.",
         "type": "string",
         "default": "Lanczos",
         "options":  [],
@@ -351,7 +395,7 @@
     "pil_downscale_mode": {
         "label": "Downscale mode:",
         "category": "Editing",
-        "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "description": "Downscaling mode used when the inpainting resolution doesn't match the generation area size.",
         "type": "string",
         "default": "Lanczos",
         "options": [],
@@ -366,17 +410,25 @@
         "saved": true
     },
     "interrogate_model": {
-        "label": "Image interrogation model (WebUI only):",
+        "label": "Describe model (WebUI only):",
         "category": "Stable Diffusion",
-        "description": "Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.",
+        "description": "Model used when auto-generating appropriate prompts using the Describe action. Supported values will vary based on what extensions you've installed into the Stable Diffusion WebUI, but 'clip' should always be accepted.",
         "type": "string",
         "default": "clip",
+        "saved": true
+    },
+    "inpaint_blend_past_selection": {
+        "label": "Blend inpainting past the selection:",
+        "category": "Stable Diffusion",
+        "description": "Let the soft edge of inpainted content extend past the selection edge, by the reach of the mask blur. When off, inpainting never changes pixels outside the selection.",
+        "type": "bool",
+        "default": false,
         "saved": true
     },
     "mask_blur": {
         "label": "Mask blur:",
         "category": "Stable Diffusion",
-        "description": "Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.",
+        "description": "How much to blur the inpainting mask, in pixels at the generation resolution, so generated content blends smoothly into the original image.",
         "type": "int",
         "default": 4,
         "range_options": {
@@ -470,6 +522,14 @@
         "default": true,
         "saved": true
     },
+    "warn_before_metadata_loss": {
+        "label": "Warn when saving drops EXIF, XMP, IPTC or comments:",
+        "category": "Alerts",
+        "description": "Show a warning popup, listing what would be lost, when saving an image in a format that can't keep all of its metadata.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "warn_before_write_only_save": {
         "label": "Warn when saving in a format that cannot be loaded:",
         "category": "Alerts",
@@ -513,7 +573,8 @@
             "cancel",
             "always_ask"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "always_update_metadata_on_save": {
         "label": "Always update metadata:",
@@ -526,7 +587,8 @@
             "cancel",
             "always_ask"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "warn_when_crop_deletes_layers": {
         "label": "Warn when cropping deletes layers:",
@@ -545,6 +607,7 @@
         "saved": true
     },
     "added_font_dir": {
+        "control": "directory",
         "label": "Added font directory:",
         "category": "Files",
         "description": "Directory to search for additional font files to load",
@@ -553,6 +616,7 @@
         "saved": true
     },
     "added_mypaint_brush_dir": {
+        "control": "directory",
         "label": "Added MyPaint brush directory:",
         "category": "Files",
         "description": "Directory to search for additional MyPaint brush files to load",
@@ -561,11 +625,46 @@
         "saved": true
     },
     "libmypaint_library_dir": {
+        "control": "directory",
         "label": "libmypaint library directory:",
         "category": "Files",
         "description": "Directory to search for libmypaint library files if unable to load default libraries",
         "type": "string",
         "default": "",
         "saved": true
+    },
+    "autosave_enabled": {
+        "label": "Autosave a recovery copy:",
+        "category": "Files",
+        "description": "Periodically save a copy of the open image, and offer to restore it if IntraPaint closes without quitting normally. The copy is deleted when you quit, save, or open another image.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "autosave_idle_seconds": {
+        "label": "Autosave after idle seconds:",
+        "category": "Files",
+        "description": "Seconds without changes before the recovery copy is updated.",
+        "type": "int",
+        "default": 5,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 600,
+            "step": 1
+        }
+    },
+    "autosave_max_interval_seconds": {
+        "label": "Autosave at least every N seconds:",
+        "category": "Files",
+        "description": "Longest time between recovery copy updates while you keep editing without a pause. Updates still wait for the current brush stroke or image generation to finish.",
+        "type": "int",
+        "default": 120,
+        "saved": true,
+        "range_options": {
+            "min": 10,
+            "max": 3600,
+            "step": 1
+        }
     }
 }

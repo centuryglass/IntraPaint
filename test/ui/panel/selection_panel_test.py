@@ -1,15 +1,26 @@
 """Tests SelectionPanel's clear context pins button."""
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from PySide6.QtCore import QPoint, QSize
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QPoint, QSize, Qt
+from PySide6.QtGui import QImage, QPainter, QColor
+from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.ui.layout.panel_fit import Orientation
+from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
+from src.ui.panel.tool_control_panels.magic_wand_panel import MagicWandPanel
+from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
+from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
+from src.ui.widget.panel_section import PanelSection
+from src.util.layout import layout_contents
+from src.util.visual.magic_wand_area import FillArea
+from src.util.visual.selection_mode import SelectionMode
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, press_key
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -20,8 +31,7 @@ class SelectionPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
-        cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
+        cache.set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
         self.selection_layer = self.image_stack.selection_layer
@@ -29,14 +39,14 @@ class SelectionPanelTest(IntraPaintTestCase):
         self.button = self.panel._clear_pins_button  # pylint: disable=protected-access
 
     def test_shown_only_while_inpainting(self) -> None:
-        """The button shows in inpainting mode, and hides in other modes or without inpainting support."""
+        """The button shows in inpainting mode, and hides in other modes or without an image generator."""
         cache = Cache()
         self.assertFalse(self.button.isHidden())
         cache.set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
         self.assertTrue(self.button.isHidden())
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self.assertFalse(self.button.isHidden())
-        cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
+        cache.set(Cache.IMAGE_GENERATION_AVAILABLE, False)
         self.assertTrue(self.button.isHidden())
 
     def test_enabled_only_with_pins(self) -> None:
@@ -51,3 +61,176 @@ class SelectionPanelTest(IntraPaintTestCase):
         self.button.click()
         self.assertEqual(self.selection_layer.context_pins, [])
         self.assertFalse(self.button.isEnabled())
+
+    def test_fit_plan_moves_hint_and_wraps_buttons(self) -> None:
+        """A plan without room moves the hint to the overflow content and stacks the Selection buttons, and a plan
+        with room restores both. The base size leaves the hint out, and the same widgets stay throughout."""
+        panel = self.panel
+        hint = panel._hint_label  # pylint: disable=protected-access
+        buttons = panel._actions_layout  # pylint: disable=protected-access
+        base = panel.fit_base_size(Orientation.SIDE)
+        self.assertEqual(panel.overflow_content(), hint.parentWidget())
+        roomy = QSize(600, 600)
+        panel.set_fit_space(Orientation.SIDE, roomy)
+        self.assertNotEqual(panel.overflow_content(), hint.parentWidget())
+        self.assertEqual(buttons.direction(), buttons.Direction.LeftToRight)
+        panel.set_fit_space(Orientation.SIDE, QSize(base.width(), roomy.height()))
+        self.assertEqual(buttons.direction(), buttons.Direction.TopToBottom)
+        self.assertLessEqual(panel.minimumSizeHint().width(), base.width())
+        panel.set_fit_space(Orientation.SIDE, roomy)
+        self.assertEqual(buttons.direction(), buttons.Direction.LeftToRight)
+
+    def _bounds_text(self) -> tuple[str, str]:
+        return (self.panel._bounds_position_label.text(),  # pylint: disable=protected-access
+                self.panel._bounds_size_label.text())  # pylint: disable=protected-access
+
+    def _select_rect(self) -> None:
+        image = QImage(self.selection_layer.size, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        painter.fillRect(10, 20, 40, 30, QColor(0, 0, 0, 255))
+        painter.end()
+        self.selection_layer.set_image(image)
+
+    def test_bounds_lines(self) -> None:
+        """The Selection section shows the selection's position and size, and dashes when nothing is selected."""
+        self.panel.show()
+        self.assertEqual(self._bounds_text(), ('Position: -, -', 'Size: - x -'))
+        self._select_rect()
+        self.assertEqual(self._bounds_text(), ('Position: 10, 20', 'Size: 40 x 30'))
+        section = self.panel._selection_section  # pylint: disable=protected-access
+        self.assertEqual(section._summary, '40 x 30 at 10, 20')  # pylint: disable=protected-access
+        self.selection_layer.select_all()
+        self.assertEqual(self._bounds_text(), ('Position: 0, 0', 'Size: 256 x 256'))
+        self.selection_layer.clear()
+        self.assertEqual(self._bounds_text(), ('Position: -, -', 'Size: - x -'))
+        self.assertEqual(section._summary, 'Nothing selected')  # pylint: disable=protected-access
+
+    def test_hidden_panel_skips_bounds_updates(self) -> None:
+        """A hidden panel leaves its bounds text alone until it is shown."""
+        self.panel.show()
+        self.panel.hide()
+        self._select_rect()
+        self.assertEqual(self._bounds_text(), ('Position: -, -', 'Size: - x -'))
+        self.panel.show()
+        self.assertEqual(self._bounds_text(), ('Position: 10, 20', 'Size: 40 x 30'))
+
+    def test_fit_plan_moves_bounds(self) -> None:
+        """A plan without room moves the bounds to the overflow content, and a roomy plan returns the same widget
+        to the Selection section, below the buttons."""
+        panel = self.panel
+        view = panel._bounds_view  # pylint: disable=protected-access
+        body = panel._selection_section.body  # pylint: disable=protected-access
+        panel.fit_base_size(Orientation.SIDE)
+        self.assertEqual(panel.overflow_content(), view.parentWidget())
+        panel.set_fit_space(Orientation.SIDE, QSize(600, 600))
+        self.assertEqual(body, view.parentWidget())
+        self.assertEqual(body.layout().indexOf(view), body.layout().count() - 1)
+        # Returning from the overflow content doesn't leave the view hidden:
+        panel.show()
+        panel.set_fit_space(Orientation.SIDE, QSize(panel.fit_base_size(Orientation.SIDE).width(), 100))
+        panel.set_fit_space(Orientation.SIDE, QSize(600, 600))
+        self.assertFalse(view.isHidden())
+
+    def test_no_context_controls(self) -> None:
+        """The panel holds no checkbox or label for the inpaint context settings."""
+        cache = Cache()
+        names = {cache.get_label(Cache.INPAINT_FULL_RES), cache.get_label(Cache.INPAINT_FULL_RES_PADDING)}
+        texts = {widget.text() for widget in self.panel.findChildren(QCheckBox) + self.panel.findChildren(QLabel)}
+        self.assertEqual(texts & names, set())
+        self.assertEqual(self.panel.findChildren(QSpinBox), [])
+
+
+class SelectionPanelsTest(IntraPaintTestCase):
+    """Tests what the four selection tools' panels share and where they differ."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
+        self.layer = self.image_stack.selection_layer
+        self.tools = {name: MagicMock(is_active=False) for name in ('brush', 'fill', 'free', 'shape')}
+        self.tools['shape'].get_activation_config_key.return_value = KeyConfig.SHAPE_SELECTION_TOOL_KEY
+        self.panels = {
+            'brush': BrushSelectionPanel(self.layer, self.tools['brush']),
+            'fill': MagicWandPanel(self.layer, self.tools['fill']),
+            'free': FreeSelectionPanel(self.layer, self.tools['free']),
+            'shape': ShapeSelectionPanel(self.layer, self.tools['shape'])
+        }
+
+    def _press(self, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+        with patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
+            press_key(self.panels['free'], key, modifiers)
+
+    def test_strip_packs_sections_and_side_restacks_them(self) -> None:
+        """A strip at its base height needs more than one column, a tall strip stacks every section in one, and a side
+        panel puts them back in the layout in order, shown. Closing a section in a strip plans again."""
+        # pylint: disable=protected-access
+        panel = self.panels['free']
+        base = panel.fit_base_size(Orientation.STRIP)
+        panel.set_fit_space(Orientation.STRIP, QSize(1200, base.height()))
+        self.assertGreater(len(panel._packer.plan), 1)
+        panel.set_fit_space(Orientation.STRIP, QSize(1200, 2000))
+        self.assertEqual([len(column) for column in panel._packer.plan], [3])
+        with patch.object(panel._planner, 'update', wraps=panel._planner.update) as update:
+            panel._sections[0].set_expanded(False)
+            update.assert_called_once()
+        panel._sections[0].set_expanded(True)
+        panel.set_fit_space(Orientation.SIDE, QSize(400, 2000))
+        sections = [item for item in layout_contents(panel._layout) if isinstance(item, PanelSection)]
+        self.assertEqual(sections, panel._sections)
+        self.assertTrue(all(not section.isHidden() for section in sections))
+
+    def test_mode_section_comes_first(self) -> None:
+        """Every panel starts with the Mode section, and ends with the Selection section."""
+        for name, panel in self.panels.items():
+            sections = [section.title for section in layout_contents(panel._layout)  # pylint: disable=protected-access
+                        if isinstance(section, PanelSection)]
+            self.assertTrue(sections[0].startswith('Mode'), name)
+            self.assertEqual(sections[-1], 'Selection', name)
+
+    def test_mode_title_names_active_mode(self) -> None:
+        """The Mode section's title shows the stored mode."""
+        Cache().set(Cache.SELECTION_MODE, SelectionMode.SUBTRACT.value)
+        for panel in self.panels.values():
+            self.assertEqual(panel.findChildren(PanelSection)[0].title, 'Mode: Subtract')
+
+    def test_shift_q_cycles_mode_in_every_tool(self) -> None:
+        """The tool action key steps through Replace, Add, Subtract and Intersect for each panel's active tool, then
+           wraps."""
+        order = [SelectionMode.REPLACE, SelectionMode.ADD, SelectionMode.SUBTRACT, SelectionMode.INTERSECT]
+        for name, tool in self.tools.items():
+            Cache().set(Cache.SELECTION_MODE, SelectionMode.REPLACE.value)
+            tool.is_active = True
+            for expected in order[1:] + order[:1]:
+                self._press(Qt.Key.Key_Q, Qt.KeyboardModifier.ShiftModifier)
+                self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value, name)
+            tool.is_active = False
+
+    def test_sample_merged_has_no_default_key(self) -> None:
+        """Toggling Sample merged is an unbound action by default."""
+        self.assertEqual(KeyConfig().get(KeyConfig.TOGGLE_SAMPLE_MERGED_HOTKEY), '')
+
+    def test_fill_area_persists_and_gates_fields(self) -> None:
+        """The Fill area control stores its choice, and Holes disables the threshold and Sample merged."""
+        panel = self.panels['fill']
+        assert isinstance(panel, MagicWandPanel)
+        self.assertEqual(panel.area_control.value(), FillArea.CONNECTED.value)
+        panel.area_control.set_value(FillArea.HOLES.value)
+        self.assertEqual(Cache().get(Cache.SELECTION_FILL_AREA), FillArea.HOLES.value)
+        self.assertFalse(panel.threshold_field.isEnabled())
+        panel.area_control.set_value(FillArea.BY_COLOR.value)
+        self.assertTrue(panel.threshold_field.isEnabled())
+        Cache().set(Cache.SELECTION_FILL_AREA, FillArea.HOLES.value)
+        self.assertEqual(panel.area_control.value(), FillArea.HOLES.value)
+
+    def test_old_color_select_setting_migrates(self) -> None:
+        """A saved `color_select_mode` of true becomes the By color fill area, unless a fill area is saved."""
+        data = {'color_select_mode': True}
+        Cache()._migrate_legacy_keys(data)  # pylint: disable=protected-access
+        self.assertEqual(data['selection_fill_area'], FillArea.BY_COLOR.value)
+        data = {'color_select_mode': True, 'selection_fill_area': 'Holes'}
+        Cache()._migrate_legacy_keys(data)  # pylint: disable=protected-access
+        self.assertEqual(data['selection_fill_area'], 'Holes')
+        data = {'color_select_mode': False}
+        Cache()._migrate_legacy_keys(data)  # pylint: disable=protected-access
+        self.assertNotIn('selection_fill_area', data)

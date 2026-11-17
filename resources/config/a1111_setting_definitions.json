@@ -1,6 +1,6 @@
 {
   "sd_model_checkpoint": {
-    "label": "Stable Diffusion Model:",
+    "label": "Stable Diffusion model:",
     "category": "Stable Diffusion",
     "subcategory": "Stable Diffusion WebUI image generator",
     "description": "Active image generation model",

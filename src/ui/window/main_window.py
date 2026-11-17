@@ -1,37 +1,62 @@
 """
-Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID-3-XL
-inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
+The primary image editing window: the canvas in the center, with every other panel in a `PanelDock` around it.
+
+- Docks float, tabify and nest freely. Their arrangement is saved with `saveState` (`save_dock_state`) and restored
+  once at startup with `restore_dock_state`. `__init__` lays out the first-run layout, which stays when nothing is
+  saved or a restore fails. `apply_dock_state` applies a saved layout at any time, for named layouts
+  (`src.ui.window.saved_layouts`).
+- Each tab group shows one dock at a time, and Qt's dock tab bars are never drawn (see `src.ui.window.dock_groups`).
+- The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
+  generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
+- Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate. Dragging a
+  button moves its dock (`RailDrag`).
+- Right-clicking a dock's title area or rail button opens its menu (`build_dock_menu`).
+- Dropping local image files on the window emits `files_dropped`. The canvas viewer ignores drags that its scene
+  doesn't accept, so they reach the window.
+- While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
+  back when it closes.
 """
 import logging
+import os
 import sys
-from enum import Enum
+from enum import StrEnum
+from functools import partial
 from typing import Callable, Optional
 
-from enum import StrEnum
-
-from PySide6.QtCore import Qt, QRect, QSize, Signal
-from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, QEvent, Signal, QByteArray, QMimeData
+from PySide6.QtGui import QContextMenuEvent, QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, \
+    QDragEnterEvent, QDropEvent, QAction, QMoveEvent, QScreen, QShowEvent
+from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QMenu, \
+    QWidget
 
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
+from src.controller.image_generation.generation_session import GenerationSession
 from src.ui.generated_image_selector import GeneratedImageSelector
-from src.ui.layout.draggable_divider import DraggableDivider
-from src.ui.layout.draggable_tabs.tab import Tab
-from src.ui.layout.draggable_tabs.tab_box import TabBox
+from src.ui.graphics_items.toast_message import ToastMessageItem
+from src.ui.layout.panel_fit import held_weakly
+from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer_ui.layer_panel import LayerPanel
-from src.ui.panel.tool_panel import ToolPanel
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 
+from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
-from src.ui.window.navigation_window import NavigationWindow
+from src.ui.window.dock_menu import build_dock_menu
+from src.ui.window.dock_placement import DockEdge, move_all_to_edge
+from src.ui.window.dock_rail import DockRails
+from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
+from src.ui.window.default_layouts import select_default_layout_state
+from src.ui.window.floating_title_bar import FloatingTitleBar
+from src.ui.window.rail_drag import RailDrag
+from src.ui.window.panel_dock import PanelDock
+from src.ui.window.window_geometry import capture_geometry
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.visual.display_size import get_screen_size
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH
-from src.util.validation import layout_debug, all_layout_info
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH, PROJECT_DIR
+from src.util.validation import layout_debug
+from src.util.visual.image_format_utils import IMAGE_READ_FORMATS
 
 logger = logging.getLogger(__name__)
 
@@ -44,105 +69,85 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-ACTION_NAME_MOVE_UP = _tr('Move up')
-ACTION_NAME_MOVE_DOWN = _tr('Move down')
-ACTION_NAME_MOVE_LEFT = _tr('Move left')
-ACTION_NAME_MOVE_RIGHT = _tr('Move right')
-ACTION_NAME_MOVE_ALL = _tr('Move all tabs here')
-
+TOOLS_DOCK_TITLE = _tr('Tools')
+GENERATION_DOCK_TITLE = _tr('Image Generation')
+CONTROLNET_DOCK_TITLE = _tr('ControlNet')
+LAYERS_DOCK_TITLE = _tr('Layers')
+COLOR_DOCK_TITLE = _tr('Color')
+NAVIGATION_DOCK_TITLE = _tr('Navigation')
 
 DEFAULT_LOADING_MESSAGE = _tr('Loading...')
+GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
+TOAST_GENERATION_STOPPED_EMPTY = _tr('Generation stopped before any images were ready.')
+TOAST_GENERATION_EMPTY = _tr('Generation finished without any images.')
 
-VERTICAL_STRETCH_SUM = 100
-AUTO_TAB_MOVE_THRESHOLD = 1200
-USE_LOWER_CONTROL_TAB_THRESHOLD = 1600
+CLAMP_DELAY_MS = 50
+
+ICON_PATH_TOOLS_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
+ICON_PATH_GENERATION_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
+ICON_PATH_CONTROLNET_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
+ICON_PATH_LAYERS_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
+ICON_PATH_COLOR_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
+ICON_PATH_NAVIGATION_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
+
+# A saved dock layout carries this version, and `restore_dock_state` rejects any other. Increase it when the docks
+# change in a way an older layout can't describe. Increasing it invalidates every named layout in
+# `src.ui.window.saved_layouts` as well as the auto-saved one.
+DOCK_STATE_VERSION = 2
+
+# First-run dock sizes, across the dock area: width for a side area, height for a strip area.
+DEFAULT_SIDE_DOCK_WIDTH = 340
+DEFAULT_STRIP_DOCK_HEIGHT = 240
+
+# The canvas never shrinks below this. Docks shrink toward their minimum sizes first, and the window's minimum size
+# grows if they can't shrink enough. Opening a dock never closes another one to make room.
+MIN_CANVAS_SIZE = QSize(320, 240)
+
+# First-run share of a side area's height (or a strip area's width) that the upper dock group takes:
+UPPER_GROUP_SHARE = 0.6
 
 
-class TabBoxID(StrEnum):
-    """Identifies all available tab box containers."""
-    TOP_TAB_BOX_ID = 'TOP'
-    BOTTOM_TAB_BOX_ID = 'BOTTOM'
-    LEFT_TAB_BOX_ID = 'LEFT'
-    RIGHT_TAB_BOX_ID = 'RIGHT'
-    LOWER_TAB_BOX_ID = 'LOWER'
-
-
-class TabMoveActions(Enum):
-    """Identifies the menu actions used to move tabs."""
-    MOVE_LEFT = 0
-    MOVE_RIGHT = 1
-    MOVE_UP_TO_TOP = 2
-    MOVE_UP_TO_LOWER = 3
-    MOVE_DOWN_TO_LOWER = 4
-    MOVE_DOWN_TO_BOTTOM = 5
-
-    def display_name(self) -> str:
-        """Returns the appropriate action display name."""
-        match self:
-            case TabMoveActions.MOVE_LEFT:
-                return ACTION_NAME_MOVE_LEFT
-            case TabMoveActions.MOVE_RIGHT:
-                return ACTION_NAME_MOVE_RIGHT
-            case TabMoveActions.MOVE_UP_TO_LOWER | TabMoveActions.MOVE_UP_TO_TOP:
-                return ACTION_NAME_MOVE_UP
-            case _:
-                return ACTION_NAME_MOVE_DOWN
-
-    def is_valid_for_tab_box(self, box_id: TabBoxID) -> bool:
-        """Returns whether the action type is valid for a tab within a particular tab box"""
-        match self:
-            case TabMoveActions.MOVE_LEFT:
-                return box_id != TabBoxID.LEFT_TAB_BOX_ID
-            case TabMoveActions.MOVE_RIGHT:
-                return box_id != TabBoxID.RIGHT_TAB_BOX_ID
-            case TabMoveActions.MOVE_UP_TO_LOWER:
-                return box_id == TabBoxID.BOTTOM_TAB_BOX_ID
-            case TabMoveActions.MOVE_UP_TO_TOP:
-                return box_id not in (TabBoxID.BOTTOM_TAB_BOX_ID, TabBoxID.TOP_TAB_BOX_ID)
-            case TabMoveActions.MOVE_DOWN_TO_BOTTOM:
-                return box_id == TabBoxID.LOWER_TAB_BOX_ID
-            case _:
-                assert self == TabMoveActions.MOVE_DOWN_TO_LOWER
-                return box_id not in (TabBoxID.BOTTOM_TAB_BOX_ID, TabBoxID.LOWER_TAB_BOX_ID)
-
-    def destination_tab_box_id(self) -> TabBoxID:
-        """Returns the tab box the action moves tabs into."""
-        match self:
-            case TabMoveActions.MOVE_LEFT:
-                return TabBoxID.LEFT_TAB_BOX_ID
-            case TabMoveActions.MOVE_RIGHT:
-                return TabBoxID.RIGHT_TAB_BOX_ID
-            case TabMoveActions.MOVE_UP_TO_LOWER:
-                return TabBoxID.LOWER_TAB_BOX_ID
-            case TabMoveActions.MOVE_UP_TO_TOP:
-                return TabBoxID.TOP_TAB_BOX_ID
-            case TabMoveActions.MOVE_DOWN_TO_BOTTOM:
-                return TabBoxID.BOTTOM_TAB_BOX_ID
-            case _:
-                assert self == TabMoveActions.MOVE_DOWN_TO_LOWER
-                return TabBoxID.LOWER_TAB_BOX_ID
+class DockID(StrEnum):
+    """The main window's dock object names. `saveState` stores placement by name, so renaming one drops it."""
+    TOOLS = 'tools_dock'
+    GENERATION = 'generation_dock'
+    CONTROLNET = 'controlnet_dock'
+    LAYERS = 'layers_dock'
+    COLOR = 'color_dock'
+    NAVIGATION = 'navigation_dock'
 
 
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
     generate_signal = Signal()
+    files_dropped = Signal(list)  # Local file paths with a readable image extension.
     cancel_generation = Signal()
+    previous_options_available = Signal(bool)
+    full_screen_changed = Signal(bool)  # Emitted when the window enters or leaves full screen, however it happened.
+    """Emitted when `can_restore_previous_options` changes."""
 
     def __init__(self, image_stack: ImageStack):
-        """Initializes the main application window and sets up the default UI layout and menu options.
+        """Builds the window around the canvas, with empty docks in the first-run layout.
 
         image_stack : ImageStack
             Image layers being edited.
-        controller : BaseController
-            Object managing application behavior.
         """
         super().__init__()
+        self._was_full_screen = False
         # Called on every close request; returning False keeps the window open. None closes without asking.
         self.confirm_close: Optional[Callable[[], bool]] = None
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setAcceptDrops(True)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
+        # One coalesced re-clamp for every move, resize and display change:
+        self._clamp_timer = QTimer(self)
+        self._clamp_timer.setSingleShot(True)
+        self._clamp_timer.setInterval(CLAMP_DELAY_MS)
+        self._clamp_timer.timeout.connect(self._clamp_to_screen)
+        self._watched_displays: set[QObject] = set()
+        self._display_signals_connected = False
 
         if '--dev' in sys.argv:
             def _dbg_layout():
@@ -152,17 +157,30 @@ class MainWindow(QMainWindow):
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack
+        self._generation_session = GenerationSession(image_stack)
+        self._generation_session.generation_started.connect(self.show_generated_options)
+        self._generation_session.image_ready.connect(self.load_sample_preview)
+        self._generation_session.progress_changed.connect(self.set_loading_message)
+        self._generation_session.generation_finished.connect(self._on_generation_finished)
+        self._generation_session.generation_failed.connect(self._on_generation_failed)
+        self._generation_session.generation_ended.connect(self._on_generation_ended)
+        self._generation_session.stop_requested.connect(self.cancel_generation)
         self._image_selector: Optional[GeneratedImageSelector] = None
+        self._toast_message: Optional[ToastMessageItem] = None
+        self._previous_options_available = False
 
-        # Create components, build layout:
-        self._main_widget = QWidget(self)
-        self._layout = QVBoxLayout(self._main_widget)
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.setSpacing(2)
+        # The central widget shows the canvas, or the generated image selector in its place:
+        self._image_panel = ImagePanel(image_stack, include_rulers=True, include_navigation_button=True)
+        self._image_panel.setContentsMargins(1, 1, 1, 1)
+        self._main_widget = self._image_panel
         self._central_widget = QStackedWidget(self)
+        self._central_widget.setMinimumSize(MIN_CANVAS_SIZE)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
         self._central_widget.setCurrentWidget(self._main_widget)
+        # The dock layout from before the image selector hid the docks:
+        self._dock_state_before_selector: Optional[QByteArray] = None
+        self._docks_open_before_selector: list[PanelDock] = []
 
         # Loading indicator:
         self._is_loading = False
@@ -182,220 +200,395 @@ class MainWindow(QMainWindow):
                 self.set_is_loading(app_state == APP_STATE_LOADING)
             AppStateTracker.signal().connect(_show_spinner_when_busy)
 
-        # Main page contents:
-        self._last_open_box = TabBoxID.RIGHT_TAB_BOX_ID
-        self._top_tab_box = TabBox(Qt.Orientation.Horizontal, True)
-        self._layout.addWidget(self._top_tab_box, stretch=1)
-        self._top_divider = DraggableDivider()
-        self._layout.addWidget(self._top_divider)
+        # Docks:
+        self.setDockNestingEnabled(True)
+        hide_dock_tab_bars(self)
+        # Top and bottom areas span the full window width:
+        self.setCorner(Qt.Corner.TopLeftCorner, Qt.DockWidgetArea.TopDockWidgetArea)
+        self.setCorner(Qt.Corner.TopRightCorner, Qt.DockWidgetArea.TopDockWidgetArea)
+        self.setCorner(Qt.Corner.BottomLeftCorner, Qt.DockWidgetArea.BottomDockWidgetArea)
+        self.setCorner(Qt.Corner.BottomRightCorner, Qt.DockWidgetArea.BottomDockWidgetArea)
+        self._tools_dock = PanelDock(TOOLS_DOCK_TITLE, DockID.TOOLS, self, QIcon(ICON_PATH_TOOLS_DOCK),
+                                     KeyConfig.SELECT_TOOL_TAB)
+        self._generation_dock = PanelDock(GENERATION_DOCK_TITLE, DockID.GENERATION, self,
+                                          QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB)
+        self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self,
+                                          QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB)
+        self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, QIcon(ICON_PATH_LAYERS_DOCK),
+                                       KeyConfig.SHOW_LAYER_MENU_SHORTCUT)
+        self._color_dock = PanelDock(COLOR_DOCK_TITLE, DockID.COLOR, self, QIcon(ICON_PATH_COLOR_DOCK))
+        self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
+                                          QIcon(ICON_PATH_NAVIGATION_DOCK), KeyConfig.NAVIGATION_WINDOW_SHORTCUT)
+        self._rails = DockRails(self)
+        self._rail_drag = RailDrag(self, self._rails, self._rails.sync)
+        for dock in self.docks:
+            button = self._rails.add_dock(dock)
+            self._rail_drag.watch(button)
+            # Looked up on each call, as the rail button's menu below is:
+            show_menu = lambda menu_dock, pos: self._show_dock_menu(menu_dock, pos)  # pylint: disable=unnecessary-lambda,unnecessary-lambda-assignment
+            dock.set_floating_title_bar(FloatingTitleBar(dock, show_menu))
+            # The rail blocks context menus, so each button opens the dock menu itself:
+            button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            button.customContextMenuRequested.connect(
+                lambda pos, rail_button=button: self._show_dock_menu(rail_button.dock, rail_button.mapToGlobal(pos)))
+            notch = dock.notch
+            notch.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            notch.customContextMenuRequested.connect(
+                lambda pos, notch_dock=dock, notch_widget=notch: self._show_dock_menu(
+                    notch_dock, notch_widget.mapToGlobal(pos)))
+        self._rails.set_tools_dock(self._tools_dock)
+        self._rails.set_generation_dock(self._generation_dock)
+        self._rails.generate_button.clicked.connect(self.generate_signal)
+        self.reset_dock_layout()
 
-        self._image_panel = ImagePanel(image_stack, True, include_rulers=True)
-        self._image_panel.setContentsMargins(1, 1, 1, 1)
-        self._layout.addWidget(self._image_panel, stretch=VERTICAL_STRETCH_SUM)
-
-        self._lower_divider = DraggableDivider()
-        self._layout.addWidget(self._lower_divider)
-        self._lower_tab_box = TabBox(Qt.Orientation.Horizontal, False)
-        self._layout.addWidget(self._lower_tab_box, stretch=1)
-
-        self._bottom_divider = DraggableDivider()
-        self._layout.addWidget(self._bottom_divider)
-        self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
-        self._layout.addWidget(self._bottom_tab_box, stretch=1)
-
-        def _show_or_hide_top_divider(_=None) -> None:
-            self._top_divider.setVisible(self._top_tab_box.count > 0 and self._top_tab_box.is_open)
-        for signal in (self._top_tab_box.box_toggled, self._top_tab_box.tab_added,
-                       self._top_tab_box.tab_removed):
-            signal.connect(_show_or_hide_top_divider)
-        _show_or_hide_top_divider()
-
-        def _show_or_hide_lower_divider(_=None) -> None:
-            self._lower_divider.setVisible(self._lower_tab_box.count > 0 and self._lower_tab_box.is_open)
-        for signal in (self._lower_tab_box.box_toggled, self._lower_tab_box.tab_added,
-                       self._lower_tab_box.tab_removed):
-            signal.connect(_show_or_hide_lower_divider)
-        _show_or_hide_lower_divider()
-
-        def _show_or_hide_bottom_divider(_=None) -> None:
-            self._bottom_divider.setVisible(self._bottom_tab_box.count > 0 and self._bottom_tab_box.is_open)
-        for signal in (self._bottom_tab_box.box_toggled, self._bottom_tab_box.tab_added,
-                       self._bottom_tab_box.tab_removed):
-            signal.connect(_show_or_hide_bottom_divider)
-        _show_or_hide_bottom_divider()
-
-        # Optional extra windows:
-        self._layer_panel: Optional[LayerPanel] = None
-        self._navigation_window = NavigationWindow(image_stack, self._image_panel.image_viewer)
-
-        # Image/Mask editing layout:
-
-        self._tab_actions: dict[Tab, dict[TabMoveActions, QAction]] = {}
-        self._tab_bar_actions: list[QAction] = []
-        for tab_box_id in TabBoxID:
-            assert isinstance(tab_box_id, TabBoxID)
-            tab_box = self._get_tab_box(tab_box_id)
-            tab_box.box_will_open.connect(self._prepare_for_tab_box_open)
-
-            def _on_open(is_open: bool, box_id=tab_box_id) -> None:
-                if is_open:
-                    self._tab_open_slot(box_id)
-            tab_box.box_toggled.connect(_on_open)
-
-            def _tab_added(tab, box_id=tab_box_id):
-                # Remember to update this after adding any new tabs
-                if isinstance(tab.content_widget, ToolPanel):
-                    Cache().set(Cache.TOOL_TAB_BAR, box_id)
-                elif isinstance(tab.content_widget, GeneratorPanel):
-                    Cache().set(Cache.GENERATION_TAB_BAR, box_id)
-                else:
-                    Cache().set(Cache.CONTROLNET_TAB_BAR, box_id)
-                self._update_tab_actions(tab, box_id)
-            tab_box.tab_added.connect(_tab_added)
-
-            def _move_all(_, box=tab_box, box_id=tab_box_id) -> None:
-                all_tabs: list[Tab] = []
-                for other_box_id in TabBoxID:
-                    assert isinstance(other_box_id, TabBoxID)
-                    if other_box_id == box_id:
-                        continue
-                    other_tab_box = self._get_tab_box(other_box_id)
-                    all_tabs += other_tab_box.tabs
-                for tab in all_tabs:
-                    box.add_widget(tab)
-            move_all_action = QAction()
-            move_all_action.setText(ACTION_NAME_MOVE_ALL)
-            move_all_action.triggered.connect(_move_all)
-            tab_box.add_tab_bar_action(move_all_action)
-            if '--dev' in sys.argv:  # Developer mode only: add layout debug action
-                def _tab_box_debug(_, box=tab_box, box_id=tab_box_id):
-                    print(f'\n{box_id} DEBUG:')
-                    print('\tBOX:')
-                    box_info = all_layout_info(box)
-                    for k, v in box_info.items():
-                        print(f'\t\t{k}: {v}')
-                    print('\tBAR:')
-                    # noinspection PyProtectedMember
-                    bar_info = all_layout_info(box._tab_bar)
-                    for k, v in bar_info.items():
-                        print(f'\t\t{k}: {v}')
-                debug_action = QAction()
-                debug_action.setText('LAYOUT DEBUG')
-                debug_action.triggered.connect(_tab_box_debug)
-                tab_box.add_tab_bar_action(debug_action)
-                self._tab_bar_actions.append(debug_action)
-            self._tab_bar_actions.append(move_all_action)
+        self._image_panel.navigation_window_requested.connect(self._show_navigation_dock)
 
         AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
 
-    def _init_tab_actions(self, tab: Tab) -> None:
-        if tab not in self._tab_actions:
-            self._tab_actions[tab] = {}
-        for action_type in TabMoveActions:
-            if action_type in self._tab_actions[tab]:
-                continue
-            new_tab_box = self._get_tab_box(action_type.destination_tab_box_id())
-            action_text = action_type.display_name()
-
-            def _move_to_panel(_, moving_tab=tab, destination_box=new_tab_box) -> None:
-                destination_box.add_widget(moving_tab)
-            action = QAction(action_text)
-            action.triggered.connect(_move_to_panel)
-            self._tab_actions[tab][action_type] = action
-
-        if '--dev' in sys.argv:  # Developer mode only: add layout debug action
-            def _tab_debug(_, dbg_tab=tab):
-                print(f'\nTAB "{dbg_tab.text()}" DEBUG:')
-                print('\tMAIN:')
-                tab_info = all_layout_info(dbg_tab)
-                for k, v in tab_info.items():
-                    print(f'\t\t{k}: {v}')
-                for i, widget in enumerate(dbg_tab.tab_bar_widgets):
-                    print(f'\tWIDGET {i}:')
-                    widget_info = all_layout_info(widget)
-                    for k, v in widget_info.items():
-                        print(f'\t\t{k}: {v}')
-            tab_action = QAction('TAB DEBUG')
-            tab_action.triggered.connect(_tab_debug)
-            tab.addAction(tab_action)
-            # noinspection PyTypeChecker
-            self._tab_actions[tab]['DEBUG'] = tab_action  # type: ignore
-
-    def _update_tab_actions(self, tab: Tab, tab_box_key: TabBoxID) -> None:
-        self._init_tab_actions(tab)
-        for action_type in TabMoveActions:
-            action = self._tab_actions[tab][action_type]
-            action_included = action in tab.actions()
-            should_include = action_type.is_valid_for_tab_box(tab_box_key)
-            if action_included and not should_include:
-                tab.removeAction(action)
-            elif not action_included and should_include:
-                tab.addAction(action)
-
-    def add_tab(self, tab: Tab, tab_box_id: Optional[TabBoxID] = None) -> None:
-        """Adds a new tab to one of the window's tab boxes."""
-        if tab_box_id is None:
-            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
-                tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID
-            elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
-                tab_box_id = TabBoxID.LOWER_TAB_BOX_ID
-            else:
-                tab_box_id = TabBoxID.RIGHT_TAB_BOX_ID
-        tab_box = self._get_tab_box(tab_box_id)
-        self._update_tab_actions(tab, tab_box_id)
-        tab_box.add_widget(tab)
-
-    def remove_tab(self, tab: Tab) -> None:
-        """Removes a tab if it is found in any of the window's tab boxes."""
-        for tab_box in (self._top_tab_box, self._lower_tab_box, self._bottom_tab_box,
-                        self._image_panel.left_tab_box, self._image_panel.right_tab_box):
-            assert tab_box is not None
-            if tab_box.contains_widget(tab):
-                tab_box.remove_widget(tab)
-                return
+    @property
+    def upper_docks(self) -> list[PanelDock]:
+        """Returns the docks tabified in the upper group of the first-run layout, in tab order."""
+        return [self._tools_dock, self._generation_dock, self._controlnet_dock]
 
     @property
-    def navigation_window(self) -> NavigationWindow:
-        """Access the navigation window."""
-        return self._navigation_window
+    def lower_docks(self) -> list[PanelDock]:
+        """Returns the docks tabified in the lower group of the first-run layout, in tab order."""
+        return [self._layers_dock, self._color_dock, self._navigation_dock]
 
-    def show_navigation_window(self) -> None:
-        """Show or raise the navigation window."""
-        if not self._navigation_window.isVisible():
-            Cache().load_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self._navigation_window)
-            self._navigation_window.show()
-            self._navigation_window.raise_()
+    @property
+    def docks(self) -> list[PanelDock]:
+        """Returns every dock, upper group first."""
+        return [*self.upper_docks, *self.lower_docks]
+
+    @property
+    def layers_dock(self) -> PanelDock:
+        """Returns the dock holding the layer panel."""
+        return self._layers_dock
+
+    @property
+    def color_dock(self) -> PanelDock:
+        """Returns the dock holding the color picker."""
+        return self._color_dock
+
+    @property
+    def navigation_dock(self) -> PanelDock:
+        """Returns the dock holding the navigation panel."""
+        return self._navigation_dock
+
+    @property
+    def tools_dock(self) -> PanelDock:
+        """Returns the dock holding the tool panel."""
+        return self._tools_dock
+
+    @property
+    def generation_dock(self) -> PanelDock:
+        """Returns the dock holding the active generator's control panel."""
+        return self._generation_dock
+
+    @property
+    def controlnet_dock(self) -> PanelDock:
+        """Returns the dock holding the ControlNet panel, empty unless the active generator supports ControlNet."""
+        return self._controlnet_dock
+
+    def set_tool_controller(self, tool_controller: ToolController) -> None:
+        """Shows the controller's recent tools in the rail of the Tools dock."""
+        self._rails.set_tool_controller(tool_controller)
+
+    @property
+    def rail_drag(self) -> RailDrag:
+        """Returns the handler for rail button drags."""
+        return self._rail_drag
+
+    @property
+    def rails(self) -> DockRails:
+        """Returns the icon rails along the window edges."""
+        return self._rails
+
+    def _show_navigation_dock(self) -> None:
+        """Opens the Navigation dock in front of its group."""
+        self._navigation_dock.set_open(True)
+
+    def dock_toggle_actions(self) -> list[QAction]:
+        """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
+        return [dock.toggleViewAction() for dock in self.docks]
+
+    def move_all_docks_to_edge(self, edge: DockEdge) -> None:
+        """Moves every dock that has content into one tab group along a window edge."""
+        move_all_to_edge(self, self.docks, edge)
+        self._rails.sync()
+
+    def dock_menu(self, dock: PanelDock) -> QMenu:
+        """Builds the context menu for a dock (see `build_dock_menu`).
+
+        Its moves don't all emit `dockLocationChanged`, so the rails resync after any of its actions.
+        """
+        menu = build_dock_menu(self, dock, self.docks)
+        for submenu in [menu, *menu.findChildren(QMenu)]:
+            for action in submenu.actions():
+                if action.menu() is None:
+                    action.triggered.connect(lambda _checked=False: self._rails.sync())
+        return menu
+
+    def dock_at(self, widget: Optional[QWidget], global_pos: QPoint) -> Optional[PanelDock]:
+        """Returns the dock whose title area is at a screen position, given the widget there."""
+        while widget is not None and widget is not self:
+            if isinstance(widget, PanelDock):
+                content = widget.content
+                if content is not None and widget.mapFromGlobal(global_pos).y() >= content.geometry().top():
+                    return None
+                return widget
+            widget = widget.parentWidget()
+        return None
+
+    def _show_dock_menu(self, dock: PanelDock, global_pos: QPoint) -> None:
+        """Shows a dock's menu at a screen position, then deletes it."""
+        menu = self.dock_menu(dock)
+        menu.exec(global_pos)
+        menu.deleteLater()
+
+    def contextMenuEvent(self, event: Optional[QContextMenuEvent]) -> None:  # pylint: disable=invalid-name
+        """Shows the dock menu over a dock's title area, and Qt's own menu elsewhere."""
+        if event is None:
+            return
+        dock = self.dock_at(QApplication.widgetAt(event.globalPos()), event.globalPos())
+        if dock is None:
+            super().contextMenuEvent(event)
+            return
+        self._show_dock_menu(dock, event.globalPos())
+
+    def reset_dock_layout(self) -> None:
+        """Puts every dock back in the default layout for the window's current size.
+
+        Picks one of the bundled layouts in `src.ui.window.default_layouts` by width and height, using the window's
+        own size once it has one (`isVisible`), or the screen it will open on before its first show. Falls back to
+        `_reset_dock_layout_procedural` if the bundled layout can't be restored, which `DOCK_STATE_VERSION` changing
+        can cause.
+        """
+        self.set_image_selector_visible(False)
+        size = self.size() if self.isVisible() else get_screen_size(self)
+        state = select_default_layout_state(size.width(), size.height())
+        if self._restore_layout(QByteArray.fromBase64(state.encode())):
+            self._rails.sync()
+            return
+        logger.warning('Could not apply the bundled default layout, using the procedural fallback layout')
+        self._reset_dock_layout_procedural()
+
+    def _reset_dock_layout_procedural(self) -> None:
+        """Builds a first-run layout from scratch, used if a bundled default layout fails to restore.
+
+        The upper docks (Tools, Image generation, ControlNet) are tabified in the right area, or in the bottom area
+        on a screen taller than wide, with Tools open. The lower docks (Layers, Color, Navigation) are tabified in a
+        second group under it, or beside it in the bottom area, with Layers open. The other docks are closed. Any dock
+        can be dragged into either group.
+        """
+        self.set_image_selector_visible(False)
+        screen_size = get_screen_size(self)
+        portrait = screen_size.height() > screen_size.width()
+        area = Qt.DockWidgetArea.BottomDockWidgetArea if portrait else Qt.DockWidgetArea.RightDockWidgetArea
+        group_split = Qt.Orientation.Horizontal if portrait else Qt.Orientation.Vertical
+        first_dock = self.upper_docks[0]
+        first_lower_dock = self.lower_docks[0]
+        # The upper group is placed first, then the lower group after it in the split direction. Without that
+        # direction, or when splitting after tabifying, Qt merges the groups into one.
+        with PanelDock.placing_docks():
+            for dock in self.docks:
+                dock.hide()
+            for docks in (self.upper_docks, self.lower_docks):
+                for dock in docks:
+                    dock.setFloating(False)
+                    self.addDockWidget(area, dock, group_split)
+                for dock in docks[1:]:
+                    self.tabifyDockWidget(docks[0], dock)
+        group_docks = [first_dock, first_lower_dock]
+        group_sizes = [UPPER_GROUP_SHARE, 1 - UPPER_GROUP_SHARE]
+        if portrait:
+            self.resizeDocks([first_dock], [DEFAULT_STRIP_DOCK_HEIGHT], Qt.Orientation.Vertical)
+            self.resizeDocks(group_docks, [round(size * 1000) for size in group_sizes], Qt.Orientation.Horizontal)
+        else:
+            self.resizeDocks([first_dock], [DEFAULT_SIDE_DOCK_WIDTH], Qt.Orientation.Horizontal)
+            self.resizeDocks(group_docks, [round(size * 1000) for size in group_sizes], Qt.Orientation.Vertical)
+        for dock in self.docks:
+            dock.set_open(dock in group_docks)
+        self._rails.sync()
+
+    def save_dock_state(self) -> str:
+        """Returns the dock layout as text for `restore_dock_state`, as it was before the image selector hid it."""
+        state = self._dock_state_before_selector if self._dock_state_before_selector is not None \
+            else self._save_state_with_waiting_docks()
+        return state.toBase64().data().decode()
+
+    def restore_dock_state(self, saved_state: str) -> bool:
+        """Restores a layout from `save_dock_state` at startup, returning whether it did.
+
+        Call it once, after restoring the window geometry so docks are fitted to the restored window size. Empty,
+        invalid or wrong-version text leaves the first-run layout from `__init__` in place. See `apply_dock_state` for
+        later changes.
+        """
+        if saved_state == '':
+            return False
+        if not self.apply_dock_state(saved_state):
+            logger.warning('Could not restore the saved panel layout, using the default layout')
+            return False
+        return True
+
+    def apply_dock_state(self, saved_state: str) -> bool:
+        """Applies a layout from `save_dock_state`, returning whether it did.
+
+        Qt keeps docks inside the window and moves floating docks onto a current display. The window's geometry is
+        unchanged. Empty, invalid or wrong-version text leaves the live layout unchanged.
+        """
+        if saved_state == '':
+            return False
+        # Closing the selector puts the docks back, so a rejected state leaves the layout from before the selector:
+        self.set_image_selector_visible(False)
+        if not self._restore_layout(QByteArray.fromBase64(saved_state.encode())):
+            return False
+        self._rails.sync()
+        return True
+
+    def _restore_layout(self, state: QByteArray) -> bool:
+        """Restores a saved dock layout, hides docks without content, and closes each tab group's background docks.
+        Returns whether the layout was restored."""
+        with PanelDock.placing_docks():
+            if not self.restoreState(state, DOCK_STATE_VERSION):
+                return False
+        for dock in self.docks:
+            dock.sync_availability()
+        close_background_docks(self, self.docks, state.data())
+        return True
+
+    def _save_state_with_waiting_docks(self) -> QByteArray:
+        """Saves the dock layout with each empty dock that would open once filled shown, so it reopens after a restart
+        even if its generator wasn't connected at exit."""
+        waiting = [dock for dock in self.docks if not dock.is_available and dock.open_when_available]
+        for dock in waiting:
+            dock.show()
+        state = self.saveState(DOCK_STATE_VERSION)
+        for dock in waiting:
+            dock.hide()
+        return state
+
+    @property
+    def generation_session(self) -> GenerationSession:
+        """The session that owns the generated image batches and runs generation."""
+        return self._generation_session
+
+    def _on_generation_finished(self) -> None:
+        self.set_is_loading(False)
+
+    def _on_generation_failed(self, err: BaseException) -> None:
+        """Shows the error. `_on_generation_ended` closes the selection screen if no option arrived."""
+        self.set_is_loading(False)
+        show_error_dialog(self, GENERATE_ERROR_TITLE_UNEXPECTED, err)
+
+    def _on_generation_ended(self) -> None:
+        """Lets the selection screen drop the placeholders no image arrived for, and closes it if none arrived.
+
+        A failed run already reported its error. Any other run that produced nothing says so on the canvas.
+        """
+        if self._image_selector is None or not self.is_image_selector_visible():
+            return
+        if self._image_selector.finish_generation():
+            return
+        self.set_image_selector_visible(False)
+        if not self._generation_session.failed:
+            message = TOAST_GENERATION_STOPPED_EMPTY if self._generation_session.stopped else TOAST_GENERATION_EMPTY
+            self._toast_message = ToastMessageItem(message, self._image_panel.image_viewer)
 
     def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""
         return hasattr(self, '_image_selector') and self._central_widget.currentWidget() == self._image_selector
 
+    def _ensure_image_selector(self) -> GeneratedImageSelector:
+        """Returns the generated image selection screen, creating it on first use."""
+        if self._image_selector is None:
+            self._image_selector = GeneratedImageSelector(self._image_stack,
+                                                          self._generation_session,
+                                                          held_weakly(partial(self.set_image_selector_visible, False)))
+            self._image_selector.previous_options_available.connect(self._report_previous_options_available)
+        return self._image_selector
+
     def set_image_selector_visible(self, visible: bool):
-        """Shows or hides the generated image selection screen."""
+        """Shows or hides the generated image selection screen.
+
+        Showing it displays whichever batch the selector holds. To pick the batch, call `show_generated_options` or
+        `restore_previous_image_selection_options` instead.
+        """
         is_visible = self.is_image_selector_visible()
         if visible == is_visible:
             return
         if visible:
-            if self._image_selector is None:
-                self._image_selector = GeneratedImageSelector(self._image_stack,
-                                                              lambda: self.set_image_selector_visible(False))
-                self._image_selector.cancel_generation.connect(self.cancel_generation)
-            else:
-                self._image_selector.reset()
-            self._central_widget.addWidget(self._image_selector)
-            self._central_widget.setCurrentWidget(self._image_selector)
-            self.installEventFilter(self._image_selector)
+            selector = self._ensure_image_selector()
+            AppStateTracker.set_app_state(APP_STATE_SELECTION)
+            self._dock_state_before_selector = self._save_state_with_waiting_docks()
+            self._docks_open_before_selector = [dock for dock in self.docks if not dock.isHidden()]
+            for dock in self.docks:
+                dock.hide()
+            self._rails.set_suspended(True)
+            self._central_widget.addWidget(selector)
+            self._central_widget.setCurrentWidget(selector)
+            self.installEventFilter(selector)
         else:
+            assert self._image_selector is not None
+            # Stores the batch for re-opening when the selector didn't close itself, as when a generation fails:
+            self._image_selector.archive_current_options()
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             self.removeEventFilter(self._image_selector)
             self._central_widget.setCurrentWidget(self._main_widget)
             self._central_widget.removeWidget(self._image_selector)
+            self._rails.set_suspended(False)
+            # Hidden docks keep their place, so showing them again brings the layout back without rebuilding it:
+            for dock in self._docks_open_before_selector:
+                if dock.is_available:
+                    dock.show()
+            # Qt forgets split sizes while every dock in an area is hidden, so the saved sizes are put back:
+            if self._dock_state_before_selector is not None:
+                self._restore_layout(self._dock_state_before_selector)
+            self._dock_state_before_selector = None
+            self._docks_open_before_selector = []
+        self._report_previous_options_available()
+
+    def show_generated_options(self, paste_mask: Optional[QImage] = None) -> None:
+        """Shows the selection screen for a generation that is starting, with placeholders for the results.
+
+        Inpainted results are clipped by paste_mask when applied, or by the selection if it is None.
+        """
+        self._ensure_image_selector().start_new_options(paste_mask)
+        self.set_image_selector_visible(True)
+
+    def can_restore_previous_options(self) -> bool:
+        """Returns whether the selection screen is hidden and has a stored batch it can show again."""
+        if self._image_selector is None:
+            return False
+        return not self.is_image_selector_visible() and self._image_selector.can_restore_previous()
+
+    def restore_previous_image_selection_options(self) -> None:
+        """Re-opens the selection screen showing the last batch of generated options."""
+        # Batches are only stored in the selector, so it exists if one is stored:
+        assert self._image_selector is not None
+        self._image_selector.restore_previous_options()
+        self.set_image_selector_visible(True)
+
+    def _report_previous_options_available(self, _available: Optional[bool] = None) -> None:
+        """Emits `previous_options_available` when `can_restore_previous_options` changes.
+
+        `_available` is the selector's own value, which ignores whether the selection screen is showing.
+        """
+        available = self.can_restore_previous_options()
+        if available != self._previous_options_available:
+            self._previous_options_available = available
+            self.previous_options_available.emit(available)
 
     def load_sample_preview(self, image: QImage, idx: int) -> None:
-        """Adds an image to the generated image selection screen."""
+        """Adds an image to the generated image selection screen, or drops it if the screen is hidden.
+
+        Closing the screen removes the batch's placeholders, so a result arriving after that has no slot to fill.
+        """
         if self._image_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
+        elif not self.is_image_selector_visible():
+            logger.info(f'Dropped sample {idx}: the selection screen closed before it arrived')
         else:
             self._image_selector.add_image_option(image, idx)
 
@@ -403,8 +596,11 @@ class MainWindow(QMainWindow):
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
         if is_loading:
             AppStateTracker.set_app_state(APP_STATE_LOADING)
-            self._loading_widget.show()
             self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
+            # The selection screen shows its own loading state in each unfilled option:
+            if TIMELAPSE_MODE_FLAG in sys.argv or not self.is_image_selector_visible():
+                self._loading_widget.show()
+                self._loading_widget.raise_()
         else:
             if AppStateTracker.app_state() == APP_STATE_LOADING:
                 if self.is_image_selector_visible():
@@ -421,122 +617,105 @@ class MainWindow(QMainWindow):
         self.update()
 
     def set_loading_message(self, message: str) -> None:
-        """Sets the loading spinner message text."""
+        """Sets the loading spinner message text, or the selection screen's progress text while it shows."""
+        if self._image_selector is not None and self.is_image_selector_visible():
+            self._image_selector.set_progress_text(message)
         if self._loading_widget.isVisible():
             self._loading_widget.message = message
 
-    def _prepare_for_tab_box_open(self, opening_tab_box: TabBox) -> None:
-        """When tabs are arranged across multiple panels, opening a new tab will often make the window extend
-           beyond the window bounds. This is obnoxious, so make sure to close other tabs before opening a new one
-           if this would happen."""
-        assert not opening_tab_box.is_open  # It shouldn't be open yet, otherwise this whole function is irrelevant
-        opening_box_id = None
-        tab_boxes: dict[TabBoxID, TabBox] = {}
-        for box_id_str in TabBoxID:
-            tab_box_id = TabBoxID(box_id_str)
-            tab_box = self._get_tab_box(tab_box_id)
-            if tab_box == opening_tab_box:
-                opening_box_id = tab_box_id
-            tab_boxes[tab_box_id] = tab_box
-        assert opening_box_id is not None
-        horizontal_tab_box_ids = [TabBoxID.TOP_TAB_BOX_ID, TabBoxID.BOTTOM_TAB_BOX_ID, TabBoxID.LOWER_TAB_BOX_ID]
-        vertical_tab_box_ids = [TabBoxID.LEFT_TAB_BOX_ID, TabBoxID.RIGHT_TAB_BOX_ID]
+    def _clamp_to_screen(self) -> None:
+        """Shrinks the window, frame included, to the available size of the display it is on.
 
-        parallel_tabs = list(horizontal_tab_box_ids if opening_box_id in horizontal_tab_box_ids
-                             else vertical_tab_box_ids)
-        parallel_tabs.remove(opening_box_id)
-        perpendicular_tabs = horizontal_tab_box_ids if opening_box_id in vertical_tab_box_ids else vertical_tab_box_ids
-        to_close: set[TabBox] = set()
-        max_size = self.size()
-        min_opening_box_size = opening_tab_box.minimum_active_size
-
-        if opening_box_id in horizontal_tab_box_ids:
-            perpendicular_width = 0
-            perpendicular_height = 0
-            parallel_width = 0
-            parallel_height = max_size.height() // 6  # Minimum space for the ImageView
-            for perpendicular_id in perpendicular_tabs:
-                tab_box_min = tab_boxes[perpendicular_id].sizeHint()
-                perpendicular_height = max(tab_box_min.height(), perpendicular_height)
-                perpendicular_width += tab_box_min.width()
-            for parallel_id in parallel_tabs:
-                tab_box_min = tab_boxes[parallel_id].sizeHint()
-                parallel_width = max(parallel_width, tab_box_min.width())
-                parallel_height += tab_box_min.height()
-            # Check if height would be exceeded:
-            if parallel_height + perpendicular_height + min_opening_box_size.height() > max_size.height():
-                for tab_id in perpendicular_tabs:
-                    to_close.add(tab_boxes[tab_id])
-            if parallel_height + min_opening_box_size.height() >= max_size.height():
-                for tab_id in parallel_tabs:
-                    to_close.add(tab_boxes[tab_id])
-            # Check if width would be exceeded:
-            if max(parallel_width, min_opening_box_size.width()) + perpendicular_width > max_size.width():
-                for tab_id in perpendicular_tabs:
-                    to_close.add(tab_boxes[tab_id])
-        else:
-            assert opening_box_id in vertical_tab_box_ids
-            perpendicular_width = 0
-            perpendicular_height = 0
-            parallel_width = max_size.width() // 6  # Minimum space for the ImageView
-            parallel_height = 0
-            for perpendicular_id in perpendicular_tabs:
-                tab_box_min = tab_boxes[perpendicular_id].sizeHint()
-                perpendicular_height += tab_box_min.height()
-                perpendicular_width = max(perpendicular_width, tab_box_min.width())
-            for parallel_id in parallel_tabs:
-                tab_box_min = tab_boxes[parallel_id].sizeHint()
-                parallel_width += tab_box_min.width()
-                parallel_height = max(parallel_height, tab_box_min.height())
-            # Check if width would be exceeded:
-            if parallel_width + perpendicular_width + min_opening_box_size.width() > max_size.width():
-                for tab_id in perpendicular_tabs:
-                    to_close.add(tab_boxes[tab_id])
-            if parallel_width + min_opening_box_size.width() > max_size.width():
-                for tab_id in parallel_tabs:
-                    to_close.add(tab_boxes[tab_id])
-            # Check if height would be exceeded:
-            if max(parallel_height, min_opening_box_size.height()) + perpendicular_height > max_size.height():
-                for tab_id in perpendicular_tabs:
-                    to_close.add(tab_boxes[tab_id])
-        for tab_box in to_close:
-            tab_box.is_open = False
-
-    def _size_and_bounds_updates(self) -> None:
-        """Keep the screen bounds up to date and cached"""
+        `resize` sets the size inside the frame, so the frame's margins come off the target size. Each resize schedules
+        another clamp, so a clamp that leaves the frame too large repeats forever.
+        """
         screen_size = get_screen_size(self, False)
+        if screen_size.isNull():
+            return
+        frame_size = self.frameGeometry().size()
+        if frame_size.width() > screen_size.width() or frame_size.height() > screen_size.height():
+            margin_width = frame_size.width() - self.width()
+            margin_height = frame_size.height() - self.height()
+            self.resize(min(self.width(), screen_size.width() - margin_width),
+                        min(self.height(), screen_size.height() - margin_height))
 
-        if not screen_size.isNull():
-            window_size = self.frameGeometry().size()
-            if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
-                window_size.setWidth(min(window_size.width(), screen_size.width()))
-                window_size.setHeight(min(window_size.height(), screen_size.height()))
-                self.resize(window_size)
-        # Cache window placement:
-        if self.isVisible():
-            Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)
+    def _watch_displays(self) -> None:
+        """Schedules a re-clamp when the window changes screens or a display's usable area changes."""
+        window_handle = self.windowHandle()
+        if window_handle is not None and window_handle not in self._watched_displays:
+            self._watched_displays.add(window_handle)
+            window_handle.screenChanged.connect(self._clamp_timer.start)
+        for screen in QApplication.screens():
+            if screen not in self._watched_displays:
+                self._watched_displays.add(screen)
+                screen.availableGeometryChanged.connect(self._clamp_timer.start)
+        app = QApplication.instance()
+        if app is not None and not self._display_signals_connected:
+            self._display_signals_connected = True
+            app.screenAdded.connect(self._on_screens_changed)
+            app.screenRemoved.connect(self._on_screens_changed)
+
+    def _on_screens_changed(self, unused_screen: Optional[QScreen] = None) -> None:
+        self._watch_displays()
+        self._clamp_timer.start()
+
+    def showEvent(self, event: Optional[QShowEvent]) -> None:
+        """Starts watching display changes once the window has a native handle."""
+        super().showEvent(event)
+        self._watch_displays()
+
+    def changeEvent(self, event: Optional[QEvent]) -> None:  # pylint: disable=invalid-name
+        """Reports full screen changes, including ones made by the window manager."""
+        super().changeEvent(event)
+        if event is not None and event.type() == QEvent.Type.WindowStateChange:
+            full_screen = self.isFullScreen()
+            if full_screen != self._was_full_screen:
+                self._was_full_screen = full_screen
+                self.full_screen_changed.emit(full_screen)
 
     def moveEvent(self, unused_event: Optional[QMoveEvent]) -> None:
-        """Makes sure the window size respects the current display as it moves."""
-        self._size_and_bounds_updates()
+        """Schedules a re-clamp as the window moves between displays."""
+        if self.isVisible():
+            self._clamp_timer.start()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Applies the most appropriate layout when the window size changes."""
-        self._size_and_bounds_updates()
+        """Updates the loading indicator bounds and schedules a re-clamp."""
+        if self.isVisible():
+            self._clamp_timer.start()
         if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
             loading_widget_size = int(self.height() / 3)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2,
                                    self.height() // 2 - loading_widget_size // 2,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
-        # Cache window placement:
-        if self.isVisible():
-            Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""
         if not self._is_loading:
             super().mousePressEvent(event)
+
+    @staticmethod
+    def _dropped_image_paths(mime_data: Optional[QMimeData]) -> list[str]:
+        """Returns the local files in dropped data that have a supported image extension."""
+        if mime_data is None or not mime_data.hasUrls():
+            return []
+        paths = [url.toLocalFile() for url in mime_data.urls() if url.isLocalFile()]
+        return [path for path in paths if os.path.splitext(path)[1][1:].upper() in IMAGE_READ_FORMATS
+                and os.path.isfile(path)]
+
+    def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
+        """Accepts drags that carry at least one openable image file."""
+        if event is not None and len(self._dropped_image_paths(event.mimeData())) > 0:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: Optional[QDropEvent]) -> None:
+        """Reports the dropped image files through `files_dropped`."""
+        if event is None:
+            return
+        paths = self._dropped_image_paths(event.mimeData())
+        if len(paths) > 0:
+            event.acceptProposedAction()
+            self.files_dropped.emit(paths)
 
     def closeEvent(self, event: Optional[QCloseEvent]) -> None:
         """Asks `confirm_close` for permission, then closes the application. Ignores the event if it declines."""
@@ -544,6 +723,8 @@ class MainWindow(QMainWindow):
             if event is not None:
                 event.ignore()
             return
+        Cache().set(Cache.SAVED_MAIN_WINDOW_GEOMETRY, capture_geometry(self).to_json())
+        Cache().set(Cache.SAVED_MAIN_WINDOW_STATE, self.save_dock_state())
         QApplication.exit()
 
     def close_without_confirmation(self) -> None:
@@ -559,29 +740,3 @@ class MainWindow(QMainWindow):
     def image_panel(self) -> ImagePanel:
         """Returns the window's ImagePanel."""
         return self._image_panel
-
-    def _tab_open_slot(self, tab_box_id: TabBoxID):
-        """If the screen is too small to fit perpendicular tabs, automatically close them when a new tab opens."""
-        self._last_open_box = tab_box_id
-        opened_box = self._get_tab_box(tab_box_id)
-        if not opened_box.is_open:
-            opened_box.is_open = True
-
-    def _get_tab_box(self, tab_box_id: TabBoxID) -> TabBox:
-        """Look up a tab box from its expected name in config."""
-        match tab_box_id:
-            case TabBoxID.TOP_TAB_BOX_ID:
-                return self._top_tab_box
-            case TabBoxID.LOWER_TAB_BOX_ID:
-                return self._lower_tab_box
-            case TabBoxID.BOTTOM_TAB_BOX_ID:
-                return self._bottom_tab_box
-            case TabBoxID.LEFT_TAB_BOX_ID:
-                left_box = self._image_panel.left_tab_box
-                assert left_box is not None
-                return left_box
-            case _:
-                assert tab_box_id == TabBoxID.RIGHT_TAB_BOX_ID
-                right_box = self._image_panel.right_tab_box
-                assert right_box is not None
-                return right_box

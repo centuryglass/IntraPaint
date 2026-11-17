@@ -7,10 +7,11 @@ Supports the following:
 - Override the cursor when over the image viewer.
 """
 import os
+from enum import IntEnum
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
-from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
+from PySide6.QtGui import QCursor, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -19,12 +20,16 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.modal.modal_utils import show_error_dialog
-from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED, \
-    ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, \
-    DEBUG_CURSOR_ENV_VAR, LOCK_ERROR_MESSAGES
+from src.util.shared_constants import DEBUG_CURSOR_ENV_VAR
+from src.util.shared_text import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED,
+                                  ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN,
+                                  ERROR_MESSAGE_LAYER_GROUP_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
+                                  LOCK_ERROR_MESSAGES)
 from src.util.visual.image_utils import image_is_fully_transparent
+from src.util.visual.key_hint_text import rich_text_key_hints
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
-    vertical_scroll_hint_text, get_key_display_string
+    vertical_scroll_hint_text
+from src.util.rich_text import rich_text_format
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.base_tool'
@@ -35,10 +40,19 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-PAN_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
+PAN_HINT = _tr('{pan_key}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
+MIDDLE_PAN_HINT = _tr('{middle_mouse_icon}, drag: pan view')
 ZOOM_HINT = _tr('{v_scroll_icon}: zoom')
 FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
 DEBUG_CURSOR_FILE_PREFIX = 'debug_'
+
+
+class ToolGroup(IntEnum):
+    """The tool panel's button groups, in the order the panel shows them."""
+    PAINT = 0
+    EDIT = 1
+    SELECTION = 2
+    GENERATION = 3
 
 
 # noinspection PyMethodMayBeStatic
@@ -62,8 +76,7 @@ class BaseTool(QObject):
 
     5.  If the tool should change the cursor, use `tool.cursor = cursor` to change the cursor when the tool is active
        and the pointer is over the image.  Use `tool.cursor = None` to go back to using the default cursor with the
-       tool.  Tool cursors can be either a QCursor or a QPixmap, but QPixmap should only be used for extra large
-       cursors that might not work well with the windowing system.
+       tool.
 
     To integrate:
     -------------
@@ -78,8 +91,7 @@ class BaseTool(QObject):
        - Set the image widget cursor to tool cursor, if not None.
        - Connect to the cursor_change signal to handle cursor updates.
 
-    4. When applying cursors, if the cursor is a Pixmap instead of a  QCursor, instead use a minimal cursor and
-       manually draw the pixmap over the mouse cursor. If the cursor is None, use the default cursor.
+    4. When applying cursors, use the default cursor if the cursor is None.
 
     5. When the image display component receives QEvents, calculate the associated image coordinates if relevant and
        call the associated BaseTool event function. To support, MouseEnter and MouseExit, use the mouse events to flag
@@ -91,12 +103,15 @@ class BaseTool(QObject):
 
     cursor_change = Signal()
 
+    # The tool panel groups buttons by this, keeping the order tools were added within a group:
+    TOOL_GROUP = ToolGroup.PAINT
+
     def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon,
                  enable_selection_restrictions: bool = True) -> None:
         super().__init__()
         self._activation_config_key = activation_config_key
-        self._cursor: Optional[QCursor | QPixmap] = None
-        self._saved_cursor: Optional[QCursor | QPixmap] = None
+        self._cursor: Optional[QCursor] = None
+        self._saved_cursor: Optional[QCursor] = None
         self._disabled_cursor = QCursor(Qt.CursorShape.ForbiddenCursor)
         self._active = False
         self._label_text = label_text
@@ -112,7 +127,7 @@ class BaseTool(QObject):
         if KeyConfig().get_modifier(modifier_key) == Qt.KeyboardModifier.NoModifier:
             return ''
         modifier = KeyConfig().get(modifier_key)
-        modifier = get_key_display_string(modifier)
+        modifier = rich_text_key_hints(modifier)
         return modifier_hint_str.format(modifier_or_modifiers=modifier)
 
     @staticmethod
@@ -122,7 +137,7 @@ class BaseTool(QObject):
 
     @staticmethod
     def load_cursor_icon(cursor_path: str) -> QIcon:
-        """Loads a cursor file as a QCursor or QPixmap, using the debug path if the appropriate env var is set."""
+        """Loads a cursor image file as a QIcon, using the debug path if the appropriate env var is set."""
         if DEBUG_CURSOR_ENV_VAR in os.environ and os.environ[DEBUG_CURSOR_ENV_VAR]:
             cursor_dir = os.path.dirname(cursor_path)
             cursor_file = os.path.basename(cursor_path)
@@ -130,19 +145,24 @@ class BaseTool(QObject):
         return QIcon(cursor_path)
 
     @property
-    def cursor(self) -> Optional[QCursor | QPixmap]:
-        """Returns the active tool cursor or tool pixmap."""
+    def cursor(self) -> Optional[QCursor]:
+        """Returns the active tool cursor."""
         return self._cursor
 
     @cursor.setter
-    def cursor(self, new_cursor: Optional[QCursor | QPixmap]) -> None:
-        """Sets the active tool cursor or tool pixmap."""
+    def cursor(self, new_cursor: Optional[QCursor]) -> None:
+        """Sets the active tool cursor."""
         if self._cursor != self._disabled_cursor:
             self._cursor = new_cursor
             if self.is_active:
                 self.cursor_change.emit()
         else:
             self._saved_cursor = new_cursor
+
+    @property
+    def cursor_disabled(self) -> bool:
+        """Returns whether the tool is showing the cursor that indicates input is disabled."""
+        return self._cursor == self._disabled_cursor
 
     def set_disabled_cursor(self, use_disabled_cursor: bool) -> None:
         """Sets or removes a cursor indicating that input is disabled."""
@@ -196,11 +216,14 @@ class BaseTool(QObject):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        pan_hint = PAN_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                   middle_mouse_icon=middle_button_hint_text(),
-                                   modifier_or_modifiers='{modifier_or_modifiers}')
+        pan_key = rich_text_key_hints(KeyConfig().get(KeyConfig.PAN_VIEW_KEY))
+        if pan_key == '':
+            pan_hint = MIDDLE_PAN_HINT.format(middle_mouse_icon=middle_button_hint_text())
+        else:
+            pan_hint = PAN_HINT.format(pan_key=pan_key, left_mouse_icon=left_button_hint_text(),
+                                       middle_mouse_icon=middle_button_hint_text())
         zoom_hint = ZOOM_HINT.format(v_scroll_icon=vertical_scroll_hint_text())
-        return f'{BaseTool.modifier_hint(KeyConfig.PAN_VIEW_MODIFIER, pan_hint)} - {zoom_hint}'
+        return f'{pan_hint} - {zoom_hint}'
 
     @property
     def label(self) -> str:
@@ -210,6 +233,11 @@ class BaseTool(QObject):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return None
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns the `Cache` keys the tool panel's reset button restores to their defaults. With none, the button
+        is hidden."""
+        return []
 
     def validate_layer(self, layer: Optional[Layer], require_image_layer=True, show_error_messages=True,
                        image_stack: Optional[ImageStack] = None) -> bool:
@@ -223,6 +251,8 @@ class BaseTool(QObject):
             error_message = ERROR_MESSAGE_LAYER_GROUP_LOCKED
         elif not layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
+        elif (hidden_parent := layer.hidden_parent) is not None:
+            error_message = rich_text_format(ERROR_MESSAGE_LAYER_GROUP_HIDDEN, group_name=hidden_parent.name)
         elif (image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY)
               and self._enable_selection_restrictions):
             mask_image = image_stack.selection_layer.image_bits_readonly
@@ -241,25 +271,23 @@ class BaseTool(QObject):
 
     # Event handlers:
 
-    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_click(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse click event, returning whether the tool consumed the event."""
         return False
 
-    # noinspection PyUnusedLocal
-    def mouse_double_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_double_click(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse double click event, returning whether the tool consumed the event."""
         return False
 
-    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_move(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
         return False
 
-    # noinspection PyUnusedLocal
-    def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_enter(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse enter event, returning whether the tool consumed the event.
 
         Mouse enter events are non-standard, the widget managing this tool needs to identify these itself by tracking
@@ -267,8 +295,7 @@ class BaseTool(QObject):
         """
         return False
 
-    # noinspection PyUnusedLocal
-    def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_exit(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse exit event, returning whether the tool consumed the event.
 
         Mouse exit events are non-standard, the widget managing this tool needs to identify these itself by tracking
@@ -276,10 +303,10 @@ class BaseTool(QObject):
         """
         return False
 
-    def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
+    def tablet_event(self, _event: Optional[QTabletEvent], _image_coordinates: QPoint) -> bool:
         """Receives a graphics tablet input event, returning whether the tool consumed the event."""
         return False
 
-    def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
+    def wheel_event(self, _event: Optional[QWheelEvent]) -> bool:
         """Receives a mouse wheel scroll event, returning whether the tool consumed the event."""
         return False

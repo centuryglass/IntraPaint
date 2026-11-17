@@ -4,7 +4,7 @@ import math
 from typing import Optional
 
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt, QMargins
-from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
+from PySide6.QtGui import QTransform, QPolygonF
 
 from src.util.math_utils import convert_degrees
 from src.util.shared_constants import MIN_NONZERO, FLOAT_MAX
@@ -63,16 +63,15 @@ def align_inner_bounds(outer_bounds: QRect | QRectF, inner_bounds: QRect | QRect
                                       start_margin: int, end_margin: int) -> tuple[int, int]:
         if outer_size >= (inner_size + start_margin + end_margin):
             return start_margin, end_margin
-        else:
-            logger.warning(f'inner {dim_name} plus margins exceeds outer {dim_name}, margins will be adjusted.  '
-                           f'outer={outer_size}, inner={inner_size}, margins={start_margin},{end_margin}')
-            margin_available = outer_size - inner_size
-            if margin_available == 0:
-                return 0, 0
-            if start_margin == 0:
-                return 0, margin_available
-            new_start_margin = round(margin_available * start_margin / (start_margin + end_margin))
-            return new_start_margin, margin_available - new_start_margin
+        logger.warning(f'inner {dim_name} plus margins exceeds outer {dim_name}, margins will be adjusted.  '
+                       f'outer={outer_size}, inner={inner_size}, margins={start_margin},{end_margin}')
+        margin_available = outer_size - inner_size
+        if margin_available == 0:
+            return 0, 0
+        if start_margin == 0:
+            return 0, margin_available
+        new_start_margin = round(margin_available * start_margin / (start_margin + end_margin))
+        return new_start_margin, margin_available - new_start_margin
 
     left_margin, right_margin = _validate_and_correct_margins('width', outer_bounds.width(),
                                                               inner_bounds.width(), left_margin, right_margin)
@@ -128,13 +127,14 @@ def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
 
 
 def panel_position(rect: QRect | QRectF, transform: QTransform) -> QPointF:
-    """Returns the X/Y position the layer transform and text tool panels show for a transformed rectangle: the
-       top-left of its transformed bounding box.
+    """Returns the X/Y position the text tool panel shows for a transformed rectangle: the scene position of the
+       rectangle's local top-left corner.
 
-    Both tools read and write position through this function and transform_at_panel_position, so changing the
-    convention here changes it in both panels.
+    The corner is the same point the layer transform tool's panel shows with its origin snapped to the top-left
+    corner (TransformOutline.origin_scene_pos). For a flipped rectangle it is not the top-left of the bounding box.
+    The text tool reads and writes position through this function and transform_at_panel_position.
     """
-    return map_rect_precise(rect, transform).topLeft()
+    return transform.map(QPointF(rect.topLeft()))
 
 
 def transform_at_panel_position(rect: QRect | QRectF, transform: QTransform, position: QPointF) -> QTransform:
@@ -142,20 +142,6 @@ def transform_at_panel_position(rect: QRect | QRectF, transform: QTransform, pos
        unchanged."""
     offset = position - panel_position(rect, transform)
     return transform * QTransform.fromTranslate(offset.x(), offset.y())
-
-
-def translate_to_point(transform: QTransform,
-                       new_origin: Optional[QPointF | QPoint] = None) -> QTransform:
-    """Creates an adjusted transformation by adding a final translation to ensure (0, 0) lands on a specific point."""
-    if new_origin is None:
-        new_origin = QPointF(0.0, 0.0)
-    if isinstance(new_origin, QPoint):
-        new_origin = QPointF(new_origin)
-    initial_origin = transform.map(QPointF(0.0, 0.0))
-    if initial_origin == new_origin:
-        return QTransform(transform)
-    return transform * QTransform.fromTranslate(new_origin.x() - initial_origin.x(),
-                                                new_origin.y() - initial_origin.y())
 
 
 def transform_str(transformation: QTransform) -> str:
@@ -182,11 +168,6 @@ def rotation_angle(transformation: QTransform) -> float:
     """Returns the rotation component of a transformation, in degrees."""
     rotation_pt = transformation.map(QPointF(1.0, 1.0)) - transformation.map(QPointF(0.0, 0.0))
     return (math.degrees(math.atan2(rotation_pt.y(), rotation_pt.x())) - 45) % 360
-
-
-def translation_point(transformation: QTransform) -> QPointF:
-    """Returns the translation component of a transformation as a point."""
-    return QPointF(transformation.m31(), transformation.m32())
 
 
 def transform_scale(transformation: QTransform) -> tuple[float, float]:
@@ -303,27 +284,6 @@ def adjusted_placement_in_bounds(rect: QRect, bounds: QRect) -> QRect:
 def is_smaller_size(size1: QSize, size2: QSize) -> bool:
     """Returns whether size1 is smaller than size2"""
     return size1.width() * size1.height() < size2.width() * size2.height()
-
-
-def fill_outside_rect(painter: QPainter, bounds: QRect, excluded: QRect, color: QColor | Qt.GlobalColor) -> None:
-    """Paint all content within a given bounds, excluding one rectangle"""
-    if bounds.isEmpty():
-        return
-    if excluded.isEmpty() or not bounds.intersects(excluded):
-        painter.fillRect(bounds, color)
-        return
-    bounds = bounds.normalized()
-    excluded = excluded.normalized().intersected(bounds)
-    right = QRect(excluded.x() + excluded.width(), bounds.y(),
-                  (bounds.x() + bounds.width()) - (excluded.x() + excluded.width()), bounds.height())
-    left = QRect(bounds.x(), bounds.y(), excluded.x() - bounds.x(), bounds.height())
-    top = QRect(left.x() + left.width(), bounds.y(), right.x() - (left.x() + left.width()), excluded.y() - bounds.y())
-    bottom = QRect(top.x(), excluded.y() + excluded.height(), top.width(),
-                   bounds.height() - (excluded.y() + excluded.height()))
-    for border_rect in (left, right, top, bottom):
-        assert bounds.contains(border_rect)
-        if not border_rect.isEmpty():
-            painter.fillRect(border_rect, color)
 
 
 def closest_point_keeping_aspect_ratio(moving_point: QPointF, source_point: QPointF, aspect_ratio: float) -> QPointF:

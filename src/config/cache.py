@@ -1,11 +1,12 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 from argparse import Namespace
-from typing import Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.config import Config
+from src.config.generated_keys import CacheKeys
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 from src.util.visual.display_size import get_screen_bounds
@@ -26,17 +27,22 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 SCALING_OPTION_NONE = _tr('None')
 
 
-class Cache(Config, metaclass=Singleton):
+class Cache(CacheKeys, Config, metaclass=Singleton):
     """Use the Config module's data sharing capabilities to cache temporary values."""
 
     def __init__(self, json_path: str = DEFAULT_FILE_PATH) -> None:
         """Initialize the cache, registering expected value types."""
-        super().__init__(CONFIG_DEFINITIONS, json_path, Cache)
+        super().__init__(CONFIG_DEFINITIONS, json_path)
         self._geometry_timer = QTimer()
         self._geometry_timer.setInterval(GEOMETRY_CHECK_INTERVAL)
         self._geometry_timer.timeout.connect(self._check_bounds)
         self._final_bounds: dict[QWidget, QRect] = {}
         self._last_bounds: dict[QWidget, QRect] = {}
+
+    def _migrate_legacy_keys(self, json_data: dict[str, Any]) -> None:
+        """Converts the saved `color_select_mode` checkbox to `selection_fill_area`."""
+        if 'selection_fill_area' not in json_data and json_data.get('color_select_mode') is True:
+            json_data['selection_fill_area'] = 'By color'
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
@@ -79,6 +85,19 @@ class Cache(Config, metaclass=Singleton):
         except (ValueError, TypeError):
             return False
 
+    def tiling_in_effect(self) -> bool:
+        """Returns whether generated images tile: the WebUI generator is connected and its tiling option is on."""
+        return bool(self.get(Cache.WEBUI_TILING_AVAILABLE) and self.get(Cache.WEBUI_TILING))
+
+    def limited_context_in_effect(self) -> bool:
+        """Returns whether inpainting limits context to the selection. Read this, not
+        `Cache.INPAINT_FULL_RES` alone, wherever the crop is drawn or applied.
+
+        Tiling turns the crop off and leaves `Cache.INPAINT_FULL_RES` as the user set it. A crop's edges wrap only to
+        each other, so a tiling crop never tiles with the image around it.
+        """
+        return bool(self.get(Cache.INPAINT_FULL_RES)) and not self.tiling_in_effect()
+
     def _check_bounds(self) -> None:
         to_clear = []
         to_update = []
@@ -95,153 +114,3 @@ class Cache(Config, metaclass=Singleton):
             self._last_bounds[widget] = QRect(widget.geometry())
         if len(self._last_bounds) == 0:
             self._geometry_timer.stop()
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
-
-    BACKGROUND_COLOR: str
-    BATCH_COUNT: str
-    BATCH_SIZE: str
-    CANVAS_RESIZE_CROP_LAYERS: str
-    COLOR_SLIDER_MODE: str
-    COLOR_SLIDER_MODE_SECONDARY: str
-    CANVAS_RESIZE_LAYER_MODE: str
-    CLIP_SKIP: str
-    CLONE_STAMP_TOOL_ANTIALIAS: str
-    CLONE_STAMP_TOOL_BRUSH_SIZE: str
-    CLONE_STAMP_TOOL_HARDNESS: str
-    CLONE_STAMP_TOOL_OPACITY: str
-    CLONE_STAMP_TOOL_PRESSURE_HARDNESS: str
-    CLONE_STAMP_TOOL_PRESSURE_OPACITY: str
-    CLONE_STAMP_TOOL_PRESSURE_SIZE: str
-    COLOR_SELECT_MODE: str
-    COMFYUI_CACHED_SCALING_MODE: str
-    COMFYUI_INPAINTING_MODEL: str
-    COMFYUI_MODEL_CONFIG: str
-    COMFYUI_TILED_VAE: str
-    COMFYUI_TILED_VAE_TILE_SIZE: str
-    CONTROLNET_ARGS_0_COMFYUI: str
-    CONTROLNET_ARGS_0_WEBUI: str
-    CONTROLNET_ARGS_1_COMFYUI: str
-    CONTROLNET_ARGS_1_WEBUI: str
-    CONTROLNET_ARGS_2_COMFYUI: str
-    CONTROLNET_ARGS_2_WEBUI: str
-    CONTROLNET_TAB_BAR: str
-    CUTN: str
-    DENOISING_STRENGTH: str
-    DRAW_TOOL_ANTIALIAS: str
-    DRAW_TOOL_BRUSH_PATTERN: str
-    DRAW_TOOL_BRUSH_SIZE: str
-    DRAW_TOOL_HARDNESS: str
-    DRAW_TOOL_OPACITY: str
-    DRAW_TOOL_PRESSURE_HARDNESS: str
-    DRAW_TOOL_PRESSURE_OPACITY: str
-    DRAW_TOOL_PRESSURE_SIZE: str
-    EDIT_MODE: str
-    EDIT_SIZE: str
-    ERASER_TOOL_ANTIALIAS: str
-    ERASER_TOOL_HARDNESS: str
-    ERASER_TOOL_OPACITY: str
-    ERASER_TOOL_PRESSURE_HARDNESS: str
-    ERASER_TOOL_PRESSURE_OPACITY: str
-    ERASER_TOOL_PRESSURE_SIZE: str
-    ERASER_TOOL_SIZE: str
-    EXPECT_TABLET_INPUT: str
-    FILL_THRESHOLD: str
-    FILL_TOOL_BRUSH_PATTERN: str
-    FILTER_TOOL_ANTIALIAS: str
-    FILTER_TOOL_BRUSH_SIZE: str
-    FILTER_TOOL_CACHED_PARAMETERS: str
-    FILTER_TOOL_HARDNESS: str
-    FILTER_TOOL_OPACITY: str
-    FILTER_TOOL_PRESSURE_HARDNESS: str
-    FILTER_TOOL_PRESSURE_OPACITY: str
-    FILTER_TOOL_PRESSURE_SIZE: str
-    FILTER_TOOL_SELECTED_FILTER: str
-    GENERATION_RESOLUTION_RULE: str
-    GENERATION_SIZE: str
-    GENERATION_TAB_BAR: str
-    GENERATOR_SCALING_MODES: str
-    GLID_SERVER_URL: str
-    GUIDANCE_SCALE: str
-    HYPERNETWORK_MODELS: str
-    IMAGE_LAYER_SCALING_BEHAVIOR: str
-    INPAINT_FULL_RES: str
-    INPAINT_FULL_RES_PADDING: str
-    INPAINT_OPTIONS_AVAILABLE: str
-    LAST_ACTIVE_TOOL: str
-    LAST_BRUSH_COLOR: str
-    LAST_FILE_PATH: str
-    LAST_NAV_PANEL_TOOL: str
-    LAST_SEED: str
-    LORA_MODELS: str
-    MASKED_CONTENT: str
-    MYPAINT_BRUSH: str
-    NEGATIVE_PROMPT: str
-    NEW_IMAGE_BACKGROUND_COLOR: str
-    PAINT_SELECTION_ONLY: str
-    PAINT_TOOL_BRUSH_SIZE: str
-    PROMPT: str
-    RECENT_COLORS: str
-    RECENT_GENERATION_AREA_SIZES: str
-    RECENT_TOOLS: str
-    SAMPLE_MERGED: str
-    SAMPLING_METHOD: str
-    SAMPLING_STEPS: str
-    SAVED_LAYER_WINDOW_POS: str
-    SAVED_MAIN_WINDOW_POS: str
-    SAVED_NAVIGATION_WINDOW_POS: str
-    SCALING_MODE: str
-    SCHEDULER: str
-    SCRIPTS_IMG2IMG: str
-    SCRIPTS_TXT2IMG: str
-    SD_COMFYUI_SERVER_URL: str
-    SD_MODEL: str
-    SD_UPSCALING_AVAILABLE: str
-    SD_UPSCALING_CONTROLNET_TILE_MODELS: str
-    SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS: str
-    SD_UPSCALING_CONTROLNET_TILE_SETTINGS: str
-    SD_UPSCALING_DENOISING_STRENGTH: str
-    SD_UPSCALING_STEP_COUNT: str
-    SD_WEBUI_SERVER_URL: str
-    SEED: str
-    SELECTION_BRUSH_SIZE: str
-    SHAPE_TOOL_ANTIALIAS: str
-    SHAPE_TOOL_DASH_PATTERN: str
-    SHAPE_TOOL_FILL_COLOR: str
-    SHAPE_TOOL_FILL_PATTERN: str
-    SHAPE_TOOL_LINE_COLOR: str
-    SHAPE_TOOL_LINE_JOIN_STYLE: str
-    SHAPE_TOOL_LINE_STYLE: str
-    SHAPE_TOOL_LINE_WIDTH: str
-    SHAPE_TOOL_MODE: str
-    SHAPE_TOOL_STAR_INNER_POINT_FRACTION: str
-    SHAPE_TOOL_VERTEX_COUNT: str
-    SKIP_STEPS: str
-    SMUDGE_TOOL_ANTIALIAS: str
-    SMUDGE_TOOL_BRUSH_SIZE: str
-    SMUDGE_TOOL_HARDNESS: str
-    SMUDGE_TOOL_OPACITY: str
-    SMUDGE_TOOL_PRESSURE_HARDNESS: str
-    SMUDGE_TOOL_PRESSURE_OPACITY: str
-    SMUDGE_TOOL_PRESSURE_SIZE: str
-    STYLES: str
-    TEXT_BACKGROUND_COLOR: str
-    TEXT_TOOL_PARAMS: str
-    TOOL_TAB_BAR: str
-    ULTIMATE_UPSCALE_SCRIPT_AVAILABLE: str
-    USE_STABLE_DIFFUSION_UPSCALING: str
-    USE_ULTIMATE_UPSCALE_SCRIPT: str
-    WEBUI_CACHED_SCALING_MODE: str
-    WEBUI_LAST_SUBSEED: str
-    WEBUI_RESTORE_FACES: str
-    WEBUI_SEED_RESIZE: str
-    WEBUI_SEED_RESIZE_ENABLED: str
-    WEBUI_SUBSEED: str
-    WEBUI_SUBSEED_STRENGTH: str
-    WEBUI_TILING: str
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/./scripts/dynamic_import_typing.py ./src/config/cache.py`
-
-    CLONE_STAMP_TOOL_SOURCE_MODE: str

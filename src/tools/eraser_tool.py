@@ -9,6 +9,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -24,7 +25,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eraser_icon.svg'
-CURSOR_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/cursors/eraser_cursor.svg'
 LABEL_TEXT_ERASER_TOOL = _tr('Erase')
 TOOLTIP_ERASER_TOOL = _tr('Erase image layer content')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: erase')
@@ -42,10 +42,10 @@ class EraserTool(QtPaintBrushTool):
                          hardness_key=Cache.ERASER_TOOL_HARDNESS, antialias_key=Cache.ERASER_TOOL_ANTIALIAS,
                          pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS)
         self.brush.eraser = True
+        self.crosshair_variant = CrosshairVariant.ERASER
 
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_ERASER_TOOL))
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

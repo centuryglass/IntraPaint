@@ -31,13 +31,13 @@ from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.math_utils import clamp
 from src.util.optional_import import optional_import
 
-# PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec
-# and IntraPaint-linux.spec, or bundles ship without it.
+# PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec,
+# or bundles ship without it.
 MyPaintBrushTool = optional_import('src.tools.mypaint_brush_tool', attr_name='MyPaintBrushTool')
 # Both fill tools import the compiled `src.util.visual.image_fill` module, which is missing when the Cython build
 # failed. They are None in that case, and every use in ToolController must handle that.
 FillTool = optional_import('src.tools.fill_tool', attr_name='FillTool')
-SelectionFillTool = optional_import('src.tools.selection_fill_tool', attr_name='SelectionFillTool')
+MagicWandTool = optional_import('src.tools.magic_wand_tool', attr_name='MagicWandTool')
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this
 WHEEL_NOTCH_DELTA = 120
 
 FILL_TOOLS_UNAVAILABLE_LOG = (
-    'The fill and selection fill tools are unavailable because the compiled image_fill module could not be loaded. '
+    'The fill and magic wand tools are unavailable because the compiled image_fill module could not be loaded. '
     'Install a C compiler, then run `python setup.py build_ext --inplace` from the IntraPaint directory and restart '
     'IntraPaint.')
 
@@ -79,8 +79,8 @@ class ToolController(QObject):
         self._tool_modifier_delegates: dict[BaseTool, dict[Qt.KeyboardModifier, BaseTool]] = {}
         self._mouse_in_bounds = False
         self._all_tools: list[BaseTool] = []
-        # Wheel delta short of a full notch, carried between padding scroll events:
-        self._padding_scroll_remainder = 0
+        # Wheel delta short of a full notch, carried between context scroll events:
+        self._context_scroll_remainder = 0
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
         HotkeyFilter.instance().modifiers_changed.connect(self._handle_modifier_delegation)
@@ -115,9 +115,9 @@ class ToolController(QObject):
         self.add_tool(FreeSelectionTool(image_stack, image_viewer))
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
         self.add_tool(ShapeSelectionTool(image_stack, image_viewer))
-        if SelectionFillTool is not None:
-            self.add_tool(SelectionFillTool(image_stack))
-        if FillTool is None or SelectionFillTool is None:
+        if MagicWandTool is not None:
+            self.add_tool(MagicWandTool(image_stack, image_viewer))
+        if FillTool is None or MagicWandTool is None:
             logger.warning(FILL_TOOLS_UNAVAILABLE_LOG)
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
@@ -247,7 +247,7 @@ class ToolController(QObject):
         """Allow the active tool to intercept and handle events."""
         assert event is not None
         # ImageGraphicsView.wheelEvent passes wheel events here before its zoom handling sees them.
-        if event.type() == QEvent.Type.Wheel and self._scroll_padding(cast(QWheelEvent, event)):
+        if event.type() == QEvent.Type.Wheel and self._scroll_context(cast(QWheelEvent, event)):
             return True
         if self._active_tool is None:
             return super().eventFilter(source, event)
@@ -296,34 +296,32 @@ class ToolController(QObject):
                 event_handled = active_tool.wheel_event(cast(QWheelEvent, event))
         return True if event_handled else super().eventFilter(source, event)
 
-    def _scroll_padding(self, event: QWheelEvent) -> bool:
-        """Changes inpaint full-res padding while the padding scroll modifier is held, returning whether the event was
+    def _scroll_context(self, event: QWheelEvent) -> bool:
+        """Changes inpaint context while the context scroll modifier is held, returning whether the event was
            consumed.
 
-        Each notch moves padding as far as scrolling the padding slider does, multiplied while the speed modifier is
-        held. Either wheel axis counts, because some platforms turn modifier + vertical scroll into horizontal scroll.
-        Raising padding above zero turns Inpaint Full Resolution on.
+        Each notch moves context as far as scrolling the context slider does. Either wheel axis counts, because some
+        platforms turn modifier + vertical scroll into horizontal scroll.
+        Raising context above zero turns on the limit to the selection.
         """
         if not KeyConfig.modifier_held(KeyConfig.PADDING_SCROLL_MODIFIER, held_modifiers=event.modifiers()):
-            self._padding_scroll_remainder = 0
+            self._context_scroll_remainder = 0
             return False
         delta = event.angleDelta().y() if event.angleDelta().y() != 0 else event.angleDelta().x()
-        if (delta < 0) != (self._padding_scroll_remainder < 0):
-            self._padding_scroll_remainder = 0
-        self._padding_scroll_remainder += delta
-        notches = int(self._padding_scroll_remainder / WHEEL_NOTCH_DELTA)
+        if (delta < 0) != (self._context_scroll_remainder < 0):
+            self._context_scroll_remainder = 0
+        self._context_scroll_remainder += delta
+        notches = int(self._context_scroll_remainder / WHEEL_NOTCH_DELTA)
         if notches == 0:
             return True
-        self._padding_scroll_remainder -= notches * WHEEL_NOTCH_DELTA
+        self._context_scroll_remainder -= notches * WHEEL_NOTCH_DELTA
         cache = Cache()
         step = cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.STEP) * QApplication.wheelScrollLines()
-        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER, held_modifiers=event.modifiers()):
-            step *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-        padding = clamp(cache.get(Cache.INPAINT_FULL_RES_PADDING) + notches * step,
+        context = clamp(cache.get(Cache.INPAINT_FULL_RES_PADDING) + notches * step,
                         cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MIN),
                         cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MAX))
-        cache.set(Cache.INPAINT_FULL_RES_PADDING, int(padding))
-        if padding > 0:
+        cache.set(Cache.INPAINT_FULL_RES_PADDING, int(context))
+        if context > 0:
             cache.set(Cache.INPAINT_FULL_RES, True)
         return True
 

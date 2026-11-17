@@ -1,11 +1,12 @@
-"""Shared setup for the request-payload snapshot tests of the Stable Diffusion generators.
+"""Shared setup for tests that drive the Stable Diffusion generators offline against `FakeSdBackend`.
 
-These are characterization tests: each one sets cached generation settings, runs a generator's request-building path
+The request-payload snapshot tests are characterization tests: each one sets cached generation settings, runs a generator's request-building path
 synchronously against `FakeSdBackend`, and compares the POST requests it sent with a committed JSON snapshot under
 `SNAPSHOT_DIR`. A snapshot diff means a request changed, so a change that alters one must explain the diff.
 
 `run_upscale` also drives the full upscale path synchronously, so tests can check how the result is applied to the
-image stack and its undo history.
+image stack and its undo history. The `*_backend_test.py` modules use the same setup for the generators' other
+backend calls, without snapshots.
 """
 import os
 import sys
@@ -17,18 +18,18 @@ from unittest.mock import MagicMock
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QColor
 from PySide6.QtWidgets import QApplication
+from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNetUnit, PreprocessorParams
 
-from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
-from src.api.controlnet.controlnet_model import ControlNetModel
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlNetUnit, ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.sd_generator import SDGenerator
+from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
+    SavedControlNetUnit
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from src.util.async_task import AsyncTask
-from src.util.shared_constants import UPSCALED_LAYER_NAME
+from src.util.shared_text import UPSCALED_LAYER_NAME
 from test.base_test_case import IntraPaintTestCase, TEST_IMAGE_DIR, PROJECT_ROOT
 from test.controller.image_generation.fake_sd_backend import FakeSdBackend, RecordedRequest, snapshot_requests
 
@@ -41,7 +42,7 @@ FAKE_SERVER_URL = 'http://sd.invalid:7860'
 GENERATION_AREA = QRect(150, 50, 300, 300)
 GENERATION_SIZE = QSize(512, 512)
 SELECTION_BOUNDS = QRect(250, 150, 80, 60)
-# Below and right of the selection, inside the generation area, so it stretches the inpaint full-res crop:
+# Below and right of the selection, inside the generation area, so it stretches the inpaint context crop:
 CONTEXT_PIN = QPoint(420, 320)
 UPSCALE_SIZE = QSize(1200, 800)
 
@@ -86,7 +87,6 @@ class SdGeneratorTestCase(IntraPaintTestCase):
             painter.end()
 
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
         cache.set(Cache.GENERATION_SIZE, GENERATION_SIZE)
         cache.set(Cache.PROMPT, f'a lighthouse on a cliff <lora:{LORA_NAME}:0.8>')
         cache.set(Cache.NEGATIVE_PROMPT, 'blurry')
@@ -105,6 +105,14 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.status = StatusRecorder()
         self.generated_images: dict[int, QImage] = {}
         self.generator: Optional[ImageGenerator] = None
+
+    def clear_source_corner(self) -> None:
+        """Makes the generation area's top-left corner transparent in the source layer."""
+        with self.image_stack.active_layer.borrow_image() as layer_image:
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+            painter.fillRect(QRect(GENERATION_AREA.topLeft(), QSize(100, 100)), Qt.GlobalColor.black)
+            painter.end()
 
     @staticmethod
     def server_args() -> Namespace:
@@ -154,19 +162,25 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.assertEqual(self.image_stack.size, UPSCALE_SIZE)
         self.assertEqual(len(self.image_stack.all_layers()), len(initial_layers) + 1)
 
+    def assert_backend_lists_empty(self, generator: SDGenerator) -> None:
+        """Checks that every backend option getter returns an empty result."""
+        self.assertEqual(generator.get_diffusion_model_names(), [])
+        self.assertEqual(generator.get_diffusion_sampler_names(), [])
+        self.assertEqual(generator.get_upscale_method_names(), [])
+        self.assertEqual(generator.get_lora_model_info(), [])
+        self.assertEqual(generator.get_controlnet_models(), [])
+        self.assertEqual(generator.get_controlnet_preprocessors(), [])
+        self.assertEqual(generator.get_controlnet_types(), {})
+        self.assertFalse(generator.ultimate_upscale_script_available())
+
     @staticmethod
-    def controlnet_unit(key_type: ControlKeyType, model_name: str, preprocessor: ControlNetPreprocessor,
+    def controlnet_unit(model_name: str, preprocessor: ControlNetPreprocessor,
                         image_string: str = CONTROLNET_REUSE_IMAGE_CODE) -> str:
-        """Returns a serialized, enabled ControlNet unit."""
-        unit = ControlNetUnit(key_type)
-        unit.enabled = True
-        unit.model = ControlNetModel(model_name)
-        unit.preprocessor = preprocessor
-        unit.image_string = image_string
-        unit.control_strength.value = 0.75
-        unit.control_start.value = 0.1
-        unit.control_end.value = 0.9
-        return unit.serialize()
+        """Returns a serialized, enabled ControlNet unit, in the format the ControlNet panel saves."""
+        unit = ControlNetUnit(model=ControlNetModel(model_name),
+                              preprocessor=PreprocessorParams(typedef=preprocessor, parameter_values={}),
+                              control_strength=0.75, control_start=0.1, control_end=0.9)
+        return SavedControlNetUnit(True, image_string, unit).to_json()
 
     def assert_requests_match_snapshot(self, name: str, requests: Optional[list[RecordedRequest]] = None,
                                        replacements: Optional[dict[str, str]] = None) -> None:

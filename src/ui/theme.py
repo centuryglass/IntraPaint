@@ -8,7 +8,7 @@ qt-material themes stay available as config options, and use the configured Qt s
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
 from PySide6.QtWidgets import QApplication, QStyleFactory
@@ -17,6 +17,9 @@ from src.ui.ink_style import InkColors, InkStyle
 from src.util.gc_paused import gc_paused
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR
+
+if TYPE_CHECKING:
+    from src.config.application_config import AppConfig
 
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
@@ -40,11 +43,12 @@ class _ThemeState:
         # The loaded IntraPaint Ink font, palette and style colors. Its font files register with Qt once, on first
         # load:
         self.ink_theme: Optional[tuple[Optional[QFont], QPalette, InkColors]] = None
-        # The configured Qt style name, the applied theme and the scroll bar option, which together pick the
+        # The configured Qt style name, the applied theme and the scroll bar and popup options, which together pick the
         # installed QStyle:
         self.style_name: Optional[str] = None
         self.theme: Optional[str] = None
         self.overlay_scroll_bars = True
+        self.rounded_popups = True
         # The installed InkStyle. QApplication owns it, and deletes it when another style replaces it:
         self.ink_style: Optional[InkStyle] = None
 
@@ -129,7 +133,7 @@ def _install_style() -> None:
             logger.error(f'Unknown Qt style {style_name}, using Fusion')
             style_name = 'Fusion'
         _, _, colors = _load_ink_theme()
-        _state.ink_style = InkStyle(style_name, colors, _state.overlay_scroll_bars)
+        _state.ink_style = InkStyle(style_name, colors, _state.overlay_scroll_bars, _state.rounded_popups)
         app.setStyle(_state.ink_style)
     else:
         _state.ink_style = None
@@ -201,9 +205,40 @@ def apply_overlay_scroll_bars(overlay: bool) -> None:
             _install_style()
 
 
+def apply_rounded_popups(rounded: bool) -> None:
+    """Sets whether THEME_INK draws menus and tooltips with rounded corners and a shadow.
+
+    Menus and tooltips already open keep their old shape.
+    """
+    if rounded == _state.rounded_popups:
+        return
+    _state.rounded_popups = rounded
+    if _state.theme == THEME_INK:
+        with gc_paused():
+            _install_style()
+
+
 def apply_font_point_size(font_pt: int) -> None:
     """Sets the application font's point size."""
     app = _app()
     font = app.font()
     font.setPointSize(font_pt)
     app.setFont(font)
+
+
+def apply_appearance_config(config: 'AppConfig', connected_object: Optional[object] = None) -> None:
+    """Applies the config's scroll bar, popup, style, theme and font size options to the application.
+
+    With `connected_object`, each option is also reapplied when it changes, through a config connection owned by that
+    object. Widgets copy the palette and font when they are created, so call this before creating the main window.
+    `src/config/application_config.py` imports this module, so the config is passed in and not imported here.
+    """
+    # The scroll bar, popup and style options come before the theme, so THEME_INK installs InkStyle with them set:
+    for key, apply_fn in ((config.OVERLAY_SCROLL_BARS, apply_overlay_scroll_bars),
+                          (config.ROUNDED_POPUPS, apply_rounded_popups),
+                          (config.STYLE, apply_style),
+                          (config.THEME, apply_theme),
+                          (config.FONT_POINT_SIZE, apply_font_point_size)):
+        if connected_object is not None:
+            config.connect(connected_object, key, apply_fn)
+        apply_fn(config.get(key))

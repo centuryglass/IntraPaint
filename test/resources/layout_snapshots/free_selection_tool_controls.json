@@ -2,48 +2,113 @@
   "minimum": {
     "problems": [],
     "size": [
-      239,
-      132
+      306,
+      265
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 101x30, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 101x10, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 101x10, minimum 126x30",
-      "squeezed: DualToggle/Label 'Select' is 38x29, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 38x29, minimum 98x29"
+      "squeezed: PanelSection[1] is 135x108, minimum 100x128",
+      "squeezed: PanelSection[1]/QWidget is 135x82, minimum 100x102",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 135x24, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear pins' is 135x23, minimum 100x30",
+      "clipped: PanelSection[1]/QWidget/QPushButton 'Clear' shows 135x23 of 135x24",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 135x24, minimum 80x30"
     ],
     "size": [
-      119,
-      92
+      153,
+      265
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      256,
-      92
+      330,
+      265
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 238x17, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x17, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x17, minimum 126x30",
-      "squeezed: DualToggle/Label 'Select' is 106x17, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 106x17, minimum 98x29",
-      "squeezed: KeyHintLabel 'Q' is 17x17, minimum 17x22"
+      "squeezed: PanelSection[0] is 312x34, minimum 128x50",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 263x17, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 312x17, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 312x17, minimum 128x24",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 45x17, minimum 45x21",
+      "squeezed: PanelSection[1] is 312x34, minimum 288x56",
+      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 308x17, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 312x17, minimum 288x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 96x17, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear pins' is 100x17, minimum 100x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 80x17, minimum 80x30",
+      "squeezed: PanelSection[2] is 312x34, minimum 43x43",
+      "squeezed: PanelSection[2]/_HeaderButton 'Free selection' is 308x17, minimum 16x26"
     ],
     "size": [
-      256,
-      66
+      330,
+      132
+    ]
+  },
+  "strip_minimum": {
+    "problems": [],
+    "size": [
+      306,
+      265
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "squeezed: QWidget is 135x247, minimum 288x207",
+      "squeezed: QWidget/PanelSection[2] is 135x102, minimum 288x102",
+      "squeezed: QWidget/PanelSection[2]/QWidget is 135x76, minimum 288x76",
+      "squeezed: QWidget/PanelSection[2]/QWidget/QPushButton 'Select all' is 41x30, minimum 96x30",
+      "squeezed: QWidget/PanelSection[2]/QWidget/QPushButton 'Clear pins' is 41x30, minimum 100x30",
+      "squeezed: QWidget/PanelSection[2]/QWidget/QPushButton 'Clear' is 41x30, minimum 80x30"
+    ],
+    "size": [
+      153,
+      265
+    ]
+  },
+  "strip_preferred": {
+    "problems": [],
+    "size": [
+      330,
+      265
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "squeezed: QWidget[1] is 178x114, minimum 288x102",
+      "squeezed: QWidget[1]/PanelSection is 178x102, minimum 288x102",
+      "squeezed: QWidget[1]/PanelSection/QWidget is 178x76, minimum 288x76",
+      "squeezed: QWidget[1]/PanelSection/QWidget/QPushButton 'Select all' is 56x30, minimum 96x30",
+      "squeezed: QWidget[1]/PanelSection/QWidget/QPushButton 'Clear pins' is 55x30, minimum 100x30",
+      "clipped: QWidget[1]/PanelSection/QWidget/QPushButton 'Clear' shows 55x30 of 56x30",
+      "squeezed: QWidget[1]/PanelSection/QWidget/QPushButton 'Clear' is 56x30, minimum 80x30"
+    ],
+    "size": [
+      330,
+      132
+    ]
+  },
+  "strip_tall": {
+    "problems": [],
+    "size": [
+      330,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      265
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      256,
+      330,
       1200
     ]
   },
@@ -51,7 +116,7 @@
     "problems": [],
     "size": [
       1600,
-      92
+      265
     ]
   }
 }

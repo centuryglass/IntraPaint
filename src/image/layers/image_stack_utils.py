@@ -1,5 +1,8 @@
-"""Provides various functions that act on an ImageStack.  Includes only functions that the ImageStack itself does not
-   need to access, which don't access any protected internal data."""
+"""Provides various functions that act on an ImageStack.
+
+Includes only functions that the ImageStack itself does not need to access, which don't access any protected internal
+data.
+"""
 from typing import Optional
 
 from PIL import Image
@@ -16,11 +19,12 @@ from src.image.layers.image_stack import ImageStack, ERROR_TITLE_CROP_FAILED, ER
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.layer_resize_mode import LayerResizeMode
-from src.image.layers.text_layer import TextLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_content_bounds
+from src.util.rich_text import escape_rich_text
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -47,9 +51,7 @@ def crop_image_stack_to_bounds(image_stack: ImageStack, bounds: QRect) -> None:
 def crop_image_stack_to_selection(image_stack: ImageStack) -> None:
     """Crops the image stack to match its selection bounds"""
     selection_layer = image_stack.selection_layer
-    np_selection = selection_layer.image_bits_readonly
-    selection_pos = selection_layer.position
-    selection_bounds = image_content_bounds(np_selection).translated(selection_pos.x(), selection_pos.y())
+    selection_bounds = selection_layer.get_content_bounds()
     if selection_bounds.isEmpty():
         show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_SELECTION)
         return
@@ -76,11 +78,11 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
         all_layers = layer.recursive_child_layers
     else:
         all_layers = [layer]
-    text_layers = [crop_layer for crop_layer in all_layers if isinstance(crop_layer, TextLayer)]
-    if len(text_layers) > 0:
-        text_layer_names = [text_layer.name for text_layer in text_layers]
-        if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names,
-                                                           ACTION_NAME_CROP_LAYER_TO_SELECTION):
+    non_destructive_layers = [crop_layer for crop_layer in all_layers if isinstance(crop_layer, NonDestructiveLayer)]
+    if len(non_destructive_layers) > 0:
+        layer_names = [layer.name for layer in non_destructive_layers]
+        if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names,
+                                                                     ACTION_NAME_CROP_LAYER_TO_SELECTION):
             return
     with UndoStack().combining_actions('image_stack_utils.crop_layer_to_selection'):
         no_overlap_count = 0
@@ -88,11 +90,11 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
         crop_success_count = 0
         to_delete = []
         deleted_layer_names = []
-        if len(text_layers) > 0:
+        if len(non_destructive_layers) > 0:
             replacements: dict[int, Layer] = {}
             for i, updated_layer in enumerate(all_layers):
-                if isinstance(updated_layer, TextLayer):
-                    replacements[i] = image_stack.replace_text_layer_with_image(updated_layer)
+                if isinstance(updated_layer, NonDestructiveLayer):
+                    replacements[i] = image_stack.replace_layer_with_image(updated_layer)
             for i, image_layer in replacements.items():
                 all_layers[i] = image_layer
         for cropped_layer in all_layers:
@@ -129,7 +131,7 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
                 return
         if len(deleted_layer_names) > 0:
             warning_message = WARNING_MESSAGE_CROP_DELETED_LAYERS.format(
-                layer_names=' '.join((f'<li>{name}</li>' for name in deleted_layer_names)))
+                layer_names=''.join(f'<li>{escape_rich_text(name)}</li>' for name in deleted_layer_names))
             show_warning_dialog(None, WARNING_TITLE_CROP_DELETED_LAYERS, warning_message,
                                 AppConfig.WARN_WHEN_CROP_DELETES_LAYERS)
 
@@ -145,45 +147,36 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
     if not image_stack.confirm_no_locked_layers(ERROR_TITLE_IMAGE_SCALE_FAILED):
         return
     with UndoStack().combining_actions('image_stack_utils.scale_all_layers'):
-        scale_all_layers_ungrouped(image_stack, width, height, image_scale_mode)
-
-
-def scale_all_layers_ungrouped(image_stack: ImageStack, width: int, height: int,
-                               image_scale_mode: Optional[Image.Resampling] = None) -> None:
-    """Scale all layer content and the canvas without grouping the changes, for callers that already hold an
-    UndoStack.combining_actions group.
-
-    The caller checks for locked layers first, and nothing here rejects a size of zero or below."""
-    initial_size = image_stack.size
-    x_scale = width / initial_size.width()
-    y_scale = height / initial_size.height()
-    scale_transform = QTransform.fromScale(x_scale, y_scale)
-    with image_stack.batching_content_updates():
-        for layer in image_stack.all_layers():
-            if not isinstance(layer, TransformLayer):
-                continue
-            if isinstance(layer, ImageLayer) and image_scale_mode is not None:
-                image = layer.image
-                if image.size() == initial_size:
-                    new_size = QSize(width, height)
+        initial_size = image_stack.size
+        x_scale = width / initial_size.width()
+        y_scale = height / initial_size.height()
+        scale_transform = QTransform.fromScale(x_scale, y_scale)
+        with image_stack.batching_content_updates():
+            for layer in image_stack.all_layers():
+                if not isinstance(layer, TransformLayer):
+                    continue
+                if isinstance(layer, ImageLayer) and image_scale_mode is not None:
+                    image = layer.image
+                    if image.size() == initial_size:
+                        new_size = QSize(width, height)
+                    else:
+                        new_size = QSize(round(image.width() * x_scale), round(image.height() * y_scale))
+                    layer.image = pil_image_scaling(image, new_size, image_scale_mode)
                 else:
-                    new_size = QSize(round(image.width() * x_scale), round(image.height() * y_scale))
-                layer.image = pil_image_scaling(image, new_size, image_scale_mode)
-            else:
-                layer.transform = layer.transform * scale_transform
-        selection_layer = image_stack.selection_layer
-        selection_layer.set_context_pins([QPoint(min(int(pin.x() * x_scale), width - 1),
-                                                 min(int(pin.y() * y_scale), height - 1))
-                                          for pin in selection_layer.context_pins])
-        new_size = QSize(width, height)
+                    layer.transform = layer.transform * scale_transform
+            selection_layer = image_stack.selection_layer
+            selection_layer.set_context_pins([QPoint(min(int(pin.x() * x_scale), width - 1),
+                                                     min(int(pin.y() * y_scale), height - 1))
+                                              for pin in selection_layer.context_pins])
+            new_size = QSize(width, height)
 
-        def _final_size_update(size=new_size) -> None:
-            image_stack.size = size
+            def _final_size_update(size=new_size) -> None:
+                image_stack.size = size
 
-        def _revert(size=initial_size) -> None:
-            image_stack.size = size
+            def _revert(size=initial_size) -> None:
+                image_stack.size = size
 
-        UndoStack().commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
+            UndoStack().commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
 
 
 def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> QColor:
@@ -197,12 +190,14 @@ def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> 
     return image_stack.qimage(False).pixelColor(image_point - content_bounds.topLeft())
 
 
-def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Optional[ImageLayer | TextLayer]:
-    """Return the topmost image or text layer that contains non-transparent pixels at the given coordinates, or the
-       topmost with transparent pixels if none are non-transparent at that point."""
+def top_layer_at_point(image_stack: ImageStack,
+                       image_coordinates: QPoint) -> Optional[ImageLayer | NonDestructiveLayer]:
+    """Return the topmost shown image or non-destructive layer that contains non-transparent pixels at the given
+       coordinates, or the topmost with transparent pixels if none are non-transparent at that point. Hidden layers,
+       and layers inside hidden groups, are never returned."""
     all_layers = [layer for layer in image_stack.layer_stack.recursive_child_layers
-                  if isinstance(layer, (ImageLayer, TextLayer))]
-    top_transparent: Optional[ImageLayer | TextLayer] = None
+                  if isinstance(layer, (ImageLayer, NonDestructiveLayer)) and layer.shown]
+    top_transparent: Optional[ImageLayer | NonDestructiveLayer] = None
     for layer in all_layers:
         layer_point = layer.map_from_image(image_coordinates)
         if not layer.bounds.contains(layer_point):
@@ -211,10 +206,29 @@ def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Op
         pixel_color = layer_image.pixelColor(layer_point)
         if pixel_color.alpha() > 0:
             return layer
-        if top_transparent is None or (top_transparent.locked or top_transparent.parent_locked
-                                       or not top_transparent.visible):
+        if top_transparent is None or (top_transparent.locked or top_transparent.parent_locked):
             top_transparent = layer
     return top_transparent
+
+
+def layers_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> list[ImageLayer | NonDestructiveLayer]:
+    """Return every shown image or non-destructive layer whose transformed bounds contain the point.
+
+    Layers with a non-transparent pixel at the point come first, then the rest, each group ordered topmost first.
+    Hidden layers, and layers inside hidden groups, are never returned."""
+    opaque: list[ImageLayer | NonDestructiveLayer] = []
+    transparent: list[ImageLayer | NonDestructiveLayer] = []
+    for layer in image_stack.layer_stack.recursive_child_layers:
+        if not isinstance(layer, (ImageLayer, NonDestructiveLayer)) or not layer.shown:
+            continue
+        layer_point = layer.map_from_image(image_coordinates)
+        if not layer.bounds.contains(layer_point):
+            continue
+        if layer.get_qimage().pixelColor(layer_point).alpha() > 0:
+            opaque.append(layer)
+        else:
+            transparent.append(layer)
+    return opaque + transparent
 
 
 def image_stack_outline_path(image_stack: ImageStack) -> QPainterPath:

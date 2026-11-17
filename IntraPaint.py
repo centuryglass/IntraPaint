@@ -1,5 +1,5 @@
-"""
-Runs the main IntraPaint inpainting UI.
+"""Runs the main IntraPaint inpainting UI.
+
 Assuming you're running the ComfyUI or the Stable Diffusion WebUI API on the same machine with default settings, running
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
@@ -30,29 +30,18 @@ if not is_pyinstaller_bundle():
                                       cwd=os.path.dirname(os.path.abspath(__file__)), check=False)
         if build_result.returncode != 0:
             # Startup continues: only the fill tools need the compiled module (see ToolController).
-            print('WARNING: Building the image_fill module failed, so the fill and selection fill tools will be '
+            print('WARNING: Building the image_fill module failed, so the fill and magic wand tools will be '
                   'unavailable. Install a C compiler, then run `python setup.py build_ext --inplace` in the '
                   'IntraPaint directory to enable them. All other tools will work normally.', file=sys.stderr)
 
 
-from PySide6.QtCore import QTranslator, QObject, QEvent
+from PySide6.QtCore import QObject, QEvent, QtMsgType, qFormatLogMessage, qInstallMessageHandler
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel, QMenu
 
-from src.ui.modal.image_filter_modal import ImageFilterModal
-from src.ui.modal.image_scale_modal import ImageScaleModal
-from src.ui.modal.login_modal import LoginModal
-from src.ui.modal.new_image_modal import NewImageModal
-from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
-from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.layer_ui.layer_panel import LayerPanel
-from src.ui.window.extra_network_window import ExtraNetworkWindow
-from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.navigation_window import NavigationWindow
-from src.ui.window.main_window import MainWindow
-from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.util.arg_parser import build_arg_parser
 from src.util.optional_import import check_import
+from src.util.translation import install_translation, resolve_language, saved_language_setting
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR, DEBUG_CURSOR_ENV_VAR
 
@@ -105,6 +94,24 @@ if args.verbose:
 if args.cursor_debug:
     os.environ[DEBUG_CURSOR_ENV_VAR] = 'True'
 
+# Qt's Wayland platform plugin warns whenever anything grabs the mouse on a window that isn't a popup, since Wayland
+# only allows that for popups. QDockWidget's own drag-and-drop does this when floating a dock (e.g. dragging its
+# title bar), which is expected there, not an IntraPaint bug. Qt logs it with a plain, uncategorized qWarning(), so it
+# can't be filtered through QT_LOGGING_RULES; install a message handler that drops just this one message by text,
+# passing everything else through with Qt's own formatting:
+_SUPPRESSED_QT_MESSAGES = ('This plugin supports grabbing the mouse only for popup windows',)
+
+
+def _filtered_qt_message_handler(msg_type: QtMsgType, context, message: str) -> None:
+    """Reproduces Qt's default message handling, except for the suppressed messages above."""
+    if any(suppressed in message for suppressed in _SUPPRESSED_QT_MESSAGES):
+        return
+    stream = sys.stdout if msg_type in (QtMsgType.QtDebugMsg, QtMsgType.QtInfoMsg) else sys.stderr
+    print(qFormatLogMessage(msg_type, context, message), file=stream)
+
+
+qInstallMessageHandler(_filtered_qt_message_handler)
+
 logging.basicConfig(level=logging.INFO, handlers=handlers)
 print(f'Logs will be saved at {LOG_FILE_PATH}')
 logger = logging.getLogger(__name__)
@@ -118,6 +125,77 @@ def exit_log():
 atexit.register(exit_log)
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+# close pyinstaller splash screen, if running from bundled executable:
+try:
+    # noinspection PyUnresolvedReferences
+    import pyi_splash
+
+    pyi_splash.close()
+except ImportError:
+    pass  # Not using the pyinstaller bundle
+
+# show Qt splash screen:
+splash_screen_image = QPixmap(f'{PROJECT_DIR}/resources/IntraPaint_banner.jpg')
+screen = app.primaryScreen()
+splash_screen_bounds = get_scaled_placement(screen.geometry(), splash_screen_image.size(), 10)
+splash_screen_image = splash_screen_image.scaled(splash_screen_bounds.size())
+splash_screen = QSplashScreen(screen, splash_screen_image)
+splash_screen.setGeometry(splash_screen_bounds)
+splash_screen.show()
+splash_screen.raise_()
+app.processEvents()
+
+# Load the chosen translation (src/util/translation.py explains why this happens before most imports):
+ui_language = resolve_language(saved_language_setting())
+logger.info(f'UI language: {ui_language}')
+translator = install_translation(app, ui_language)
+
+# If relevant directories exist, update paths for GLID-3-XL dependencies:
+if not is_pyinstaller_bundle():
+    if not check_import('ldm'):
+        expected_ldm_path = f'{PROJECT_DIR}/latent-diffusion'
+        if os.path.exists(expected_ldm_path):
+            sys.path.append(expected_ldm_path)
+    else:
+        expected_ldm_path = PROJECT_DIR
+
+    # Newer versions of pytorch-lightning changed the location of one needed dependency, but latent-diffusion was
+    # never updated. This only requires a single minor update, so make that change here if necessary:
+    updated_file_path = f'{expected_ldm_path}/ldm/models/diffusion/ddpm.py'
+    if os.path.exists(updated_file_path):
+        with open(updated_file_path, 'r+') as module_file:
+            lines = module_file.readlines()
+            for i, line in enumerate(lines):
+                if 'from pytorch_lightning.utilities.distributed import rank_zero_only' in line:
+                    lines[i] = 'from pytorch_lightning.utilities.rank_zero import rank_zero_only'
+                    module_file.seek(0)
+                    module_file.writelines(lines)
+                    module_file.truncate()
+                    break
+
+    if not check_import('taming'):
+        expected_taming_path = f'{PROJECT_DIR}/taming-transformers'
+        if os.path.exists(expected_taming_path):
+            sys.path.append(expected_taming_path)
+
+# These imports need to be delayed until after QApplication creation, logging setup, translation, and import path
+# tweaks. Importing most of src/ constructs AppConfig as a side effect (libmypaint reads its library path at import),
+# and config construction needs the QApplication.
+from src.controller.app_controller import AppController
+from src.ui.modal.image_filter_modal import ImageFilterModal
+from src.ui.modal.image_scale_modal import ImageScaleModal
+from src.ui.modal.login_modal import LoginModal
+from src.ui.modal.modal_utils import show_error_dialog
+from src.ui.modal.new_image_modal import NewImageModal
+from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
+from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.layer_ui.layer_panel import LayerPanel
+from src.ui.window.extra_network_window import ExtraNetworkWindow
+from src.ui.window.generator_setup_window import GeneratorSetupWindow
+from src.ui.window.main_window import MainWindow
+from src.ui.window.navigation_window import NavigationWindow
+from src.ui.window.prompt_style_window import PromptStyleWindow
 
 if args.dev:
     # If a QWidget isn't properly assigned to a parent or hidden after being removed, it will pop up as a new window.
@@ -151,68 +229,6 @@ if args.dev:
 
     event_filter = WindowEventFilter()
     app.installEventFilter(event_filter)
-
-# close pyinstaller splash screen, if running from bundled executable:
-try:
-    # noinspection PyUnresolvedReferences
-    import pyi_splash
-
-    pyi_splash.close()
-except ImportError:
-    pass  # Not using the pyinstaller bundle
-
-# show Qt splash screen:
-splash_screen_image = QPixmap(f'{PROJECT_DIR}/resources/IntraPaint_banner.jpg')
-screen = app.primaryScreen()
-splash_screen_bounds = get_scaled_placement(screen.geometry(), splash_screen_image.size(), 10)
-splash_screen_image = splash_screen_image.scaled(splash_screen_bounds.size())
-splash_screen = QSplashScreen(screen, splash_screen_image)
-splash_screen.setGeometry(splash_screen_bounds)
-splash_screen.show()
-splash_screen.raise_()
-app.processEvents()
-
-# Load translations:
-translator = QTranslator()
-for root, _, files in os.walk(f'{PROJECT_DIR}/resources/translations'):
-    for file in files:
-        if file.endswith('.qm'):
-            assert translator.load(os.path.join(root, file)), f'Failed to load {file}'
-app.installTranslator(translator)
-
-# If relevant directories exist, update paths for GLID-3-XL dependencies:
-if not is_pyinstaller_bundle():
-    if not check_import('ldm'):
-        expected_ldm_path = f'{PROJECT_DIR}/latent-diffusion'
-        if os.path.exists(expected_ldm_path):
-            sys.path.append(expected_ldm_path)
-    else:
-        expected_ldm_path = PROJECT_DIR
-
-    # Newer versions of pytorch-lightning changed the location of one needed dependency, but latent-diffusion was
-    # never updated. This only requires a single minor update, so make that change here if necessary:
-    updated_file_path = f'{expected_ldm_path}/ldm/models/diffusion/ddpm.py'
-    if os.path.exists(updated_file_path):
-        with open(updated_file_path, 'r+') as module_file:
-            lines = module_file.readlines()
-            for i, line in enumerate(lines):
-                if 'from pytorch_lightning.utilities.distributed import rank_zero_only' in line:
-                    lines[i] = 'from pytorch_lightning.utilities.rank_zero import rank_zero_only'
-                    module_file.seek(0)
-                    module_file.writelines(lines)
-                    module_file.truncate()
-                    break
-
-    if not check_import('taming'):
-        expected_taming_path = f'{PROJECT_DIR}/taming-transformers'
-        if os.path.exists(expected_taming_path):
-            sys.path.append(expected_taming_path)
-
-# These imports need to be delayed until after logging setup, translation, and import path tweaks:
-# noinspection PyPep8
-from src.controller.app_controller import AppController
-# noinspection PyPep8
-from src.ui.modal.modal_utils import show_error_dialog
 
 if __name__ == '__main__':
     try:

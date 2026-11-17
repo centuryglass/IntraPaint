@@ -28,47 +28,47 @@ Application menu handling:
 - Provides access to various ImageStack and ImageGenerator functions
 
 Image I/O:
-- Controls when and how image file dialogs are shown.
-- Shows appropriate errors or warnings whenever saving/loading fails or does not preserve all data.
-- Caches and applies image metadata.
-- Provides the connection between the ImageStack and image files.
+- Provides the File menu actions, which delegate to ImageIO (`src/controller/image_io.py`).
 
 User settings:
 - Creates the settings modal, ensures that it contains appropriate entries from the assorted Config classes
 - Applies changes to config whenever the settings modal closes.
 """
-import json
 import logging
 import os
-import re
 import sys
 import webbrowser
 from argparse import Namespace
-from typing import Optional, Any, Callable
+from typing import Any, Optional, Callable
+from weakref import WeakSet
 
-from PIL import Image, UnidentifiedImageError, ExifTags
-from PIL.ExifTags import IFD
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QIcon, QTransform
-from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QImage, QTransform
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller import color_controller
+from src.controller.autosave_controller import AutosaveController
 from src.controller.generation_area_controller import GenerationAreaController
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
+from src.controller.image_generation.sd_adapters.controlnet_adapter import count_enabled_units
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
-from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION
+from src.controller.image_generation.sd_generator import MENU_GENERATION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
+    SDGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
+from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
+from src.image.image_metadata import ImageMetadata
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
+from src.image.filter.filter import ImageFilter
 from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
@@ -83,26 +83,29 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
-from src.image.open_raster import save_ora_image, read_ora_image, ORA_FILE_EXTENSION
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.image_scale_modal import ImageScaleModal
-from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
-    show_warning_dialog
+from src.ui.modal.layout_name_modal import prompt_layout_name, TITLE_SAVE
+from src.ui.modal.manage_layouts_modal import ManageLayoutsModal
+from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.color_panel import ColorControlPanel
-from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_style, apply_theme
-from src.ui.widget.tool_tab import ToolTab
+from src.ui.theme import apply_appearance_config
+from src.ui.window import saved_layouts
+from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
+from src.ui.window.dock_placement import DockEdge
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.main_window import MainWindow, TabBoxID
+from src.ui.window.main_window import MainWindow
+from src.ui.window.metadata_window import MetadataWindow
 from src.ui.window.navigation_window import NavigationWindow
+from src.ui.window.window_geometry import restore_window
 from src.undo_stack import UndoStack
 from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
@@ -112,15 +115,13 @@ from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, Menu
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
+from src.util.recent_files import recent_files, clear_recent_files
+from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
 from src.util.visual.display_size import get_screen_size
-from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
-    IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
-    METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
-    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS
-from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
+from src.util.rich_text import rich_text_format
 
 # Optional spacenav support:
 SpacenavManager = optional_import('src.controller.spacenav_manager', attr_name='SpacenavManager')
@@ -137,11 +138,10 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 APP_NAME = 'IntraPaint'
-APP_VERSION = 'v1.4.0'  # x-release-please-version
+APP_VERSION = 'v1.5.0'  # x-release-please-version
 
-TOOL_PANEL_LAYER_TAB = _tr('Layers')
-TOOL_PANEL_COLOR_TAB = _tr('Color')
-TOOL_PANEL_NAV_TAB = _tr('Navigation')
+UNDO_LIMIT_RESTART_TITLE = _tr('Restart required')
+UNDO_LIMIT_RESTART_MESSAGE = _tr('The new maximum undo count will apply after IntraPaint is restarted.')
 
 GENERATION_MODE_SD_WEBUI = 'stable-diffusion-webui'
 GENERATION_MODE_COMFYUI = 'comfyui'
@@ -151,85 +151,54 @@ GENERATION_MODE_NONE = 'none'
 GENERATION_MODE_TEST = 'mock'
 GENERATION_MODE_AUTO = 'auto'
 
-MENU_FILE = _tr('File')
-MENU_EDIT = _tr('Edit')
-MENU_IMAGE = _tr('Image')
-MENU_SELECTION = _tr('Selection')
-MENU_LAYERS = _tr('Layers')
-MENU_FILTERS = _tr('Filters')
-MENU_HELP = _tr('Help')
+CONTROLNET_BADGE_TOOLTIP_ONE = _tr('ControlNet: 1 unit on', 'Tooltip of the ControlNet rail button')
+CONTROLNET_BADGE_TOOLTIP_MANY = _tr('ControlNet: {count} units on', 'Tooltip of the ControlNet rail button')
+CONTROLNET_BADGE_SKIPPED = '!'
+CONTROLNET_BADGE_TOOLTIP_SKIPPED = _tr('ControlNet: {count} of {enabled} units on are skipped. Inpainting units only '
+                                       'apply in Inpaint mode.', 'Tooltip of the ControlNet rail button')
+MENU_FILE = _tr('&File')
+MENU_EDIT = _tr('&Edit')
+MENU_VIEW = _tr('&View')
+MENU_IMAGE = _tr('&Image')
+MENU_LAYER = _tr('&Layer')
+MENU_SELECT = _tr('&Select')
+MENU_FILTERS = _tr('Fil&ters')
+REPEAT_FILTER_TITLE = _tr('Repeat {filter_name}')
+MENU_WINDOW = _tr('&Window')
+MENU_HELP = _tr('&Help')
+LAYOUT_ACTION_PROPERTY = 'saved_layout_entry'
+TITLE_LAYOUT_ERROR = _tr('Layout not applied')
+MESSAGE_LAYOUT_ERROR = _tr('The layout "{layout_name}" could not be restored. It may be corrupt or saved by an older '
+                           'version. Delete it in Manage layouts.')
+MENU_WINDOW_LAYOUTS = MENU_WINDOW + '.' + _tr('Layouts')
+MENU_WINDOW_MOVE_ALL_PANELS = MENU_WINDOW + '.' + MENU_MOVE_ALL_TO_EDGE
 
-SUBMENU_MOVE = _tr('Move')
-SUBMENU_SELECT = _tr('Select')
+SUBMENU_RECENT_FILES = _tr('Open recent')
+MENU_ACTION_CLEAR_RECENT = _tr('Clear recent files')
+SUBMENU_STACK = _tr('Stack')
 SUBMENU_TRANSFORM = _tr('Transform')
 
-CONTROL_TAB_NAME = _tr('Image Generation')
-
-ICON_PATH_GEN_TAB = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
-ICON_PATH_LAYER_TAB = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
-ICON_PATH_NAVIGATION_TAB = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
-ICON_PATH_COLOR_TAB = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
-HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/help_index.md'
+PROJECT_LINK = 'https://github.com/centuryglass/IntraPaint'
+HELP_INDEX_LINK = f'{PROJECT_LINK}/blob/master/doc/help_index.md'
+ISSUES_LINK = f'{PROJECT_LINK}/issues'
+RELEASES_LINK = f'{PROJECT_LINK}/releases'
+LICENSE_LINK = f'{PROJECT_LINK}/blob/master/LICENSE'
+ABOUT_TITLE = _tr('About IntraPaint')
+ABOUT_TEXT = _tr('<h3>IntraPaint {version}</h3>'
+                 '<p>An image editor that combines digital painting tools with AI image generation and inpainting.</p>'
+                 '<p>Free software, released under the <a href="{license_link}">GNU General Public License v3</a>.</p>'
+                 '<p><a href="{project_link}">Project page</a> - <a href="{issues_link}">Report a bug</a></p>')
+# The settings window category holding the editing, navigation and tool keys:
+KEYBINDINGS_CATEGORY = QApplication.translate('config.key_config', 'Keybindings')
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
-CONFIRM_QUIT_TITLE = _tr('Quit now?')
-CONFIRM_QUIT_MESSAGE = _tr('All unsaved changes will be lost.')
-NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
-NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
-SAVE_ERROR_TITLE = _tr('Save failed')
-LOAD_ERROR_TITLE = _tr('Open failed')
-SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, try saving in a'
-                                       ' different format or to a different disk.')
-SAVE_ERROR_MESSAGE_INVALID_EXTENSION = _tr('Saving files with the  "{extension}" extension is not supported, try again'
-                                           ' with a supported image file format.')
-SAVE_ERROR_MESSAGE_NO_EXTENSION = _tr('Tried to save with no file extension as "{file_path}", add a valid image file'
-                                      ' extension and try again.')
-RELOAD_ERROR_TITLE = _tr('Reload failed')
-RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid image file.')
-RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
-RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
-RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
-METADATA_UPDATE_TITLE = _tr('Metadata updated')
-METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
-LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
-LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
+CONFIRM_QUIT_BUTTON = _tr('Quit without saving')
+NEW_IMAGE_CONFIRMATION_BUTTON = _tr('Create without saving')
 
-TITLE_CONFIRM_METADATA_INIT = _tr('Save image generation metadata?')
-MESSAGE_CONFIRM_METADATA_INIT = _tr('No image metadata is cached, would you like to save image generation parameters to'
-                                    ' this image?')
-TITLE_CONFIRM_METADATA_UPDATE = _tr('Update image generation metadata?')
-MESSAGE_CONFIRM_METADATA_UPDATE = _tr('Image generation parameters have changed, would you like this image to be saved'
-                                      ' with the most recent values?')
-
-# Warnings when saving images cause data loss:
-LAYERS_NOT_SAVED_TITLE = _tr('Image saved without layer data')
-LAYERS_NOT_SAVED_MESSAGE = _tr('To save layer data, images must be saved in .ora format.')
-
-ALPHA_NOT_SAVED_TITLE = _tr('Image saved without full transparency')
-ALPHA_NOT_SAVED_MESSAGE = _tr('To preserve transparency, save using one of the following file formats:'
-                              ' {alpha_formats}')
-
-METADATA_NOT_SAVED_TITLE = _tr('Image saved without image generation metadata')
-METADATA_NOT_SAVED_MESSAGE = _tr('To preserve image generation metadata, save using one of the following file formats:'
-                                 ' {metadata_formats}')
-
-WRITE_ONLY_SAVE_TITLE = _tr('Image saved in a write-only format')
-WRITE_ONLY_SAVE_MESSAGE = _tr('IntraPaint can write images in the {file_format} format, but cannot load them. Use '
-                              'another file format if you want to be able to load this image in IntraPaint again.')
-
-FIXED_SIZE_SAVE_TITLE = _tr('Image saved in a format that changes size')
-FIXED_SIZE_SAVE_MESSAGE = _tr('The image is {width_px}x{height_px}, but the {file_format} format saves all images at'
-                              ' {saved_width_px}x{saved_height_px} resolution. Use another file format if you want'
-                              ' to preserve the original image size.')
-
-NO_COLOR_SAVE_TITLE = _tr('Image saved without color')
-NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without color. Use another format if you want'
-                            ' to preserve image colors.')
-
-IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'Stable Diffusion'),
-                                QApplication.translate('application_config', 'GLID-3-XL'))
-DEV_APPCONFIG_CATEGORY = QApplication.translate('application_config', 'Developer')
+IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('config.application_config', 'Stable Diffusion'),
+                                QApplication.translate('config.application_config', 'GLID-3-XL'))
+DEV_APPCONFIG_CATEGORY = QApplication.translate('config.application_config', 'Developer')
 
 
 def _get_config_categories() -> list[str]:
@@ -254,30 +223,25 @@ class AppController(MenuBuilder):
         config = AppConfig()
         cache = Cache()
         cache.apply_args(args)
-        self._layer_panel: Optional[LayerPanel] = None
+        self._layer_dock_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
+        self._metadata_window: Optional[MetadataWindow] = None
 
         # Apply style and theme before creating widgets, which copy the palette and font when they're created:
-        config.connect(self, AppConfig.OVERLAY_SCROLL_BARS, apply_overlay_scroll_bars)
-        apply_overlay_scroll_bars(config.get(AppConfig.OVERLAY_SCROLL_BARS))
-        config.connect(self, AppConfig.STYLE, apply_style)
-        apply_style(config.get(AppConfig.STYLE))
-        config.connect(self, AppConfig.THEME, apply_theme)
-        apply_theme(config.get(AppConfig.THEME))
-        config.connect(self, AppConfig.FONT_POINT_SIZE, apply_font_point_size)
-        apply_font_point_size(config.get(AppConfig.FONT_POINT_SIZE))
+        apply_appearance_config(config, self)
 
         # Initialize edited image data structures:
+        self._generator: Optional[ImageGenerator] = None
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
         self._generation_area_controller = GenerationAreaController(self._image_stack)
 
-        self._metadata: Optional[dict[str, Any]] = None
-        self._exif: Optional[Image.Exif] = None
-
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
+        self._recent_files_menu: Optional[QMenu] = None
         self.menu_window = self._window
+        self._image_io = ImageIO(self._window, self._image_stack, lambda: self._generator)
+        self._autosave = AutosaveController(self._image_stack, self._image_io, self._window)
         self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
         self._window.confirm_close = self._confirm_quit
@@ -287,35 +251,31 @@ class AppController(MenuBuilder):
             self._window.setMaximumSize(width, height)
             self._window.setMinimumSize(width, height)
         else:
-            if not Cache().load_bounds(Cache.SAVED_MAIN_WINDOW_POS, self._window):
-                size = get_screen_size(self._window)
-                x = 0
-                y = 0
-                width = size.width()
-                height = size.height()
-                self._window.setGeometry(x, y, width, height)
+            restore_window(self._window, Cache().get(Cache.SAVED_MAIN_WINDOW_GEOMETRY))
+        # After the geometry, so the docks fit the restored window:
+        self._window.restore_dock_state(Cache().get(Cache.SAVED_MAIN_WINDOW_STATE))
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
             image = QImage(config.get(AppConfig.DEFAULT_IMAGE_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
-            image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            image.fill(color_controller.new_image_color())
             self._image_stack.load_image(image)
 
         # Set up menus in the expected order, so menus don't need to be shown in the order they're initialized:
         ordered_menus = [
             MENU_FILE,
             MENU_EDIT,
+            MENU_VIEW,
             MENU_IMAGE,
-            MENU_SELECTION,
-            MENU_LAYERS,
+            MENU_LAYER,
+            MENU_SELECT,
             MENU_FILTERS,
-            MENU_STABLE_DIFFUSION,
+            MENU_GENERATION,
+            MENU_WINDOW,
             MENU_HELP
         ]
         for menu_name in ordered_menus:
             self.add_menu(menu_name)
-
-        self._generator: Optional[ImageGenerator] = None
 
         # Load settings:
         self._settings_modal = SettingsModal(self._window)
@@ -333,24 +293,50 @@ class AppController(MenuBuilder):
 
         # Set up menus:
         self.build_menus()
+        # Generator-specific entries slot in between these when a generator is loaded:
+        self.add_menu_separator(MENU_GENERATION, 502)
+        self.add_menu_separator(MENU_GENERATION, 520)
+        self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
+        self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
+        self._make_menu_action_checkable(self.toggle_selection_overlay, AppConfig.SHOW_SELECTION_OVERLAY)
+        full_screen_action = self.get_action_for_method(self.toggle_full_screen)
+        full_screen_action.setCheckable(True)
+        full_screen_action.setChecked(self._window.isFullScreen())
+        self._window.full_screen_changed.connect(full_screen_action.setChecked)
+        self.insert_menu_actions(MENU_WINDOW, self._window.dock_toggle_actions())
+        self.get_menu(MENU_WINDOW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
+        self._build_recent_files_menu()
+        self._window.files_dropped.connect(self.open_dropped_files)
+        for edge in DockEdge:
+            self.add_menu_action(MENU_WINDOW_MOVE_ALL_PANELS, lambda e=edge: self._window.move_all_docks_to_edge(e),
+                                 title=edge_title(edge))
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
+        # The repeat action stays disabled until _record_applied_filter registers it with AppStateTracker.
+        self._last_filter: Optional[tuple[ImageFilter, list[Any], bool]] = None
+        repeat_action = self.add_menu_action(MENU_FILTERS, self.repeat_last_filter, KeyConfig.REPEAT_FILTER_SHORTCUT)
+        assert repeat_action is not None
+        repeat_action.setEnabled(False)
+        self._repeat_filter_action = repeat_action
+        self.get_menu(MENU_FILTERS).addSeparator()
         filter_class_names: list[str] = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
-                             BlurFilter,
-                             SharpenFilter,
-                             PosterizeFilter,
                              SaturationFilter,
-                             InvertFilter):
+                             PosterizeFilter,
+                             InvertFilter,
+                             BlurFilter,
+                             SharpenFilter):
             image_filter = filter_class(self._image_stack)
             filter_class_names.append(image_filter.get_name())
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
+                modal.filter_applied.connect(lambda values: self._record_applied_filter(filter_instance, values))
                 self._set_alt_window_centered_bounds(modal)
                 modal.exec()
+                modal.deleteLater()
 
             config_key = image_filter.get_config_key()
             action = self.add_menu_action(MENU_FILTERS,
@@ -358,18 +344,23 @@ class AppController(MenuBuilder):
                                           config_key)
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
+            if filter_class is BlurFilter:
+                self.get_menu(MENU_FILTERS).insertSeparator(action)
         cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)  # type: ignore
 
         # Because Qt has its own bindings on the cut/copy/clear/paste keyboard events, we need to bind these at the
         # hotkeyFilter to ensure that the menu hotkeys can override the Qt bindings. The goal is to ensure that even
         # when a text field is active, these events will get handled in the context of the ImageStack if they wouldn't
-        # do anything to the text.
+        # do anything to the text. Swap and reset colors have no menu entries, so this is their only binding.
         for binding_key, handler in ((KeyConfig.UNDO_SHORTCUT, self.undo),
                                      (KeyConfig.REDO_SHORTCUT, self.redo),
                                      (KeyConfig.CUT_SHORTCUT, self.cut),
                                      (KeyConfig.COPY_SHORTCUT, self.copy),
+                                     (KeyConfig.COPY_MERGED_SHORTCUT, self.copy_merged),
                                      (KeyConfig.PASTE_SHORTCUT, self.paste),
-                                     (KeyConfig.CLEAR_SHORTCUT, self.clear)):
+                                     (KeyConfig.CLEAR_SHORTCUT, self.clear),
+                                     (KeyConfig.SWAP_COLORS_SHORTCUT, self.swap_colors),
+                                     (KeyConfig.RESET_COLORS_SHORTCUT, self.reset_colors)):
             HotkeyFilter.instance().register_config_keybinding(f'AppController_{binding_key}', handler,
                                                                binding_key)
         # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
@@ -379,7 +370,8 @@ class AppController(MenuBuilder):
         self._can_clear_or_cut_image = False
 
         # Finally, track active text inputs, so we always know when text-relevant events should be available:
-        self._active_text_field_tracker = ActiveTextFieldTracker()
+        # The tracker's focus and clipboard connections end with the window the actions belong to:
+        self._active_text_field_tracker = ActiveTextFieldTracker(self._window)
         self._active_text_field_tracker.status_changed.connect(self._update_enabled_text_relevant_actions)
         clipboard = QApplication.clipboard()
         clipboard.dataChanged.connect(self._update_clipboard_paste_availability)
@@ -388,14 +380,27 @@ class AppController(MenuBuilder):
             lambda: clipboard.dataChanged.disconnect(self._update_clipboard_paste_availability))
 
         self._last_active = self._image_stack.active_layer
-        self._lock_connection = self._last_active.lock_changed.connect(
-            lambda _layer, _lock: self._update_enabled_actions())
+        self._active_layer_connections: list[tuple[Any, Any]] = []
+
+        def _connect_active_layer(layer: Layer) -> None:
+            """Refreshes menu actions when a property that enables or disables one changes on the active layer."""
+            signals = [layer.lock_changed, layer.opacity_changed, layer.composition_mode_changed]
+            if isinstance(layer, TransformLayer):
+                signals.append(layer.transform_changed)
+            self._active_layer_connections = [(sig, sig.connect(lambda *_: self._update_enabled_actions()))
+                                              for sig in signals]
+
+        def _disconnect_active_layer() -> None:
+            for signal, connection in self._active_layer_connections:
+                signal.disconnect(connection)
+            self._active_layer_connections = []
+
+        _connect_active_layer(self._last_active)
 
         def _active_changed(active_layer: Layer) -> None:
-            self._last_active.lock_changed.disconnect(self._lock_connection)
+            _disconnect_active_layer()
             self._last_active = active_layer
-            self._lock_connection = self._last_active.lock_changed.connect(
-                lambda _layer, _lock: self._update_enabled_actions())
+            _connect_active_layer(active_layer)
             self._update_enabled_actions()
 
         self._image_stack.active_layer_changed.connect(_active_changed)
@@ -403,24 +408,33 @@ class AppController(MenuBuilder):
             lambda _layer, _bounds: self._update_enabled_actions())
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        UndoStack().clean_changed.connect(lambda _clean: self._update_window_title())  # type: ignore
+        Cache().connect(self._window, Cache.LAST_FILE_PATH, lambda _path: self._update_window_title())
+        self._update_window_title()
+        # "Reopen last generated options" also needs a stored batch, so `_update_enabled_actions` alone sets whether
+        # it is enabled, re-checking whenever either the app state or the batch changes:
+        restore_action = self.get_action_for_method(self.restore_previous_image_choices)
+        assert restore_action is not None
+        AppStateTracker.disconnect_from_state(restore_action)
+        self._window.previous_options_available.connect(lambda _available: self._update_enabled_actions())
+        AppStateTracker.signal().connect(lambda _state: self._update_enabled_actions())
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
         self._tool_panel = ToolPanel()
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
+        self._generation_area_tool.control_panel.edit_resolution_requested.connect(self.edit_generation_resolution)
         self._last_active_tool: Optional[BaseTool] = None
 
-        # Add utility widgets to the tool panel:
+        # Fill the lower dock group:
         self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
                                                              include_zoom_controls=False, use_keybindings=False)
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
-        self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
-                                                QIcon(ICON_PATH_LAYER_TAB))
-        self._tool_panel_color_picker = ColorControlPanel()
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB,
-                                                QIcon(ICON_PATH_COLOR_TAB))
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB,
-                                                QIcon(ICON_PATH_NAVIGATION_TAB))
+        self._tool_panel_color_picker = ColorControlPanel(standalone=True)
+        self._layer_dock_panel = LayerPanel(self._image_stack)
+        self._window.layers_dock.set_content(self._layer_dock_panel)
+        self._window.color_dock.set_content(self._tool_panel_color_picker)
+        self._window.navigation_dock.set_content(self._tool_panel_navigation_panel)
 
         # Add all tools to the panel except for the generation area tool:
         for tool in self._tool_controller.tools:
@@ -428,6 +442,7 @@ class AppController(MenuBuilder):
 
         # Connect signal handlers:
         self._tool_panel.tool_selected.connect(self._tool_controller.set_active_tool)
+        self._tool_panel.settings_requested.connect(self.show_settings)
         self._tool_controller.active_tool_changed.connect(self._tool_panel.setup_active_tool)
         self._tool_controller.tool_added.connect(self._tool_panel.add_tool_button)
         self._tool_controller.tool_removed.connect(self._tool_panel.remove_tool_button)
@@ -451,18 +466,10 @@ class AppController(MenuBuilder):
         _update_cursor_and_control_hint(active_tool)
         self._tool_panel.setup_active_tool(active_tool)
 
-        # Set up main window tabs:
-        self._tool_tab = ToolTab(self._tool_panel, self._tool_controller, parent=self._window)
-        try:
-            tool_tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
-        except ValueError:
-            tool_tab_box_id = None  # Invalid cache entry, use default placement
-        self._window.add_tab(self._tool_tab, tool_tab_box_id)
-
-        self._generator_control_panel: Optional[GeneratorPanel] = None
-        self._generator_tab = Tab(CONTROL_TAB_NAME, None, KeyConfig.SELECT_GENERATOR_TAB, parent=self._window)
-        self._generator_tab.hide()
-        self._generator_tab.setIcon(QIcon(ICON_PATH_GEN_TAB))
+        self._window.tools_dock.set_content(self._tool_panel)
+        self._window.set_tool_controller(self._tool_controller)
+        self._generator_control_panel: Optional[QWidget] = None
+        self._wired_generator_panels: WeakSet[QWidget] = WeakSet()
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)
@@ -527,15 +534,48 @@ class AppController(MenuBuilder):
         """Start the application."""
         app = QApplication.instance() or QApplication(sys.argv)
         if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
-            QtExceptHook().enable()
+            QtExceptHook(recovery_cb=self._autosave.keep_for_recovery,
+                         recovery_enabled_cb=lambda: self._autosave.enabled).enable()
         self._window.show()
         self._update_enabled_actions()
+        restored = self._autosave.offer_recovery()
 
         # Discard anything saved to the undo stack during the setup process:
         UndoStack().clear()
+        if restored:  # The recovery copy holds work that was never saved.
+            UndoStack().mark_modified()
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
+        self._autosave.shutdown()
+        # Saves scheduled in the last moments before exit never got an event loop to run them:
+        for config in (AppConfig(), Cache(), KeyConfig()):
+            config.save_pending_changes()
+
+    def _watch_controlnet_badge(self) -> None:
+        """Shows the number of enabled ControlNet units as the ControlNet dock's badge, and keeps it current. Outside
+        Inpaint mode, enabled inpainting units make it a caution badge, since requests skip them."""
+        dock = self._window.controlnet_dock
+        generator = self._generator
+        keys = generator.get_controlnet_unit_cache_keys() if isinstance(generator, SDGenerator) \
+            and generator.get_controlnet_panel() is not None else []
+        cache = Cache()
+
+        def _update(*_args) -> None:
+            inpainting = cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT
+            enabled, skipped = count_enabled_units([cache.get(key) for key in keys], inpainting)
+            if enabled == 0:
+                dock.set_badge('')
+            elif skipped > 0:
+                dock.set_badge(CONTROLNET_BADGE_SKIPPED,
+                               CONTROLNET_BADGE_TOOLTIP_SKIPPED.format(count=skipped, enabled=enabled), caution=True)
+            else:
+                dock.set_badge(str(enabled), CONTROLNET_BADGE_TOOLTIP_ONE if enabled == 1
+                               else CONTROLNET_BADGE_TOOLTIP_MANY.format(count=enabled))
+
+        for key in [*keys, Cache.EDIT_MODE]:
+            cache.connect(dock, key, _update)
+        _update()
 
     def load_image_generator(self, generator: ImageGenerator) -> None:
         """Load an image generator, updating controls and settings."""
@@ -546,11 +586,7 @@ class AppController(MenuBuilder):
         # unload last generator:
         last_generator = self._null_generator if self._generator is None else self._generator
         if self._generator is not None:
-            for tab in self._generator.get_extra_tabs():
-                self._window.remove_tab(tab)
-            if self._generator_control_panel is not None:
-                for tab_bar_widget in self._generator_control_panel.get_tab_bar_widgets():
-                    self._generator_tab.remove_tab_bar_widget(tab_bar_widget)
+            self._window.controlnet_dock.set_content(None)
             self._generator.unload_settings(self._settings_modal)
             self._generator.clear_menus()
             self._generator.disconnect_or_disable()
@@ -558,7 +594,8 @@ class AppController(MenuBuilder):
         # load new generator:
         if not generator.configure_or_connect():
             show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
-                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+                              rich_text_format(GENERATOR_LOAD_ERROR_MESSAGE,
+                                               generator_name=generator.get_display_name()))
             assert generator != self._null_generator
             self.load_image_generator(self._null_generator if last_generator == generator else last_generator)
             return
@@ -567,29 +604,17 @@ class AppController(MenuBuilder):
         self._generator.init_settings(self._settings_modal)
         self._generator.build_menus()
 
-        prev_panel_was_none = self._generator_control_panel is None
         self._generator_control_panel = self._generator.get_control_panel()
-        self._generator_tab.content_widget = self._generator_control_panel
-        if self._generator_control_panel is not None:
-            for tab_bar_widget in self._generator_control_panel.get_tab_bar_widgets():
-                self._generator_tab.add_tab_bar_widget(tab_bar_widget)
-        if self._generator_control_panel is None and not prev_panel_was_none:
-            self._window.remove_tab(self._generator_tab)
-        elif prev_panel_was_none and self._generator_control_panel is not None:
-            try:
-                generation_tab_box_id = TabBoxID(Cache().get(Cache.GENERATION_TAB_BAR))
-            except ValueError:
-                generation_tab_box_id = None
-            self._window.add_tab(self._generator_tab, generation_tab_box_id)
-            self._generator_tab.show()
-        for tab in self._generator.get_extra_tabs():
-            # Remember to adjust this if you add any other generator-specific tabs
-            try:
-                box_id: Optional[TabBoxID] = TabBoxID(Cache().get(Cache.CONTROLNET_TAB_BAR))
-            except ValueError:
-                box_id = None
-            self._window.add_tab(tab, box_id)
-            tab.show()
+        if isinstance(self._generator_control_panel, StableDiffusionPanel):
+            # A generator keeps its panel, so each panel's signals connect once:
+            if self._generator_control_panel not in self._wired_generator_panels:
+                self._wired_generator_panels.add(self._generator_control_panel)
+                self._generator_control_panel.setup_requested.connect(self.show_generator_window)
+                self._generator_control_panel.settings_requested.connect(
+                    lambda: self.show_settings(STABLE_DIFFUSION_CONFIG_CATEGORY))
+        self._window.generation_dock.set_content(self._generator_control_panel)
+        self._window.controlnet_dock.set_content(self._generator.get_controlnet_panel())
+        self._watch_controlnet_badge()
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 
@@ -602,13 +627,30 @@ class AppController(MenuBuilder):
             self._tool_controller.remove_tool(gen_area_tool)
         elif gen_area_tool is None and show_image_gen_controls:
             self._tool_controller.add_tool(self._generation_area_tool)
-        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.navigation_window)
+        # Context pins only take effect with a generator. They show and accept edits while this flag is set, and are
+        # dropped when it clears:
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, show_image_gen_controls)
+        if not show_image_gen_controls:
+            self._image_stack.selection_layer.clear_context_pins(False)
+        active_tool = self._tool_controller.active_tool
+        if active_tool is not None:
+            self._window.image_panel.set_control_hint(active_tool.get_input_hint())
+        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
         self._generation_area_controller.generation_area_visible = show_image_gen_controls
+        # The Stable Diffusion panel owns the resolution, which the generation area panel only summarizes:
+        self._generation_area_tool.control_panel.set_resolution_shown(
+            isinstance(self._generator_control_panel, StableDiffusionPanel))
         generate_action = self.get_action_for_method(self.start_and_manage_inpainting)
         generate_action.setEnabled(self._generator is not None and not isinstance(self._generator, NullGenerator))
         self._update_enabled_actions()
+
+    def edit_generation_resolution(self) -> None:
+        """Opens the Image generation dock in its tab group, and focuses its resolution field."""
+        self._window.generation_dock.set_open(True)
+        if isinstance(self._generator_control_panel, StableDiffusionPanel):
+            self._generator_control_panel.reveal_resolution()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Load application settings into a SettingsModal"""
@@ -652,11 +694,15 @@ class AppController(MenuBuilder):
         categories = _get_config_categories()
         base_keys = [key for cat in categories for key in app_config.get_category_keys(cat)]
         key_keys = KeyConfig().get_keys()
+        undo_limit_changed = AppConfig.MAX_UNDO in changed_settings \
+            and changed_settings[AppConfig.MAX_UNDO] != app_config.get(AppConfig.MAX_UNDO)
         for key, value in changed_settings.items():
             if key in base_keys:
                 app_config.set(key, value)
             elif key in key_keys:
                 KeyConfig().set(key, value)
+        if undo_limit_changed:
+            show_warning_dialog(self._window, UNDO_LIMIT_RESTART_TITLE, UNDO_LIMIT_RESTART_MESSAGE, None)
         if self._generator is not None:
             self._generator.update_settings(changed_settings)
 
@@ -753,14 +799,15 @@ class AppController(MenuBuilder):
                     break
 
         # Hide everything related to generation area if no generator is in use:
-        crop_to_gen_action = self.get_action_for_method(self.crop_image_to_gen_area)
-        crop_to_gen_action.setVisible(self._generator != self._null_generator)
+        generation_available = bool(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
+        for gen_area_method in (self.crop_image_to_gen_area, self.clear_context_pins):
+            self.get_action_for_method(gen_area_method).setVisible(generation_available)
 
         # "Merge down" should also check the next layer:
         merge_down_action = self.get_action_for_method(self.merge_layer_down)
         if merge_down_action.isEnabled():
             next_layer = self._image_stack.next_layer(active_layer)
-            if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
+            if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.shown \
                     or not isinstance(next_layer, TransformLayer) \
                     or next_layer.layer_parent != active_layer.layer_parent:
                 merge_down_action.setEnabled(False)
@@ -773,13 +820,18 @@ class AppController(MenuBuilder):
         # "Merge all visible" needs at least one mergeable visible top-level layer:
         merge_visible_action = self.get_action_for_method(self.merge_all_visible)
         if _test_state(self.merge_all_visible):
-            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.shown]
             can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
                                                                 and isinstance(visible_top_layers[0], LayerGroup)
                                                                 and visible_top_layers[0].count > 0)
             merge_visible_action.setEnabled(can_merge_visible)
         else:
             merge_visible_action.setEnabled(False)
+
+        # "Reopen last generated options" also needs a stored batch that still fits the image:
+        restore_action = self.get_action_for_method(self.restore_previous_image_choices)
+        restore_action.setEnabled(_test_state(self.restore_previous_image_choices)
+                                  and self._window.can_restore_previous_options())
 
         self._can_clear_or_cut_image = not is_locked and not selection_is_empty
         self._can_copy_image = not selection_is_empty
@@ -814,340 +866,124 @@ class AppController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def new_image(self) -> None:
         """Open a new image creation modal."""
+        self.wait_for_pending_save()
         default_size = AppConfig().get(AppConfig.DEFAULT_IMAGE_SIZE)
-        image_modal = NewImageModal(default_size.width(), default_size.height())
+        generation_area_size = self._image_stack.generation_area.size() if self._image_stack.has_image else None
+        clipboard_image = get_clipboard_image()
+        image_modal = NewImageModal(default_size.width(), default_size.height(), generation_area_size,
+                                    None if clipboard_image is None else clipboard_image.size())
         image_size = image_modal.show_image_modal()
-        if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
-                                                                                   NEW_IMAGE_CONFIRMATION_TITLE,
-                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE,
-                                                                                   discards_work=True)):
+        if image_size and self._image_io.confirm_unsaved_changes(NEW_IMAGE_CONFIRMATION_BUTTON):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
-            new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            new_image.fill(color_controller.new_image_color())
             Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
-            self._metadata = None
-            self._exif = None
+            self._image_io.clear_metadata()
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
-    @menu_action(MENU_FILE, 'save_shortcut', priority=1,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
+    @menu_action(MENU_FILE, 'save_shortcut', 10,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING], separator_before=True)
     def save_image(self) -> None:
         """Saves the edited image, only opening the save dialog if no previous image path is cached."""
-        image_path = Cache().get(Cache.LAST_FILE_PATH)
-        if not os.path.isfile(image_path):
-            image_path = None
-        self.save_image_as(file_path=image_path)
+        self._image_io.save()
 
-    @menu_action(MENU_FILE, 'save_as_shortcut', priority=2,
+    def wait_for_pending_save(self) -> None:
+        """Returns once any background write has finished, keeping the UI responsive while it runs."""
+        self._image_io.wait_for_pending_save()
+
+    @menu_action(MENU_FILE, 'save_as_shortcut', 11,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
     def save_image_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
-        cache = Cache()
-        config = AppConfig()
-        error_handled = False
-        try:
-            if not isinstance(file_path, str):
-                self._window.setUpdatesEnabled(False)
-                selected_path = open_image_file(self._window, mode='save',
-                                                selected_file=cache.get(Cache.LAST_FILE_PATH))
-                self._window.setUpdatesEnabled(True)
-                self._window.update()
-                self._window.repaint()
-                if not isinstance(selected_path, str):
-                    return
-                file_path = selected_path
-            assert isinstance(file_path, str)
-            delimiter_index = file_path.rfind('.')
-            if delimiter_index < 0:
-                raise ValueError(SAVE_ERROR_MESSAGE_NO_EXTENSION.format(file_path=file_path))
-            file_format = file_path[delimiter_index + 1:].upper()
-            if (file_format not in QIMAGE_WRITE_FORMATS and file_format not in PIL_WRITE_FORMATS
-                    and file_format != 'ORA'):
-                raise ValueError(SAVE_ERROR_MESSAGE_INVALID_EXTENSION.format(extension=file_format))
+        self._image_io.save_as(file_path)
 
-            # Check if metadata is out of date, ask if it should update:
-            if file_format in IMAGE_FORMATS_SUPPORTING_METADATA and self._generator is not None \
-                    and not isinstance(self._generator, NullGenerator):
-                if not self._metadata_will_be_saved():
-                    update_metadata = request_confirmation(self._window, TITLE_CONFIRM_METADATA_INIT,
-                                                           MESSAGE_CONFIRM_METADATA_INIT,
-                                                           AppConfig.ALWAYS_INIT_METADATA_ON_SAVE,
-                                                           QMessageBox.StandardButton.Yes,
-                                                           QMessageBox.StandardButton.No)
-                elif not self._metadata_is_latest():
-                    update_metadata = request_confirmation(self._window, TITLE_CONFIRM_METADATA_UPDATE,
-                                                           MESSAGE_CONFIRM_METADATA_UPDATE,
-                                                           AppConfig.ALWAYS_UPDATE_METADATA_ON_SAVE,
-                                                           QMessageBox.StandardButton.Yes,
-                                                           QMessageBox.StandardButton.No)
-                else:
-                    update_metadata = False
-                if update_metadata:
-                    self.update_metadata(False)
-
-            if file_path.lower().endswith(ORA_FILE_EXTENSION):
-
-                class _Encoder(json.JSONEncoder):
-
-                    def default(self, o):
-                        """Convert byte strings to ASCII when serializing."""
-                        if isinstance(o, bytes):
-                            return o.decode()
-                        return super().default(o)
-
-                save_ora_image(self._image_stack, file_path, json.dumps(self._metadata, cls=_Encoder))
-            else:
-                image = self._image_stack.qimage()
-
-                # Check for data loss conditions that should be mentioned:
-                warn_save_discards_layers = (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE)
-                                             and self._image_stack.layer_stack.count > 1)
-                warn_save_discards_alpha = (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
-                                            and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
-                                                  and not image_is_fully_opaque(image))
-                                                 or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
-                                                     and image_has_partial_alpha(image))))
-                warn_save_discards_metadata = (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
-                                               and self._metadata is not None
-                                               and METADATA_PARAMETER_KEY in self._metadata
-                                               and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA)
-                warn_save_is_write_only = (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE)
-                                           and file_format in IMAGE_WRITE_FORMATS
-                                           and file_format not in IMAGE_READ_FORMATS)
-                warn_save_changes_size = (config.get(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE)
-                                          and file_format in IMAGE_FORMATS_WITH_FIXED_SIZE
-                                          and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
-                warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
-                                           and file_format in GREYSCALE_IMAGE_FORMATS)
-                if file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
-
-                    try:
-                        save_image_with_metadata(image, file_path, self._metadata, self._exif)
-                    except ValueError:
-                        logger.error(f'Format {file_format} should support metadata, but saving with metadata failed.')
-                        warn_save_discards_metadata = config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
-                        save_image(image, file_path, self._exif)
-                else:
-                    save_image(image, file_path, self._exif)
-
-                # Show data loss warnings, if not disabled:
-                alpha_loss_message = ALPHA_NOT_SAVED_MESSAGE
-                metadata_loss_message = METADATA_NOT_SAVED_MESSAGE
-                fixed_size_message = FIXED_SIZE_SAVE_MESSAGE
-                color_loss_message = NO_COLOR_SAVE_MESSAGE
-                write_only_message = WRITE_ONLY_SAVE_MESSAGE
-
-                def _extension_str(extensions: tuple[str, ...]) -> str:
-                    return ', '.join((f'.{ext.lower()}' for ext in extensions))
-
-                format_str = f'.{file_format.lower()}'
-
-                if warn_save_discards_alpha:
-                    alpha_loss_message = alpha_loss_message.format(
-                        alpha_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_ALPHA))
-                if warn_save_discards_metadata:
-                    metadata_loss_message = metadata_loss_message.format(
-                        metadata_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_METADATA))
-                if warn_save_changes_size:
-                    final_size = IMAGE_FORMATS_WITH_FIXED_SIZE[file_format]
-                    fixed_size_message = fixed_size_message.format(width_px=image.width(),
-                                                                   height_px=image.height(),
-                                                                   file_format=format_str,
-                                                                   saved_width_px=final_size.width(),
-                                                                   saved_height_px=final_size.height())
-                if warn_save_is_write_only:
-                    write_only_message = write_only_message.format(file_format=format_str)
-                if warn_save_removes_color:
-                    color_loss_message = color_loss_message.format(file_format=format_str)
-
-                for loss_condition, warn_on_save_config_key, title, message in (
-                        (warn_save_discards_layers, AppConfig.WARN_BEFORE_LAYERLESS_SAVE, LAYERS_NOT_SAVED_TITLE,
-                         LAYERS_NOT_SAVED_MESSAGE),
-                        (warn_save_discards_alpha, AppConfig.WARN_BEFORE_RGB_SAVE, ALPHA_NOT_SAVED_TITLE,
-                         alpha_loss_message),
-                        (warn_save_discards_metadata, AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA,
-                         METADATA_NOT_SAVED_TITLE, metadata_loss_message),
-                        (warn_save_is_write_only, AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE, WRITE_ONLY_SAVE_TITLE,
-                         write_only_message),
-                        (warn_save_changes_size, AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE, FIXED_SIZE_SAVE_TITLE,
-                         fixed_size_message),
-                        (warn_save_removes_color, AppConfig.WARN_BEFORE_COLOR_LOSS, NO_COLOR_SAVE_TITLE,
-                         color_loss_message)):
-                    if loss_condition:
-                        show_warning_dialog(self._window, title, message, warn_on_save_config_key)
-            if not os.path.isfile(file_path):
-                raise RuntimeError(SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
-            cache.set(Cache.LAST_FILE_PATH, file_path)
-        except (IOError, TypeError, ValueError, RuntimeError) as save_err:
-            error_handled = True
-            logger.error(f'save failed: {save_err}')
-            show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
-        finally:
-            if isinstance(file_path, str) and not os.path.isfile(file_path) and not error_handled:
-                show_error_dialog(self._window, SAVE_ERROR_TITLE,
-                                  SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
-            self._window.setUpdatesEnabled(True)
-            self._window.update()
-            self._window.repaint()
-
-    @menu_action(MENU_FILE, 'load_shortcut', 3,
+    @menu_action(MENU_FILE, 'load_shortcut', 1,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image(self, file_path: Optional[str | list[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
-        cache = Cache()
-        if file_path is None:
-            self._window.setUpdatesEnabled(False)
-            selected_path = open_image_file(self._window)
-            self._window.setUpdatesEnabled(True)
-            self._window.update()
-            self._window.repaint()
-            if not isinstance(selected_path, (str, list)):
-                return
-            file_path = selected_path
-        if isinstance(file_path, list):
-            if len(file_path) != 1:
-                logger.warning(f'Expected single image, got list with length {len(file_path)}')
-            file_path = file_path[0]
-        assert isinstance(file_path, str)
-        self._exif = Image.Exif()
-        self._metadata = None
-        try:
-            assert file_path is not None
-            if file_path.lower().endswith('.ora'):
-                metadata = read_ora_image(self._image_stack, file_path)
-                if metadata is not None and len(metadata) > 0:
-                    self._metadata = json.loads(metadata)
-            else:
-                image, exif, image_info = load_image(file_path)
-                # try and load metadata:
-                if image_info is not None:
-                    if METADATA_COMMENT_KEY in image_info and METADATA_PARAMETER_KEY not in image_info:
-                        # noinspection PyTypeChecker
-                        image_info[METADATA_PARAMETER_KEY] = image_info[METADATA_COMMENT_KEY]
-                    self._metadata = image_info
-                if exif is not None:
-                    if isinstance(exif, Image.Exif):
-                        self._exif = exif
-                    elif (self._metadata is None or METADATA_PARAMETER_KEY
-                          not in self._metadata) and isinstance(exif, dict):
-                        self._metadata = exif
-                        if 'exif' in exif:
-                            self._exif.load(exif['exif'])
-                if (self._metadata is None or METADATA_PARAMETER_KEY not in self._metadata) and self._exif is not None:
-                    exif_tags = self._exif.get_ifd(IFD.Exif)
-                    description = exif_tags.get(ExifTags.Base.ImageDescription)
-                    if description is None:
-                        description = self._exif.get(ExifTags.Base.ImageDescription)
-                    if description is not None:
-                        if self._metadata is None:
-                            self._metadata = {}
-                        self._metadata[METADATA_PARAMETER_KEY] = description
-                self._image_stack.load_image(image)
-            cache.set(Cache.LAST_FILE_PATH, file_path)
+        self._image_io.load(file_path)
 
-            # File loaded, attempt to apply metadata:
-            if self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata:
-                param_str = self._metadata[METADATA_PARAMETER_KEY]
-                if param_str is not None and not isinstance(param_str, str):
-                    # noinspection PyTypeChecker
-                    param_str = str(param_str, encoding='utf-8')
-                match = re.match(r'^((?:.|\n)*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
-                                 r' Size: ?(\d+)x?(\d+)', param_str)
-                if match:
-                    prompt = match.group(1)
-                    negative = ''
-                    steps = int(match.group(2))
-                    sampler = match.group(3)
-                    cfg_scale = float(match.group(4))
-                    seed = int(match.group(5))
-                    divider_match = re.match('^((?:.|\n)*)\nNegative prompt: ?(.*)$', prompt)
-                    if divider_match:
-                        prompt = divider_match.group(1)
-                        negative = divider_match.group(2)
-                    logger.info('Detected saved image gen data, applying to UI')
-                    try:
-                        cache.set(Cache.PROMPT, prompt)
-                        cache.set(Cache.NEGATIVE_PROMPT, negative)
-                        cache.set(Cache.SAMPLING_STEPS, steps)
-                        try:
-                            cache.set(Cache.SAMPLING_METHOD, sampler)
-                        except ValueError:
-                            logger.error(f'sampler "{sampler}" used to generate this image is not supported.')
-                        cache.set(Cache.GUIDANCE_SCALE, cfg_scale)
-                        cache.set(Cache.SEED, seed)
-                    except (TypeError, RuntimeError) as err:
-                        logger.error(f'Failed to load image gen data from metadata: {err}')
-                else:
-                    logger.warning('image parameters do not match expected patterns, cannot be used. '
-                                   f'parameters:{param_str}')
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
-        except (UnidentifiedImageError, OSError) as err:
-            show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
-            return
-        finally:
-            self._window.setUpdatesEnabled(True)
-            self._window.update()
-            self._window.repaint()
-
-    @menu_action(MENU_FILE, 'load_layers_shortcut', 4,
+    @menu_action(MENU_FILE, 'load_layers_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image_layers(self) -> None:
         """Open one or more images as layers."""
-        layer_paths, layers_selected = open_image_layers(self._window)
-        if not layers_selected or not layer_paths or len(layer_paths) == 0:
-            return
-        layers: list[tuple[QImage, str]] = []
-        errors: list[str] = []
-        for layer_path in layer_paths:
-            try:
-                image, _, _ = load_image(layer_path)
-                layers.append((image, layer_path))
-            except IOError:
-                errors.append(layer_path)
-        if not self._image_stack.has_image:
-            width = 0
-            height = 0
-            for image, _ in layers:
-                width = max(width, image.width())
-                height = max(height, image.height())
-            base_layer = create_transparent_image(QSize(width, height))
-            self._image_stack.load_image(base_layer)
-        for image, image_path in layers:
-            name = os.path.basename(image_path)
-            self._image_stack.create_layer(name, image)
-        if len(errors) > 0:
-            show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE, LOAD_LAYER_ERROR_MESSAGE + ','.join(errors))
-        if self._image_stack.has_image:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+        self._image_io.load_layers()
 
-    @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
+    def _make_menu_action_checkable(self, method: Callable[..., None], config_key: str) -> None:
+        """Shows a boolean AppConfig value as the checked state of the menu action that toggles it."""
+        action = self.get_action_for_method(method)
+        config = AppConfig()
+        action.setCheckable(True)
+        action.setChecked(config.get(config_key))
+        # Config.connect inspects the callback's signature, which Python 3.11 and 3.12 can't read for Qt methods:
+        config.connect(action, config_key,
+                       lambda checked: action.setChecked(checked))  # pylint: disable=unnecessary-lambda
+
+    def _build_recent_files_menu(self) -> None:
+        """Adds the Open recent submenu below File > Open..., filled each time it opens."""
+        file_menu = self.get_menu(MENU_FILE)
+        layers_action = self.get_action_for_method(self.load_image_layers)
+        self._recent_files_menu = QMenu(SUBMENU_RECENT_FILES, file_menu)
+        file_menu.insertMenu(layers_action, self._recent_files_menu)
+        self._recent_files_menu.aboutToShow.connect(self._update_recent_files_menu)
+
+    def _update_recent_files_menu(self) -> None:
+        """Lists the remembered files, newest first. Entries whose file no longer exists are disabled."""
+        menu = self._recent_files_menu
+        assert menu is not None
+        menu.clear()
+        paths = recent_files()
+        can_open = AppStateTracker.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
+        for path in paths:
+            action = menu.addAction(os.path.basename(path).replace('&', '&&'))
+            assert action is not None
+            action.setToolTip(path)
+            action.setEnabled(can_open and os.path.isfile(path))
+            action.triggered.connect(lambda _=False, file_path=path: self.load_image(file_path))
+        if len(paths) > 0:
+            menu.addSeparator()
+        clear_action = menu.addAction(MENU_ACTION_CLEAR_RECENT)
+        assert clear_action is not None
+        clear_action.setEnabled(len(paths) > 0)
+        clear_action.triggered.connect(clear_recent_files)
+
+    def open_dropped_files(self, file_paths: list[str]) -> None:
+        """Opens image files dropped on the window, adding them as layers if an image is already open."""
+        if AppStateTracker.app_state() not in (APP_STATE_EDITING, APP_STATE_NO_IMAGE) or len(file_paths) == 0:
+            return
+        if self._image_stack.has_image:
+            self._image_io.add_layers_from_files(file_paths)
+        else:
+            self.load_image(file_paths[0])
+            if len(file_paths) > 1:
+                self._image_io.add_layers_from_files(file_paths[1:])
+
+    @menu_action(MENU_FILE, 'reload_shortcut', 12, valid_app_states=[APP_STATE_EDITING])
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
-        file_path = Cache().get(Cache.LAST_FILE_PATH)
-        if file_path == '':
-            show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
-            return
-        if not os.path.isfile(file_path):
-            show_error_dialog(self._window, RELOAD_ERROR_TITLE,
-                              RELOAD_ERROR_MESSAGE_INVALID_FILE.format(file_path=file_path))
-            return
-        if not self._image_stack.has_image or request_confirmation(self._window,
-                                                                   RELOAD_CONFIRMATION_TITLE,
-                                                                   RELOAD_CONFIRMATION_MESSAGE,
-                                                                   discards_work=True):
-            self.load_image(file_path=file_path)
+        self._image_io.reload()
 
-    @menu_action(MENU_FILE, 'quit_shortcut', 6)
+    @menu_action(MENU_FILE, 'quit_shortcut', 30, separator_before=True)
     def quit(self, skip_confirmation: bool = False) -> None:
         """Quit the application after getting confirmation from the user."""
         if skip_confirmation:
+            self.wait_for_pending_save()
             self._window.close_without_confirmation()
         else:
             self._window.close()  # MainWindow.closeEvent asks through _confirm_quit.
 
+    def _update_window_title(self) -> None:
+        """Shows the open file's name in the window title, marked while it has unsaved changes."""
+        file_path = Cache().get(Cache.LAST_FILE_PATH)
+        self._window.setWindowFilePath(file_path if file_path != '' else UNTITLED_FILE_NAME)
+        self._window.setWindowModified(not UndoStack().is_clean())
+
     def _confirm_quit(self) -> bool:
-        """Asks the user to confirm closing the main window, returning whether to proceed."""
-        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True)
+        """Returns whether closing the main window may proceed, offering to save unsaved changes first."""
+        confirmed = self._image_io.confirm_unsaved_changes(CONFIRM_QUIT_BUTTON)
+        if confirmed:
+            self.wait_for_pending_save()
+        return confirmed
 
     # Edit menu:
 
@@ -1173,7 +1009,7 @@ class AppController(MenuBuilder):
         else:
             UndoStack().redo()
 
-    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'cut_shortcut', 110, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def cut(self) -> None:
         """Cut selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
@@ -1188,7 +1024,7 @@ class AppController(MenuBuilder):
                 self._can_paste_image = True
                 self._update_enabled_actions()
 
-    @menu_action(MENU_EDIT, 'copy_shortcut', 103, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'copy_shortcut', 111, valid_app_states=[APP_STATE_EDITING])
     def copy(self) -> None:
         """Copy selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_copy():
@@ -1203,7 +1039,17 @@ class AppController(MenuBuilder):
                 self._can_paste_image = True
                 self._update_enabled_actions()
 
-    @menu_action(MENU_EDIT, 'paste_shortcut', 104, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'copy_merged_shortcut', 112, valid_app_states=[APP_STATE_EDITING])
+    def copy_merged(self) -> None:
+        """Copy the selected region of all visible layers combined, as one image."""
+        copied_image = self._image_stack.copy_merged()
+        if copied_image is not None and not copied_image.isNull():
+            set_clipboard_image(copied_image)
+        if not self._can_paste_image:
+            self._can_paste_image = True
+            self._update_enabled_actions()
+
+    @menu_action(MENU_EDIT, 'paste_shortcut', 113, valid_app_states=[APP_STATE_EDITING])
     def paste(self) -> None:
         """Paste copied image content into a new layer, or copied text in an active text field."""
         if self._active_text_field_tracker.focused_can_paste():
@@ -1228,7 +1074,7 @@ class AppController(MenuBuilder):
                                           center.y() - (image.height() - 1) // 2)
         self._image_stack.paste_image(image, offset)
 
-    @menu_action(MENU_EDIT, 'clear_shortcut', 105, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'clear_shortcut', 114, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:
         """Clear selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
@@ -1236,38 +1082,134 @@ class AppController(MenuBuilder):
         else:
             self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106)
     def swap_colors(self) -> None:
         """Swap the foreground and background colors."""
         color_controller.swap()
 
-    @menu_action(MENU_EDIT, 'reset_colors_shortcut', 107)
     def reset_colors(self) -> None:
         """Set the foreground color to black and the background color to white."""
         color_controller.reset()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 108)
-    def show_settings(self) -> None:
-        """Show the settings window."""
+    @menu_action(MENU_EDIT, 'keyboard_shortcuts_shortcut', 120, separator_before=True)
+    def show_keyboard_shortcuts(self) -> None:
+        """Show the settings window at the keybinding settings."""
+        self.show_settings(KEYBINDINGS_CATEGORY)
+
+    @menu_action(MENU_EDIT, 'settings_shortcut', 121)
+    def show_settings(self, category: Optional[str] = None) -> None:
+        """Show the settings window, on the tab named `category` if one is given."""
         if self._settings_modal is None:
             self._settings_modal = SettingsModal(self._window)
             self.init_settings(self._settings_modal)
             self._settings_modal.changes_saved.connect(self.update_settings)
         self.refresh_settings(self._settings_modal)
         self._set_alt_window_fractional_bounds(self._settings_modal)
-        self._settings_modal.show_modal()
+        self._settings_modal.show_modal(category)
 
-    # Image menu:
+    # View menu:
 
-    @menu_action(MENU_IMAGE, 'toggle_rulers_shortcut', 198)
+    @menu_action(MENU_VIEW, 'zoom_in_shortcut', 190, valid_app_states=[APP_STATE_EDITING])
+    def zoom_in(self) -> None:
+        """Zoom in on the image view by one step."""
+        self._image_viewer.zoom_in()
+
+    @menu_action(MENU_VIEW, 'zoom_out_shortcut', 191, valid_app_states=[APP_STATE_EDITING])
+    def zoom_out(self) -> None:
+        """Zoom out from the image view by one step."""
+        self._image_viewer.zoom_out()
+
+    @menu_action(MENU_VIEW, 'zoom_actual_size_shortcut', 193, valid_app_states=[APP_STATE_EDITING])
+    def zoom_to_actual_size(self) -> None:
+        """Show the image at 100% scale."""
+        self._image_viewer.zoom_to_actual_size()
+
+    @menu_action(MENU_VIEW, 'reset_view_shortcut', 192, valid_app_states=[APP_STATE_EDITING])
+    def reset_view(self) -> None:
+        """Fit the whole image in the view."""
+        self._image_viewer.follow_generation_area = False
+        self._image_viewer.reset_scale()
+
+    @menu_action(MENU_VIEW, 'zoom_to_gen_area_shortcut', 194, valid_app_states=[APP_STATE_EDITING])
+    def zoom_to_generation_area(self) -> None:
+        """Center the view on the generation area."""
+        self._image_viewer.zoom_to_generation_area()
+
+    @menu_action(MENU_VIEW, 'toggle_control_hints_shortcut', 201, valid_app_states=[APP_STATE_EDITING])
+    def toggle_control_hints(self) -> None:
+        """Show or hide the active tool's control hints below the image."""
+        config = AppConfig()
+        config.set(AppConfig.SHOW_TOOL_CONTROL_HINTS, not config.get(AppConfig.SHOW_TOOL_CONTROL_HINTS))
+
+    @menu_action(MENU_VIEW, 'toggle_selection_overlay_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    def toggle_selection_overlay(self) -> None:
+        """Show or hide the selection overlay fill, leaving the selection outline in place."""
+        config = AppConfig()
+        config.set(AppConfig.SHOW_SELECTION_OVERLAY, not config.get(AppConfig.SHOW_SELECTION_OVERLAY))
+
+    @menu_action(MENU_VIEW, 'toggle_full_screen_shortcut', 203,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def toggle_full_screen(self) -> None:
+        """Switch the main window between full screen and its previous size, keeping a maximized state."""
+        self._window.setWindowState(self._window.windowState() ^ Qt.WindowState.WindowFullScreen)
+
+    @menu_action(MENU_WINDOW, 'reset_dock_layout_shortcut', 520,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def reset_panel_layout(self) -> None:
+        """Put every panel back where it starts on first run, and open it."""
+        self._window.reset_dock_layout()
+
+    @menu_action(MENU_WINDOW_LAYOUTS, 'save_dock_layout_shortcut', 510,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def save_panel_layout(self) -> None:
+        """Save the current panel arrangement under a name chosen by the user."""
+        name = prompt_layout_name(self._window, TITLE_SAVE, saved_layouts.default_layout_name(),
+                                  set(saved_layouts.layout_names()))
+        if name is not None:
+            saved_layouts.save_layout(name, self._window.save_dock_state())
+
+    @menu_action(MENU_WINDOW_LAYOUTS, 'manage_dock_layouts_shortcut', 511,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def manage_panel_layouts(self) -> None:
+        """Open the dialog for applying, renaming and deleting saved panel layouts."""
+        ManageLayoutsModal(self._apply_saved_layout, self._window).exec()
+
+    def _apply_saved_layout(self, name: str) -> None:
+        """Applies a saved layout, showing an error if its text can't be restored."""
+        try:
+            applied = self._window.apply_dock_state(saved_layouts.get_layout_state(name))
+        except KeyError:
+            applied = False
+        if not applied:
+            show_error_dialog(self._window, TITLE_LAYOUT_ERROR,
+                              rich_text_format(MESSAGE_LAYOUT_ERROR, layout_name=name))
+
+    def _update_layout_menu(self) -> None:
+        """Lists the saved layouts below the static Layouts actions, rebuilt each time the submenu opens."""
+        menu = self.get_menu(MENU_WINDOW_LAYOUTS)
+        for action in menu.actions():
+            if action.property(LAYOUT_ACTION_PROPERTY):
+                menu.removeAction(action)
+                action.deleteLater()
+        names = saved_layouts.layout_names()
+        if len(names) == 0:
+            return
+        separator = menu.addSeparator()
+        assert separator is not None
+        separator.setProperty(LAYOUT_ACTION_PROPERTY, True)
+        enabled = AppStateTracker.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
+        for name in names:
+            action = menu.addAction(name.replace('&', '&&'))
+            assert action is not None
+            action.setProperty(LAYOUT_ACTION_PROPERTY, True)
+            action.setEnabled(enabled)
+            action.triggered.connect(lambda _=False, layout_name=name: self._apply_saved_layout(layout_name))
+
+    @menu_action(MENU_VIEW, 'toggle_rulers_shortcut', 200, separator_before=True)
     def toggle_rulers(self) -> None:
         """Show or hide the rulers beside the image."""
         AppConfig().set(AppConfig.SHOW_RULERS, not AppConfig().get(AppConfig.SHOW_RULERS))
 
-    @menu_action(MENU_IMAGE, 'navigation_window_shortcut', 199)
-    def show_navigation_window(self) -> None:
-        """Show the image preview window."""
-        self._window.show_navigation_window()
+    # Image menu:
 
     @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 200, valid_app_states=[APP_STATE_EDITING])
     def resize_canvas(self) -> None:
@@ -1295,70 +1237,71 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
-    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_flip_horizontal_shortcut', 202,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_flip_horizontal(self) -> None:
+        """Flip the whole image horizontally."""
+        self._image_stack.flip_image(True)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_flip_vertical_shortcut', 203,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_flip_vertical(self) -> None:
+        """Flip the whole image vertically."""
+        self._image_stack.flip_image(False)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_cw_shortcut', 204,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_cw(self) -> None:
+        """Rotate the whole image 90 degrees clockwise."""
+        self._image_stack.rotate_image(90)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_ccw_shortcut', 205,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_ccw(self) -> None:
+        """Rotate the whole image 90 degrees counter-clockwise."""
+        self._image_stack.rotate_image(-90)
+
+    @menu_action(f'{MENU_IMAGE}.{SUBMENU_TRANSFORM}', 'image_rotate_180_shortcut', 206,
+                 valid_app_states=[APP_STATE_EDITING])
+    def image_rotate_180(self) -> None:
+        """Rotate the whole image 180 degrees."""
+        self._image_stack.rotate_image(180)
+
+    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 210, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def crop_image_to_selection(self) -> None:
         """Crop the image to fit selected content."""
         crop_image_stack_to_selection(self._image_stack)
 
-    @menu_action(MENU_IMAGE, 'crop_image_to_gen_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'crop_image_to_gen_shortcut', 211, valid_app_states=[APP_STATE_EDITING])
     def crop_image_to_gen_area(self) -> None:
         """Crop the image to fit the generation area."""
         crop_image_stack_to_gen_area(self._image_stack)
 
-    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 212, valid_app_states=[APP_STATE_EDITING])
     def resize_image_to_content(self) -> None:
         """Update the image size to match all layer content."""
         resize_image_stack_to_content(self._image_stack)
 
-    def _metadata_will_be_saved(self) -> bool:
-        return self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata
+    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 220,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], separator_before=True)
+    def show_metadata_window(self) -> None:
+        """Opens the window for viewing and editing the image's metadata, or raises it if it is already open."""
+        metadata = self._image_io.metadata
+        if self._metadata_window is None:
+            self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH))
+            self._metadata_window.metadata_applied.connect(self._apply_edited_metadata)
+            self._image_io.on_metadata_replaced = self._metadata_window.set_metadata
+        else:
+            self._metadata_window.set_metadata(metadata)
+        self._metadata_window.show()
+        self._metadata_window.raise_()
+        self._metadata_window.activateWindow()
 
-    @staticmethod
-    def _updated_metadata_params() -> str:
-        cache = Cache()
-        prompt = cache.get(Cache.PROMPT)
-        negative = cache.get(Cache.NEGATIVE_PROMPT)
-        steps = cache.get(Cache.SAMPLING_STEPS)
-        sampler = cache.get(Cache.SAMPLING_METHOD)
-        cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
-        seed = cache.get(Cache.SEED)
-        size = cache.get(Cache.GENERATION_SIZE)
-        return f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
-            f'{cfg_scale}, Seed: {seed}, Size: {size.width()}x{size.height()}'
+    def _apply_edited_metadata(self, metadata: ImageMetadata) -> None:
+        """Makes the metadata window's applied edits the image's metadata, which the next save writes."""
+        self._image_io.metadata = metadata
 
-    def _metadata_is_latest(self) -> bool:
-        if not self._metadata_will_be_saved():
-            return False
-        return self._metadata is not None and self._updated_metadata_params() == self._metadata[METADATA_PARAMETER_KEY]
-
-    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 204,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
-    def update_metadata(self, show_messagebox: bool = True) -> None:
-        """
-        Adds image editing parameters from config to the image metadata, in a format compatible with the A1111
-        Stable Diffusion WebUI. Parameters will be applied to the image file when save_image is called.
-
-        Parameters
-        ----------
-        show_messagebox: bool
-            If true, show a messagebox after the update to let the user know what happened.
-        """
-        params = self._updated_metadata_params()
-        if self._metadata is None:
-            self._metadata = {}
-        self._metadata[METADATA_PARAMETER_KEY] = params
-        if self._exif is None:
-            self._exif = Image.Exif()
-        exif_tags = self._exif.get_ifd(IFD.Exif)
-        exif_tags[ExifTags.Base.ImageDescription.value] = params
-        if show_messagebox:
-            message_box = QMessageBox()
-            message_box.setWindowTitle(METADATA_UPDATE_TITLE)
-            message_box.setText(METADATA_UPDATE_MESSAGE)
-            message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-            message_box.exec()
-
-    @menu_action(MENU_IMAGE, 'generator_select_shortcut', 205)
+    @menu_action(MENU_GENERATION, 'generator_select_shortcut', 530)
     def show_generator_window(self) -> None:
         """Show the generator selection window."""
         assert self._generator is not None
@@ -1378,7 +1321,7 @@ class AppController(MenuBuilder):
         self._generator_window.show()
         self._generator_window.raise_()
 
-    @menu_action(MENU_IMAGE, 'generate_shortcut', 206, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_GENERATION, 'generate_shortcut', 500, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if AppStateTracker.app_state() != APP_STATE_EDITING:
@@ -1389,181 +1332,186 @@ class AppController(MenuBuilder):
             assert self._generator is not None
             self._generator.start_and_manage_image_generation()
 
-    # Selection menu:
-    @menu_action(MENU_SELECTION, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_GENERATION, 'restore_choices_shortcut', 501, valid_app_states=[APP_STATE_EDITING])
+    def restore_previous_image_choices(self) -> None:
+        """Re-open the last batch of generated image options."""
+        if self._window.can_restore_previous_options():
+            self._window.restore_previous_image_selection_options()
+
+    # Select menu:
+    @menu_action(MENU_SELECT, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:
         """Selects the entire image."""
         self._image_stack.selection_layer.image = self._image_stack.qimage(crop_to_image=False)
 
-    @menu_action(MENU_SELECTION, 'select_none_shortcut', 301, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'select_none_shortcut', 301, valid_app_states=[APP_STATE_EDITING])
     def select_none(self) -> None:
         """Clears the selection."""
         self._image_stack.selection_layer.clear()
 
-    @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 302,
+    @menu_action(MENU_SELECT, 'invert_selection_shortcut', 302,
                  valid_app_states=[APP_STATE_EDITING])
     def invert_selection(self) -> None:
         """Swaps selected and unselected areas."""
         self._image_stack.selection_layer.invert_selection()
 
-    @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', 303,
-                 valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'select_layer_content_shortcut', 310,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def select_active_layer_content(self) -> None:
         """Selects all pixels in the active layer that are not fully transparent."""
         self._image_stack.select_layer_content()
 
-    @menu_action(MENU_SELECTION, 'grow_selection_shortcut', 304, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'grow_selection_shortcut', 320,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def grow_selection(self, num_pixels=1) -> None:
         """Expand the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
 
-    @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', 305,
+    @menu_action(MENU_SELECT, 'shrink_selection_shortcut', 321,
                  valid_app_states=[APP_STATE_EDITING])
     def shrink_selection(self, num_pixels=1) -> None:
         """Contract the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
-    @menu_action(MENU_SELECTION, 'clear_context_pins_shortcut', 306, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'clear_context_pins_shortcut', 330,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def clear_context_pins(self) -> None:
-        """Removes all context pins."""
-        self._image_stack.selection_layer.clear_context_pins()
+        """Removes all context pins, if an image generator is loaded."""
+        if Cache().get(Cache.IMAGE_GENERATION_AVAILABLE):
+            self._image_stack.selection_layer.clear_context_pins()
 
     # Layer menu:
-    @menu_action(MENU_LAYERS, 'show_layer_menu_shortcut', 399)
-    def show_layer_panel(self) -> None:
-        """Opens the layer panel window"""
-        if self._layer_panel is None:
-            self._layer_panel = LayerPanel(self._image_stack)
-            if not Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel):
-                width = int(self._layer_panel.sizeHint().width() * 1.5)
-                height = self._window.height() // 3
-                x = self._window.x() + self._window.width() - int(width * 1.5)
-                y = self._window.y() + height
-                Cache().set(Cache.SAVED_LAYER_WINDOW_POS, f'{x},{y},{width},{height}')
-                Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel)
-        self._layer_panel.show()
-        self._layer_panel.raise_()
+    @menu_action(MENU_LAYER, 'rename_layer_shortcut', 410, valid_app_states=[APP_STATE_EDITING], separator_before=True)
+    def rename_layer(self) -> None:
+        """Edit the active layer's name in the layer panel, opening its dock if it is closed."""
+        panel = self._layer_dock_panel
+        if panel is not None:
+            self._window.layers_dock.open_in_group()
+            panel.start_rename()
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_previous_layer_shortcut', 400,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_previous_layer_shortcut', 420,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_previous_layer(self) -> None:
         """Select the layer above the current active layer."""
         self._image_stack.offset_active_selection(-1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_next_layer_shortcut', 401,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_next_layer_shortcut', 421,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_next_layer(self) -> None:
         """Select the layer below the current active layer."""
         self._image_stack.offset_active_selection(1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_up_shortcut', 410,
-                 valid_app_states=[APP_STATE_EDITING])
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_up_shortcut', 422,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
         self._image_stack.move_layer_by_offset(-1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_down_shortcut', 411,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_down_shortcut', 423,
                  valid_app_states=[APP_STATE_EDITING])
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
         self._image_stack.move_layer_by_offset(1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_to_top_shortcut', 412,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_to_top_shortcut', 424,
                  valid_app_states=[APP_STATE_EDITING])
     def move_layer_to_top(self) -> None:
         """Move the active layer to the top of the layer stack."""
         self._image_stack.move_layer(self._image_stack.active_layer, self._image_stack.layer_stack, 0)
 
-    def _get_active_transform_layer(self) -> TransformLayer:
+    def _transform_active_layer(self, change: Callable[[TransformLayer], None]) -> None:
+        """Applies a transformation to the active layer, or to every layer in the active layer group."""
         active_layer = self._image_stack.active_layer
         if isinstance(active_layer, TransformLayer):
-            return active_layer
+            change(active_layer)
+            return
         assert isinstance(active_layer, LayerGroup)
-        return TransformGroup(active_layer)
+        transform_group = TransformGroup(active_layer)
+        try:
+            change(transform_group)
+        finally:
+            transform_group.remove_all()
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_mirror_horizontal(self) -> None:
         """Flip the active layer horizontally."""
-        layer = self._get_active_transform_layer()
-        layer.flip_horizontal()
+        self._transform_active_layer(lambda layer: layer.flip_horizontal())
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_mirror_vertical(self) -> None:
         """Flip the active layer vertically."""
-        layer = self._get_active_transform_layer()
-        layer.flip_vertical()
+        self._transform_active_layer(lambda layer: layer.flip_vertical())
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_rotate_cw(self) -> None:
         """Rotate the active layer 90 degrees clockwise."""
-        layer = self._get_active_transform_layer()
-        layer.rotate(90)
+        self._transform_active_layer(lambda layer: layer.rotate(90))
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_rotate_ccw(self) -> None:
         """Rotate the active layer 90 degrees counter-clockwise."""
-        layer = self._get_active_transform_layer()
-        layer.rotate(-90)
+        self._transform_active_layer(lambda layer: layer.rotate(-90))
 
-    @menu_action(MENU_LAYERS, 'new_layer_shortcut', 440,
+    @menu_action(MENU_LAYER, 'new_layer_shortcut', 400,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def new_layer(self) -> None:
         """Create a new image layer above the active layer."""
         self._image_stack.create_layer()
 
-    @menu_action(MENU_LAYERS, 'new_layer_group_shortcut', 441,
+    @menu_action(MENU_LAYER, 'new_layer_group_shortcut', 401,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def new_layer_group(self) -> None:
         """Create a new layer group above the active layer."""
         self._image_stack.create_layer_group()
 
-    @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 442,
+    @menu_action(MENU_LAYER, 'copy_layer_shortcut', 402,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:
-        """Create a copy of the active layer."""
+        """Duplicate the active layer."""
         self._image_stack.copy_layer()
 
-    @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'delete_layer_shortcut', 403, valid_app_states=[APP_STATE_EDITING])
     def delete_layer(self) -> None:
         """Delete the active layer."""
         self._image_stack.remove_layer()
 
-    @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', 444, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_layer_down_shortcut', 440,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
 
-    @menu_action(MENU_LAYERS, 'merge_group_shortcut', 445, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_group_shortcut', 441, valid_app_states=[APP_STATE_EDITING])
     def merge_group(self) -> None:
         """Merge the active layer group into a single image layer."""
         self._image_stack.merge_group()
 
-    @menu_action(MENU_LAYERS, 'merge_all_visible_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_all_visible_shortcut', 442, valid_app_states=[APP_STATE_EDITING])
     def merge_all_visible(self) -> None:
         """Merge all visible layers into a single image layer."""
         self._image_stack.merge_all_visible()
 
-    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 447, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'flatten_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])
     def flatten_layer(self) -> None:
         """Simplifies the active layer."""
         self._image_stack.flatten_layer()
 
-    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 448,
-                 valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'layer_to_image_size_shortcut', 450,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 449, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'crop_layer_to_selection_shortcut', 451, valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_selection(self) -> None:
         """Crop the active layer to fit overlapping selection bounds."""
         crop_layer_to_selection(self._image_stack)
 
-    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 450,
+    @menu_action(MENU_LAYER, 'crop_to_content_shortcut', 452,
                  valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
@@ -1575,6 +1523,28 @@ class AppController(MenuBuilder):
     def open_help_index(self) -> None:
         """Open the IntraPaint documentation index in a browser window."""
         webbrowser.open(HELP_INDEX_LINK)
+
+    @menu_action(MENU_HELP, 'report_bug_shortcut', 610, separator_before=True)
+    def open_issue_tracker(self) -> None:
+        """Open the GitHub issue tracker in a browser window."""
+        webbrowser.open(ISSUES_LINK)
+
+    @menu_action(MENU_HELP, 'release_notes_shortcut', 611)
+    def open_release_notes(self) -> None:
+        """Open the GitHub releases page in a browser window."""
+        webbrowser.open(RELEASES_LINK)
+
+    @menu_action(MENU_HELP, 'about_shortcut', 620, separator_before=True)
+    def show_about(self) -> None:
+        """Show IntraPaint's version, license and project links."""
+        QMessageBox.about(self._window, ABOUT_TITLE, ABOUT_TEXT.format(version=APP_VERSION, license_link=LICENSE_LINK,
+                                                                       project_link=PROJECT_LINK,
+                                                                       issues_link=ISSUES_LINK))
+
+    @menu_action(MENU_HELP, 'about_qt_shortcut', 621)
+    def show_about_qt(self) -> None:
+        """Show Qt's version and license."""
+        QMessageBox.aboutQt(self._window)
 
     # Internal/protected:
 
@@ -1595,13 +1565,32 @@ class AppController(MenuBuilder):
         window_bounds.moveCenter(center)
         alt_window.setGeometry(window_bounds)
 
+    def repeat_last_filter(self) -> None:
+        """Applies the last filter applied from the Filters menu again, with the same values and no dialog."""
+        if self._last_filter is None:
+            return
+        image_filter, param_values, active_layer_only = self._last_filter
+        image_filter.active_layer_only = active_layer_only
+        image_filter.selection_only = not self._image_stack.selection_layer.empty
+        image_filter.apply_filter(param_values)
+
+    def _record_applied_filter(self, image_filter: ImageFilter, param_values: list[Any]) -> None:
+        """Saves a filter applied from its dialog for repeat_last_filter, and names it in the repeat action."""
+        if self._last_filter is None:
+            AppStateTracker.set_enabled_states(self._repeat_filter_action, [APP_STATE_EDITING])
+        self._last_filter = (image_filter, list(param_values), image_filter.active_layer_only)
+        self._repeat_filter_action.setText(REPEAT_FILTER_TITLE.format(filter_name=image_filter.get_name()))
+
     def _set_alt_window_centered_bounds(self, alt_window: QWidget) -> None:
-        """Set a new window's bounds centered over the main window bounds, scaled to the sizeHint."""
+        """Set a new window's bounds centered over the main window bounds, scaled to the sizeHint and restricted to
+           the screen size, unless the minimum size hint is larger."""
         window_bounds = self._window.geometry()
         center = window_bounds.center()
         size_hint = alt_window.sizeHint()
-        window_bounds.setWidth(size_hint.width())
-        window_bounds.setHeight(size_hint.height())
+        minimum_size = alt_window.minimumSizeHint()
+        screen_size = get_screen_size(self._window)
+        window_bounds.setWidth(max(min(size_hint.width(), screen_size.width()), minimum_size.width()))
+        window_bounds.setHeight(max(min(size_hint.height(), screen_size.height()), minimum_size.height()))
         window_bounds.moveCenter(center)
         alt_window.setGeometry(window_bounds)
 

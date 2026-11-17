@@ -1,12 +1,12 @@
-"""Three gradient sliders with spin boxes that edit a color in RGB, HSV or OKLCH.
+"""Gradient sliders with spin boxes that edit a color in RGB, HSV or OKLCH, and its alpha.
 
-A combo box switches the color model. Each slider's track shows the color the slider would produce at each position,
-holding the other two components. OKLCH tracks leave out-of-gamut positions blank, and an out-of-gamut OKLCH choice
-keeps its lightness and hue at the largest chroma that fits sRGB (see `color_math.oklch_to_srgb_in_gamut`).
+A segmented control switches the color model of the first three sliders, and the fourth edits alpha. Each component
+slider's track shows the color the slider would produce at each position, holding the other two components. OKLCH
+tracks leave out-of-gamut positions blank, and an out-of-gamut OKLCH choice keeps its lightness and hue at the largest
+chroma that fits sRGB (see `color_math.oklch_to_srgb_in_gamut`).
 
 The block keeps its own components, so dragging saturation or chroma to zero keeps the hue. Slider drags emit
-`color_changed`; slider releases, arrow keys and spin box edits also emit `color_committed`. The block leaves alpha
-unchanged.
+`color_changed`; slider releases, arrow keys and spin box edits also emit `color_committed`.
 """
 import colorsys
 from dataclasses import dataclass
@@ -15,9 +15,10 @@ from typing import Optional
 import numpy as np
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QDoubleSpinBox, QApplication, QComboBox, QSizePolicy
+from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QDoubleSpinBox, QApplication, QSizePolicy
 
 from src.config.cache import Cache
+from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
 from src.util.visual import color_math
 
@@ -43,7 +44,15 @@ MODE_LABELS = {
     MODE_OKLCH: _tr('OKLCH'),
 }
 
+ALPHA_LABEL = _tr('A')
+ALPHA_TOOLTIP = _tr('Opacity, from 0 (transparent) to 255 (opaque)')
+SUMMARY = _tr('{mode} {first}, {second}, {third}, alpha {alpha}')
+
 GRADIENT_SAMPLES = 64
+ALPHA_GRADIENT_SAMPLES = 32
+ALPHA_ROW = 4
+# Rows sit close together so the block fits short strips:
+ROW_SPACING = 3
 
 # Below this OKLCH chroma, HSV saturation or HSV value the hue is undefined, so the block keeps its current hue.
 ACHROMATIC_THRESHOLD = 1e-4
@@ -109,20 +118,20 @@ def _hsv_to_rgb(hue: np.ndarray, saturation: np.ndarray, value: np.ndarray) -> n
 
 
 class ColorSliderBlock(QWidget):
-    """Three gradient sliders with spin boxes that edit a color in RGB, HSV or OKLCH."""
+    """Gradient sliders with spin boxes that edit a color in RGB, HSV or OKLCH, and its alpha.
+
+    `mode_changed` fires when the color model changes, and `summary` describes the components for a collapsed section.
+    """
 
     color_changed = Signal(QColor)
     color_committed = Signal(QColor)
+    mode_changed = Signal(str)
 
-    def __init__(self, parent: Optional[QWidget] = None, save_mode: bool = True, secondary: bool = False) -> None:
-        """Creates the block, reading and saving its mode in the Cache if `save_mode` is true.
-
-        The mode lives in `Cache.COLOR_SLIDER_MODE`, or in `Cache.COLOR_SLIDER_MODE_SECONDARY` for a `secondary` block.
-        """
+    def __init__(self, parent: Optional[QWidget] = None, save_mode: bool = True) -> None:
+        """Creates the block, reading and saving its mode in `Cache.COLOR_SLIDER_MODE` if `save_mode` is true."""
         super().__init__(parent)
         # Cache key attributes exist only once the Cache singleton is constructed, so this can't be a default argument.
-        mode_key = Cache.COLOR_SLIDER_MODE_SECONDARY if secondary else Cache.COLOR_SLIDER_MODE
-        self._mode_key: Optional[str] = mode_key if save_mode else None
+        self._mode_key: Optional[str] = Cache.COLOR_SLIDER_MODE if save_mode else None
         mode = Cache().get(self._mode_key) if self._mode_key is not None else MODE_RGB
         self._mode = mode if mode in MODES else MODE_RGB
         self._color = QColor(Qt.GlobalColor.black)
@@ -131,13 +140,13 @@ class ColorSliderBlock(QWidget):
 
         layout = QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self._mode_box = QComboBox(self)
-        self._mode_box.setToolTip(MODE_TOOLTIP)
-        for option in MODES:
-            self._mode_box.addItem(MODE_LABELS[option], option)
-        self._mode_box.setCurrentIndex(MODES.index(self._mode))
-        self._mode_box.currentIndexChanged.connect(lambda index: self.set_mode(MODES[index]))
-        layout.addWidget(self._mode_box, 0, 0, 1, 3, Qt.AlignmentFlag.AlignLeft)
+        layout.setVerticalSpacing(ROW_SPACING)
+        self._mode_control = SegmentedControl([Segment(option, MODE_LABELS[option], tooltip=MODE_TOOLTIP)
+                                               for option in MODES], DisplayMode.LABEL, combo_fallback=True,
+                                              parent=self)
+        self._mode_control.set_value(self._mode)
+        self._mode_control.valueChanged.connect(self.set_mode)
+        layout.addWidget(self._mode_control, 0, 0, 1, 3)
 
         self._labels: list[QLabel] = []
         self._sliders: list[GradientSlider] = []
@@ -153,6 +162,23 @@ class ColorSliderBlock(QWidget):
             layout.addWidget(spin_box, index + 1, 2)
             self._labels.append(label)
             self._spin_boxes.append(spin_box)
+        self._alpha_label = QLabel(ALPHA_LABEL, self)
+        self._alpha_label.setToolTip(ALPHA_TOOLTIP)
+        self._alpha_slider = GradientSlider(0, 255, self, checkerboard=True, step=1)
+        self._alpha_slider.setToolTip(ALPHA_TOOLTIP)
+        self._alpha_slider.value_changed.connect(lambda value: self._set_alpha(value, False))
+        self._alpha_slider.value_committed.connect(lambda _: self.color_committed.emit(self.selected_color()))
+        self._alpha_spin_box = QDoubleSpinBox(self)
+        self._alpha_spin_box.setKeyboardTracking(False)
+        self._alpha_spin_box.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self._alpha_spin_box.setDecimals(0)
+        self._alpha_spin_box.setRange(0, 255)
+        self._alpha_spin_box.setToolTip(ALPHA_TOOLTIP)
+        self._alpha_spin_box.valueChanged.connect(lambda value: self._set_alpha(value, True))
+        self._alpha_label.setBuddy(self._alpha_spin_box)
+        layout.addWidget(self._alpha_label, ALPHA_ROW, 0)
+        layout.addWidget(self._alpha_slider, ALPHA_ROW, 1)
+        layout.addWidget(self._alpha_spin_box, ALPHA_ROW, 2)
         layout.setColumnStretch(1, 1)
         self._build_sliders()
         self._update_components_from_color()
@@ -162,6 +188,28 @@ class ColorSliderBlock(QWidget):
     def sliders(self) -> tuple[GradientSlider, ...]:
         """The three component sliders, in channel order."""
         return tuple(self._sliders)
+
+    @property
+    def alpha_slider(self) -> GradientSlider:
+        """The alpha slider."""
+        return self._alpha_slider
+
+    @property
+    def alpha_spin_box(self) -> QDoubleSpinBox:
+        """The alpha spin box."""
+        return self._alpha_spin_box
+
+    @property
+    def mode_control(self) -> SegmentedControl:
+        """The color model choice."""
+        return self._mode_control
+
+    def summary(self) -> str:
+        """Returns the components and alpha in display units, for a collapsed section's header."""
+        values = [f'{component:.{channel.decimals}f}' for component, channel in zip(self._components,
+                                                                                 CHANNELS[self._mode])]
+        return SUMMARY.format(mode=MODE_LABELS[self._mode], first=values[0], second=values[1], third=values[2],
+                              alpha=self._color.alpha())
 
     @property
     def spin_boxes(self) -> tuple[QDoubleSpinBox, ...]:
@@ -178,15 +226,16 @@ class ColorSliderBlock(QWidget):
         if mode == self._mode:
             return
         self._mode = mode
-        self._mode_box.blockSignals(True)
-        self._mode_box.setCurrentIndex(MODES.index(mode))
-        self._mode_box.blockSignals(False)
+        self._mode_control.blockSignals(True)
+        self._mode_control.set_value(mode)
+        self._mode_control.blockSignals(False)
         if self._mode_key is not None:
             Cache().set(self._mode_key, mode)
         self._components = np.zeros(3)
         self._build_sliders()
         self._update_components_from_color()
         self._update_widgets()
+        self.mode_changed.emit(mode)
 
     def components(self) -> tuple[float, float, float]:
         """Returns the components in the current mode's display units."""
@@ -275,6 +324,14 @@ class ColorSliderBlock(QWidget):
             spin_box.setValue(self._components[index])
             spin_box.blockSignals(False)
             self._sliders[index].set_gradient(self._gradient(index))
+        self._alpha_slider.set_value(self._color.alpha())
+        self._alpha_spin_box.blockSignals(True)
+        self._alpha_spin_box.setValue(self._color.alpha())
+        self._alpha_spin_box.blockSignals(False)
+        alpha_gradient = np.empty((ALPHA_GRADIENT_SAMPLES, 4))
+        alpha_gradient[:, :3] = (self._color.redF(), self._color.greenF(), self._color.blueF())
+        alpha_gradient[:, 3] = np.linspace(0.0, 1.0, ALPHA_GRADIENT_SAMPLES)
+        self._alpha_slider.set_gradient(alpha_gradient)
 
     def _gradient(self, index: int) -> np.ndarray:
         """Returns RGBA samples across one channel's range, holding the other components."""
@@ -292,6 +349,15 @@ class ColorSliderBlock(QWidget):
         self._color = self._components_color()
         self._update_widgets()
         if self._color != last_color:
+            self.color_changed.emit(self.selected_color())
+        if commit:
+            self.color_committed.emit(self.selected_color())
+
+    def _set_alpha(self, value: float, commit: bool) -> None:
+        alpha = int(round(value))
+        if alpha != self._color.alpha():
+            self._color.setAlpha(alpha)
+            self._update_widgets()
             self.color_changed.emit(self.selected_color())
         if commit:
             self.color_committed.emit(self.selected_color())

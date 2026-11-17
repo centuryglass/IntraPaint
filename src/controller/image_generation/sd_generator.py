@@ -1,28 +1,34 @@
-"""Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
-   support."""
+"""Shared base for the Stable Diffusion generators, with optional ControlNet and upscaling support."""
 import logging
+import weakref
+from abc import ABC, abstractmethod
 from argparse import Namespace
-from json import JSONDecodeError
-from typing import Optional, cast, Any, Protocol
+from typing import Optional, cast, Any, Protocol, Dict
 
+from PIL import Image
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
-from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
-from PySide6.QtWidgets import QInputDialog, QApplication
+from PySide6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtWidgets import QInputDialog, QApplication, QWidget
+from sd_backend_client import AuthError, BackendCapabilities, CONTROLNET_MODEL_NONE, ControlNetModel, \
+    ControlNetPreprocessor, \
+    ControlNetUnit, ControlTypeDef, GenerationError, GenerationHandle, GenerationProgress, GenerationResult, \
+    GenerationStatus, ParameterDef, PreprocessorParams, SDBackendError
 
-from src.api.a1111_webservice import AuthError
-from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE
-from src.api.controlnet.controlnet_model import ControlNetModel
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlKeyType, ControlNetUnit
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
-from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.image_generator import ImageGenerator, GENERATION_BACKDROP_COLOR
+from src.controller.image_generation.mask_blur import blur_extent_in_image, blurred_mask_estimate, grow_mask
+from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
+    SavedControlNetUnit
+from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs
+from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import scale_all_layers_ungrouped
-from src.ui.layout.draggable_tabs.tab import Tab
+from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.modal_utils import show_error_dialog
-from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
-from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
+from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.controlnet_panel import ControlNetPanel
+from src.ui.panel.generators.stable_diffusion_panel import AdvancedControls, StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
@@ -30,11 +36,13 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
-from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_INPAINT, \
-    URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE
+from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_INPAINT
+from src.util.shared_text import (URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, URL_REQUEST_TITLE, PIL_SCALING_MODES,
+                                  UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE)
 from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling
+from src.util.rich_text import rich_text_format
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +87,12 @@ SD_BASE_DESCRIPTION = _tr("""
 IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_checkpoint_tab.png'
 IMAGE_PREVIEW_STABILITY_MATRIX_MODELS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_model_browser_tab.png'
 IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_packages_tab.png'
+# The image placeholders in INSTALLATION_STABILITY_MATRIX:
+STABILITY_MATRIX_ICONS = {
+    'packages_icon': IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES,
+    'checkpoints_icon': IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS,
+    'models_icon': IMAGE_PREVIEW_STABILITY_MATRIX_MODELS
+}
 
 INSTALLATION_STABILITY_MATRIX = _tr("""
 <h3>Stability Matrix installation and setup</h3>
@@ -110,25 +124,25 @@ INSTALLATION_STABILITY_MATRIX = _tr("""
     <li>
         Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
         you to select a package to install. Choose <b>"{generator_package}"</b>, and wait for installation to finish.
-        From here, Stability-Matrix will go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/>
+        From here, Stability-Matrix will go to the <img src='{packages_icon}'/>
         <b>Packages</b> tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
         packages.<br/>
     </li>
     <li>
         If you've already downloaded Stable Diffusion or ControlNet models, go to the 
-         <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS + """'/><b>Checkpoint Manager</b> tab on the left.
+         <img src='{checkpoints_icon}'/><b>Checkpoint Manager</b> tab on the left.
          Click the "<big>⋯</big>" menu button on the upper right, and choose "Models Folder", and it will open the 
          folder you need in the system file manager.  Copy Stable Diffusion models into the "StableDiffusion"
          subfolder, and copy any ControlNet models to the "ControlNet" subfolder.<br/>
     </li>
     <li>
         If you haven't downloaded any Stable Diffusion models yet, you can do that in Stability Matrix.
-        Go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_MODELS + """'/><b>Model Browser</b> tab to find and 
+        Go to the <img src='{models_icon}'/><b>Model Browser</b> tab to find and
         download a Stable Diffusion model file.<br/>
     </li>
     {post_install_generator_setup}
     <li>
-        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the 
+        On the <img src='{packages_icon}'/><b>Packages</b> tab, click the
         <b>Launch</b> button under <b>"{generator_package}"</b>.  A log screen will open up, showing the status of the
         package as it starts up.<br/>
     </li>
@@ -170,8 +184,7 @@ ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED = _tr('Loading ControlNet preprocessor
 
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable Diffusion')
-ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
-MENU_STABLE_DIFFUSION = 'Stable Diffusion'
+MENU_GENERATION = _tr('&Generation')
 
 
 LCM_SAMPLER = 'LCM'
@@ -180,7 +193,7 @@ LCM_LORA_XL = 'lcm-lora-sdxl'
 
 
 class SDClient(Protocol):
-    """The client methods `SDGenerator` calls, shared by `src.api`'s clients and the `sd_backend_client` clients."""
+    """The client methods `SDGenerator` calls, both generators' `sd_backend_client` clients."""
 
     @property
     def server_url(self) -> str:
@@ -188,6 +201,16 @@ class SDClient(Protocol):
 
     def disconnect(self) -> None:
         """Closes the client's connection. The client is unusable afterwards."""
+
+    def submit_preprocessor_preview(self, image: Image.Image, preprocessor: PreprocessorParams,
+                                    mask: Optional[Image.Image] = None) -> GenerationHandle:
+        """Queues a ControlNet preprocessor preview job."""
+
+    def get_capabilities(self) -> BackendCapabilities:
+        """Reports which optional features the server has."""
+
+    def get_soft_inpainting_parameters(self) -> list[ParameterDef]:
+        """Lists the server's soft inpainting settings, empty when it has none."""
 
 
 def _check_lcm_mode_available(_) -> bool:
@@ -208,25 +231,26 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
-class SDGenerator(ImageGenerator):
+class SDGenerator(ImageGenerator, ABC):
     """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
        support."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace, url_cache_key: str,
-                 controlnet_key_type: ControlKeyType,
+                 scaling_mode_cache_key: str,
                  show_extended_controlnet_options=False) -> None:
         super().__init__(window, image_stack)
         self._image_stack = image_stack
         self._server_url = args.server_url if args.server_url != '' else Cache().get(url_cache_key)
         self._url_cache_key = url_cache_key
         self._lora_images: Optional[dict[str, Optional[QImage]]] = None
+        self._lora_window: Optional[ExtraNetworkWindow] = None
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
-        self._controlnet_tab: Optional[Tab] = None
-        self._controlnet_panel: Optional[TabbedControlNetPanel] = None
-        self._controlnet_key_type = controlnet_key_type
+        self._controlnet_panel: Optional[ControlNetPanel] = None
+        self._scaling_mode_cache_key = scaling_mode_cache_key
         self._show_extended_controlnet_options = show_extended_controlnet_options
+        self._active_handle: Optional[GenerationHandle] = None
 
     @property
     def server_url(self) -> str:
@@ -237,120 +261,173 @@ class SDGenerator(ImageGenerator):
         """Returns a preview image for this generator."""
         return self._preview
 
-    def get_extra_tabs(self) -> list[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        if self._controlnet_tab is not None:
-            return [self._controlnet_tab]
-        return []
+    def get_controlnet_panel(self) -> Optional[QWidget]:
+        """Returns the ControlNet panel, if the connected backend supports ControlNet."""
+        return self._controlnet_panel
 
+    def _create_control_panel(self, panel: StableDiffusionPanel, advanced_controls: AdvancedControls
+                              ) -> StableDiffusionPanel:
+        """Connects a new control panel to the commands shared by the Stable Diffusion backends, and fills its Advanced
+        section."""
+        panel.hide()
+        panel.generate_signal.connect(self.start_and_manage_image_generation)
+        panel.lora_requested.connect(self.show_lora_window)
+        panel.lcm_mode_requested.connect(self.set_lcm_mode)
+        panel.lcm_available_check = lambda: _check_lcm_mode_available(self)
+        panel.set_advanced_content(advanced_controls)
+        return panel
+
+    @abstractmethod
     def get_webservice(self) -> Optional[SDClient]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def remove_webservice(self) -> None:
         """Destroy and remove any active webservice object."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def create_or_get_webservice(self, url: str) -> SDClient:
         """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
-        raise NotImplementedError()
 
-    def interrogate(self) -> None:
+    @abstractmethod
+    def describe(self) -> None:
         """Update the prompt to match image content using an AI image description model."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
         """Return the list of available Controlnet preprocessors."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_models(self) -> list[str]:
         """Return the list of available ControlNet models."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_types(self) -> dict[str, ControlTypeDef]:
         """Return available ControlNet categories."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_unit_cache_keys(self) -> list[str]:
         """Return keys used to cache serialized ControlNet units as strings."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_diffusion_model_names(self) -> list[str]:
         """Return the list of available image generation models."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_lora_model_info(self) -> list[dict[str, Any]]:
         """Return available LoRA model extensions."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_diffusion_sampler_names(self) -> list[str]:
         """Return the list of available samplers."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_upscale_method_names(self) -> list[str]:
         """Return the list of available upscale methods."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def ultimate_upscale_script_available(self) -> bool:
         """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def cache_generator_specific_data(self) -> None:
         """When activating the generator, after the webservice is connected, this method should be implemented to
            load and cache any generator-specific API data."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def clear_cached_generator_data(self) -> None:
         """Clear any cached data specific to this image generator."""
-        raise NotImplementedError()
 
     def cancel_generation(self) -> None:
-        """Cancels image generation, if in-progress"""
-        raise NotImplementedError()
+        """Cancels the job `_wait_for_job` is waiting on, if one is in progress. A job the backend hasn't started is
+        dropped, and a running one is interrupted."""
+        handle = self._active_handle
+        if AppStateTracker.app_state() == APP_STATE_LOADING and handle is not None:
+            try:
+                handle.cancel()
+            except SDBackendError as err:
+                logger.error(f'Cancelling job {handle.task_id} failed: {err}')
 
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
         """Attempt to load a LoRA model thumbnail image from the API."""
         raise NotImplementedError()
 
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                     image: QImage, mask: Optional[QImage],
-                                     status_signal: SignalInstance,
-                                     image_signal: SignalInstance) -> None:
-        """Requests a ControlNet preprocessor preview image."""
-        raise NotImplementedError()
+    def load_preprocessor_preview(self, preprocessor: PreprocessorParams,
+                                  image: QImage, mask: Optional[QImage],
+                                  status_signal: SignalInstance,
+                                  image_signal: SignalInstance) -> None:
+        """Requests a ControlNet preprocessor preview image. Call this outside the UI thread."""
+        webservice = self.get_webservice()
+        assert webservice is not None
+        handle = webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor,
+                                                        None if mask is None else qimage_to_pil(mask))
+        result = self._wait_for_job(handle, status_signal)
+        if result is None:
+            return
+        if len(result.images) != 1:
+            logger.warning(f'Expected one preprocessor preview image, got {len(result.images)}')
+        preview_image = image if len(result.images) == 0 else pil_to_qimage(result.images[0])
+        image_signal.emit(preview_image)
 
+    def _wait_for_job(self, handle: GenerationHandle, status_signal: Optional[SignalInstance],
+                      batch_index: int = 0, num_batches: int = 1) -> Optional[GenerationResult]:
+        """Blocks until a job finishes, emitting progress through `status_signal`. Call this outside the UI thread.
+
+        Returns None if the job was cancelled. `cancel_generation` cancels the job while this waits.
+
+        Raises
+        ------
+        SDBackendError
+            If the job fails, or a request made while waiting fails.
+        """
+
+        def _on_progress(progress: GenerationProgress) -> None:
+            if status_signal is not None:
+                status_signal.emit(progress_status_update(progress, batch_index, num_batches))
+
+        self._active_handle = handle
+        try:
+            return handle.wait(on_progress=_on_progress)
+        except GenerationError as err:
+            if err.status == GenerationStatus.CANCELLED:
+                logger.info(f'Job {handle.task_id} was cancelled')
+                return None
+            raise
+        finally:
+            self._active_handle = None
+
+    @abstractmethod
     def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
                       image_signal: SignalInstance) -> None:
         """Upscales an image using cached upscaling settings."""
-        raise NotImplementedError()
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
-        """Gets the contents of the image generation area, handling any necessary preprocessing."""
+        """Gets the contents of the generation area, handling any necessary preprocessing."""
         if init_image is not None:
             return init_image
-        return self._image_stack.qimage_generation_area_content()
+        return flatten_onto_color(self._image_stack.qimage_generation_area_content(), GENERATION_BACKDROP_COLOR)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
-        """Gets the inpainting mask for the image generation area, handling any necessary preprocessing."""
+        """Gets the inpainting mask for the generation area, handling any necessary preprocessing."""
         if init_mask is not None:
             return init_mask
         return self._image_stack.selection_layer.mask_image
 
-    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_size=True) -> QRect:
-        """Returns the inpaint full-res crop within the generation area, or the whole area when nothing is cropped.
+    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_resolution=True) -> QRect:
+        """Returns the inpaint context crop within the generation area, or the whole area when nothing is cropped.
 
         The crop is relative to the generation area's top left, scaled to Cache.GENERATION_SIZE when
-        scale_to_generation_size is true.
+        scale_to_generation_resolution is true.
         """
         cache = Cache()
         edit_mode = cache.get(Cache.EDIT_MODE)
         gen_area = self._image_stack.generation_area
-        if scale_to_generation_size:
+        if scale_to_generation_resolution:
             image_size = cache.get(Cache.GENERATION_SIZE)
         else:
             image_size = gen_area.size()
-        if edit_mode != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+        if edit_mode != EDIT_MODE_INPAINT or not cache.limited_context_in_effect():
             return QRect(QPoint(), image_size)
 
         selection_layer = self._image_stack.selection_layer
@@ -358,21 +435,45 @@ class SDGenerator(ImageGenerator):
         if selection_gen_area is None or selection_gen_area.size() == gen_area.size():
             return QRect(QPoint(), image_size)
         bounds = selection_gen_area.translated(-gen_area.topLeft())
-        if scale_to_generation_size and image_size != gen_area.size():
+        if scale_to_generation_resolution and image_size != gen_area.size():
             transform = QTransform.fromScale(image_size.width()/gen_area.width(), image_size.height()/gen_area.height())
             bounds = map_rect_precise(bounds, transform).toAlignedRect()
         return bounds
 
+    @staticmethod
+    def _blend_past_selection() -> bool:
+        return AppConfig().get(AppConfig.INPAINT_BLEND_PAST_SELECTION)
+
+    def get_blend_estimate(self, mask: QImage) -> Optional[QImage]:
+        """Returns the mask blurred as the backends blur it."""
+        return blurred_mask_estimate(mask, AppConfig().get(AppConfig.MASK_BLUR))
+
+    def get_paste_mask(self) -> QImage:
+        """Returns the selection mask, grown by the mask blur band's reach if `AppConfig.INPAINT_BLEND_PAST_SELECTION`
+        is set. The mask stays hard-edged.
+
+        Results are patches that already carry the blur's soft edge, so clipping them with a soft mask would apply the
+        blur twice. The reach is measured at the whole generation area's scale, the widest the backend blurs at: the
+        WebUI blurs the whole area before cropping, and a client-side crop is never larger.
+        """
+        selection = super().get_paste_mask()
+        if not self._blend_past_selection():
+            return selection
+        reach_x, reach_y = blur_extent_in_image(AppConfig().get(AppConfig.MASK_BLUR),
+                                                self._image_stack.generation_area.size(),
+                                                Cache().get(Cache.GENERATION_SIZE))
+        return grow_mask(selection, reach_x, reach_y)
+
     def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
-        """Crops a generation area image (at area size or generation size) to the inpaint crop, then scales it to
+        """Crops a generation area image (at area size or generation resolution) to the inpaint crop, then scales it to
         Cache.GENERATION_SIZE."""
         gen_area = self._image_stack.generation_area
         crop_bounds = self._inpaint_gen_area_crop_bounds(gen_area.size() != image.size())
         if crop_bounds.size() != image.size():
             image = image.copy(crop_bounds)
-        gen_size = Cache().get(Cache.GENERATION_SIZE)
-        if image.size() != gen_size:
-            return pil_image_scaling(image, gen_size)
+        gen_resolution = Cache().get(Cache.GENERATION_SIZE)
+        if image.size() != gen_resolution:
+            return pil_image_scaling(image, gen_resolution)
         return image
 
     def _restore_cropped_inpainting_images(self, initial_image: QImage, crop_bounds: QRect,
@@ -395,9 +496,9 @@ class SDGenerator(ImageGenerator):
         return restored_images
 
     def _context_pins_change_inpaint_crop(self) -> bool:
-        """Returns whether context pins change the inpaint full-res crop of the current inpainting settings."""
+        """Returns whether context pins change the inpaint context crop of the current inpainting settings."""
         cache = Cache()
-        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.limited_context_in_effect():
             return False
         selection_layer = self._image_stack.selection_layer
         return selection_layer.get_selection_gen_area() \
@@ -480,22 +581,18 @@ class SDGenerator(ImageGenerator):
             controlnet_preprocessor_list: list[ControlNetPreprocessor] = []
 
             # Build ControlNet tab, if available through the API:
-            if self._controlnet_tab is None:
+            if self._controlnet_panel is None:
                 try:
                     controlnet_model_list = self.get_controlnet_models()
                     controlnet_preprocessor_list = self.get_controlnet_preprocessors()
                     control_types = self.get_controlnet_types()
                     control_keys = self.get_controlnet_unit_cache_keys()
                     if len(controlnet_preprocessor_list) > 0 and len(control_types) > 0:
-                        controlnet_panel = TabbedControlNetPanel(controlnet_preprocessor_list,
-                                                                 controlnet_model_list,
-                                                                 control_types,
-                                                                 control_keys,
-                                                                 self._show_extended_controlnet_options)
-                        self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-                                                   parent=self.menu_window)
-                        self._controlnet_tab.hide()
-                        self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
+                        controlnet_panel = ControlNetPanel(controlnet_preprocessor_list,
+                                                           controlnet_model_list,
+                                                           control_types,
+                                                           control_keys,
+                                                           self._show_extended_controlnet_options)
                         controlnet_panel.request_preview.connect(self.controlnet_preprocessor_preview)
                         self._controlnet_panel = controlnet_panel
                 except (KeyError, RuntimeError) as err:
@@ -513,20 +610,22 @@ class SDGenerator(ImageGenerator):
             cache.set(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE, ultimate_sd_upscale_found)
             cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, tile_models)
             cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS,
-                      [preprocessor.serialize() for preprocessor in tile_preprocessors])
+                      [preprocessor.model_dump_json() for preprocessor in tile_preprocessors])
 
             if tiled_upscaling_available:
                 try:
-                    upscale_tile_control_unit = ControlNetUnit.deserialize(
-                        cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS), self._controlnet_key_type)
-                    cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
-                except (KeyError, RuntimeError, JSONDecodeError):
-                    upscale_tile_control_unit = ControlNetUnit(self._controlnet_key_type)
-                    upscale_tile_control_unit.model = ControlNetModel(tile_models[0])
-                    upscale_tile_control_unit.preprocessor = tile_preprocessors[0]
-                    cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
+                    saved_tile_unit = SavedControlNetUnit.from_json(
+                        cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS))
+                except ValueError:
+                    saved_tile_unit = SavedControlNetUnit(
+                        False, '', ControlNetUnit(model=ControlNetModel(tile_models[0]),
+                                                  preprocessor=PreprocessorParams(typedef=tile_preprocessors[0],
+                                                                                  parameter_values={})))
+                cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, saved_tile_unit.to_json())
 
-            # Enable inpainting cropping and padding:
+            self._load_soft_inpainting()
+
+            # Enable the inpaint context options:
             cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
 
             assert self._window is not None
@@ -536,6 +635,22 @@ class SDGenerator(ImageGenerator):
         except AuthError:
             return False
 
+    def _load_soft_inpainting(self) -> None:
+        """Caches whether the backend supports soft inpainting, and the settings it publishes."""
+        cache = Cache()
+        webservice = self.get_webservice()
+        assert webservice is not None
+        parameters: list[ParameterDef] = []
+        available = False
+        try:
+            available = webservice.get_capabilities().soft_inpainting
+            if available:
+                parameters = webservice.get_soft_inpainting_parameters()
+        except SDBackendError as err:
+            logger.error(f'Loading soft inpainting support failed: {err}')
+        save_parameter_defs(parameters)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, available)
+
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""
         cache = Cache()
@@ -544,16 +659,22 @@ class SDGenerator(ImageGenerator):
         if webservice is not None:
             webservice.disconnect()
             self.remove_webservice()
-        # Turn off inpainting cropping and padding again:
+        # Turn off the inpaint context options again:
         cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
 
         # Clear cached webservice data:
+        if self._lora_window is not None:
+            self._lora_window.close()
+            self._lora_window.deleteLater()
+            self._lora_window = None
         if self._lora_images is not None:
             self._lora_images.clear()
             self._lora_images = None
         cache = Cache()
         cache.set(Cache.SD_UPSCALING_AVAILABLE, False)
         cache.set(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE, False)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, False)
+        save_parameter_defs([])
         for cache_key in (Cache.SD_MODEL, Cache.LORA_MODELS, Cache.HYPERNETWORK_MODELS, Cache.SAMPLING_METHOD,
                           Cache.SCHEDULER, Cache.GENERATOR_SCALING_MODES, Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS,
                           Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS):
@@ -569,16 +690,15 @@ class SDGenerator(ImageGenerator):
                 cache.set(cache_key, {})
         self.clear_cached_generator_data()
 
-        if self._controlnet_tab is not None:
-            self._controlnet_tab.setParent(None)
-            self._controlnet_tab.deleteLater()
-            self._controlnet_tab = None
+        if self._controlnet_panel is not None:
+            self._controlnet_panel.setParent(None)
+            self._controlnet_panel.deleteLater()
             self._controlnet_panel = None
         assert self._window is not None
         self._window.cancel_generation.disconnect(self.cancel_generation)
         self.clear_menus()
 
-    def controlnet_preprocessor_preview(self, preprocessor: ControlNetPreprocessor, image_str: str) -> None:
+    def controlnet_preprocessor_preview(self, preprocessor: PreprocessorParams, image_str: str) -> None:
         """Generates a ControlNet preprocessor preview, displaying it in a new window."""
         if image_str == CONTROLNET_REUSE_IMAGE_CODE:
             image = self.get_gen_area_image()
@@ -608,11 +728,10 @@ class SDGenerator(ImageGenerator):
         def _handle_error(error: Exception) -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             show_error_dialog(self._window, ERROR_TITLE_PREPROCESSOR_PREVIEW_FAILED,
-                              ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED.format(err=error))
+                              rich_text_format(ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED, err=error))
 
         def _load_preview(preview_image: QImage) -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-            print(f'LOADED PREVIEW: {preview_image}')
             assert self._controlnet_panel is not None
             self._controlnet_panel.set_preview(preview_image)
 
@@ -636,10 +755,7 @@ class SDGenerator(ImageGenerator):
         upscale_method = str(cache.get(Cache.SCALING_MODE))
         generator_scaling_modes = cast(list[str], cache.get(Cache.GENERATOR_SCALING_MODES))
         if upscale_method in generator_scaling_modes and upscale_method != UPSCALE_OPTION_NONE:
-            if self._controlnet_key_type == ControlKeyType.WEBUI:
-                cache.set(Cache.WEBUI_CACHED_SCALING_MODE, upscale_method)
-            else:
-                cache.set(Cache.COMFYUI_CACHED_SCALING_MODE, upscale_method)
+            cache.set(self._scaling_mode_cache_key, upscale_method)
         if not (cache.get(Cache.SD_UPSCALING_AVAILABLE) and cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING)):
             if (upscale_method not in generator_scaling_modes and upscale_method in PIL_SCALING_MODES.keys()) \
                                                                   or upscale_method.lower() \
@@ -678,18 +794,21 @@ class SDGenerator(ImageGenerator):
 
         task.image_ready.connect(self._apply_upscaled_image)
 
+        # The slots hold the task weakly: a strong reference would make a cycle through the task's connections.
+        task_ref = weakref.ref(task)
+
         def _on_finish() -> None:
             assert self._window is not None
             self._window.set_is_loading(False)
-            task.status_signal.disconnect(_apply_status_update)
-            task.error_signal.disconnect(handle_error)
-            task.image_ready.disconnect(self._apply_upscaled_image)
-            task.finish_signal.disconnect(_on_finish)
+            finished_task = task_ref()
+            if finished_task is None:
+                return
+            finished_task.status_signal.disconnect(_apply_status_update)
+            finished_task.error_signal.disconnect(handle_error)
+            finished_task.image_ready.disconnect(self._apply_upscaled_image)
+            finished_task.finish_signal.disconnect(_on_finish)
 
         task.finish_signal.connect(_on_finish)
-        # TODO: get rid of this once the WebUI generator has proper queue support.
-        if hasattr(self, '_async_progress_check'):
-            self._async_progress_check()
         task.start()
         return True
 
@@ -699,7 +818,7 @@ class SDGenerator(ImageGenerator):
         With locked layers present, only the canvas is resized."""
         with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
             if self._image_stack.confirm_no_locked_layers():
-                scale_all_layers_ungrouped(self._image_stack, img.width(), img.height())
+                scale_all_layers(self._image_stack, img.width(), img.height())
             else:
                 old_size = self._image_stack.size
                 scaled_size = img.size()
@@ -715,7 +834,7 @@ class SDGenerator(ImageGenerator):
                                                        layer_parent=self._image_stack.layer_stack, image_data=img)
             self._image_stack.active_layer = new_layer
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
+    @menu_action(MENU_GENERATION, 'lora_shortcut', 511, [APP_STATE_EDITING],
                  condition_check=_check_lora_available)
     def show_lora_window(self) -> None:
         """Show the Lora model selection window."""
@@ -749,18 +868,28 @@ class SDGenerator(ImageGenerator):
                 assert self._window is not None
                 task.status.disconnect(self._window.set_loading_message)
                 task.finish_signal.disconnect(_resume_and_show)
-                delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
-                delayed_lora_window.exec()
+                self._open_lora_window(loras)
 
             assert self._window is not None
             task.status.connect(self._window.set_loading_message)
             task.finish_signal.connect(_resume_and_show)
             task.start()
         else:
-            lora_window = ExtraNetworkWindow(loras, self._lora_images)
-            lora_window.exec()
+            self._open_lora_window(loras)
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
+    def _open_lora_window(self, loras: list[dict[str, str]]) -> None:
+        """Shows the LoRA window without blocking the main window, or raises it if it is already open."""
+        assert self._lora_images is not None
+        if self._lora_window is not None:
+            if self._lora_window.isVisible():
+                self._lora_window.raise_()
+                self._lora_window.activateWindow()
+                return
+            self._lora_window.deleteLater()
+        self._lora_window = ExtraNetworkWindow(loras, self._lora_images)
+        self._lora_window.show()
+
+    @menu_action(MENU_GENERATION, 'lcm_mode_shortcut', 512, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
         cache = Cache()
@@ -795,14 +924,28 @@ class SDGenerator(ImageGenerator):
             return
         active_control_index = index - expected_count
         control_index = -1
-        control_units = [ControlNetUnit.deserialize(cache.get(control_key))
-                         for control_key in self.get_controlnet_unit_cache_keys()]
-        for i, control_unit in enumerate(control_units):
-            if control_unit.enabled:
+        for i, control_key in enumerate(self.get_controlnet_unit_cache_keys()):
+            try:
+                enabled = SavedControlNetUnit.from_json(cache.get(control_key)).enabled
+            except ValueError:
+                enabled = False
+            if enabled:
                 active_control_index -= 1
                 if active_control_index < 0:
                     control_index = i
                     break
         if control_index >= 0:
             assert self._controlnet_panel is not None
-            self._controlnet_panel.set_preview(self._generated_images[index], control_index)
+            self._controlnet_panel.set_preview(self._session.result(index), control_index)
+
+    def load_remote_settings(self) -> Dict[str, Any]:
+        """If relevant, loads a dict holding backend image generator settings."""
+        return {}
+
+    def refresh_settings(self, settings_modal: SettingsModal) -> None:
+        """Reloads current values for this generator's settings, and updates them in the settings modal."""
+        settings = self.load_remote_settings()
+        app_config = AppConfig()
+        for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
+            settings[key] = app_config.get(key)
+        settings_modal.update_settings(settings)

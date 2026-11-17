@@ -3,13 +3,15 @@ import logging
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.config import Config
+from src.config.generated_keys import KeyConfigKeys
 from src.ui.modal.modal_utils import show_warning_dialog
-from src.util.key_code_utils import get_modifiers
+from src.util.key_code_utils import get_modifiers, get_key_with_modifiers, key_alternatives
+from src.util.rich_text import escape_rich_text, rich_text_list
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
@@ -30,21 +32,77 @@ CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/key_config_definitions.jso
 
 KEY_CONFIG_ERROR_TITLE = _tr('Warning')
 KEY_CONFIG_ERROR_MESSAGE = _tr('Errors found in configurable key bindings:\n')
-SPEED_MODIFIER_ERROR = _tr('Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}')
 NOT_A_MODIFIER_ERROR = _tr('"{key_binding_name}" should be a modifier key (Ctrl, Alt, Shift), found "{key_value}"')
 UNEXPECTED_MODIFIER_ERROR = _tr('"{key_binding_name}" assigned unexpected modifier key "{key_value}", this may cause '
                                 'problems')
 UNKNOWN_KEY_CODE_ERROR = _tr('"{key_binding_name}" value "{key_value}" is not a recognized key')
-SPEED_MODIFIER_CONFLICT_ERROR = _tr('"{key_binding_name}" is set to {key_value}, but {speed_modifier} is the speed'
-                                    ' modifier'
-                                    ' key. This will cause {key_str} to always operate at 10x speed.')
-UNSET_KEY_ERROR = _tr('{key_binding_name} is not set')
 KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names}, some keys may not work.')
-SPEED_MODIFIED_KEY_DESCRIPTION = _tr('{key_binding_name} (with speed modifier)')
 
 
-class KeyConfig(Config, metaclass=Singleton):
+# Config keys that set the brush opacity directly, mapped to the opacity each sets:
+BRUSH_OPACITY_PRESETS = {f'brush_opacity_{percent}': percent / 100 for percent in range(10, 101, 10)}
+
+
+class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
     """Provides access to the user-editable application keybinding config."""
+
+    # Defaults from released versions, so installs that never changed them follow the current default:
+    PREVIOUS_DEFAULTS = {
+        'draw_tool_key': ['D'],
+        'generation_area_tool_key': ['G'],
+        'previous_generation_frame_key': ['Shift+G'],
+        'eyedropper_tool_key': ['C'],
+        'clone_stamp_tool_key': ['N'],
+        'smudge_tool_key': ['M'],
+        'filter_tool_key': ['I'],
+        'text_tool_key': ['X'],
+        'transform_tool_key': ['T'],
+        'selection_brush_tool_key': ['S'],
+        'selection_fill_tool_key': ['A'],
+        'shape_selection_tool_key': ['R'],
+        'shape_tool_key': ['Shift+S'],
+        'tool_action_hotkey': ['q'],
+        'toggle_selection_shape_hotkey': [''],
+        'zoom_in': ['PgUp'],
+        'zoom_out': ['PgDown'],
+        'select_tool_tab': ['1'],
+        'select_generator_tab': ['2'],
+        'select_ControlNet_tab': ['3'],
+        'load_layers_shortcut': ['Ctrl+Shift+O'],
+        'save_as_shortcut': ['Ctrl+Alt+S'],
+        'reload_shortcut': ['F5'],
+        'swap_colors_shortcut': ['Shift+X'],
+        'reset_colors_shortcut': ['Shift+D'],
+        'settings_shortcut': ['F9'],
+        'zoom_in_shortcut': ['Ctrl+Shift+='],
+        'zoom_out_shortcut': ['Ctrl+Shift+-'],
+        'reset_view_shortcut': ['Ctrl+Alt+0'],
+        'zoom_to_gen_area_shortcut': ['Ctrl+Alt+Z'],
+        'toggle_rulers_shortcut': ['Ctrl+Alt+Shift+R'],
+        'generator_select_shortcut': ['F11'],
+        'resize_canvas_shortcut': ['F2', 'Shift+F2'],
+        'scale_image_shortcut': ['F3'],
+        'crop_image_shortcut': ['Ctrl+Alt+C'],
+        'update_metadata_shortcut': ['Ctrl+Alt+D'],
+        'restore_choices_shortcut': ['Ctrl+G'],
+        'invert_selection_shortcut': ['Ctrl+I'],
+        'grow_selection_shortcut': ['Ctrl+='],
+        'shrink_selection_shortcut': ['Ctrl+-'],
+        'select_previous_layer_shortcut': ['Ctrl+PgUp'],
+        'select_next_layer_shortcut': ['Ctrl+PgDown'],
+        'move_layer_up_shortcut': ['Ctrl+Home'],
+        'move_layer_down_shortcut': ['Ctrl+End'],
+        'move_layer_to_top_shortcut': ['Ctrl+Shift+Home'],
+        'copy_layer_shortcut': ['Ctrl+Shift+C', 'Ctrl+J,Ctrl+Shift+C'],
+        'delete_layer_shortcut': ['Ctrl+Shift+D'],
+        'merge_layer_down_shortcut': ['Ctrl+Shift+M'],
+        'merge_all_visible_shortcut': ['Ctrl+Shift+Alt+M'],
+        'layer_to_image_size_shortcut': ['Ctrl+Shift+I'],
+        'crop_layer_to_selection_shortcut': ['Ctrl+Shift+E'],
+        'color_balance_shortcut': ['Ctrl+1'],
+        'saturation_shortcut': ['Ctrl+6'],
+        'invert_shortcut': ['Ctrl+7'],
+    }
 
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.
@@ -53,16 +111,16 @@ class KeyConfig(Config, metaclass=Singleton):
         ----------
         json_path: str
             Path where config values will be saved and read. If the file does not exist, it will be created with
-            default values. Any expected keys not found in the file will be added with default values. Any unexpected
+            default values. Any expected keys not found in the file load with their current default. Any unexpected
             keys will be discarded.
         """
-        super().__init__(CONFIG_DEFINITIONS, json_path, KeyConfig)
+        super().__init__(CONFIG_DEFINITIONS, json_path)
         self.validate_keybindings()
 
     @staticmethod
     def modifier_held(modifier_key: str, exclusive=False,
                       held_modifiers: Optional[Qt.KeyboardModifier] = None) -> bool:
-        """Returns whether a KeyConfig modifier is held, or false if modifier key is invalid or unbound."""
+        """Returns whether a KeyConfig modifier is held, or False if the modifier binding is invalid or empty."""
         try:
             if held_modifiers is None:
                 held_modifiers = QApplication.keyboardModifiers()
@@ -81,8 +139,25 @@ class KeyConfig(Config, metaclass=Singleton):
         except (RuntimeError, KeyError, ValueError):
             return False
 
+    @staticmethod
+    def event_matches(event: QKeyEvent, config_key: str) -> bool:
+        """Returns whether a key event is the key and exact modifiers of any alternative bound to a config key."""
+        event_modifiers = event.modifiers() & ~Qt.KeyboardModifier.KeypadModifier
+        for alternative in key_alternatives(KeyConfig().get(config_key)):
+            try:
+                key, modifiers = get_key_with_modifiers(alternative)
+            except ValueError:
+                continue
+            if key is not None and key == event.key() and modifiers == event_modifiers:
+                return True
+        return False
+
     def get_modifier(self, key: str) -> Qt.KeyboardModifier | list[Qt.KeyboardModifier]:
-        """Returns the modifier or modifier list associated with a config value."""
+        """Returns the modifier or modifier list associated with a config value.
+
+        An empty binding returns `Qt.KeyboardModifier.NoModifier`, which means disabled, never always held. A caller
+        that reads this directly instead of using `modifier_held` checks for `NoModifier` itself.
+        """
         str_value = self.get(key)
         try:
             return get_modifiers(str_value)
@@ -91,7 +166,10 @@ class KeyConfig(Config, metaclass=Singleton):
             return Qt.KeyboardModifier.NoModifier
 
     def validate_keybindings(self) -> None:
-        """Checks all keybindings for conflicts, and shows a warning message if any are found."""
+        """Checks all keybindings for conflicts, and shows a warning message if any are found.
+
+        Any binding may be empty, which leaves its action unbound. Empty values are skipped, so they never conflict.
+        """
         key_binding_options = self.get_category_keys('Keybindings') + self.get_category_keys('Menu Shortcuts')
         duplicate_map = {}
         errors = []
@@ -117,16 +195,12 @@ class KeyConfig(Config, metaclass=Singleton):
                 return True
             return False
 
-        # Bindings whose key contains one of these also claim speed_modifier+key. New default bindings must avoid
-        # those combinations, or validation reports a conflict.
-        speed_modifier_strings = ('zoom_in', 'zoom_out', 'pan', 'move', 'brush_size')
-        speed_modifier = self.get(KeyConfig.SPEED_MODIFIER)
-        if speed_modifier != '' and not _is_modifier(speed_modifier):
-            errors.append(SPEED_MODIFIER_ERROR.format(speed_modifier=speed_modifier, modifiers=modifiers))
         for config_key in key_binding_options:
             key_binding_name = self.get_label(config_key)
             key_values = self.get(config_key).split(',')
             for key_value in key_values:
+                if key_value == '':
+                    continue
                 standardized_key = _standardize_key_str(key_value)
                 if config_key.endswith('_modifier'):
                     if not _is_modifier(standardized_key):
@@ -137,25 +211,10 @@ class KeyConfig(Config, metaclass=Singleton):
                         errors.append(UNEXPECTED_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
                                                                        key_value=key_value))
                 # noinspection PyUnresolvedReferences
-                if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
+                if key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
                     errors.append(UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
                                                                 key_value=key_value))
-                elif any(mod_str in config_key for mod_str in speed_modifier_strings) and speed_modifier \
-                        in modifiers:
-                    if speed_modifier in key_value:
-                        errors.append(SPEED_MODIFIER_CONFLICT_ERROR.format(key_binding_name=key_binding_name,
-                                                                           key_value=key_value,
-                                                                           speed_modifier=speed_modifier))
-                    else:
-                        speed_value = _standardize_key_str(f'{speed_modifier}+{standardized_key}')
-                        speed_key = SPEED_MODIFIED_KEY_DESCRIPTION.format(key_binding_name=key_binding_name)
-                        if speed_value not in duplicate_map:
-                            duplicate_map[speed_value] = [speed_key]
-                        else:
-                            duplicate_map[speed_value].append(speed_key)
-                if len(key_value) == 0:
-                    errors.append(UNSET_KEY_ERROR.format(key_binding_name=key_binding_name))
-                elif standardized_key not in duplicate_map:
+                if standardized_key not in duplicate_map:
                     duplicate_map[standardized_key] = [config_key]
                 else:
                     duplicate_map[standardized_key].append(config_key)
@@ -164,9 +223,6 @@ class KeyConfig(Config, metaclass=Singleton):
                 key_names = [self.get_label(key) for key in config_keys]
                 if key_str in modifiers:
                     modifier_conflict_lists = [[KeyConfig.LINE_MODIFIER,
-                                                KeyConfig.PAN_VIEW_MODIFIER,
-                                                KeyConfig.FIXED_ANGLE_MODIFIER],
-                                               [KeyConfig.LINE_MODIFIER,
                                                 KeyConfig.FIXED_ANGLE_MODIFIER,
                                                 KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER]]
                     for conflict_list in modifier_conflict_lists:
@@ -180,122 +236,6 @@ class KeyConfig(Config, metaclass=Singleton):
             # AppConfig explicit initialization is required if running the dynamic import script, otherwise
             # WARN_ON_KEY_ERROR won't be present and any key errors will cause an unexplained failure.
             AppConfig()
-            lines = ['<li>' + err + '</li>\n' for err in errors]
-            error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
+            error_message = (f'<b>{escape_rich_text(KEY_CONFIG_ERROR_MESSAGE.strip())}</b>'
+                             + rich_text_list(errors))
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/key_config.py`
-
-    BLUR_SHORTCUT: str
-    BRIGHTNESS_CONTRAST_SHORTCUT: str
-    BRUSH_HARDNESS_DECREASE: str
-    BRUSH_HARDNESS_INCREASE: str
-    BRUSH_OPACITY_DECREASE: str
-    BRUSH_OPACITY_INCREASE: str
-    BRUSH_SIZE_DECREASE: str
-    BRUSH_SIZE_INCREASE: str
-    BRUSH_TOOL_KEY: str
-    CLEAR_CONTEXT_PINS_SHORTCUT: str
-    CLEAR_SHORTCUT: str
-    CLONE_STAMP_TOOL_KEY: str
-    COLOR_BALANCE_SHORTCUT: str
-    COPY_LAYER_SHORTCUT: str
-    COPY_SHORTCUT: str
-    CROP_IMAGE_SHORTCUT: str
-    CROP_IMAGE_TO_GEN_SHORTCUT: str
-    CROP_LAYER_TO_SELECTION_SHORTCUT: str
-    CROP_TO_CONTENT_SHORTCUT: str
-    CUT_SHORTCUT: str
-    DELETE_LAYER_SHORTCUT: str
-    DRAW_TOOL_KEY: str
-    ERASER_TOOL_KEY: str
-    EYEDROPPER_OVERRIDE_MODIFIER: str
-    EYEDROPPER_TOOL_KEY: str
-    FILL_TOOL_KEY: str
-    FILTER_TOOL_KEY: str
-    FIXED_ANGLE_MODIFIER: str
-    FIXED_ASPECT_MODIFIER: str
-    FLATTEN_LAYER_SHORTCUT: str
-    FREE_SELECTION_TOOL_KEY: str
-    GENERATE_SHORTCUT: str
-    GENERATION_AREA_TOOL_KEY: str
-    GENERATOR_SELECT_SHORTCUT: str
-    GROW_SELECTION_SHORTCUT: str
-    HELP_INDEX_SHORTCUT: str
-    IMAGE_TO_LAYERS_SHORTCUT: str
-    INVERT_SELECTION_SHORTCUT: str
-    INVERT_SHORTCUT: str
-    LAYER_MIRROR_HORIZONTAL_SHORTCUT: str
-    LAYER_MIRROR_VERTICAL_SHORTCUT: str
-    LAYER_ROTATE_CCW_SHORTCUT: str
-    LAYER_ROTATE_CW_SHORTCUT: str
-    LAYER_TO_IMAGE_SIZE_SHORTCUT: str
-    LCM_MODE_SHORTCUT: str
-    LINE_MODIFIER: str
-    LOAD_LAYERS_SHORTCUT: str
-    LOAD_SHORTCUT: str
-    LORA_SHORTCUT: str
-    MERGE_ALL_VISIBLE_SHORTCUT: str
-    MERGE_GROUP_SHORTCUT: str
-    MERGE_LAYER_DOWN_SHORTCUT: str
-    MOVE_DOWN: str
-    MOVE_LAYER_DOWN_SHORTCUT: str
-    MOVE_LAYER_TO_TOP_SHORTCUT: str
-    MOVE_LAYER_UP_SHORTCUT: str
-    MOVE_LEFT: str
-    MOVE_RIGHT: str
-    MOVE_UP: str
-    NAVIGATION_WINDOW_SHORTCUT: str
-    NEW_IMAGE_SHORTCUT: str
-    NEW_LAYER_GROUP_SHORTCUT: str
-    NEW_LAYER_SHORTCUT: str
-    PADDING_SCROLL_MODIFIER: str
-    PAN_DOWN: str
-    PAN_LEFT: str
-    PAN_RIGHT: str
-    PAN_UP: str
-    PAN_VIEW_MODIFIER: str
-    PASTE_SHORTCUT: str
-    POSTERIZE_SHORTCUT: str
-    PREVIOUS_GENERATION_FRAME_KEY: str
-    PROMPT_STYLE_SHORTCUT: str
-    QUIT_SHORTCUT: str
-    REDO_SHORTCUT: str
-    RELOAD_SHORTCUT: str
-    RESET_COLORS_SHORTCUT: str
-    RESIZE_CANVAS_SHORTCUT: str
-    ROTATE_CCW_KEY: str
-    ROTATE_CW_KEY: str
-    SATURATION_SHORTCUT: str
-    SAVE_AS_SHORTCUT: str
-    SAVE_SHORTCUT: str
-    SCALE_IMAGE_SHORTCUT: str
-    SELECTION_BRUSH_TOOL_KEY: str
-    SELECTION_FILL_TOOL_KEY: str
-    SELECT_ALL_SHORTCUT: str
-    SELECT_CONTROLNET_TAB: str
-    SELECT_GENERATOR_TAB: str
-    SELECT_LAYER_CONTENT_SHORTCUT: str
-    SELECT_NEXT_LAYER_SHORTCUT: str
-    SELECT_NONE_SHORTCUT: str
-    SELECT_PREVIOUS_LAYER_SHORTCUT: str
-    SELECT_TOOL_TAB: str
-    SETTINGS_SHORTCUT: str
-    SHAPE_SELECTION_TOOL_KEY: str
-    SHAPE_TOOL_KEY: str
-    SHARPEN_SHORTCUT: str
-    SHOW_LAYER_MENU_SHORTCUT: str
-    SHRINK_SELECTION_SHORTCUT: str
-    SMUDGE_TOOL_KEY: str
-    SPEED_MODIFIER: str
-    SWAP_COLORS_SHORTCUT: str
-    TEXT_TOOL_KEY: str
-    TOGGLE_RULERS_SHORTCUT: str
-    TOOL_ACTION_HOTKEY: str
-    TRANSFORM_TOOL_KEY: str
-    UNDO_SHORTCUT: str
-    UPDATE_METADATA_SHORTCUT: str
-    ZOOM_IN: str
-    ZOOM_OUT: str
-    ZOOM_TOGGLE: str

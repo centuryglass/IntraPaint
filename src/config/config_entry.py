@@ -1,5 +1,6 @@
 """Represents configurable typed values loaded from JSON definitions."""
 import logging
+from copy import deepcopy
 from typing import Any, Optional
 
 from PySide6.QtCore import QSize
@@ -10,6 +11,10 @@ from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_IN
 logger = logging.getLogger(__name__)
 
 VALUE_KEY = 'value'
+
+# The attributes `ConfigEntry.snapshot_state` copies. An attribute that tests can change and that is missing here
+# carries over from one test to the next.
+_STATE_ATTRIBUTES = ('_value', '_default_value', '_options', '_default_options', '_minimum', '_maximum', '_step')
 
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -29,6 +34,13 @@ UNEXPECTED_TYPE_ERROR = _tr('unexpected type:')
 MISSING_VALUE_ERROR = _tr('{key}: missing value')
 
 
+def _json_scalar(value: Any) -> Any:
+    """Converts a value to its JSON form, writing sizes as 'WxH'."""
+    if isinstance(value, QSize):
+        return f'{value.width()}x{value.height()}'
+    return value
+
+
 class DefinitionKey:
     """Config definition key constants."""
     DEFAULT = 'default'
@@ -40,6 +52,22 @@ class DefinitionKey:
     OPTIONS = 'options'
     RANGE = 'range_options'
     SAVED = 'saved'
+    # Optional bool. When true, a saved entry stays in the config file even when it equals the default, so a later
+    # change to the default doesn't alter it for installs that already saved it.
+    PINNED = 'pinned'
+    # Optional string naming the control a settings window shows for a string value: one of the `ControlHint`
+    # constants. A string with no hint is a text field.
+    CONTROL = 'control'
+
+
+class ControlHint:
+    """Values of a definition's `control` key."""
+    # A color string. An empty value means "use the theme's color" and the control offers that state.
+    COLOR = 'color'
+    # A color string that is always set.
+    COLOR_REQUIRED = 'color_required'
+    # A directory path, with a Browse button.
+    DIRECTORY = 'directory'
 
 
 class DefinitionType:
@@ -58,7 +86,6 @@ class RangeKey:
     MIN = 'min'
     MAX = 'max'
     STEP = 'step'
-    ALL = [MIN, MAX, STEP]
 
 
 class ConfigEntry(Parameter):
@@ -73,7 +100,9 @@ class ConfigEntry(Parameter):
                  tooltip: str,
                  options: Optional[ParamTypeList] = None,
                  range_options: Optional[dict[str, int | float]] = None,
-                 save_json: bool = True) -> None:
+                 save_json: bool = True,
+                 pinned: bool = False,
+                 control_hint: Optional[str] = None) -> None:
         minimum = None
         maximum = None
         step = None
@@ -89,10 +118,15 @@ class ConfigEntry(Parameter):
                          maximum,
                          step)
         self._key = key
-        self._value = initial_value
+        self._value = deepcopy(initial_value)  # Mutating the value in place must not change the default.
+        # `Parameter.set_valid_options` moves `_default_value` onto the first option when options load at runtime.
+        # Saving compares against this copy, so choosing that first option is still saved.
+        self._definition_default = deepcopy(initial_value)
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
+        self.pinned = pinned
+        self.control_hint = control_hint
         self._default_options: Optional[ParamTypeList] = None
         if options is not None:
             self._default_options = [*options]
@@ -120,6 +154,7 @@ class ConfigEntry(Parameter):
             self.set_valid_options(valid_options)
 
         # Validate type, range, accepted options:
+        value = self.normalize(value)
         self.validate(value, True)
         value_changed = self._value != value
         self._value = value
@@ -145,6 +180,15 @@ class ConfigEntry(Parameter):
         if isinstance(self._value, dict):
             return self._value.copy()
         return self._value
+
+    def snapshot_state(self) -> dict[str, Any]:
+        """Returns a copy of the entry's value, default, options and range, for `restore_state`."""
+        return {name: deepcopy(getattr(self, name)) for name in _STATE_ATTRIBUTES}
+
+    def restore_state(self, state: dict[str, Any]) -> None:
+        """Restores the value, default, options and range saved by `snapshot_state`. `state` stays unchanged."""
+        for name, value in state.items():
+            setattr(self, name, deepcopy(value))
 
     def default_options(self) -> Optional[ParamTypeList]:
         """Returns a copy of the list of default options provided when the entry was created, if any."""
@@ -178,29 +222,30 @@ class ConfigEntry(Parameter):
             options.append(option)
         self.set_valid_options(options)
 
+    def is_default_state(self) -> bool:
+        """Returns whether the value matches the definition's default, whatever options have loaded since."""
+        return self._value == self._definition_default
+
+    def default_json_value(self) -> Any:
+        """Returns the definition's default in its saved JSON form."""
+        return _json_scalar(self._definition_default)
+
+    def saved_json_value(self, json_value: Any) -> Any:
+        """Returns the value part of a saved JSON value, unwrapping the `{min, max, step, value}` form older files use
+        for ranged entries."""
+        if isinstance(json_value, dict) and self.type_name in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
+            return json_value.get(VALUE_KEY)
+        return json_value
+
     def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
-        """Adds the value to a dict in a format that can be written to a JSON file."""
-        if self.save_json:
-            if isinstance(self._value, QSize):
-                json_dict[self._key] = f'{self._value.width()}x{self._value.height()}'
-            minimum = self.minimum
-            maximum = self.maximum
-            step = self.single_step
-            if minimum is not None or maximum is not None or step is not None:
-                json_dict[self._key] = {}
-                for config_param, inner_key in ((minimum, RangeKey.MIN),
-                                                (maximum, RangeKey.MAX),
-                                                (step, RangeKey.STEP),
-                                                (self._value, VALUE_KEY)):
-                    if config_param is None:
-                        continue
-                    if isinstance(config_param, QSize):
-                        config_param = f'{config_param.width()}x{config_param.height()}'
-                    json_dict[self._key][inner_key] = config_param
-            elif isinstance(self._value, QSize):
-                json_dict[self._key] = f'{self._value.width()}x{self._value.height()}'
-            else:
-                json_dict[self._key] = self._value
+        """Adds the value to a dict in a format that can be written to a JSON file.
+
+        Nothing is added for an entry that is unsaved, or that matches its definition and isn't pinned. Ranges always
+        come from the definition, so they are never saved.
+        """
+        if not self.save_json or (self.is_default_state() and not self.pinned):
+            return
+        json_dict[self._key] = _json_scalar(self._value)
 
     def load_from_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""
@@ -220,13 +265,7 @@ class ConfigEntry(Parameter):
         json_value = json_dict[self._key]
         if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
             if self.type_name in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
-                if RangeKey.MIN in json_value and json_value[RangeKey.MIN] is not None:
-                    self.minimum = _apply_type(json_value[RangeKey.MIN], self.type_name)
-                if RangeKey.MAX in json_value and json_value[RangeKey.MAX] is not None:
-                    self.maximum = _apply_type(json_value[RangeKey.MAX], self.type_name)
-                if RangeKey.STEP in json_value and json_value[RangeKey.STEP] is not None:
-                    step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
-                    self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
+                # Older files save ranged entries as {min, max, step, value}. Only the value is read.
                 if VALUE_KEY not in json_value:
                     logger.error(MISSING_VALUE_ERROR.format(key=self._key))
                     json_value = self.default_value
@@ -238,6 +277,7 @@ class ConfigEntry(Parameter):
 
         if self.type_name == TYPE_QSIZE:
             json_value = _apply_type(json_value, TYPE_QSIZE)
+        json_value = self.normalize(json_value)
         if self.options is not None and len(self.options) == 0:
             self.set_valid_options([json_value])
         if not self.validate(json_value):

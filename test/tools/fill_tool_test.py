@@ -5,7 +5,6 @@ import numpy as np
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QTransform
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller import color_controller
 from src.image.layers.image_layer import ImageLayer
@@ -58,7 +57,6 @@ class FillToolTest(ToolTestCase):
     def setUp(self) -> None:
         super().setUp()
         # Keep separate fills in separate undo entries:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         cache = Cache()
         cache.set(Cache.FILL_THRESHOLD, 0.0)
         cache.set(Cache.SAMPLE_MERGED, False)
@@ -148,21 +146,39 @@ class FillToolTest(ToolTestCase):
         self.assert_images_equal(self.layer.image, initial_image)
         self.assertEqual(UndoStack().undo_count(), 0)
 
-    def test_translucent_region_is_replaced(self) -> None:
-        """Filling partly transparent pixels replaces them with the fill color instead of compositing over them."""
+    def test_opaque_fill_replaces_translucent_region(self) -> None:
+        """An opaque fill color covers partly transparent pixels completely."""
         self.layer.image = solid_image(self.IMAGE_SIZE, QColor(255, 0, 0, 128))
         UndoStack().clear()
         initial_image = self.layer.image
         self.mouse_drag([SEED_POINT])
         self.assert_filled_exactly(self.layer, initial_image, region_mask(self.IMAGE_SIZE, QRect(QPoint(), self.IMAGE_SIZE)))
 
-    def test_translucent_fill_color_is_premultiplied(self) -> None:
-        """A translucent fill color is written premultiplied, replacing the opaque pixels under it."""
+    def test_translucent_fill_composites_over_opaque_content(self) -> None:
+        """A translucent fill color blends with the opaque pixels under it and leaves them opaque."""
+        color_controller.set_foreground(QColor(0, 0, 255, 128))
+        self.layer.image = solid_image(self.IMAGE_SIZE, QColor(255, 0, 0))
+        UndoStack().clear()
+        self.mouse_drag([SEED_POINT])
+        pixels = image_data_as_numpy_8bit_readonly(self.layer.image)
+        blended = QColor(self.layer.image.pixelColor(SEED_POINT))
+        self.assertEqual(blended.alpha(), 255)
+        self.assertAlmostEqual(blended.red(), 127, delta=2)
+        self.assertEqual(blended.green(), 0)
+        self.assertAlmostEqual(blended.blue(), 128, delta=2)
+        self.assertTrue(np.all(pixels[:, :, 3] == 255))
+        self.assert_valid_premultiplied(self.layer.image)
+
+    def test_translucent_fill_over_transparent_region(self) -> None:
+        """A translucent fill color over fully transparent pixels leaves that translucent color."""
         fill_color = QColor(255, 128, 0, 128)
         color_controller.set_foreground(fill_color)
+        self.layer.image = solid_image(self.IMAGE_SIZE, QColor(Qt.GlobalColor.transparent))
+        UndoStack().clear()
         initial_image = self.layer.image
         self.mouse_drag([SEED_POINT])
-        self.assert_filled_exactly(self.layer, initial_image, region_mask(self.IMAGE_SIZE, BASE_RECT), fill_color)
+        self.assert_filled_exactly(self.layer, initial_image, region_mask(self.IMAGE_SIZE, QRect(QPoint(), self.IMAGE_SIZE)),
+                                   fill_color)
         self.assert_valid_premultiplied(self.layer.image)
 
     def test_transparent_region_fills(self) -> None:
@@ -325,6 +341,19 @@ class FillToolTest(ToolTestCase):
         self.assert_images_equal(self.layer.image, initial_image)
         self.assertEqual(UndoStack().undo_count(), 0)
         self.layer.locked = False
+
+    def test_layer_in_hidden_group_refuses_fill(self) -> None:
+        """A click on a visible layer inside a hidden group shows an error naming the group, and changes nothing."""
+        group = self.image_stack.create_layer_group('hidden group')
+        grouped = self.image_stack.create_layer(image_data=region_pattern(self.IMAGE_SIZE), layer_parent=group)
+        self.image_stack.active_layer = grouped
+        group.visible = False
+        initial_image = grouped.image
+        with patch('src.tools.base_tool.show_error_dialog') as mock_error:
+            self.mouse_drag([SEED_POINT])
+        mock_error.assert_called_once()
+        self.assertIn('"hidden group"', mock_error.call_args.args[2])
+        self.assert_images_equal(grouped.image, initial_image)
 
     def test_hidden_layer_refuses_fill(self) -> None:
         """A click on a hidden layer shows an error and changes nothing."""

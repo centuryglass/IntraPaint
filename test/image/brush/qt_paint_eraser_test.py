@@ -1,7 +1,6 @@
 """Tests QtPaintBrush in eraser mode against golden images, and checks properties that must hold for any erase
    stroke."""
 import numpy as np
-import pytest
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QColor, QImage
 
@@ -203,7 +202,6 @@ class QtPaintEraserTest(BrushTestCase):
                                  initial_image.convertToFormat(QImage.Format.Format_Alpha8))
         self.assert_stroke_matches_golden(image, 'eraser_alpha_locked')
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/154')
     def test_repeated_erasing_on_alpha_locked_layer_keeps_color(self) -> None:
         """Erase strokes on an alpha-locked layer don't shift its color, however many are repeated."""
         initial_image = self.configure_alpha_locked_erase()

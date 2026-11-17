@@ -1,0 +1,322 @@
+"""Tests StrokePreview's timed updates and its real-brush render, for painting, erasing, smudging, filtering and
+clone stamping."""
+import json
+import os
+from typing import Optional
+
+from PySide6.QtCore import QPoint, QSize, QTimer
+from PySide6.QtGui import QImage, QPalette
+
+from src.config.cache import Cache
+from src.image.filter.blur import BlurFilter
+from src.image.filter.invert import InvertFilter
+from src.image.filter.posterize import PosterizeFilter
+from src.image.filter.sharpen import SharpenFilter
+from src.tools.filter_tool import FilterTool
+from src.ui.panel.tool_control_panels.clone_stamp_preview import (CloneStampStrokePreview, SOURCE_MODE_DYNAMIC_OFFSET,
+                                                                  SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_STATIC)
+from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_3, BRUSH_PATTERN_SOLID
+from src.ui.panel.tool_control_panels.stroke_preview import (DrawStrokePreview, EraseStrokePreview, FilterStrokePreview,
+                                                                 SmudgeStrokePreview, StrokePreview)
+from src.ui.panel.tool_control_panels.preview_backdrop import backdrop_image
+from src.undo_stack import UndoStack
+from src.util.visual.keycap import keycap_colors
+from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
+from test.tools.tool_test_case import ToolTestCase
+
+PREVIEW_SIZE = QSize(200, 80)
+GOLDEN_DIR = os.path.join(TEST_RESOURCE_DIR, 'brush_previews')
+
+
+class StrokePreviewTest(IntraPaintTestCase):
+    """Tests the Draw tool's preview."""
+
+    def make_preview(self, timer: Optional[QTimer] = None) -> DrawStrokePreview:
+        """Returns a visible preview of the Draw tool's settings."""
+        preview = DrawStrokePreview(Cache.DRAW_TOOL_BRUSH_SIZE, Cache.DRAW_TOOL_OPACITY, Cache.DRAW_TOOL_HARDNESS,
+                                Cache.LAST_BRUSH_COLOR, Cache.DRAW_TOOL_BRUSH_PATTERN, Cache.DRAW_TOOL_ANTIALIAS,
+                                render_timer=timer)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def render(self, preview: StrokePreview) -> QImage:
+        """Returns the preview as painted."""
+        return preview.grab().toImage()
+
+    def test_input_change_keeps_the_old_render_until_the_timer_fires(self) -> None:
+        """A changed input leaves the last render on screen and schedules one render, which the timer's timeout runs."""
+        timer = QTimer()
+        preview = self.make_preview(timer)
+        self.assertTrue(preview.is_current)
+        Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, 13)
+        Cache().set(Cache.DRAW_TOOL_OPACITY, 0.4)
+        self.assertFalse(preview.is_current)
+        self.assertTrue(timer.isActive())
+        timer.timeout.emit()
+        self.assertTrue(preview.is_current)
+
+    def test_cached_image_is_reused_for_the_same_inputs(self) -> None:
+        """Returning to earlier settings shows the cached render at once, without waiting for the timer."""
+        timer = QTimer()
+        preview = self.make_preview(timer)
+        original = Cache().get(Cache.DRAW_TOOL_BRUSH_SIZE)
+        Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, original + 5)
+        timer.timeout.emit()
+        self.assertTrue(preview.is_current)
+        Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, original)
+        self.assertTrue(preview.is_current)
+        self.assertFalse(timer.isActive())
+
+    def test_rendering_leaves_undo_history_alone(self) -> None:
+        """The scratch layer's edits are not recorded."""
+        preview = self.make_preview()
+        before = UndoStack().undo_count()
+        preview.render_now()
+        self.assertEqual(UndoStack().undo_count(), before)
+
+    def test_background_contrasts_with_the_brush_color(self) -> None:
+        """The background is whichever of the panel background and keycap fill contrasts more with the brush color."""
+        preview = self.make_preview()
+        base = preview.palette().color(QPalette.ColorRole.Base)
+        keycap_fill = keycap_colors(preview.palette())[0]
+        for color in (base, keycap_fill):
+            with self.subTest(color=color.name()):
+                Cache().set(Cache.LAST_BRUSH_COLOR, color.name())
+                other = keycap_fill if color == base else base
+                self.assertEqual(preview._background(), other)  # pylint: disable=protected-access
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for hard, soft and patterned brushes."""
+        cases = {
+            'hard': (20, 1.0, BRUSH_PATTERN_SOLID),
+            'soft': (30, 0.3, BRUSH_PATTERN_SOLID),
+            'pattern': (30, 1.0, BRUSH_PATTERN_DENSE_3),
+        }
+        for name, (size, hardness, pattern) in cases.items():
+            with self.subTest(name):
+                Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, size)
+                Cache().set(Cache.DRAW_TOOL_HARDNESS, hardness)
+                Cache().set(Cache.DRAW_TOOL_OPACITY, 0.8)
+                Cache().set(Cache.DRAW_TOOL_BRUSH_PATTERN, pattern)
+                Cache().set(Cache.DRAW_TOOL_ANTIALIAS, True)
+                preview = self.make_preview()
+                preview.render_now()
+                self.assert_image_matches_golden(self.render(preview), os.path.join(GOLDEN_DIR, f'stroke_{name}.png'))
+
+
+class EraserPreviewTest(IntraPaintTestCase):
+    """Tests the Eraser tool's preview."""
+
+    def make_preview(self) -> EraseStrokePreview:
+        """Returns a visible preview of the Eraser's settings."""
+        preview = EraseStrokePreview(Cache.ERASER_TOOL_SIZE, Cache.ERASER_TOOL_OPACITY, Cache.ERASER_TOOL_HARDNESS,
+                                     Cache.ERASER_TOOL_ANTIALIAS)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def test_stroke_shows_the_checkerboard_through_the_backdrop(self) -> None:
+        """Pixels under the stroke differ from the backdrop-filled pixels beside it."""
+        Cache().set(Cache.ERASER_TOOL_SIZE, 20)
+        Cache().set(Cache.ERASER_TOOL_HARDNESS, 1.0)
+        Cache().set(Cache.ERASER_TOOL_OPACITY, 1.0)
+        image = self.make_preview().grab().toImage()
+        backdrop = image.pixelColor(1, 1)
+        stroke_start = image.pixelColor(PREVIEW_SIZE.width() // 2, PREVIEW_SIZE.height() // 2)
+        self.assertNotEqual(backdrop, stroke_start)
+        colors = {image.pixelColor(x, PREVIEW_SIZE.height() // 2).name() for x in range(20, 180)}
+        self.assertGreater(len(colors), 1)
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for hard, soft and faint erasers."""
+        cases = {
+            'hard': (20, 1.0, 1.0),
+            'soft': (30, 0.3, 1.0),
+            'faint': (30, 1.0, 0.4),
+        }
+        for name, (size, hardness, opacity) in cases.items():
+            with self.subTest(name):
+                Cache().set(Cache.ERASER_TOOL_SIZE, size)
+                Cache().set(Cache.ERASER_TOOL_HARDNESS, hardness)
+                Cache().set(Cache.ERASER_TOOL_OPACITY, opacity)
+                Cache().set(Cache.ERASER_TOOL_ANTIALIAS, True)
+                preview = self.make_preview()
+                self.assert_image_matches_golden(preview.grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'erase_{name}.png'))
+
+
+class SmudgePreviewTest(IntraPaintTestCase):
+    """Tests the Smudge tool's preview."""
+
+    def make_preview(self) -> SmudgeStrokePreview:
+        """Returns a visible preview of the Smudge tool's settings."""
+        preview = SmudgeStrokePreview(Cache.SMUDGE_TOOL_BRUSH_SIZE, Cache.SMUDGE_TOOL_OPACITY,
+                                      Cache.SMUDGE_TOOL_HARDNESS, Cache.SMUDGE_TOOL_ANTIALIAS)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def test_stroke_changes_the_backdrop(self) -> None:
+        """The rendered stroke differs from the unsmudged backdrop."""
+        Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, 20)
+        Cache().set(Cache.SMUDGE_TOOL_HARDNESS, 1.0)
+        Cache().set(Cache.SMUDGE_TOOL_OPACITY, 1.0)
+        image = self.make_preview().grab().toImage()
+        self.assertNotEqual(image, backdrop_image(PREVIEW_SIZE))
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for hard, soft and faint smudges."""
+        cases = {
+            'hard': (20, 1.0, 1.0),
+            'soft': (30, 0.3, 1.0),
+            'faint': (30, 1.0, 0.4),
+        }
+        for name, (size, hardness, opacity) in cases.items():
+            with self.subTest(name):
+                Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, size)
+                Cache().set(Cache.SMUDGE_TOOL_HARDNESS, hardness)
+                Cache().set(Cache.SMUDGE_TOOL_OPACITY, opacity)
+                Cache().set(Cache.SMUDGE_TOOL_ANTIALIAS, True)
+                preview = self.make_preview()
+                self.assert_image_matches_golden(preview.grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'smudge_{name}.png'))
+
+
+class FilterPreviewTest(ToolTestCase):
+    """Tests the Filter tool's preview."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        tool = FilterTool(self.image_stack, self.image_viewer)
+        self.filters = tool._filters  # pylint: disable=protected-access
+        Cache().update_options(Cache.FILTER_TOOL_SELECTED_FILTER, [f.get_name() for f in self.filters])
+
+    def make_preview(self) -> FilterStrokePreview:
+        """Returns a visible preview of the Filter tool's settings."""
+        preview = FilterStrokePreview(self.filters, Cache.FILTER_TOOL_BRUSH_SIZE, Cache.FILTER_TOOL_OPACITY,
+                                      Cache.FILTER_TOOL_HARDNESS, Cache.FILTER_TOOL_ANTIALIAS)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def use_filter(self, filter_type: type, values: Optional[list] = None) -> None:
+        """Selects the filter of a class, with its default parameters unless `values` is given."""
+        img_filter = next(f for f in self.filters if isinstance(f, filter_type))
+        if values is None:
+            values = [param.default_value for param in img_filter.get_parameters()]
+        Cache().set(Cache.FILTER_TOOL_BRUSH_SIZE, 30)
+        Cache().set(Cache.FILTER_TOOL_HARDNESS, 1.0)
+        Cache().set(Cache.FILTER_TOOL_OPACITY, 1.0)
+        Cache().set(Cache.FILTER_TOOL_ANTIALIAS, True)
+        params = json.loads(Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
+        params[img_filter.get_name()] = values
+        Cache().set(Cache.FILTER_TOOL_CACHED_PARAMETERS, json.dumps(params))
+        Cache().set(Cache.FILTER_TOOL_SELECTED_FILTER, img_filter.get_name())
+
+    def test_stroke_changes_the_backdrop(self) -> None:
+        """The filtered stroke differs from the unfiltered backdrop."""
+        self.use_filter(InvertFilter)
+        self.assertNotEqual(self.make_preview().grab().toImage(), backdrop_image(PREVIEW_SIZE))
+
+    def test_filter_change_makes_the_render_stale(self) -> None:
+        """Selecting another filter schedules a new render."""
+        self.use_filter(InvertFilter)
+        preview = self.make_preview()
+        self.use_filter(SharpenFilter)
+        self.assertFalse(preview.is_current)
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for inverting, blurring and posterizing."""
+        for name, filter_type in (('invert', InvertFilter), ('blur', BlurFilter), ('posterize', PosterizeFilter)):
+            with self.subTest(name):
+                self.use_filter(filter_type)
+                self.assert_image_matches_golden(self.make_preview().grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'filter_{name}.png'))
+
+
+class CloneStampPreviewTest(IntraPaintTestCase):
+    """Tests the Clone stamp tool's preview."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().update_options(Cache.CLONE_STAMP_TOOL_SOURCE_MODE,
+                               [SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_DYNAMIC_OFFSET, SOURCE_MODE_STATIC])
+        Cache().set(Cache.CLONE_STAMP_TOOL_BRUSH_SIZE, 30)
+        Cache().set(Cache.CLONE_STAMP_TOOL_HARDNESS, 0.8)
+        Cache().set(Cache.CLONE_STAMP_TOOL_OPACITY, 1.0)
+        Cache().set(Cache.CLONE_STAMP_TOOL_ANTIALIAS, True)
+
+    def make_preview(self, mode: str, source_xy: QPoint = QPoint(),
+                     timer: Optional[QTimer] = None) -> CloneStampStrokePreview:
+        """Returns a visible preview of the Clone stamp tool's settings in a source mode."""
+        Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, mode)
+        preview = CloneStampStrokePreview(Cache.CLONE_STAMP_TOOL_BRUSH_SIZE, Cache.CLONE_STAMP_TOOL_OPACITY,
+                                          Cache.CLONE_STAMP_TOOL_HARDNESS, Cache.CLONE_STAMP_TOOL_ANTIALIAS,
+                                          render_timer=timer)
+        preview.set_source_xy(source_xy)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def test_stroke_changes_the_backdrop(self) -> None:
+        """Each mode's render differs from the plain backdrop, and from the other modes'."""
+        renders = {mode: self.make_preview(mode).grab().toImage()
+                   for mode in (SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_DYNAMIC_OFFSET, SOURCE_MODE_STATIC)}
+        for mode, image in renders.items():
+            with self.subTest(mode):
+                self.assertNotEqual(image, backdrop_image(PREVIEW_SIZE))
+        self.assertEqual(len({image.bits().tobytes() for image in renders.values()}), len(renders))
+
+    def test_offset_changes_make_the_render_stale(self) -> None:
+        """A new offset schedules a render in the offset modes."""
+        for mode in (SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_DYNAMIC_OFFSET):
+            with self.subTest(mode):
+                timer = QTimer()
+                preview = self.make_preview(mode, timer=timer)
+                preview.set_source_xy(QPoint(0, -50))
+                self.assertFalse(preview.is_current)
+                timer.timeout.emit()
+                self.assertTrue(preview.is_current)
+
+    def test_fixed_position_ignores_the_source_coordinates(self) -> None:
+        """A fixed position has no anchor in the preview, so new coordinates keep the current render."""
+        preview = self.make_preview(SOURCE_MODE_STATIC)
+        preview.set_source_xy(QPoint(300, 40))
+        self.assertTrue(preview.is_current)
+
+    def test_mode_change_makes_the_render_stale(self) -> None:
+        """Selecting another source mode schedules a new render."""
+        preview = self.make_preview(SOURCE_MODE_FIXED_OFFSET)
+        Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, SOURCE_MODE_STATIC)
+        self.assertFalse(preview.is_current)
+
+    def test_offset_direction_moves_the_source(self) -> None:
+        """Opposite offsets give different renders."""
+        left = self.make_preview(SOURCE_MODE_FIXED_OFFSET, QPoint(-100, 0)).grab().toImage()
+        right = self.make_preview(SOURCE_MODE_FIXED_OFFSET, QPoint(100, 0)).grab().toImage()
+        self.assertNotEqual(left, right)
+
+    def test_rendering_leaves_undo_history_alone(self) -> None:
+        """The scratch layer's edits are not recorded."""
+        before = UndoStack().undo_count()
+        self.make_preview(SOURCE_MODE_DYNAMIC_OFFSET)
+        self.assertEqual(UndoStack().undo_count(), before)
+
+    def test_golden_images(self) -> None:
+        """The render matches a golden image for each source mode, and for an offset with a vertical part."""
+        cases = {
+            'fixed_offset': (SOURCE_MODE_FIXED_OFFSET, QPoint()),
+            'fixed_offset_diagonal': (SOURCE_MODE_FIXED_OFFSET, QPoint(-120, 40)),
+            'dynamic_offset': (SOURCE_MODE_DYNAMIC_OFFSET, QPoint()),
+            'fixed_position': (SOURCE_MODE_STATIC, QPoint()),
+        }
+        for name, (mode, source_xy) in cases.items():
+            with self.subTest(name):
+                self.assert_image_matches_golden(self.make_preview(mode, source_xy).grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'clone_{name}.png'))

@@ -1,16 +1,21 @@
-"""Tests ImageViewer's context pin markers and what deleting a viewer releases."""
+"""Tests ImageViewer's context pin markers, its manual resolution label, its drop routing, and what deleting a viewer
+releases."""
 import sys
 
-from PySide6.QtCore import QCoreApplication, QEvent, QPoint, QRectF, QSize
-from PySide6.QtGui import QColor, QImage, QPainter
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QCoreApplication, QEvent, QMimeData, QObject, QPoint, QPointF, QRect, QRectF, QSize, \
+    Qt
+from PySide6.QtGui import QColor, QDragEnterEvent, QImage, QPainter
+from PySide6.QtWidgets import QApplication, QMainWindow
 import shiboken6
 
+from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
     MAX_MARKER_SIZE, MARKER_REFERENCE_VIEW_SIDE
 from src.ui.image_viewer import ImageViewer, color_under_overlay, IMAGE_BORDER_COLOR, IMAGE_BORDER_OPACITY
 from src.ui.ink_style import ink_colors
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -54,6 +59,65 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
         viewer.resizeEvent(None)
         self.assertEqual(viewer.context_pin_marker_size, MIN_MARKER_SIZE)
         self.assertEqual(viewer._context_pin_items[0].marker_size, MIN_MARKER_SIZE)  # pylint: disable=protected-access
+
+
+class ImageViewerManualResolutionLabelTest(IntraPaintTestCase):
+    """Tests that the generation area carries a resolution label while the resolution rule is Manual."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA)
+        self.image_stack = ImageStack(QSize(512, 512), QSize(256, 256), QSize(8, 8), QSize(512, 512))
+        self.image_stack.create_layer('Background')
+        self.image_stack.generation_area = QRect(128, 128, 256, 256)
+        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer.resize(600, 600)
+        self.viewer.resizeEvent(None)
+        self.viewer.set_generation_area_visible(True)
+        self.label = self.viewer.manual_resolution_label
+
+    def test_label_shows_only_under_manual_rule(self) -> None:
+        """The label shows the resolution under the Manual rule, follows resolution changes, and hides otherwise."""
+        cache = Cache()
+        self.assertFalse(self.label.isVisible())
+        cache.set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        cache.set(Cache.GENERATION_SIZE, QSize(768, 512))
+        self.assertTrue(self.label.isVisible())
+        self.assertEqual(self.label.text, 'Manual resolution: 768 x 512')
+        cache.set(Cache.GENERATION_SIZE, QSize(640, 448))
+        self.assertEqual(self.label.text, 'Manual resolution: 640 x 448')
+        cache.set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA)
+        self.assertFalse(self.label.isVisible())
+
+    def test_label_follows_its_setting(self) -> None:
+        """Turning the label's setting off hides it under the Manual rule, and turning it back on shows it."""
+        config = AppConfig()
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        config.set(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, False)
+        self.assertFalse(self.label.isVisible())
+        config.set(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, True)
+        self.assertTrue(self.label.isVisible())
+
+    def test_label_hides_with_generation_area(self) -> None:
+        """Hiding the generation area outline hides the label with it."""
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        self.viewer.set_generation_area_visible(False)
+        self.assertFalse(self.label.isVisible())
+        self.viewer.set_generation_area_visible(True)
+        self.assertTrue(self.label.isVisible())
+
+    def test_label_follows_area_and_moves_inside_when_zoomed(self) -> None:
+        """The label anchors to the area's top left, above the edge until zooming to the area leaves no room there."""
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        self.assertEqual(self.label.pos(), QPointF(128, 128))
+        self.assertFalse(self.label.inside)
+        self.image_stack.generation_area = QRect(64, 96, 256, 256)
+        self.assertEqual(self.label.pos(), QPointF(64, 96))
+        self.viewer.follow_generation_area = True
+        self.assertTrue(self.label.inside)
+        self.viewer.follow_generation_area = False
+        self.viewer.reset_scale()
+        self.assertFalse(self.label.inside)
 
 
 class ImageViewerSurroundTest(IntraPaintTestCase):
@@ -128,3 +192,87 @@ class MarkerSizeForViewTest(IntraPaintTestCase):
         """Tiny and huge views stay within the marker size limits."""
         self.assertEqual(marker_size_for_view(QSize(10, 10)), MIN_MARKER_SIZE)
         self.assertEqual(marker_size_for_view(QSize(10000, 10000)), MAX_MARKER_SIZE)
+
+
+DOCK_DRAG_MIME = 'application/x-qt-mainwindowdrag-window'
+CLAIMED_DRAG_MIME = 'application/x-intrapaint-test-drop'
+
+
+class _DragWatcher(QObject):
+    """Installed on a top-level window to record whether a DragEnter reached it."""
+
+    def __init__(self, window: QMainWindow) -> None:
+        super().__init__(window)
+        self.window_saw_drag = False
+
+    def eventFilter(self, _watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
+        """Records a DragEnter, and lets Qt's own drag handling run."""
+        if event.type() == QEvent.Type.DragEnter:
+            self.window_saw_drag = True
+        return False
+
+
+class _DropClaimingViewer(ImageViewer):
+    """An image viewer that claims one sample drag format, as the canvas drop feature will."""
+
+    def accepts_mime_data(self, mime_data: QMimeData) -> bool:
+        """Returns whether the drag carries the claimed sample format."""
+        return mime_data is not None and mime_data.hasFormat(CLAIMED_DRAG_MIME)
+
+
+class ImageViewerDropRoutingTest(IntraPaintTestCase):
+    """Tests that an image view claims only the drags it handles, passing Qt's dock drag up to
+    the main window instead of letting its scene swallow it."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.window = QMainWindow()
+        self.window.setCentralWidget(self.viewer)
+        self.window.resize(300, 200)
+        self.window.show()
+        self.watcher = _DragWatcher(self.window)
+        self.window.installEventFilter(self.watcher)
+
+    def tearDown(self) -> None:
+        self.window.hide()
+        super().tearDown()
+
+    @classmethod
+    def _drag_enter(cls, viewer: ImageViewer, mime: QMimeData, action: Qt.DropAction) -> QDragEnterEvent:
+        """Sends a DragEnter for `mime` to `viewer`'s viewport, as a drag over the canvas."""
+        event = QDragEnterEvent(QPoint(50, 50), action, mime, Qt.MouseButton.LeftButton,
+                                Qt.KeyboardModifier.NoModifier)
+        QApplication.sendEvent(viewer.viewport(), event)
+        return event
+
+    def test_dock_drag_passes_up_over_the_view(self) -> None:
+        """A drag a view doesn't claim, like Qt's Wayland dock drag, is ignored at the viewport
+        and reaches the window above the view, so a dock can drop over the canvas."""
+        mime = QMimeData()
+        mime.setData(DOCK_DRAG_MIME, b'')
+        event = self._drag_enter(self.viewer, mime, Qt.DropAction.MoveAction)
+        self.assertFalse(event.isAccepted())
+        self.assertTrue(self.watcher.window_saw_drag)
+
+    def test_claimed_drag_is_accepted_by_the_view(self) -> None:
+        """A drag that `accepts_mime_data` claims is accepted at the view, which stops the
+        drag's parent walk before it reaches the window."""
+        claiming = _DropClaimingViewer(None, self.image_stack, use_keybindings=False)
+        window = QMainWindow()
+        window.setCentralWidget(claiming)
+        window.resize(300, 200)
+        window.show()
+        watcher = _DragWatcher(window)
+        window.installEventFilter(watcher)
+        mime = QMimeData()
+        mime.setData(CLAIMED_DRAG_MIME, b'')
+        event = self._drag_enter(claiming, mime, Qt.DropAction.CopyAction)
+        self.assertTrue(event.isAccepted())
+        self.assertEqual(event.dropAction(), Qt.DropAction.CopyAction)
+        self.assertFalse(watcher.window_saw_drag)
+
+    def test_accepts_mime_data_is_false_by_default(self) -> None:
+        """The base view claims no drag formats, so every drag passes up the widget chain."""
+        self.assertFalse(self.viewer.accepts_mime_data(QMimeData()))

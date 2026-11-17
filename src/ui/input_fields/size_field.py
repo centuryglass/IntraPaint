@@ -62,10 +62,13 @@ class SizeField(QWidget):
         self._max_height = INT_MAX
         self._width_box.setRange(self._min_width, self._max_width)
         self._height_box.setRange(self._min_height, self._max_height)
+        # Focusing the field focuses its width box:
+        self.setFocusProxy(self._width_box)
         self._build_layout()
 
     def _build_layout(self) -> None:
-        clear_layout(self._layout)
+        # Unparenting would hide the widgets, and adding them back doesn't show them again:
+        clear_layout(self._layout, unparent=False)
         if self._orientation == Qt.Orientation.Horizontal:
             def _add_column(column_widget: Optional[QWidget], column: int, stretch: int = 2) -> None:
                 if column_widget is not None:

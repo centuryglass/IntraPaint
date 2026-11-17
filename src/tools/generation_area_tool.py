@@ -10,10 +10,12 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.generation_area_controller import record_generation_area_size
 from src.image.layers.image_stack import ImageStack
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.area_resize_handle import AreaResizeHandle
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel
+from src.undo_stack import UndoStack
 from src.util.generation_area_utils import area_handle_positions, resize_area_from_handle, CORNER_HANDLES, \
     EDGE_HANDLES, HANDLE_TOP_LEFT, HANDLE_BOTTOM_RIGHT, HANDLE_TOP_RIGHT, HANDLE_BOTTOM_LEFT, HANDLE_LEFT, \
     HANDLE_RIGHT, HANDLE_TOP, HANDLE_BOTTOM
@@ -23,6 +25,7 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.generation_area_tool'
+UNDO_GESTURE = 'GenerationAreaTool.drag'
 
 
 def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
@@ -31,7 +34,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_GEN_AREA_TOOL = f'{PROJECT_DIR}/resources/icons/tools/gen_area_icon.svg'
-GENERATION_AREA_LABEL = _tr('Set Image Generation Area')
+GENERATION_AREA_LABEL = _tr('Generation area')
 GENERATION_AREA_TOOLTIP = _tr('Select an image region for AI image generation')
 GEN_AREA_CONTROL_HINT = _tr('{left_mouse_icon}: move area - {right_mouse_icon}: resize area')
 GEN_AREA_HANDLE_CONTROL_HINT = _tr('{left_mouse_icon}: move area, or drag a handle to resize - {right_mouse_icon}: '
@@ -57,7 +60,7 @@ _HANDLE_CURSOR_SHAPES = {
 
 
 class GenerationAreaTool(BaseTool):
-    """An image editing tool that moves and resizes the image generation area.
+    """An image editing tool that moves and resizes the generation area.
 
     Left-dragging inside the area moves it by the pointer's offset, and left-pressing outside centers it on the
     pointer before dragging from there. With `show_handles`, eight resize handles on the area's outline resize it.
@@ -65,6 +68,8 @@ class GenerationAreaTool(BaseTool):
     the top left corner fixed, keeping the generation resolution's aspect ratio while the modifier is held. Each
     left-drag starts a new undo step.
     """
+
+    TOOL_GROUP = ToolGroup.GENERATION
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, show_handles: bool = True) -> None:
         super().__init__(KeyConfig.GENERATION_AREA_TOOL_KEY, GENERATION_AREA_LABEL, GENERATION_AREA_TOOLTIP,
@@ -87,13 +92,11 @@ class GenerationAreaTool(BaseTool):
 
         self._handles: dict[str, AreaResizeHandle] = {}
         if show_handles:
-            scene = image_viewer.scene()
-            assert scene is not None
             for handle_id in (*CORNER_HANDLES, *EDGE_HANDLES):
                 handle = AreaResizeHandle()
                 handle.setZValue(HANDLE_Z_VALUE)
                 handle.setVisible(False)
-                scene.addItem(handle)
+                image_viewer.canvas_extras.register(handle, CanvasExtraCategory.TOOL)
                 self._handles[handle_id] = handle
             image_stack.generation_area_bounds_changed.connect(self._update_handle_positions)
             self._update_handle_positions()
@@ -113,6 +116,11 @@ class GenerationAreaTool(BaseTool):
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
+        return self._control_panel
+
+    @property
+    def control_panel(self) -> GenerationAreaToolPanel:
+        """The tool's control panel, which shows the resolution line and asks to open the generation panel."""
         return self._control_panel
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
@@ -156,9 +164,9 @@ class GenerationAreaTool(BaseTool):
             self._set_cursor_shape(_HANDLE_CURSOR_SHAPES[handle_id])
 
     def _set_area_in_drag(self, area: QRect) -> None:
-        """Sets the generation area during a left-drag, starting a new undo step with the drag's first change."""
+        """Sets the generation area during a left-drag."""
         initial_area = self._image_stack.generation_area
-        self._image_stack.set_generation_area(area, merge_with_last=self._drag_changed_area)
+        self._image_stack.set_generation_area(area)
         if self._image_stack.generation_area != initial_area:
             self._drag_changed_area = True
 
@@ -178,6 +186,7 @@ class GenerationAreaTool(BaseTool):
         self._set_area_in_drag(area)
 
     def _end_left_drag(self) -> None:
+        UndoStack().end_gesture()
         if self._drag_handle is not None and self._drag_changed_area:
             record_generation_area_size(self._image_stack.generation_area.size())
         self._move_offset = None
@@ -185,14 +194,14 @@ class GenerationAreaTool(BaseTool):
         self._drag_changed_area = False
 
     def _resize_generation_area(self, bottom_right: QPoint) -> None:
-        """Updates the image generation area's size in the image."""
+        """Updates the generation area's size in the image."""
         generation_area = self._image_stack.generation_area
         width = min(self._image_stack.width - generation_area.x(), bottom_right.x() - generation_area.x())
         height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
         if width > 0 and height > 0:
             if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
-                gen_size = cast(QSize, Cache().get(Cache.GENERATION_SIZE))
-                aspect_ratio = gen_size.width() / gen_size.height()
+                gen_resolution = cast(QSize, Cache().get(Cache.GENERATION_SIZE))
+                aspect_ratio = gen_resolution.width() / gen_resolution.height()
                 bottom_right = closest_point_keeping_aspect_ratio(QPointF(bottom_right),
                                                                   QPointF(generation_area.topLeft()),
                                                                   aspect_ratio)
@@ -202,7 +211,7 @@ class GenerationAreaTool(BaseTool):
             self._image_stack.generation_area = QRect(generation_area.x(), generation_area.y(), width, height)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Start moving or resizing the image generation area on left-click, start resizing on right-click."""
+        """Start moving or resizing the generation area on left-click, start resizing on right-click."""
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
             self._end_left_drag()
@@ -213,6 +222,7 @@ class GenerationAreaTool(BaseTool):
                 handle_id = self._handle_at(event)
             if handle_id is not None:
                 self._image_viewer.follow_generation_area = False
+                UndoStack().begin_gesture(UNDO_GESTURE)
                 self._drag_handle = handle_id
                 self._drag_start_area = self._image_stack.generation_area
                 handle_pos = area_handle_positions(self._drag_start_area)[handle_id]
@@ -220,6 +230,7 @@ class GenerationAreaTool(BaseTool):
                 return True
             if modifiers != Qt.KeyboardModifier.NoModifier:
                 return False
+            UndoStack().begin_gesture(UNDO_GESTURE)
             area = self._image_stack.generation_area
             if area.contains(image_coordinates):
                 self._move_offset = area.topLeft() - image_coordinates
@@ -227,6 +238,7 @@ class GenerationAreaTool(BaseTool):
                 self._move_offset = QPoint(-(area.width() // 2), -(area.height() // 2))
                 self._move_generation_area(image_coordinates)
         elif event.buttons() == Qt.MouseButton.RightButton:
+            UndoStack().begin_gesture(UNDO_GESTURE)
             self._image_viewer.follow_generation_area = False
             self._resizing = True
             self._resize_generation_area(image_coordinates)
@@ -252,7 +264,7 @@ class GenerationAreaTool(BaseTool):
             self._update_hover_cursor(event)
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Finish any drag, recording the new size if the area was resized."""
         if self._resizing:
             record_generation_area_size(self._image_stack.generation_area.size())
@@ -261,10 +273,12 @@ class GenerationAreaTool(BaseTool):
         return False
 
     def key_event(self, event: Optional[QKeyEvent]) -> bool:
-        """Move image generation area with arrow keys."""
+        """Move generation area with arrow keys."""
         assert event is not None
         translation = QPoint(0, 0)
-        multiplier = 10 if KeyConfig().modifier_held(KeyConfig.SPEED_MODIFIER) else 1
+        multiplier = 10 if any(KeyConfig.event_matches(event, more_key) for more_key in (
+            KeyConfig.MOVE_LEFT_MORE, KeyConfig.MOVE_RIGHT_MORE, KeyConfig.MOVE_UP_MORE,
+            KeyConfig.MOVE_DOWN_MORE)) else 1
         match event.key():
             case Qt.Key.Key_Left:
                 translation.setX(-1 * multiplier)

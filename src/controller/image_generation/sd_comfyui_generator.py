@@ -5,36 +5,33 @@ from typing import Optional, cast, Any
 
 from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
-from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, GenerationError, \
-    GenerationHandle, GenerationProgress, GenerationResult, GenerationStatus, SDBackendError
+from PySide6.QtWidgets import QApplication, QWidget
+from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, \
+    PREPROCESSOR_NONE, SDBackendError, ControlNetPreprocessor, ControlTypeDef
 # Not in the library's public API. The model config list has no `Backend` equivalent.
 from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
-from src.api.controlnet.controlnet_constants import ControlTypeDef, PREPROCESSOR_NONE
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor, \
-    preprocessor_from_legacy
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
-from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
+from src.controller.image_generation.image_generator import GENERATION_BACKDROP_COLOR
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX
-from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
+    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_GENERATION, \
+    STABILITY_MATRIX_ICONS
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.comfyui_extras_tab import ComfyUIExtrasTab
-from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING
+from src.util.application_state import APP_STATE_EDITING
+from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR
-from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
-    GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
+from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
+from src.util.shared_text import (AUTH_ERROR, GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE,
+                                  ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR)
+from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
@@ -73,7 +70,7 @@ SD_COMFYUI_GENERATOR_SETUP_OPTIONS = _tr("""
 <p>
     To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
     install ComfyUI, and start it.  This guide will explain each of those steps.
-</p>""" + GETTING_SD_MODELS + """
+</p>""") + GETTING_SD_MODELS + _tr("""
 <hr/>
 <h2>Installing ComfyUI: Available options</h2>
 <p>
@@ -91,7 +88,8 @@ SD_COMFYUI_GENERATOR_SETUP_OPTIONS = _tr("""
 SD_COMFYUI_GENERATOR_STABILITY_MATRIX_PACKAGE = 'ComfyUI'
 SD_COMFYUI_GENERATOR_SETUP_STABILITY_MATRIX = INSTALLATION_STABILITY_MATRIX.format(
     generator_package=SD_COMFYUI_GENERATOR_STABILITY_MATRIX_PACKAGE,
-    post_install_generator_setup=''
+    post_install_generator_setup='',
+    **STABILITY_MATRIX_ICONS
 )
 SD_COMFYUI_GENERATOR_SETUP_ALTERNATIVES = _tr("""
 <hr/>
@@ -149,6 +147,9 @@ SD_COMFYUI_GENERATOR_SETUP = SD_COMFYUI_GENERATOR_SETUP_OPTIONS + SD_COMFYUI_GEN
 
 DEFAULT_COMFYUI_URL = 'http://localhost:8188'
 
+# ComfyUI rejects seeds at or above this, so batch seeds wrap back to 0 past the largest one:
+COMFYUI_SEED_LIMIT = 2 ** 64
+
 
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache()
@@ -168,12 +169,10 @@ class SDComfyUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, ControlKeyType.COMFYUI)
+        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, Cache.COMFYUI_CACHED_SCALING_MODE)
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
-        self._gen_extras_tab = ComfyUIExtrasTab()
         # The job the worker thread is waiting on, which `cancel_generation` cancels from the main thread:
-        self._active_handle: Optional[GenerationHandle] = None
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -206,9 +205,9 @@ class SDComfyUIGenerator(SDGenerator):
         self._webservice = ComfyUiWebservice(url)
         return self._webservice
 
-    def interrogate(self) -> None:
+    def describe(self) -> None:
         """Update the prompt to match image content using an AI image description model."""
-        raise RuntimeError('ComfyUI lacks interrogate support')
+        raise RuntimeError('ComfyUI lacks describe support')
 
     def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
         """Return the list of available Controlnet preprocessors."""
@@ -218,14 +217,9 @@ class SDComfyUIGenerator(SDGenerator):
         except SDBackendError as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
-        preprocessors: list[ControlNetPreprocessor] = []
-        for preprocessor in library_preprocessors:
-            try:
-                preprocessors.append(legacy_preprocessor(preprocessor))
-            except (TypeError, ValueError) as err:
-                logger.warning(f'Skipping ControlNet preprocessor "{preprocessor.name}": {err}')
+        preprocessors = list(library_preprocessors)
         if not any(preprocessor.name == PREPROCESSOR_NONE for preprocessor in preprocessors):
-            preprocessors.append(ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, []))
+            preprocessors.append(ControlNetPreprocessor(name=PREPROCESSOR_NONE))
         return preprocessors
 
     def get_controlnet_models(self) -> list[str]:
@@ -241,7 +235,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Return available ControlNet categories."""
         assert self._webservice is not None
         try:
-            return cast(dict[str, ControlTypeDef], self._webservice.get_controlnet_type_categories())
+            return self._webservice.get_controlnet_type_categories()
         except SDBackendError as err:
             logger.error(f'Loading ControlNet types failed: {err}')
             return {}
@@ -357,56 +351,24 @@ class SDComfyUIGenerator(SDGenerator):
         """Clear any cached data specific to this image generator."""
         Cache().restore_default_options(Cache.COMFYUI_MODEL_CONFIG)
 
-    def cancel_generation(self) -> None:
-        """Cancels image generation, if in-progress"""
-        handle = self._active_handle
-        if AppStateTracker.app_state() == APP_STATE_LOADING and handle is not None:
-            try:
-                handle.cancel()
-            except SDBackendError as err:
-                logger.error(f'Cancelling ComfyUI job {handle.task_id} failed: {err}')
-
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
         """Attempt to load a LoRA model thumbnail image from the API."""
         return None  # ComfyUI doesn't provide LoRA thumbnails.
 
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                  image: QImage, mask: Optional[QImage],
-                                  status_signal: SignalInstance,
-                                  image_signal: SignalInstance) -> None:
-        """Requests a ControlNet preprocessor preview image."""
-        assert self._webservice is not None
-        preprocessor_params = preprocessor_from_legacy(preprocessor)
-        if preprocessor_params is None:
-            image_signal.emit(image)
-            return
-        handle = self._webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor_params,
-                                                              None if mask is None else qimage_to_pil(mask))
-        result = self._wait_for_job(handle, status_signal)
-        if result is None:
-            return
-        if len(result.images) != 1:
-            logger.warning(f'Expected one preprocessor preview image, got {len(result.images)}')
-        preview_image = image if len(result.images) == 0 else pil_to_qimage(result.images[0])
-        image_signal.emit(preview_image)
-
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
-        """Gets the contents of the image generation area, handling any necessary preprocessing."""
-        image = init_image if init_image is not None else self._image_stack.qimage_generation_area_content()
+        """Gets the contents of the generation area, handling any necessary preprocessing."""
+        image = init_image if init_image is not None else flatten_onto_color(
+            self._image_stack.qimage_generation_area_content(), GENERATION_BACKDROP_COLOR)
         return self._scale_and_crop_gen_qimage(image)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
-        """Gets the inpainting mask for the image generation area, blurred by `AppConfig.MASK_BLUR`.
+        """Gets the unblurred inpainting mask for the generation area, opaque where content changes.
 
-        ComfyUI doesn't blur masks, so the blur is applied here. The mask is opaque where content changes; the library
-        converts it to ComfyUI's format when uploading it.
+        The library applies `AppConfig.MASK_BLUR` and converts the mask to ComfyUI's format when uploading it.
         """
         selection_layer = self._image_stack.selection_layer
         mask = init_mask if init_mask is not None else selection_layer.mask_image
         mask = self._scale_and_crop_gen_qimage(mask)
-        blur_radius = AppConfig().get(AppConfig.MASK_BLUR)
-        if blur_radius > 0:
-            mask = BlurFilter.blur(mask, MODE_GAUSSIAN, blur_radius)
         return mask
 
     def is_available(self) -> bool:
@@ -433,14 +395,6 @@ class SDComfyUIGenerator(SDGenerator):
         app_config = AppConfig()
         settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
-    def refresh_settings(self, settings_modal: SettingsModal) -> None:
-        """Reloads current values for this generator's settings, and updates them in the settings modal."""
-        settings = {}
-        app_config = AppConfig()
-        for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
-            settings[key] = app_config.get(key)
-        settings_modal.update_settings(settings)
-
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies any changed settings from a SettingsModal that are relevant to the image generator and require
            special handling."""
@@ -458,48 +412,19 @@ class SDComfyUIGenerator(SDGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), STABLE_DIFFUSION_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    @menu_action(MENU_GENERATION, 'clear_memory_shortcut', 513, [APP_STATE_EDITING])
+    def clear_comfyui_memory(self) -> None:
+        """Removes cached models from GPU memory within ComfyUI."""
+        assert self._webservice is not None
+        self._webservice.free_memory()
+
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = StableDiffusionPanel(False, False)
-            self._control_panel.hide()
-            self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
-
-            # Configure "extras" tab in control panel:
-            def _clear_comfyui_memory() -> None:
-                assert self._webservice is not None
-                self._webservice.free_memory()
-
-            self._gen_extras_tab.clear_comfyui_memory_signal.connect(_clear_comfyui_memory)
-            self._control_panel.add_extras_tab(self._gen_extras_tab)
+            self._control_panel = self._create_control_panel(StableDiffusionPanel(False),
+                                                             ComfyUIAdvancedControls())
+            self._control_panel.clear_memory_requested.connect(self.clear_comfyui_memory)
         return self._control_panel
-
-    def _wait_for_job(self, handle: GenerationHandle, status_signal: Optional[SignalInstance],
-                      batch_index: int = 0, num_batches: int = 1) -> Optional[GenerationResult]:
-        """Blocks until a job finishes, emitting progress through `status_signal`. Call this outside the UI thread.
-
-        Returns None if the job was cancelled. `cancel_generation` cancels the job while this waits.
-
-        Raises
-        ------
-        SDBackendError
-            If the job fails, or a request made while waiting fails.
-        """
-
-        def _on_progress(progress: GenerationProgress) -> None:
-            if status_signal is not None:
-                status_signal.emit(progress_status_update(progress, batch_index, num_batches))
-
-        self._active_handle = handle
-        try:
-            return handle.wait(on_progress=_on_progress)
-        except GenerationError as err:
-            if err.status == GenerationStatus.CANCELLED:
-                logger.info(f'ComfyUI job {handle.task_id} was cancelled')
-                return None
-            raise
-        finally:
-            self._active_handle = None
 
     def generate(self,
                  status_signal: SignalInstance,
@@ -513,7 +438,7 @@ class SDComfyUIGenerator(SDGenerator):
             Signal to emit when status updates are available.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
-            mode is text-to-image and there are no ControlNet units using the image generation area.
+            mode is text-to-image and there are no ControlNet units using the generation area.
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
@@ -532,7 +457,7 @@ class SDComfyUIGenerator(SDGenerator):
         gen_area = self._image_stack.generation_area
         inpaint_inner_bounds = QRect(QPoint(), gen_area.size())
 
-        if edit_mode == EDIT_MODE_INPAINT and cache.get(Cache.INPAINT_FULL_RES):
+        if edit_mode == EDIT_MODE_INPAINT and cache.limited_context_in_effect():
             inpaint_inner_bounds = self._inpaint_gen_area_crop_bounds()
             if inpaint_inner_bounds.size() != source_image.size():
                 original_source_image = source_image
@@ -556,7 +481,7 @@ class SDComfyUIGenerator(SDGenerator):
         for batch_num in range(num_batches):
             try:
                 # Later batches continue from the first batch's seed, which the library picks when Cache.SEED is -1:
-                sequence_seed = None if seed is None else seed + batch_num
+                sequence_seed = None if seed is None else (seed + batch_num) % COMFYUI_SEED_LIMIT
                 diffusion_params = build_comfy_params(edit_mode, source_image, mask_image, sequence_seed)
                 result = self._wait_for_job(submit(diffusion_params), status_signal, batch_num, num_batches)
                 if result is None:
@@ -564,7 +489,7 @@ class SDComfyUIGenerator(SDGenerator):
                 if seed is None:
                     seed = result.seed
                 image_data = [pil_to_qimage(image) for image in result.images]
-                # If using "inpaint full res", scale and pad images to make them match the gen. area size again.
+                # If context is limited, scale and pad images to make them match the gen. area size again.
                 if inpaint_inner_bounds.size() != gen_area.size() and original_source_image is not None:
                     image_data = self._restore_cropped_inpainting_images(original_source_image, inpaint_inner_bounds,
                                                                          image_data)

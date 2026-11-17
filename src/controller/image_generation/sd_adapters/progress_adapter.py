@@ -1,6 +1,6 @@
 """Converts the library's `GenerationProgress` snapshots into IntraPaint's generation status updates.
 
-`progress_status_update` returns the dict `ImageGenerator._apply_status_update` reads. The library calls a
+`progress_status_update` returns the dict `GenerationSession._apply_status_update` reads. The library calls a
 `handle.wait(on_progress=...)` callback on the worker thread, so the callback only emits the result through the task's
 status signal.
 """
@@ -28,7 +28,7 @@ STATUS_BATCH_NUMBER = _tr('Batch {batch_num} of {num_batches}:')
 STATUS_ETA_MINUTES = _tr('ETA: {minutes}:{seconds}')
 STATUS_ETA_SECONDS = _tr('ETA: {seconds}s')
 
-# Key `ImageGenerator._apply_status_update` reads status text from.
+# Key `GenerationSession._apply_status_update` reads status text from.
 PROGRESS_KEY = 'progress'
 
 
@@ -50,15 +50,17 @@ def progress_percentage(progress: GenerationProgress, batch_index: int = 0, num_
         batch_fraction = 0.0
     else:
         batch_fraction = min(max(progress.progress, 0.0), 1.0)
-    return round((batch_index + batch_fraction) / num_batches * 100, ndigits=4)
+    return round((batch_index + batch_fraction) / num_batches * 100, ndigits=2)
 
 
 def _eta_text(eta_seconds: float) -> str:
     minutes = round(eta_seconds // 60)
     seconds = round(eta_seconds % 60)
     if minutes > 0:
-        return STATUS_ETA_MINUTES.format(minutes=minutes, seconds=f'{seconds:02d}')
-    return STATUS_ETA_SECONDS.format(seconds=seconds)
+        eta_text = STATUS_ETA_MINUTES.format(minutes=minutes, seconds=f'{seconds:02d}')
+    else:
+        eta_text = STATUS_ETA_SECONDS.format(seconds=seconds)
+    return eta_text.replace(' ', '\xa0')
 
 
 def progress_status_text(progress: GenerationProgress, batch_index: int = 0, num_batches: int = 1) -> str:
@@ -82,7 +84,9 @@ def progress_status_text(progress: GenerationProgress, batch_index: int = 0, num
 
 
 def progress_status_update(progress: GenerationProgress, batch_index: int = 0, num_batches: int = 1) -> dict[str, str]:
-    """Returns a status update for `ImageGenerator._apply_status_update`. See `progress_percentage` for the parameters.
+    """Returns a status update for `GenerationSession._apply_status_update`.
+
+    See `progress_percentage` for the parameters.
     """
     return {PROGRESS_KEY: progress_status_text(progress, batch_index, num_batches)}
 

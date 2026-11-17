@@ -1,23 +1,26 @@
 """Tests the selection brush: its left button and brush paint the selection layer, and its right button adds, moves
    and removes context pins."""
 import math
+from unittest import mock
 
 import numpy as np
-from PySide6.QtCore import QPoint, QRectF, QSize, Qt
+from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QPen
+from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.selection_layer import SelectionLayer
+from src.tools.context_pin_dragger import CONTEXT_PIN_CONTROL_HINT
 from src.tools.selection_brush_tool import SelectionBrushTool
-from src.ui.input_fields.dual_toggle import DualToggle
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
+from src.util.visual.selection_mode import SelectionMode
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.tool_test_case import ToolTestCase
 
 RIGHT = Qt.MouseButton.RightButton
+SHIFT = Qt.KeyboardModifier.ShiftModifier
+ALT = Qt.KeyboardModifier.AltModifier
 
 
 class SelectionBrushToolTest(ToolTestCase):
@@ -25,7 +28,7 @@ class SelectionBrushToolTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.image_stack.create_layer()
         self.tool = self.activate_tool(SelectionBrushTool(self.image_stack, self.image_viewer))
         self.selection_layer = self.image_stack.selection_layer
@@ -42,6 +45,21 @@ class SelectionBrushToolTest(ToolTestCase):
         self.assertTrue(self.selection_layer.is_empty())
         self.assertEqual(UndoStack().undo_count(), 1)
         self.assertEqual(len(self.image_viewer._context_pin_items), 1)  # pylint: disable=protected-access
+
+    def test_no_pin_editing_or_hint_without_generator(self) -> None:
+        """With no image generator loaded, the right button leaves pins alone, markers hide and the hint omits pins."""
+        pin_hint_start = CONTEXT_PIN_CONTROL_HINT.split('}', 1)[1]
+        self.selection_layer.set_context_pins([QPoint(100, 100)], False)
+        pin_item = self.image_viewer._context_pin_items[0]  # pylint: disable=protected-access
+        self.assertTrue(pin_item.isVisibleTo(pin_item.parentItem()))
+        self.assertIn(pin_hint_start, self.tool.get_input_hint())
+        Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, False)
+        self.assertFalse(pin_item.isVisibleTo(pin_item.parentItem()))
+        self.assertNotIn(pin_hint_start, self.tool.get_input_hint())
+        self.mouse_drag([QPoint(200, 200)], RIGHT)
+        self.mouse_drag([QPoint(100, 100), QPoint(150, 150)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [QPoint(100, 100)])
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_right_click_on_pin_removes_it(self) -> None:
         """A right-click on a pin's needle tip removes the pin, as one undo step."""
@@ -124,6 +142,101 @@ class SelectionBrushToolTest(ToolTestCase):
         self.assertEqual(self.selection_layer.context_pins, [])
         self.assertFalse(self.selection_layer.is_empty())
 
+    def _selection_mask(self) -> np.ndarray:
+        image = self.selection_layer.image.convertToFormat(QImage.Format.Format_ARGB32)
+        return image_data_as_numpy_8bit(image)[:, :, 3] > 0
+
+    def _preselect(self, rect: QRect) -> np.ndarray:
+        """Selects a rectangle outside the undo history, returning the selection mask."""
+        image = self.selection_layer.image
+        painter = QPainter(image)
+        painter.fillRect(rect, Qt.GlobalColor.red)
+        painter.end()
+        self.selection_layer.image = image
+        UndoStack().clear()
+        return self._selection_mask()
+
+    def _stroke_only_mask(self, points: list[QPoint]) -> np.ndarray:
+        """Returns the pixels one stroke selects on an empty selection, then restores the empty selection."""
+        self.selection_layer.clear(False)
+        UndoStack().clear()
+        self.mouse_drag(points)
+        mask = self._selection_mask()
+        self.selection_layer.clear(False)
+        UndoStack().clear()
+        return mask
+
+    def test_replace_mode_stroke_replaces_selection(self) -> None:
+        """A replace-mode stroke leaves only the stroke selected, as one undo step that restores the old selection."""
+        points = [QPoint(300, 300), QPoint(340, 320), QPoint(380, 300)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(50, 50, 100, 100))
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self.mouse_drag(points)
+        np.testing.assert_array_equal(self._selection_mask(), stroke)
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        np.testing.assert_array_equal(self._selection_mask(), existing)
+        UndoStack().redo()
+        np.testing.assert_array_equal(self._selection_mask(), stroke)
+
+    def test_intersect_mode_stroke_keeps_overlap(self) -> None:
+        """An intersect-mode stroke leaves the part of the old selection under the stroke, as one undo step."""
+        points = [QPoint(30, 100), QPoint(100, 100), QPoint(170, 100)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(50, 50, 100, 100))
+        self.set_selection_mode(SelectionMode.INTERSECT)
+        self.mouse_drag(points)
+        expected = existing & stroke
+        self.assertTrue(expected.any())
+        self.assertFalse(np.array_equal(expected, stroke))
+        np.testing.assert_array_equal(self._selection_mask(), expected)
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        np.testing.assert_array_equal(self._selection_mask(), existing)
+
+    def test_add_mode_stroke_keeps_existing_selection(self) -> None:
+        """With the default add mode, a stroke keeps the old selection and adds to it."""
+        points = [QPoint(300, 300), QPoint(340, 320), QPoint(380, 300)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(50, 50, 100, 100))
+        self.mouse_drag(points)
+        np.testing.assert_array_equal(self._selection_mask(), existing | stroke)
+
+    def _with_modifiers(self, modifiers: Qt.KeyboardModifier) -> mock._patch:
+        return mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers)
+
+    def test_alt_at_press_subtracts_without_fixing_angle(self) -> None:
+        """Alt held through a stroke subtracts it despite the default add mode, following the pointer freely."""
+        points = [QPoint(60, 60), QPoint(100, 75), QPoint(140, 110)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(40, 40, 120, 90))
+        with self._with_modifiers(ALT):
+            self.mouse_drag(points, modifiers=ALT)
+        np.testing.assert_array_equal(self._selection_mask(), existing & ~stroke)
+        self.assertEqual(UndoStack().undo_count(), 1)
+
+    def test_alt_pressed_again_fixes_angle(self) -> None:
+        """Alt held at the press fixes the stroke's angle once it is released and pressed again during the stroke."""
+        expected_stroke = self._stroke_only_mask([QPoint(60, 60), QPoint(100, 75), QPoint(160, 75)])
+        existing = self._preselect(QRect(40, 40, 160, 90))
+        with self._with_modifiers(ALT):
+            self.mouse_press(QPoint(60, 60), modifiers=ALT)
+        self.mouse_move(QPoint(100, 75))
+        with self._with_modifiers(ALT):
+            self.mouse_move(QPoint(160, 85), modifiers=ALT)
+            self.mouse_release(QPoint(160, 85), modifiers=ALT)
+        np.testing.assert_array_equal(self._selection_mask(), existing & ~expected_stroke)
+
+    def test_shift_alt_line_keeps_stored_mode(self) -> None:
+        """A Shift+Alt click draws a fixed-angle line in the stored mode, without subtracting."""
+        self.mouse_drag([QPoint(60, 60)])
+        with self._with_modifiers(SHIFT | ALT):
+            self.mouse_drag([QPoint(160, 64)], modifiers=SHIFT | ALT)
+        mask = self._selection_mask()
+        self.assertTrue(mask[60, 110], 'Line midpoint not selected')
+        self.assertTrue(mask[60, 160], 'Line end not snapped to the horizontal')
+
 
 SELECTION_BRUSH_GOLDEN_DIR = 'test/resources/test_images/selection_brush'
 SELECTED_ARGB = 0xffff0000  # Every selected pixel, with the test config's SELECTION_COLOR.
@@ -166,7 +279,6 @@ class SelectionBrushStrokeTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         Cache().set(Cache.SELECTION_BRUSH_SIZE, STROKE_BRUSH_SIZE)
         self.image_stack.create_layer()
         self.tool = self.activate_tool(SelectionBrushTool(self.image_stack, self.image_viewer))
@@ -177,13 +289,8 @@ class SelectionBrushStrokeTest(ToolTestCase):
         UndoStack().clear()
 
     def _set_deselect_mode(self) -> None:
-        """Switches the tool to erasing selection through its control panel's select/deselect toggle."""
-        panel = self.tool.get_control_panel()
-        assert panel is not None
-        mode_toggle = panel.findChild(DualToggle)
-        assert isinstance(mode_toggle, DualToggle)
-        mode_toggle.setValue(TOOL_MODE_DESELECT)
-        self.assertTrue(self.brush.eraser)
+        """Switches the tool to erasing selection through the shared selection mode."""
+        self.set_selection_mode(SelectionMode.SUBTRACT)
 
     def _select_all(self) -> QImage:
         """Selects the whole image outside the undo history, and returns the selection layer image."""

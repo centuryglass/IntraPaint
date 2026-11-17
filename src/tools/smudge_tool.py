@@ -5,13 +5,15 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
@@ -27,7 +29,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/smudge_icon.svg'
-CURSOR_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/cursors/smudge_cursor.svg'
 SMUDGE_LABEL = _tr('Smudge')
 SMUDGE_TOOLTIP = _tr('Smudge image content')
 SMUDGE_CONTROL_HINT = _tr('{left_mouse_icon}: smudge')
@@ -40,7 +41,6 @@ class SmudgeTool(BrushTool):  # type: ignore
         brush = SmudgeBrush()
         super().__init__(KeyConfig.SMUDGE_TOOL_KEY, SMUDGE_LABEL, SMUDGE_TOOLTIP, QIcon(ICON_PATH_SMUDGE_TOOL),
                          image_stack, image_viewer, brush)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SMUDGE_TOOL))
         self._control_panel = SmudgeToolPanel()
         cache = Cache()
         key_filter = HotkeyFilter.instance()
@@ -49,6 +49,7 @@ class SmudgeTool(BrushTool):  # type: ignore
             self.brush_size = size
         cache.connect(self, Cache.SMUDGE_TOOL_BRUSH_SIZE, _size_update)
         self.brush_size = cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE)
+        self.crosshair_variant = CrosshairVariant.SMUDGE
 
         def _opacity_update(opacity: float) -> None:
             brush.opacity = opacity
@@ -64,11 +65,14 @@ class SmudgeTool(BrushTool):  # type: ignore
             return True
         opacity_down_id = f'SmudgeTool_{id(self)}_opacity_down'
         opacity_up_id = f'SmudgeTool_{id(self)}_opacity_up'
-        key_filter.register_speed_modified_keybinding(opacity_down_id,
-                                                      lambda offset: _update_opacity_offset(-offset),
-                                                      KeyConfig.BRUSH_OPACITY_DECREASE)
-        key_filter.register_speed_modified_keybinding(opacity_up_id, _update_opacity_offset,
-                                                      KeyConfig.BRUSH_OPACITY_INCREASE)
+        key_filter.register_config_keybinding(opacity_down_id, lambda: _update_opacity_offset(-1),
+                                              KeyConfig.BRUSH_OPACITY_DECREASE)
+        key_filter.register_config_keybinding(opacity_up_id, lambda: _update_opacity_offset(1),
+                                              KeyConfig.BRUSH_OPACITY_INCREASE)
+
+        def _set_opacity(opacity: float) -> None:
+            self.opacity = opacity
+        self._bind_opacity_preset_keys(_set_opacity)
 
         def _hardness_update(hardness: float) -> None:
             brush.hardness = hardness
@@ -84,11 +88,10 @@ class SmudgeTool(BrushTool):  # type: ignore
             return True
         hardness_down_id = f'SmudgeTool_{id(self)}_hardness_down'
         hardness_up_id = f'SmudgeTool_{id(self)}_hardness_up'
-        key_filter.register_speed_modified_keybinding(hardness_down_id,
-                                                      lambda offset: _update_hardness_offset(-offset),
-                                                      KeyConfig.BRUSH_HARDNESS_DECREASE)
-        key_filter.register_speed_modified_keybinding(hardness_up_id, _update_hardness_offset,
-                                                      KeyConfig.BRUSH_HARDNESS_INCREASE)
+        key_filter.register_config_keybinding(hardness_down_id, lambda: _update_hardness_offset(-1),
+                                              KeyConfig.BRUSH_HARDNESS_DECREASE)
+        key_filter.register_config_keybinding(hardness_up_id, lambda: _update_hardness_offset(1),
+                                              KeyConfig.BRUSH_HARDNESS_INCREASE)
 
         def _pressure_size_update(use_pressure: bool) -> None:
             brush.pressure_size = use_pressure
@@ -112,7 +115,7 @@ class SmudgeTool(BrushTool):  # type: ignore
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
-            assert isinstance(control_panel, BrushToolPanel)
+            assert isinstance(control_panel, StrokeToolPanel)
             control_panel.show_pressure_checkboxes()
 
     def get_input_hint(self) -> str:
@@ -149,6 +152,9 @@ class SmudgeTool(BrushTool):  # type: ignore
         Cache().set(Cache.SMUDGE_TOOL_HARDNESS, hardness)
 
     def set_brush_size(self, new_size: int) -> None:
-        """Ensure brush size also propagates to the appropriate config key."""
-        Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, new_size)
+        """Ensure brush size also propagates to the appropriate config key, clamped to that key's range."""
+        cache = Cache()
+        new_size = int(clamp(new_size, cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE, RangeKey.MIN),
+                             cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE, RangeKey.MAX)))
+        cache.set(Cache.SMUDGE_TOOL_BRUSH_SIZE, new_size)
         super().set_brush_size(new_size)

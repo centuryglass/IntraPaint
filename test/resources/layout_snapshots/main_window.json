@@ -7,14 +7,7 @@
     ]
   },
   "hd": {
-    "problems": [
-      "squeezed: QStackedWidget is 1280x698, minimum 574x764",
-      "squeezed: QStackedWidget/QWidget is 1280x698, minimum 574x764",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x656, minimum 574x722",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 63x654, minimum 63x720",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 57x648, minimum 57x714",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 48x142, minimum 33x208"
-    ],
+    "problems": [],
     "size": [
       1280,
       720
@@ -23,8 +16,8 @@
   "minimum": {
     "problems": [],
     "size": [
-      574,
-      786
+      615,
+      332
     ]
   },
   "portrait": {
@@ -35,16 +28,7 @@
     ]
   },
   "small": {
-    "problems": [
-      "squeezed: QStackedWidget is 800x578, minimum 350x764",
-      "squeezed: QStackedWidget/QWidget is 800x578, minimum 350x764",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 800x536, minimum 350x722",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 63x534, minimum 63x720",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 57x528, minimum 57x714",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolTab 'Tools' is 49x70, minimum 33x117",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 48x70, minimum 33x208",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/RotatingToolbarButton 'Generate'/Label 'Generate' is 27x63, minimum 27x64"
-    ],
+    "problems": [],
     "size": [
       800,
       600

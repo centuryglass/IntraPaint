@@ -1,16 +1,19 @@
 """Interface for performing drawing operations on an image layer."""
 import time
 from typing import Optional, TypeVar, Callable
+from weakref import WeakSet
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QColor, QImage
 
 from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.modal_utils import show_error_dialog
-from src.util.shared_constants import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN,
-                                       ERROR_MESSAGE_LAYER_LOCKED, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
-                                       ERROR_MESSAGE_LAYER_GROUP_LOCKED, LOCK_ERROR_MESSAGES)
+from src.util.shared_text import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN,
+                                  ERROR_MESSAGE_LAYER_GROUP_HIDDEN, ERROR_MESSAGE_LAYER_LOCKED,
+                                  ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, ERROR_MESSAGE_LAYER_GROUP_LOCKED,
+                                  LOCK_ERROR_MESSAGES)
 from src.util.visual.image_utils import image_is_fully_transparent
+from src.util.rich_text import rich_text_format
 
 # Longest a mid-stroke draw should block the event loop. Input left over is drawn on the next event loop pass, so the
 # window can repaint and take input during a long stroke.
@@ -40,6 +43,14 @@ def draw_buffered_input(input_buffer: list[InputT], count_per_draw: int, stroke_
 
 class LayerBrush:
     """Draws content to an image layer."""
+
+    # Brushes between `start_stroke` and `end_stroke`. A stroke's content isn't in its layer's image until it ends.
+    _drawing_brushes: WeakSet['LayerBrush'] = WeakSet()
+
+    @staticmethod
+    def any_stroke_in_progress() -> bool:
+        """Returns whether any brush is in the middle of a stroke."""
+        return len(LayerBrush._drawing_brushes) > 0
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
         self._layer: Optional[ImageLayer] = None
@@ -111,11 +122,12 @@ class LayerBrush:
 
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
-        if self._layer is None or not self._layer.visible or self._layer.locked or self._layer.parent_locked:
+        if self._layer is None or not self._layer.shown or self._layer.locked or self._layer.parent_locked:
             return
         if self._drawing:
             self.end_stroke()
         self._drawing = True
+        LayerBrush._drawing_brushes.add(self)
 
     def stroke_to(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
                   y_tilt: Optional[float]) -> None:
@@ -125,6 +137,8 @@ class LayerBrush:
             error_message = ERROR_MESSAGE_LAYER_NONE
         elif not self._layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
+        elif (hidden_parent := self._layer.hidden_parent) is not None:
+            error_message = rich_text_format(ERROR_MESSAGE_LAYER_GROUP_HIDDEN, group_name=hidden_parent.name)
         elif self._layer.locked:
             error_message = ERROR_MESSAGE_LAYER_LOCKED
         elif self._layer.parent_locked:
@@ -143,6 +157,7 @@ class LayerBrush:
     def end_stroke(self) -> None:
         """Finishes a brush stroke, copying it back to the layer."""
         self._drawing = False
+        LayerBrush._drawing_brushes.discard(self)
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
         """Sets a mask image, restricting brush changes to areas covered by non-transparent mask areas"""

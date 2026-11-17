@@ -35,6 +35,9 @@ class GcPausedTest(IntraPaintTestCase):
             gc.enable()
 
     def test_collects_unreachable_cycles_before_block(self):
+        # test/qt_cycles.py has the collector save garbage during tests, which would keep the cycle alive.
+        debug_flags = gc.get_debug()
+        gc.set_debug(0)
         gc.disable()
         try:
             _Cycle()
@@ -42,3 +45,4 @@ class GcPausedTest(IntraPaintTestCase):
                 self.assertEqual([], [obj for obj in gc.get_objects() if isinstance(obj, _Cycle)])
         finally:
             gc.enable()
+            gc.set_debug(debug_flags)

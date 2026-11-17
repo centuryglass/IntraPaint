@@ -2,7 +2,7 @@
   {
     "body": {
       "subfolder": "sd_backend_client",
-      "type": "input"
+      "type": "temp"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
@@ -26,8 +26,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_364f46275cf66c187e615ec53bb796fc_6135bc342386fcd954cfbcdee4f184c4.png",
-        "<image 512x512 Format_ARGB32 66d23250cb3d3e59>",
+        "mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
+        "<image 512x512 Format_ARGB32 f2b2cb40ee20a124>",
         "image/png"
       ]
     },
@@ -115,9 +115,8 @@
           }
         },
         "15": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "sd_backend_client",
             "images": [
               "14",
               0
@@ -167,7 +166,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_364f46275cf66c187e615ec53bb796fc_6135bc342386fcd954cfbcdee4f184c4.png",
+            "image": "sd_backend_client/mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
             "upload": "image"
           }
         },
@@ -202,7 +201,7 @@
   {
     "body": {
       "subfolder": "sd_backend_client",
-      "type": "input"
+      "type": "temp"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
@@ -226,8 +225,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_364f46275cf66c187e615ec53bb796fc_6135bc342386fcd954cfbcdee4f184c4.png",
-        "<image 512x512 Format_ARGB32 66d23250cb3d3e59>",
+        "mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
+        "<image 512x512 Format_ARGB32 f2b2cb40ee20a124>",
         "image/png"
       ]
     },
@@ -315,9 +314,8 @@
           }
         },
         "15": {
-          "class_type": "SaveImage",
+          "class_type": "PreviewImage",
           "inputs": {
-            "filename_prefix": "sd_backend_client",
             "images": [
               "14",
               0
@@ -367,7 +365,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_364f46275cf66c187e615ec53bb796fc_6135bc342386fcd954cfbcdee4f184c4.png",
+            "image": "sd_backend_client/mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
             "upload": "image"
           }
         },

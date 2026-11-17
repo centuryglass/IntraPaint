@@ -7,14 +7,15 @@ from PySide6.QtCore import QSize
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
-from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
+from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.util.parameter import Parameter, get_parameter_type, TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STR, \
     TYPE_QSIZE, TYPE_LIST, TYPE_DICT
 from src.util.shared_constants import INT_MAX
+from src.ui.input_fields.field_factory import create_input_widget
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -73,12 +74,27 @@ class TestParameter(IntraPaintTestCase):
         self.assertFalse(param.validate(QSize(7, 32)))
 
     def test_validate_big_int_accepts_strings(self) -> None:
-        """Int parameters with bounds beyond 32 bits convert values with int() first, and reject unparseable ones."""
-        param = Parameter('seed', TYPE_INT, 0, minimum=-1, maximum=INT_MAX * 4)
-        self.assertTrue(param.validate(str(INT_MAX * 2)))
-        self.assertFalse(param.validate('not a number'))
+        """Int parameters with bounds beyond 32 bits accept decimal text within range, and reject other text, floats
+        and text outside the range."""
+        param = Parameter('seed', TYPE_INT, 0, minimum=-1, maximum=2 ** 64 - 1)
+        for value in (str(INT_MAX * 2), str(2 ** 63), str(2 ** 64 - 1), 2 ** 64 - 1):
+            self.assertTrue(param.validate(value), value)
+        for value in ('not a number', '12.5', 2.0, str(2 ** 64), '-2'):
+            self.assertFalse(param.validate(value), repr(value))
         with self.assertRaises(TypeError):
             param.validate('not a number', raise_on_failure=True)
+        with self.assertRaises(ValueError):
+            param.validate(str(2 ** 64), raise_on_failure=True)
+
+    def test_normalize_converts_big_int_text_only(self) -> None:
+        """`normalize` converts decimal text to int for big int parameters, and returns anything else unchanged."""
+        big = Parameter('seed', TYPE_INT, 0, minimum=-1, maximum=2 ** 64 - 1)
+        self.assertEqual(big.normalize(str(2 ** 64 - 1)), 2 ** 64 - 1)
+        self.assertIs(type(big.normalize('-1')), int)
+        self.assertEqual(big.normalize('12.5'), '12.5')
+        self.assertEqual(big.normalize(2.0), 2.0)
+        self.assertEqual(Parameter('steps', TYPE_INT, 5, minimum=1, maximum=10).normalize('5'), '5')
+        self.assertEqual(Parameter('text', TYPE_STR, '').normalize('5'), '5')
 
     def test_valid_options(self) -> None:
         """Only listed options validate, and a default outside the list becomes the first option."""
@@ -166,26 +182,26 @@ class TestParameter(IntraPaintTestCase):
             (Parameter('prompt', TYPE_STR, 'text'), {'multi_line': True}, PlainTextEdit, 'text'),
             (Parameter('flag', TYPE_BOOL, True), {}, CheckBox, True),
             (Parameter('size', TYPE_QSIZE, QSize(5, 6)), {}, SizeField, QSize(5, 6)),
-            (two_options, {}, DualToggle, 'b'),
-            (two_options, {'allow_dual_toggle': False}, ComboBox, 'b'),
+            (two_options, {}, SegmentedControl, 'b'),
+            (two_options, {'allow_segmented_control': False}, ComboBox, 'b'),
             (three_options, {}, ComboBox, 'b'),
         )
         for param, kwargs, widget_type, expected_value in cases:
-            widget = param.get_input_widget(**kwargs)
+            widget = create_input_widget(param, **kwargs)
             self.assertIsInstance(widget, widget_type, f'{param.name} {kwargs}')
             if expected_value is not None:
                 self.assertEqual(widget.value(), expected_value, f'{param.name} {kwargs}')
 
     def test_input_widget_tooltip(self) -> None:
         """The description becomes the widget tooltip."""
-        widget = Parameter('steps', TYPE_INT, 1, 'Step count').get_input_widget()
+        widget = create_input_widget(Parameter('steps', TYPE_INT, 1, 'Step count'))
         self.assertEqual(widget.toolTip(), 'Step count')
 
     def test_multi_line_input_widget_requires_free_text(self) -> None:
         """multi_line is rejected for non-string parameters and for option lists."""
         with self.assertRaises(ValueError):
-            Parameter('steps', TYPE_INT).get_input_widget(multi_line=True)
+            create_input_widget(Parameter('steps', TYPE_INT), multi_line=True)
         param = Parameter('sampler', TYPE_STR)
         param.set_valid_options(['a', 'b', 'c'])
         with self.assertRaises(ValueError):
-            param.get_input_widget(multi_line=True)
+            create_input_widget(param, multi_line=True)

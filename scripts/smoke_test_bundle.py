@@ -1,10 +1,13 @@
 """Launch test for a packaged IntraPaint build: fail unless the bundle starts and reaches the editing state.
 
 CI's bundle job (.github/workflows/ci.yml) runs this on each PyInstaller bundle, because a bundle can fail where
-a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Two checks:
+a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Three checks:
 1. `--help` exits cleanly. IntraPaint.py imports most of the app before parsing arguments, so this covers imports.
 2. A `--mode none` launch logs the change to the editing state within the timeout, without failing to load an optional
    tool. That covers AppController and the main window. The app never exits on its own, so it's killed afterwards.
+3. On Linux, the idle app then uses at most `IDLE_CPU_LIMIT` of a core. That catches a relayout loop, an endless
+   animation or a fast polling timer, which only show up as CPU use. `test/controller/idle_activity_test.py` checks for
+   the causes it can reach without running the event loop. The check reads `/proc`, so it doesn't run on Windows.
 
 Qt runs offscreen. On Linux, the bundle's config and logs go to a temporary directory through the XDG variables. On
 Windows and macOS, platformdirs ignores those, so the launch uses the real user directories.
@@ -26,6 +29,11 @@ EDITING_STATE_LINE = 'State change: from init to editing'
 # libmypaint doesn't load. Other optional imports (themes, spacenav, GLID-3-XL) are expected to fail in a bundle.
 OPTIONAL_IMPORT_FAILURE = 'Failed to load optional import from src.tools.'
 HELP_TIMEOUT_SECONDS = 120
+# The app settles for IDLE_SETTLE_SECONDS after reaching the editing state, then its CPU use is measured over
+# IDLE_SAMPLE_SECONDS. An idle app uses well under 1% of a core, and the loops this catches use far more.
+IDLE_SETTLE_SECONDS = 3
+IDLE_SAMPLE_SECONDS = 10
+IDLE_CPU_LIMIT = 0.10
 
 
 def _bundle_env(temp_dir: str) -> dict[str, str]:
@@ -54,6 +62,47 @@ def _check_help(executable: str, env: dict[str, str]) -> bool:
     print(result.stdout + result.stderr)
     if result.returncode != 0:
         print(f'FAIL: --help exited with code {result.returncode}')
+        return False
+    return True
+
+
+def _group_cpu_seconds(group_id: int) -> float:
+    """Returns the CPU time used so far by the live processes of a Linux process group.
+
+    A one-file bundle runs the app in a child process, which shares the bundle's process group.
+    """
+    ticks = 0
+    for entry in os.listdir('/proc'):
+        if not entry.isdigit():
+            continue
+        try:
+            with open(f'/proc/{entry}/stat', encoding='ascii') as stat_file:
+                # Fields after the parenthesized command name, which may contain spaces, start at the state field:
+                fields = stat_file.read().rsplit(')', 1)[1].split()
+        except (OSError, IndexError):
+            continue  # The process exited while being read.
+        process_group, user_ticks, system_ticks = int(fields[2]), int(fields[11]), int(fields[12])
+        if process_group == group_id:
+            ticks += user_ticks + system_ticks
+    return ticks / os.sysconf('SC_CLK_TCK')
+
+
+def _check_idle_cpu(process: subprocess.Popen) -> bool:
+    """Checks that the launched app, already in the editing state, stays under the idle CPU limit."""
+    if not sys.platform.startswith('linux'):
+        print('Skipping the idle CPU check: it reads /proc, which only Linux has.')
+        return True
+    time.sleep(IDLE_SETTLE_SECONDS)
+    start_cpu, start_time = _group_cpu_seconds(process.pid), time.monotonic()
+    time.sleep(IDLE_SAMPLE_SECONDS)
+    if process.poll() is not None:
+        print(f'FAIL: exited with code {process.returncode} while idle')
+        return False
+    cpu_fraction = (_group_cpu_seconds(process.pid) - start_cpu) / (time.monotonic() - start_time)
+    print(f'Idle CPU use: {cpu_fraction:.1%} of a core (limit {IDLE_CPU_LIMIT:.0%})')
+    if cpu_fraction > IDLE_CPU_LIMIT:
+        print('FAIL: the idle app keeps the CPU busy. A relayout loop, a running animation or a fast timer is the usual '
+              'cause. test/controller/idle_activity_test.py finds most of them.')
         return False
     return True
 
@@ -92,7 +141,7 @@ def _check_launch(executable: str, env: dict[str, str], timeout: float) -> bool:
                     break
                 if EDITING_STATE_LINE in line:
                     print('Reached the editing state.')
-                    return True
+                    return _check_idle_cpu(process)
         finally:
             _kill_tree(process)
         print(failure)
@@ -100,7 +149,7 @@ def _check_launch(executable: str, env: dict[str, str], timeout: float) -> bool:
 
 
 def main() -> int:
-    """Run both checks on the bundle named on the command line, returning the exit code."""
+    """Run the checks on the bundle named on the command line, returning the exit code."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('executable', help='path to the bundled IntraPaint executable')
     parser.add_argument('--timeout', type=float, default=180, help='seconds to wait for the editing state')

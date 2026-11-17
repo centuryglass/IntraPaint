@@ -3,14 +3,14 @@ import base64
 import io
 from typing import Optional
 
-from PIL import Image, ImageQt
+from PIL import Image, ImageChops, ImageCms, ImageQt
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
 from src.config.application_config import AppConfig
-from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.visual.geometry_utils import is_smaller_size
-from src.util.visual.image_utils import BASE_64_PREFIX
+from src.util.visual.image_utils import BASE_64_PREFIX, logger
 
 # Pillow formats IntraPaint never opens or saves.
 # - EPS covers .eps and .ps files, which Pillow reads by running them as programs in the external Ghostscript
@@ -26,6 +26,42 @@ if not hasattr(Image.core, 'drawwmf'):
 # Image.open() picks a decoder from the file's contents, not its name, so it always gets this list. Otherwise an EPS
 # file renamed to .png would still reach Ghostscript.
 PIL_OPEN_FORMATS = tuple(pil_format for pil_format in Image.OPEN if pil_format not in EXCLUDED_PIL_FORMATS)
+
+
+def convert_to_srgb(pil_image: Image.Image) -> Image.Image:
+    """Converts an image with a non-sRGB embedded ICC profile to sRGB, and returns other images unchanged.
+
+    IntraPaint edits 8-bit sRGB pixels and saves them untagged. If the conversion fails, the original image is
+    returned and a warning is logged.
+    """
+    icc_data = pil_image.info.get('icc_profile')
+    if not icc_data:
+        return pil_image
+    try:
+        source_profile = ImageCms.ImageCmsProfile(io.BytesIO(icc_data))
+        description = ImageCms.getProfileDescription(source_profile)
+        if 'srgb' in description.lower():
+            return pil_image
+        alpha: Optional[Image.Image] = None
+        image = pil_image
+        if image.mode in ('P', 'PA'):
+            image = image.convert('RGBA' if 'transparency' in image.info or image.mode == 'PA' else 'RGB')
+        if image.mode in ('RGBA', 'LA'):
+            alpha = image.getchannel('A')
+            image = image.convert('RGB' if image.mode == 'RGBA' else 'L')
+        if image.mode not in ('RGB', 'L', 'CMYK'):
+            image = image.convert('RGB')
+        converted = ImageCms.profileToProfile(image, source_profile, ImageCms.createProfile('sRGB'),
+                                              outputMode='RGB')
+        if converted is None:
+            raise ImageCms.PyCMSError('no output image')
+        if alpha is not None:
+            converted.putalpha(alpha)
+        logger.info(f'Converted image from embedded profile "{description.strip()}" to sRGB')
+        return converted
+    except (ImageCms.PyCMSError, OSError, ValueError, TypeError) as err:
+        logger.warning(f'Failed to convert embedded ICC profile to sRGB, keeping the original pixels: {err}')
+        return pil_image
 
 
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
@@ -51,11 +87,62 @@ def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
     return image
 
 
+# QImage formats that `qimage_to_pil_image` reads straight from the pixel buffer, with the PIL mode and the format the
+# pixels are converted to first. Other formats go through Qt's PNG writer.
+_DIRECT_PIL_FORMATS = {
+    QImage.Format.Format_ARGB32: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_ARGB32_Premultiplied: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_RGBA8888: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_RGBA8888_Premultiplied: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_RGB32: ('RGB', QImage.Format.Format_RGB888),
+    QImage.Format.Format_RGB888: ('RGB', QImage.Format.Format_RGB888),
+}
+
+
 def qimage_to_pil_image(qimage: QImage) -> Image.Image:
-    """Convert a Qt6 QImage to a PIL image, in PNG format."""
+    """Convert a Qt6 QImage to a PIL image with straight (not premultiplied) alpha, in the mode a PNG of the image
+    would open in: 'RGBA' for images with alpha, 'RGB' for opaque ones."""
     if not isinstance(qimage, QImage):
         raise TypeError('Invalid QImage parameter.')
-    return ImageQt.fromqimage(qimage)
+    direct_format = _DIRECT_PIL_FORMATS.get(qimage.format())
+    if direct_format is None:
+        return ImageQt.fromqimage(qimage)
+    mode, qt_format = direct_format
+    converted = qimage.convertToFormat(qt_format)
+    # frombuffer reads bytesPerLine() as the stride, so padded rows are handled. The copy detaches the PIL image from
+    # the QImage's buffer.
+    return Image.frombuffer(mode, (converted.width(), converted.height()), bytes(converted.constBits()),
+                            'raw', mode, converted.bytesPerLine(), 1).copy()
+
+
+def qimage_to_premultiplied_pil_image(qimage: QImage) -> Image.Image:
+    """Convert a QImage to a PIL image in 'RGBA' mode whose color channels are premultiplied by alpha.
+
+    Filters that mix neighboring pixels (blur, sharpen) use this so fully transparent pixels contribute no color.
+    The result is not straight RGBA: pass it back through `premultiplied_pil_image_to_qimage`, never to code that
+    expects straight alpha. `qimage_to_pil_image` is the straight-alpha conversion."""
+    if not isinstance(qimage, QImage):
+        raise TypeError('Invalid QImage parameter.')
+    converted = qimage.convertToFormat(QImage.Format.Format_RGBA8888_Premultiplied)
+    # frombuffer reads bytesPerLine() as the stride, so padded rows are handled.
+    return Image.frombuffer('RGBA', (converted.width(), converted.height()), bytes(converted.constBits()),
+                            'raw', 'RGBA', converted.bytesPerLine(), 1)
+
+
+def premultiplied_pil_image_to_qimage(pil_image: Image.Image) -> QImage:
+    """Convert a PIL image holding premultiplied 'RGBA' data (see `qimage_to_premultiplied_pil_image`) to an
+    ARGB32_Premultiplied QImage. Color values that exceed alpha, which filters can produce, are clamped to alpha."""
+    if pil_image.mode != 'RGBA':
+        raise ValueError(f'Expected premultiplied RGBA data, found mode {pil_image.mode}')
+    red, green, blue, alpha = pil_image.split()
+    pil_image = Image.merge('RGBA', (ImageChops.darker(red, alpha), ImageChops.darker(green, alpha),
+                                     ImageChops.darker(blue, alpha), alpha))
+    image = QImage(pil_image.tobytes('raw', 'RGBA'),
+                   pil_image.width,
+                   pil_image.height,
+                   pil_image.width * 4,
+                   QImage.Format.Format_RGBA8888_Premultiplied)
+    return image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
 
 
 def pil_qsize(image: Image.Image) -> QSize:

@@ -2,16 +2,17 @@
 import math
 import unittest
 
-import pytest
 from PySide6.QtCore import QPoint, QPointF, QRectF
 from PySide6.QtGui import QImage, QTransform, Qt
+from PySide6.QtWidgets import QMenu
 
-from src.config.application_config import AppConfig
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.ui.graphics_items.transform_outline import (TransformOutline, ORIGIN_HANDLE_ID, BR_HANDLE_ID,
                                                      TRANSFORM_MODE_ROTATE)
+from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, WIDTH, X, Y
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
 from src.undo_stack import UndoStack
+from test.render_assertions import full_render
 from test.tools.tool_test_case import ToolTestCase
 
 LAYER_WIDTH = 200
@@ -54,8 +55,9 @@ class LayerTransformToolTest(ToolTestCase):
 
     def assert_panel_matches_outline(self) -> None:
         """Asserts that every panel field shows the outline's current value."""
-        self.assertAlmostEqual(self.panel.x_position, self.outline.x_pos, places=2)
-        self.assertAlmostEqual(self.panel.y_position, self.outline.y_pos, places=2)
+        origin = self.outline.origin_scene_pos
+        self.assertAlmostEqual(self.panel.x_position, origin.x(), places=2)
+        self.assertAlmostEqual(self.panel.y_position, origin.y(), places=2)
         self.assertAlmostEqual(self.panel.layer_width, self.outline.width, places=2)
         self.assertAlmostEqual(self.panel.layer_height, self.outline.height, places=2)
         x_scale, y_scale = self.outline.transform_scale
@@ -72,8 +74,8 @@ class LayerTransformToolTest(ToolTestCase):
         """Activating the tool loads the active layer's transform into the outline and the panel."""
         self.assertEqual(self.outline.transform(), self.layer.transform)
         self.assertEqual(self.outline.rect(), QRectF(0, 0, LAYER_WIDTH, LAYER_HEIGHT))
-        self.assertEqual(self.panel.x_position, LAYER_OFFSET.x())
-        self.assertEqual(self.panel.y_position, LAYER_OFFSET.y())
+        self.assertEqual(self.panel.x_position, LAYER_OFFSET.x() + LAYER_WIDTH / 2)
+        self.assertEqual(self.panel.y_position, LAYER_OFFSET.y() + LAYER_HEIGHT / 2)
         self.assertEqual(self.panel.layer_width, LAYER_WIDTH)
         self.assertEqual(self.panel.layer_height, LAYER_HEIGHT)
         self.assertEqual(self.panel.x_scale, 1.0)
@@ -90,7 +92,6 @@ class LayerTransformToolTest(ToolTestCase):
 
     def test_drag_undo(self) -> None:
         """Undoing a drag merged into one undo entry restores the layer's original position."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 1000.0)
         original = self.layer.transform
         start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
         self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
@@ -100,14 +101,97 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.outline.transform(), original)
         self.assert_panel_matches_outline()
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/11: undo merges a '
-                                           'drag by elapsed time, not by gesture')
+    def test_drag_previews_without_changing_layer(self) -> None:
+        """While the button is held, a preview item moves and the layer's transform stays as it was."""
+        original = self.layer.transform
+        start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        self.mouse_press(start)
+        self.mouse_move(start + QPoint(10, 5))
+        self.mouse_move(start + QPoint(30, 40))
+        self.assertEqual(self.layer.transform, original)
+        self.assertFalse(self.layer.visible)
+        preview = self.tool._drag_preview
+        self.assertIsNotNone(preview)
+        self.assertEqual(preview.transform(), self.outline.transform())
+        self.assert_panel_matches_outline()
+        self.mouse_release(start + QPoint(30, 40))
+        self.assertIsNone(self.tool._drag_preview)
+        self.assertTrue(self.layer.visible)
+
+    def test_drag_result_matches_direct_transform(self) -> None:
+        """A drag leaves the same composite and undo history as setting the final transform directly."""
+        start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
+        self.image_stack.flush_render()
+        dragged = full_render(self.image_stack)
+        dragged_transform = self.layer.transform
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        self.layer.transform = dragged_transform
+        self.image_stack.flush_render()
+        self.assertEqual(full_render(self.image_stack), dragged)
+
+    def test_canceled_drag_leaves_composite_unchanged(self) -> None:
+        """Deselecting the layer mid-drag discards the preview and restores the layer and composite."""
+        self.image_stack.flush_render()
+        before = full_render(self.image_stack)
+        original = self.layer.transform
+        start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        self.mouse_press(start)
+        self.mouse_move(start + QPoint(30, 40))
+        self.assertIsNotNone(self.tool._drag_preview)
+        self.tool.set_layer(None)
+        self.assertIsNone(self.tool._drag_preview)
+        self.assertTrue(self.layer.visible)
+        self.assertEqual(self.layer.transform, original)
+        self.image_stack.flush_render()
+        self.assertEqual(full_render(self.image_stack), before)
+
+    def test_non_left_click_does_not_start_drag(self) -> None:
+        """A middle or right click on the outline leaves no drag in progress, so activating another layer shows it
+        normally instead of as a drag preview."""
+        lower_image = QImage(LAYER_WIDTH * 2, LAYER_HEIGHT * 2, QImage.Format.Format_ARGB32_Premultiplied)
+        lower_image.fill(Qt.GlobalColor.blue)
+        lower_layer = self.image_stack.create_layer(image_data=lower_image, layer_index=1)
+        self.image_stack.active_layer = self.layer
+        click_point = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        for button in (Qt.MouseButton.MiddleButton, Qt.MouseButton.RightButton):
+            with self.subTest(button=button):
+                self.mouse_press(click_point, button)
+                self.mouse_release(click_point, button)
+                self._close_layer_menu()
+                self.image_stack.active_layer = lower_layer
+                self.assertIsNone(self.tool._drag_preview)
+                self.assertTrue(lower_layer.visible)
+                self.tool.set_x(self.panel.x_position + 5)
+                self.assertIsNone(self.tool._drag_preview)
+                self.assertTrue(lower_layer.visible)
+                self.image_stack.active_layer = self.layer
+
+    def _close_layer_menu(self) -> None:
+        """Closes the layer menu a right click opens, if any."""
+        menu = self.tool._layer_menu
+        if menu is not None:
+            menu.close()
+
     def test_drag_is_one_undo_step(self) -> None:
-        """One drag adds one undo entry, however much time passes between its moves."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        """One drag adds one undo entry."""
         start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
         self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
         self.assertEqual(UndoStack().undo_count(), 1)
+
+    def test_panel_field_drag_is_one_undo_step(self) -> None:
+        """Scrub-dragging a panel field adds one undo entry, and undoing it restores the original transform."""
+        original = self.layer.transform
+        field = self.panel.geometry_block.field(X)
+        field.dragStarted.emit()
+        for x_pos in (10.0, 20.0, 30.0):
+            field.set_value(x_pos)
+        field.dragFinished.emit()
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        self.assertEqual(self.layer.transform, original)
+        self.assert_panel_matches_outline()
 
     def test_corner_drag_scales(self) -> None:
         """Dragging the bottom-right handle scales the layer and leaves the top-left corner fixed."""
@@ -120,18 +204,27 @@ class LayerTransformToolTest(ToolTestCase):
         self.assert_panel_matches_outline()
 
     def test_panel_position(self) -> None:
-        """Setting X and Y in the panel moves the layer there, and the fields read back what was set."""
-        self.panel._x_pos_box.setValue(40.0)
-        self.panel._y_pos_box.setValue(60.0)
-        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0, 60.0))
+        """Setting X and Y in the panel puts the transformation origin there, and the fields read back what was set."""
+        self.panel.geometry_block.field(X).set_value(40.0)
+        self.panel.geometry_block.field(Y).set_value(60.0)
+        self.assert_points_equal(self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2)), QPointF(40.0, 60.0))
         self.assertEqual(self.panel.x_position, 40.0)
         self.assertEqual(self.panel.y_position, 60.0)
         self.assert_panel_matches_outline()
 
+    def test_panel_position_stable_under_rotation_and_resize(self) -> None:
+        """Rotating or resizing in the panel leaves X and Y unchanged."""
+        before = (self.panel.x_position, self.panel.y_position)
+        self.panel.geometry_block.field(ANGLE).set_value(45.0)
+        self.panel.geometry_block.field(WIDTH).set_value(LAYER_WIDTH * 2.0)
+        self.assertAlmostEqual(self.panel.x_position, before[0], places=2)
+        self.assertAlmostEqual(self.panel.y_position, before[1], places=2)
+        self.assert_panel_matches_outline()
+
     def test_panel_size(self) -> None:
         """Setting width and height in the panel scales the layer to that size and updates the scale fields."""
-        self.panel._width_box.setValue(LAYER_WIDTH * 2.0)
-        self.panel._height_box.setValue(LAYER_HEIGHT * 0.5)
+        self.panel.geometry_block.field(WIDTH).set_value(LAYER_WIDTH * 2.0)
+        self.panel.geometry_block.field(HEIGHT).set_value(LAYER_HEIGHT * 0.5)
         self.assertAlmostEqual(self.outline.width, LAYER_WIDTH * 2.0, places=2)
         self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 0.5, places=2)
         self.assertAlmostEqual(self.panel.x_scale, 2.0, places=2)
@@ -142,23 +235,24 @@ class LayerTransformToolTest(ToolTestCase):
     def test_panel_scale_keeps_center(self) -> None:
         """Setting a scale in the panel scales about the transformation origin, which starts at the layer center."""
         center = self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2))
-        self.panel._x_scale_box.setValue(2.0)
+        self.panel.geometry_block.field(SCALE_X).set_value(2.0)
         self.assert_points_equal(self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2)), center)
 
     def test_panel_rotation_keeps_center(self) -> None:
         """Setting a rotation in the panel rotates about the transformation origin, which starts at the layer
            center."""
         center = self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2))
-        self.panel._rotate_box.setValue(90.0)
+        self.panel.geometry_block.field(ANGLE).set_value(90.0)
         self.assertAlmostEqual(self.outline.rotation_angle, 90.0, places=2)
         self.assert_points_equal(self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2)), center)
         self.assert_panel_matches_outline()
 
     def test_panel_x_under_rotation(self) -> None:
-        """With the layer rotated, setting X moves the layer's leftmost point to X without changing the rotation."""
+        """With the layer rotated, setting X moves the origin to X without changing the rotation."""
         self.layer.transform = QTransform.fromTranslate(LAYER_OFFSET.x(), LAYER_OFFSET.y()).rotate(30.0)
-        self.panel._x_pos_box.setValue(50.0)
-        self.assertAlmostEqual(min(pt.x() for pt in self._scene_corners()), 50.0, delta=POSITION_TOLERANCE)
+        self.panel.geometry_block.field(X).set_value(50.0)
+        origin = self.outline.transformation_origin
+        self.assertAlmostEqual(self._scene_point_of(origin).x(), 50.0, delta=POSITION_TOLERANCE)
         self.assertAlmostEqual(self.panel.x_position, 50.0, places=2)
         self.assertAlmostEqual(self.outline.rotation_angle, 30.0, places=2)
         self.assert_panel_matches_outline()
@@ -172,6 +266,36 @@ class LayerTransformToolTest(ToolTestCase):
                             QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2))
         for actual, expected in zip(self._scene_corners(), corners):
             self.assert_points_equal(actual, expected)
+        self.assert_panel_matches_outline()
+        self.assert_points_equal(QPointF(self.panel.x_position, self.panel.y_position),
+                                 self._scene_point_of(self.outline.transformation_origin))
+
+    def test_origin_snaps_to_targets(self) -> None:
+        """Dragging the origin handle near any of the nine snap targets lands exactly on it."""
+        for x in (0, LAYER_WIDTH / 2, LAYER_WIDTH):
+            for y in (0, LAYER_HEIGHT / 2, LAYER_HEIGHT):
+                with self.subTest(target=(x, y)):
+                    self.outline.transformation_origin = QPointF(LAYER_WIDTH / 2 + 7, LAYER_HEIGHT / 2 + 7)
+                    target_scene = self._scene_point_of(QPointF(x, y))
+                    self.outline.move_transformation_handle(ORIGIN_HANDLE_ID, target_scene + QPointF(3, -3))
+                    self.assert_points_equal(self.outline.transformation_origin, QPointF(x, y))
+
+    def test_origin_does_not_snap_between_targets(self) -> None:
+        """Away from every snap target, the origin goes where it was dragged."""
+        scene_pos = self._scene_point_of(QPointF(LAYER_WIDTH / 4, LAYER_HEIGHT / 4))
+        self.outline.move_transformation_handle(ORIGIN_HANDLE_ID, scene_pos)
+        self.assert_points_equal(self.outline.transformation_origin, QPointF(LAYER_WIDTH / 4, LAYER_HEIGHT / 4))
+
+    def test_snapped_origin_follows_rotation(self) -> None:
+        """Snap targets rotate with the layer, so a snapped corner can be placed by typing X and Y."""
+        self.panel.geometry_block.field(ANGLE).set_value(30.0)
+        corner = self._scene_point_of(QPointF(0, 0))
+        self.outline.move_transformation_handle(ORIGIN_HANDLE_ID, corner + QPointF(2, 2))
+        self.assert_points_equal(self.outline.transformation_origin, QPointF(0, 0))
+        self.assert_points_equal(QPointF(self.panel.x_position, self.panel.y_position), corner)
+        self.panel.geometry_block.field(X).set_value(20.0)
+        self.panel.geometry_block.field(Y).set_value(30.0)
+        self.assert_points_equal(self._scene_point_of(QPointF(0, 0)), QPointF(20.0, 30.0))
 
     def test_rotation_about_moved_origin(self) -> None:
         """After the origin handle moves, a panel rotation keeps the new origin's scene position fixed."""
@@ -179,7 +303,7 @@ class LayerTransformToolTest(ToolTestCase):
         self.mouse_drag([start, start + QPoint(-80, -40)])
         origin = QPointF(self.outline.transformation_origin)
         origin_in_scene = self._scene_point_of(origin)
-        self.panel._rotate_box.setValue(45.0)
+        self.panel.geometry_block.field(ANGLE).set_value(45.0)
         self.assert_points_equal(self._scene_point_of(origin), origin_in_scene)
 
     def test_corner_drag_rotates_about_origin(self) -> None:
@@ -232,19 +356,36 @@ class LayerTransformToolTest(ToolTestCase):
         self.layer.set_transform(new_transform)
         self.assertEqual(self.outline.transform(), new_transform)
         self.assert_panel_matches_outline()
-        self.assertAlmostEqual(self.panel.x_position, 10.0, places=2)
+        self.assertAlmostEqual(self.panel.x_position, 10.0 + LAYER_WIDTH, places=2)
         self.assertAlmostEqual(self.panel.layer_width, LAYER_WIDTH * 2.0, places=2)
 
     def test_reset_transformation(self) -> None:
         """reset_transformation restores the transform the layer had when the tool loaded it, as one undo entry."""
         original = self.layer.transform
-        self.panel._x_pos_box.setValue(40.0)
+        self.panel.geometry_block.field(X).set_value(40.0)
         UndoStack().clear()
         self.tool.reset_transformation()
         self.assertEqual(self.layer.transform, original)
         self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
-        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0, LAYER_OFFSET.y()))
+        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0 - LAYER_WIDTH / 2, LAYER_OFFSET.y()))
+
+    def test_group_transform_ends_with_selection(self) -> None:
+        """Transforming a layer group moves its layers, and once another layer is active, a layer added to the group
+        keeps its own transform."""
+        group = self.image_stack.create_layer_group('group')
+        self.image_stack.move_layer(self.layer, group, 0)
+        self.image_stack.active_layer = group
+        UndoStack().clear()
+        self.panel.geometry_block.field(X).set_value(40.0)
+        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0 - LAYER_WIDTH / 2, LAYER_OFFSET.y()))
+        self.image_stack.active_layer = self.layer
+        added = self.image_stack.create_layer('added', layer_parent=group, layer_index=0)
+        self.assertEqual(added.transform, QTransform())
+        UndoStack().undo()  # The layer creation
+        UndoStack().undo()  # The active layer change
+        UndoStack().undo()  # The group transform
+        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(LAYER_OFFSET))
 
     def test_layer_click_activates_layer(self) -> None:
         """Clicking another layer on the canvas, outside the active layer's outline, makes it active."""
@@ -256,6 +397,70 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.image_stack.active_layer, other)
         self.assertEqual(self.outline.rect(), QRectF(0, 0, 50, 50))
         self.assertEqual(self.outline.transformation_origin, QPointF(25, 25))
+
+    def _create_blue_layer_over_active(self):
+        blue_image = QImage(50, 50, QImage.Format.Format_ARGB32_Premultiplied)
+        blue_image.fill(Qt.GlobalColor.blue)
+        return self.image_stack.create_layer(image_data=blue_image, transform=QTransform.fromTranslate(400, 400))
+
+    def test_layer_click_picks_topmost_overlapping_layer(self) -> None:
+        """Clicking where two layers overlap outside the active layer activates the upper one."""
+        lower = self._create_blue_layer_over_active()
+        self.image_stack.active_layer = lower  # New layers are inserted just above the active layer.
+        upper = self._create_blue_layer_over_active()
+        self.image_stack.active_layer = self.layer
+        self.mouse_drag([QPoint(420, 420)])
+        self.assertEqual(self.image_stack.active_layer, upper)
+        self.assertNotEqual(self.image_stack.active_layer, lower)
+
+    def test_layer_click_skips_hidden_layer(self) -> None:
+        """A hidden layer is never activated by a canvas click, so the click picks the visible layer beneath it."""
+        lower = self._create_blue_layer_over_active()
+        self.image_stack.active_layer = lower  # New layers are inserted just above the active layer.
+        upper = self._create_blue_layer_over_active()
+        upper.visible = False
+        self.image_stack.active_layer = self.layer
+        self.mouse_drag([QPoint(420, 420)])
+        self.assertEqual(self.image_stack.active_layer, lower)
+
+    def test_temporary_ratio_lock_reaches_outline(self) -> None:
+        """Holding the fixed-aspect modifier keeps canvas edits at the layer's ratio without changing the stored
+        "Keep aspect ratio" setting."""
+        block = self.panel.geometry_block
+        block.set_temporary_lock(True)
+        self.assertTrue(self.outline.preserve_aspect_ratio)
+        self.assertFalse(self.panel.preserve_aspect_ratio)
+        self.tool.set_width(LAYER_WIDTH * 2.0)
+        self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 2.0, places=2)
+        block.set_temporary_lock(False)
+        self.assertFalse(self.outline.preserve_aspect_ratio)
+
+    def test_ratio_lock_survives_layer_change(self) -> None:
+        """With "Keep aspect ratio" on, canvas edits to the next selected layer keep its ratio."""
+        image = QImage(LAYER_WIDTH, LAYER_HEIGHT, QImage.Format.Format_ARGB32_Premultiplied)
+        other_layer = self.image_stack.create_layer(image_data=image)
+        self.panel.geometry_block.set_ratio_locked(True)
+        self.image_stack.active_layer = other_layer
+        self.assertTrue(self.outline.preserve_aspect_ratio)
+        self.tool.set_width(LAYER_WIDTH * 2.0)
+        self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 2.0, places=2)
+
+
+    def test_right_click_lists_layers_under_cursor(self) -> None:
+        """Right-click lists the layers under the cursor, topmost first, and choosing one makes it active."""
+        image = QImage(LAYER_WIDTH, LAYER_HEIGHT, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(Qt.GlobalColor.blue)
+        upper = self.image_stack.create_layer('upper', image, transform=QTransform.fromTranslate(
+            LAYER_OFFSET.x(), LAYER_OFFSET.y()))
+        self.image_stack.active_layer = upper
+        point = LAYER_OFFSET + QPoint(20, 20)
+        self.mouse_drag([point], Qt.MouseButton.RightButton)
+        menu = self.tool._layer_menu
+        self.assertIsInstance(menu, QMenu)
+        actions = menu.actions()
+        self.assertEqual([action.text() for action in actions], [upper.name, self.layer.name])
+        actions[1].trigger()
+        self.assertIs(self.image_stack.active_layer, self.layer)
 
 
 if __name__ == '__main__':

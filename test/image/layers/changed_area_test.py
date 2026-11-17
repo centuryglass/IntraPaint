@@ -2,42 +2,34 @@
 
 Region compositing (https://github.com/centuryglass/IntraPaint/issues/25) will redraw only the reported areas, so a
 change that reports too little leaves stale pixels. Each test renders the full canvas before and after one change, and
-asserts that the reported areas, in image coordinates, cover every pixel that differs. Over-reporting passes.
+asserts that the reported areas, in image coordinates, cover every pixel that differs. Over-reporting passes those
+tests. `ReportedAreaBoundsTest` checks that a group reports what changed inside it rather than its whole bounds.
 
-`ChangedAreaRecorder` collects the reports. It reads `Layer.content_changed` from every layer in the stack, maps a
-`TransformLayer`'s rect with `TransformLayer.map_changed_rect_to_image` when it's emitted, and takes a `LayerGroup`'s
-rect as image coordinates. It ignores what a group emits from `LayerGroup._start_render`: that render only rolls up its
-children's changes as the group's whole bounds, and the region compositor replaces it with the union of their rects.
+`ChangedAreaRecorder` collects the reports. It reads `Layer.content_changed` from the stack's root group only, in image
+coordinates, so each test covers the roll-up of child changes in `LayerGroup._trigger_render` along with the change.
 """
 import sys
-from contextlib import ExitStack
 from typing import Callable, Optional
-from unittest.mock import patch
 
 import numpy as np
-import pytest
 from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.image.layers.layer_group import LayerGroup
-from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from test.base_test_case import IntraPaintTestCase
-from test.render_assertions import full_render
+from test.image.layers.image_stack_state import select_rect
+from test.render_assertions import clear_area, full_render
 
 app = QApplication.instance() or QApplication(sys.argv)
 
 CANVAS_SIZE = QSize(120, 90)
-ISSUE_210 = ('https://github.com/centuryglass/IntraPaint/issues/210: adding, removing and reordering layers schedule a '
-             'group render without reporting a changed area')
 LAYER_SIZE = QSize(40, 30)
 
 
@@ -56,36 +48,11 @@ def _noise_image(size: QSize, seed: int) -> QImage:
 class ChangedAreaRecorder:
     """Collects the changed areas an image stack's layers report, in image coordinates."""
 
-    def __init__(self, image_stack: ImageStack, exit_stack: ExitStack) -> None:
-        self._connected: set[Layer] = set()
-        self._rolling_up: set[LayerGroup] = set()
+    def __init__(self, image_stack: ImageStack) -> None:
         self.rects: list[QRect] = []
-        recorder = self
-        start_render = LayerGroup._start_render  # pylint: disable=protected-access
+        image_stack.layer_stack.content_changed.connect(self._record)
 
-        def _recorded_start_render(group: LayerGroup) -> None:
-            recorder._rolling_up.add(group)
-            try:
-                start_render(group)
-            finally:
-                recorder._rolling_up.discard(group)
-
-        exit_stack.enter_context(patch.object(LayerGroup, '_start_render', _recorded_start_render))
-        root = image_stack.layer_stack
-        root.layer_added.connect(self._connect)
-        for layer in (root, *root.recursive_child_layers):
-            self._connect(layer)
-
-    def _connect(self, layer: Layer) -> None:
-        if layer not in self._connected:
-            self._connected.add(layer)
-            layer.content_changed.connect(self._record)
-
-    def _record(self, layer: Layer, rect: QRect) -> None:
-        if layer in self._rolling_up:
-            return
-        if isinstance(layer, TransformLayer):
-            rect = layer.map_changed_rect_to_image(rect)
+    def _record(self, _layer: Layer, rect: QRect) -> None:
         self.rects.append(QRect(rect))
 
 
@@ -95,7 +62,6 @@ class ChangedAreaTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE)
         self.background = self.image_stack.create_layer('background', _noise_image(CANVAS_SIZE, 0))
         self.translated = self.image_stack.create_layer('translated', _noise_image(LAYER_SIZE, 1),
@@ -108,9 +74,7 @@ class ChangedAreaTestCase(IntraPaintTestCase):
         self.grouped = self.image_stack.create_layer('grouped', _noise_image(LAYER_SIZE, 3), layer_parent=self.group,
                                                      layer_index=1, transform=QTransform.fromTranslate(60, 50))
         self.image_stack.flush_render()
-        exit_stack = ExitStack()
-        self.addCleanup(exit_stack.close)
-        self.recorder = ChangedAreaRecorder(self.image_stack, exit_stack)
+        self.recorder = ChangedAreaRecorder(self.image_stack)
 
     def assert_change_covered(self, change: Callable[[], None], msg: Optional[str] = None) -> None:
         """Runs a change, then asserts the areas reported during it cover every pixel it changed in the full render."""
@@ -145,6 +109,24 @@ class ChangedAreaTestCase(IntraPaintTestCase):
                        f' Reported: {self.recorder.rects}')
             self.fail(message if msg is None else f'{msg}: {message}')
 
+    def assert_reported_within(self, change: Callable[[], None], area: QRect, msg: Optional[str] = None) -> None:
+        """Runs a change, then asserts it reported something, and that every area it reported lies inside `area`."""
+        self.image_stack.flush_render()
+        self.recorder.rects.clear()
+        change()
+        self.image_stack.flush_render()
+        reported = [rect for rect in self.recorder.rects if not rect.isEmpty()]
+        prefix = '' if msg is None else f'{msg}: '
+        self.assertTrue(reported, f'{prefix}the change reported no area')
+        for rect in reported:
+            self.assertTrue(area.contains(rect), f'{prefix}reported {rect} reaches outside {area}')
+
+    def assert_undo_redo_within(self, change: Callable[[], None], area: QRect) -> None:
+        """Asserts that a change, its undo and its redo each report only areas inside `area`."""
+        self.assert_reported_within(change, area, 'change')
+        self.assert_reported_within(UndoStack().undo, area, 'undo')
+        self.assert_reported_within(UndoStack().redo, area, 'redo')
+
     def assert_undo_redo_covered(self, change: Callable[[], None]) -> None:
         """Asserts that a change, its undo and its redo each report every pixel they change."""
         self.assert_change_covered(change, 'change')
@@ -156,7 +138,7 @@ class ImageEditTest(ChangedAreaTestCase):
     """Image content edits through borrow_image and set_image."""
 
     @staticmethod
-    def _fill(layer: ImageLayer, rect: QRect, color: QColor) -> Callable[[], None]:
+    def fill(layer: ImageLayer, rect: QRect, color: QColor) -> Callable[[], None]:
         def _change() -> None:
             with layer.borrow_image(rect) as image:
                 assert image is not None
@@ -167,15 +149,15 @@ class ImageEditTest(ChangedAreaTestCase):
 
     def test_borrow_image_on_untransformed_layer(self) -> None:
         """An edit through borrow_image on a layer with no transform, with undo and redo."""
-        self.assert_undo_redo_covered(self._fill(self.background, QRect(5, 5, 12, 9), QColor(255, 0, 0)))
+        self.assert_undo_redo_covered(self.fill(self.background, QRect(5, 5, 12, 9), QColor(255, 0, 0)))
 
     def test_borrow_image_on_translated_layer(self) -> None:
         """An edit through borrow_image on a translated layer, with undo and redo."""
-        self.assert_undo_redo_covered(self._fill(self.translated, QRect(4, 3, 10, 8), QColor(0, 255, 0)))
+        self.assert_undo_redo_covered(self.fill(self.translated, QRect(4, 3, 10, 8), QColor(0, 255, 0)))
 
     def test_borrow_image_on_rotated_layer(self) -> None:
         """An edit through borrow_image on a scaled, rotated layer inside a group, with undo and redo."""
-        self.assert_undo_redo_covered(self._fill(self.rotated, QRect(20, 10, 10, 8), QColor(0, 0, 255)))
+        self.assert_undo_redo_covered(self.fill(self.rotated, QRect(20, 10, 10, 8), QColor(0, 0, 255)))
 
     def test_set_image_same_size(self) -> None:
         """Replacing a translated layer's image with one the same size, with undo and redo."""
@@ -218,11 +200,12 @@ class LayerPropertyTest(ChangedAreaTestCase):
         """Hiding and showing a group."""
         self.assert_undo_redo_covered(lambda: setattr(self.group, 'visible', False))
 
-    def test_show_layer_in_hidden_group(self) -> None:
-        """Showing a hidden layer inside a hidden group shows the group too."""
+    def test_show_group_with_layer_shown_while_hidden(self) -> None:
+        """Showing a group reveals a layer that was marked visible while the group was hidden."""
         self.rotated.visible = False
         self.group.visible = False
-        self.assert_undo_redo_covered(lambda: setattr(self.rotated, 'visible', True))
+        self.rotated.visible = True
+        self.assert_undo_redo_covered(lambda: setattr(self.group, 'visible', True))
 
     def test_group_opacity_and_mode(self) -> None:
         """Changing a group's opacity and blend mode."""
@@ -244,9 +227,7 @@ class LayerPropertyTest(ChangedAreaTestCase):
         def _change() -> None:
             with self.image_stack.layer_stack.all_signals_delayed():
                 self.translated.set_transform(QTransform.fromTranslate(75, 2))
-                with self.rotated.borrow_image(QRect(0, 0, 8, 8)) as image:
-                    assert image is not None
-                    image.fill(0)
+                clear_area(self.rotated, QRect(0, 0, 8, 8))
                 self.grouped.set_opacity(0.5)
         self.assert_change_covered(_change)
 
@@ -254,28 +235,63 @@ class LayerPropertyTest(ChangedAreaTestCase):
 class LayerStructureTest(ChangedAreaTestCase):
     """Adding, removing and reordering layers."""
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_210)
     def test_add_layer(self) -> None:
         """Adding a translated layer, with undo and redo."""
         self.assert_undo_redo_covered(lambda: self.image_stack.create_layer(
             'added', _noise_image(LAYER_SIZE, 20), transform=QTransform.fromTranslate(50, 40)))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_210)
     def test_remove_layer(self) -> None:
         """Removing a layer from a group, with undo and redo."""
         self.assert_undo_redo_covered(lambda: self.image_stack.remove_layer(self.grouped))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_210)
     def test_reorder_within_group(self) -> None:
         """Moving a layer within its group changes where they overlap."""
         self.grouped.transform = QTransform.fromTranslate(65, 25)
         self.assert_undo_redo_covered(lambda: self.image_stack.move_layer(self.grouped, self.group, 0))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_210)
     def test_move_into_group(self) -> None:
         """Moving a layer into a group changes its place in the stack."""
         self.translated.transform = QTransform.fromTranslate(65, 25)
         self.assert_undo_redo_covered(lambda: self.image_stack.move_layer(self.translated, self.group, 0))
+
+
+class ReportedAreaBoundsTest(ChangedAreaTestCase):
+    """A group reports the union of what changed inside it, not its whole bounds, so the region compositor redraws only
+       the changed area."""
+
+    def test_edit_untransformed_layer(self) -> None:
+        """An edit on the background reports only the edited rect."""
+        rect = QRect(5, 5, 12, 9)
+        self.assert_undo_redo_within(ImageEditTest.fill(self.background, rect, QColor(255, 0, 0)), rect)
+
+    def test_edit_layer_in_group(self) -> None:
+        """An edit on a rotated layer inside a group reports only the edited rect's image area."""
+        rect = QRect(20, 10, 10, 8)
+        self.assert_undo_redo_within(ImageEditTest.fill(self.rotated, rect, QColor(0, 0, 255)),
+                                     self.rotated.map_changed_rect_to_image(rect))
+
+    def test_add_layer(self) -> None:
+        """Adding a layer reports only its area."""
+        self.assert_undo_redo_within(lambda: self.image_stack.create_layer(
+            'added', _noise_image(LAYER_SIZE, 20), transform=QTransform.fromTranslate(50, 40)),
+            QRect(QPoint(50, 40), LAYER_SIZE))
+
+    def test_remove_layer(self) -> None:
+        """Removing a layer from a group reports only its area."""
+        self.assert_undo_redo_within(lambda: self.image_stack.remove_layer(self.grouped),
+                                     QRect(QPoint(60, 50), LAYER_SIZE))
+
+    def test_reorder_within_group(self) -> None:
+        """Moving a layer within its group reports only the moved layer's area."""
+        self.grouped.transform = QTransform.fromTranslate(65, 25)
+        self.assert_undo_redo_within(lambda: self.image_stack.move_layer(self.grouped, self.group, 0),
+                                     QRect(QPoint(65, 25), LAYER_SIZE))
+
+    def test_move_into_group(self) -> None:
+        """Moving a layer into a group reports only the moved layer's area."""
+        self.translated.transform = QTransform.fromTranslate(65, 25)
+        self.assert_undo_redo_within(lambda: self.image_stack.move_layer(self.translated, self.group, 0),
+                                     QRect(QPoint(65, 25), LAYER_SIZE))
 
 
 class NonIsolatedGroupTest(ChangedAreaTestCase):
@@ -332,3 +348,44 @@ class OtherChangeTest(ChangedAreaTestCase):
     def test_resize_canvas(self) -> None:
         """Growing the canvas and offsetting its content, with undo and redo."""
         self.assert_undo_redo_covered(lambda: self.image_stack.resize_canvas(QSize(140, 100), 10, 6))
+
+
+class StackOperationTest(ChangedAreaTestCase):
+    """ImageStack operations built from several layer changes: selection edits, pastes and moves.
+
+    Merges, flattening and `layer_to_image_size` keep the composite unchanged, which `image_stack_merge_test.py` checks,
+    so they have nothing to cover here."""
+
+    def test_clear_selected(self) -> None:
+        """Clearing the selection from a rotated layer in a group, with undo and redo."""
+        select_rect(self.image_stack, QRect(55, 15, 30, 25))
+        self.assert_undo_redo_covered(lambda: self.image_stack.clear_selected(self.rotated))
+
+    def test_cut_and_paste(self) -> None:
+        """Cutting the selection from the background and pasting it back, each with undo and redo."""
+        select_rect(self.image_stack, QRect(20, 20, 30, 25))
+        self.assert_undo_redo_covered(lambda: self.image_stack.cut_selected(self.background))
+        self.translated.visible = False
+        self.assert_undo_redo_covered(self.image_stack.paste)
+
+    def test_paste_image(self) -> None:
+        """Pasting an image as a new layer, with undo and redo."""
+        self.assert_undo_redo_covered(lambda: self.image_stack.paste_image(_noise_image(LAYER_SIZE, 30),
+                                                                           QTransform.fromTranslate(70, 5)))
+
+    def test_generation_area_content_into_layer(self) -> None:
+        """Inserting generated content into a rotated layer, with undo and redo."""
+        self.image_stack.generation_area = QRect(50, 20, 40, 40)
+        self.assert_undo_redo_covered(lambda: self.image_stack.set_generation_area_content(
+            _noise_image(QSize(20, 20), 31), self.rotated))
+
+    def test_generation_area_content_into_group(self) -> None:
+        """Inserting generated content into a group adds a new layer, with undo and redo."""
+        self.image_stack.generation_area = QRect(10, 40, 40, 40)
+        self.assert_undo_redo_covered(lambda: self.image_stack.set_generation_area_content(
+            _noise_image(QSize(20, 20), 32), self.group))
+
+    def test_move_layer_by_offset(self) -> None:
+        """Moving a layer out of its group by offset, with undo and redo."""
+        self.translated.transform = QTransform.fromTranslate(65, 25)
+        self.assert_undo_redo_covered(lambda: self.image_stack.move_layer_by_offset(1, self.translated))

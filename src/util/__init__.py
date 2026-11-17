@@ -1,1 +1,1 @@
-"""util provides miscellaneous utility functions that are useful in many contexts."""
+"""Helpers not tied to one feature: threading, signals, singletons, argument parsing, platform and Qt layouts."""

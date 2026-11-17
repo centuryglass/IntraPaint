@@ -8,7 +8,8 @@ from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_stack import ImageStack
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.visual.pil_image_utils import premultiplied_pil_image_to_qimage, \
+    qimage_to_premultiplied_pil_image
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_STR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -71,12 +72,15 @@ class BlurFilter(ImageFilter):
         radius = cast(float, parameter_values[1])
         if mode == MODE_SIMPLE:
             return 5.0
+        if mode == MODE_GAUSSIAN:
+            # PIL approximates a Gaussian with box blurs, so its weights reach about three standard deviations out.
+            return radius * 3
         return radius
 
     @staticmethod
     def blur(image: QImage, mode: str, radius: float) -> QImage:
         """Blurs an image."""
-        pil_image = qimage_to_pil_image(image)
+        pil_image = qimage_to_premultiplied_pil_image(image)
         if mode == MODE_SIMPLE:
             image_filter = PilImageFilter.BLUR
         elif mode == MODE_BOX:
@@ -85,7 +89,7 @@ class BlurFilter(ImageFilter):
             image_filter = PilImageFilter.GaussianBlur(radius)
         else:
             raise ValueError(f'Invalid blur mode {mode}')
-        return pil_image_to_qimage(pil_image.filter(image_filter))
+        return premultiplied_pil_image_to_qimage(pil_image.filter(image_filter))
 
     def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the blur filter."""
@@ -98,5 +102,6 @@ class BlurFilter(ImageFilter):
                       3.0,
                       RADIUS_DESCRIPTION,
                       0.0,
-                      MAX_VALUE)
+                      MAX_VALUE,
+                      1.0)
         ]

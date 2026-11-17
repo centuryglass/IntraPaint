@@ -1,13 +1,12 @@
 """Tests the text tool through mouse input on the canvas and edits in its control panel."""
-import pytest
 from PySide6.QtCore import QPoint, QPointF, QRect, QSize, QSizeF, Qt
 from PySide6.QtGui import QTransform
 
-from src.config.application_config import AppConfig
 from src.image.layers.text_layer import TextLayer
 from src.image.text_rect import TextRect
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.text_tool import TextTool, MIN_DRAG_SIZE
+from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y
 from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
 from src.undo_stack import UndoStack
@@ -24,8 +23,6 @@ class TextToolTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each change is its own undo entry:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.tool = TextTool(self.image_stack, self.image_viewer)
         self.tool_controller.add_tool(self.tool)
         self.activate_tool(self.tool)
@@ -79,6 +76,13 @@ class TextToolTest(ToolTestCase):
         self.assertEqual(self.image_stack.text_layers, [])
         self.assertEqual(UndoStack().undo_count(), 0)
 
+    def test_thin_drag_creates_nothing(self) -> None:
+        """A drag that is wide or tall but not both, leaving zero width or height, creates no layer."""
+        self.mouse_drag([DRAG_START, DRAG_START + QPoint(100, 0)])
+        self.mouse_drag([DRAG_START, DRAG_START + QPoint(0, 100)])
+        self.assertEqual(self.image_stack.text_layers, [])
+        self.assertEqual(UndoStack().undo_count(), 0)
+
     def test_click_selects_layer(self) -> None:
         """Clicking an inactive text layer makes it active and loads it into the panel without editing either layer."""
         first = self._add_text_layer(QRect(20, 20, 80, 40), 'First')
@@ -103,16 +107,16 @@ class TextToolTest(ToolTestCase):
         self.assertIs(self.tool._text_layer, second)
 
     def test_typing_edits_layer(self) -> None:
-        """Text typed into the panel goes to the active layer, one undo step per edit."""
+        """Text typed into the panel goes to the active layer, and edits until the text box loses focus are one undo
+        step."""
         layer = self._drag_new_layer()
         UndoStack().clear()
         self.panel._text_box.setPlainText('Hello')
         self.panel._text_box.setPlainText('Hello world')
+        self.panel._text_box.focus_lost.emit()
         self.assertEqual(layer.text_rect.text, 'Hello world')
         self.assertEqual(layer.name, '"Hello worl..."')
-        self.assertEqual(UndoStack().undo_count(), 2)
-        UndoStack().undo()
-        self.assertEqual(layer.text_rect.text, 'Hello')
+        self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assertEqual(layer.text_rect.text, '')
 
@@ -120,6 +124,7 @@ class TextToolTest(ToolTestCase):
         """Undoing and redoing a text edit updates the panel and outline to match the layer."""
         layer = self._drag_new_layer()
         self.panel._text_box.setPlainText('Hello')
+        self.panel._text_box.focus_lost.emit()
         text_rect = self.panel.text_rect
         text_rect.size = QSize(60, 30)
         self.panel.text_rect = text_rect
@@ -137,9 +142,9 @@ class TextToolTest(ToolTestCase):
         """The panel's width and height fields resize the layer, including a height equal to the width."""
         layer = self._drag_new_layer()
         width = layer.size.width()
-        self.panel._height_input.setValue(width)
+        self.panel.geometry_block.field(HEIGHT).set_value(width)
         self.assertEqual(layer.size, QSize(width, width))
-        self.panel._width_input.setValue(width + 20)
+        self.panel.geometry_block.field(WIDTH).set_value(width + 20)
         self.assertEqual(layer.size, QSize(width + 20, width))
         self.assert_panel_matches_layer(layer)
 
@@ -147,8 +152,8 @@ class TextToolTest(ToolTestCase):
         """The panel's X and Y fields move the layer and its outline, one undo step per field."""
         layer = self._drag_new_layer()
         UndoStack().clear()
-        self.panel._x_input.setValue(10)
-        self.panel._y_input.setValue(20)
+        self.panel.geometry_block.field(X).set_value(10)
+        self.panel.geometry_block.field(Y).set_value(20)
         self.assertEqual(layer.offset, QPointF(10, 20))
         self.assert_panel_matches_layer(layer)
         self.assertEqual(UndoStack().undo_count(), 2)
@@ -166,10 +171,8 @@ class TextToolTest(ToolTestCase):
         self.assertEqual(layer.size, DRAG_BOUNDS.size() - QSize(1, 1))
         self.assert_panel_matches_layer(layer)
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/11: undo merges a '
-                                           'drag by elapsed time, not by gesture')
     def test_drag_move_is_one_undo_step(self) -> None:
-        """One drag that moves the active layer adds one undo entry, however much time passes between its moves."""
+        """One drag that moves the active layer adds one undo entry."""
         self._drag_new_layer()
         UndoStack().clear()
         start = DRAG_START + QPoint(20, 20)
@@ -225,47 +228,40 @@ class TextToolTest(ToolTestCase):
             layers.append((label, layer))
         return layers
 
-    def test_position_matches_transform_tool(self) -> None:
-        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the transform tool's,
-           rounded to whole pixels."""
+    def test_position_matches_transform_tool_at_corner(self) -> None:
+        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the transform
+           tool's with its origin snapped to the layer's top-left corner, rounded to whole pixels."""
         for label, layer in self._transformed_layers():
             with self.subTest(label):
                 self.image_stack.active_layer = layer
                 self.activate_tool(self.tool)
                 text_tool_position = self.panel.offset
-                transform_panel = self._activate_transform_tool()._control_panel
-                self.assertEqual(text_tool_position,
-                                 QPointF(transform_panel.x_position, transform_panel.y_position).toPoint())
+                transform_tool = self._activate_transform_tool()
+                transform_tool._transform_outline.transformation_origin = QPointF(layer.bounds.topLeft())
+                panel = transform_tool._control_panel
+                self.assertEqual(text_tool_position, QPointF(panel.x_position, panel.y_position).toPoint())
 
-    def test_unrotated_position_matches_transform_tool(self) -> None:
-        """For a text layer that is only translated, the text tool's X and Y are exactly the transform tool's."""
-        self._drag_new_layer()
-        text_tool_position = self.panel.offset
-        transform_panel = self._activate_transform_tool()._control_panel
-        self.assertEqual(QPointF(text_tool_position), QPointF(transform_panel.x_position, transform_panel.y_position))
+    def test_position_stable_under_rotation(self) -> None:
+        """Rotating a text layer about its top-left corner leaves the text tool's X and Y unchanged."""
+        layer = self._drag_new_layer()
+        before = self.panel.offset
+        layer.set_transform(QTransform.fromTranslate(before.x(), before.y()).rotate(30))
+        self.activate_tool(self.tool)
+        self.assertEqual(self.panel.offset, before)
 
     def test_rotated_position_set_in_text_tool(self) -> None:
-        """Setting X and Y in the text tool on a rotated layer moves it without rotating it, and the transform tool
-           reads the same values back."""
+        """Setting X and Y in the text tool on a rotated layer moves its top-left corner there without rotating it,
+           and the transform tool reads the same values back at that corner."""
         layer = self._drag_new_layer()
         layer.rotate(90)
         rotation = (layer.transform.m11(), layer.transform.m12(), layer.transform.m21(), layer.transform.m22())
-        self.panel._x_input.setValue(30)
-        self.panel._y_input.setValue(40)
+        self.panel.geometry_block.field(X).set_value(30)
+        self.panel.geometry_block.field(Y).set_value(40)
         self.assertEqual(self.panel.offset, QPoint(30, 40))
-        self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
+        self.assertEqual(layer.transform.map(QPointF(layer.bounds.topLeft())), QPointF(30, 40))
         self.assertEqual((layer.transform.m11(), layer.transform.m12(), layer.transform.m21(),
                           layer.transform.m22()), rotation)
-        transform_panel = self._activate_transform_tool()._control_panel
-        self.assertEqual(QPointF(transform_panel.x_position, transform_panel.y_position), QPointF(30, 40))
-
-    def test_rotated_position_set_in_transform_tool(self) -> None:
-        """Setting X and Y in the transform tool on a rotated layer shows the same values in the text tool."""
-        layer = self._drag_new_layer()
-        layer.rotate(90)
         transform_tool = self._activate_transform_tool()
-        transform_tool._control_panel._x_pos_box.setValue(30.0)
-        transform_tool._control_panel._y_pos_box.setValue(40.0)
-        self.activate_tool(self.tool)
-        self.assertEqual(self.panel.offset, QPoint(30, 40))
-        self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
+        transform_tool._transform_outline.transformation_origin = QPointF(layer.bounds.topLeft())
+        panel = transform_tool._control_panel
+        self.assertEqual(QPointF(panel.x_position, panel.y_position), QPointF(30, 40))

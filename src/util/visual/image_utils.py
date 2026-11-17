@@ -1,4 +1,4 @@
-"""Adds general-purpose utility functions for manipulating image data"""
+"""General-purpose utility functions for manipulating image data."""
 import base64
 import io
 import logging
@@ -10,9 +10,9 @@ from typing import Optional, Any, TypeAlias, Callable
 import cv2
 # noinspection PyPackageRequirements
 import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from PySide6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
-from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
+from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor, QImageReader
 from PySide6.QtWidgets import QStyle, QWidget, QApplication
 from numpy import ndarray, dtype
 
@@ -25,6 +25,23 @@ NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.uint8]]
 
 temp_image_dir = ''
 
+# Qt image formats IntraPaint never opens or saves. KDE's kimageformats plugin, installed with many Linux system Qt
+# packages, decodes these by running them in Ghostscript, see pil_image_utils.EXCLUDED_PIL_FORMATS.
+EXCLUDED_QIMAGE_FORMATS = {'EPS', 'EPSF', 'EPSI'}
+
+
+def read_qimage(file_path: str) -> QImage:
+    """Loads an image file with Qt, raising UnidentifiedImageError if its contents are an excluded format.
+
+    Qt picks a plugin from a file's contents when its extension doesn't match, so the file name alone can't keep
+    EXCLUDED_QIMAGE_FORMATS out. Returns a null image if Qt can't read the file at all.
+    """
+    reader = QImageReader(file_path)
+    detected_format = str(reader.format().data(), encoding='utf-8').upper()
+    if detected_format in EXCLUDED_QIMAGE_FORMATS:
+        raise UnidentifiedImageError(f'Unsupported image format {detected_format} in {file_path}')
+    return reader.read()
+
 
 def create_transparent_image(size: QSize) -> QImage:
     """Returns a new image filled with transparency, set to the requested size."""
@@ -32,6 +49,19 @@ def create_transparent_image(size: QSize) -> QImage:
     if not size.isEmpty():
         image.fill(Qt.GlobalColor.transparent)
     return image
+
+
+def flatten_onto_color(image: QImage, color: QColor) -> QImage:
+    """Returns a copy of `image` composited over an opaque `color`, in ARGB32_Premultiplied with no transparency.
+
+    Opaque pixels are unchanged.
+    """
+    flattened = QImage(image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+    flattened.fill(QColor(color.red(), color.green(), color.blue()))
+    painter = QPainter(flattened)
+    painter.drawImage(0, 0, image)
+    painter.end()
+    return flattened
 
 
 def image_is_fully_transparent(image: QImage | QPixmap | NpAnyArray) -> bool:
@@ -268,22 +298,6 @@ def numpy_8bit_to_qimage(np_image: NpAnyArray) -> QImage:
     return QImage(np_image.data, width, height, QImage.Format.Format_ARGB32_Premultiplied)
 
 
-def mask_to_grayscale(mask_image: QImage) -> QImage:
-    """Converts an alpha-based mask image (e.g. a selection layer's content) into an opaque single-channel grayscale
-       image where pixel brightness matches the source alpha value: white where fully selected, black where not.
-
-       Some inpainting mask consumers (e.g. Forge's ControlNet extension) don't reliably interpret alpha channels,
-       instead flattening any RGBA image by compositing it over a white background before reading color values. Since
-       a colored, alpha-transparent mask image survives that badly (transparent areas and any color sharing the same
-       channel value as the mask color both read the same after compositing), sending a plain grayscale mask instead
-       avoids the ambiguity entirely."""
-    argb_image = mask_image.convertToFormat(QImage.Format.Format_ARGB32)
-    alpha = np.ascontiguousarray(image_data_as_numpy_8bit(argb_image)[..., 3])
-    grayscale_image = QImage(alpha.data, alpha.shape[1], alpha.shape[0], alpha.shape[1],
-                             QImage.Format.Format_Grayscale8)
-    return grayscale_image.copy()
-
-
 def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:
     """Gets a numpy array that points to a smaller region within a larger array."""
     assert not bounds.isEmpty() and bounds.isValid(), f'invalid bounds {bounds}, array shape={np_image.shape}'
@@ -359,11 +373,16 @@ def temp_image_path(image_name: Optional[str], image_or_draw_fn: Callable[[], QI
     return img_path
 
 
+def rich_text_image_tag(image_path: str) -> str:
+    """Returns a rich-text inline image of a file, centered vertically on the surrounding text."""
+    return f'<img src="{image_path}" style="vertical-align: middle"/>'
+
+
 def temp_rich_text_image(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
     """Create a string that can embed an image into rich text by writing the image to temporary storage.  If called
        multiple times with the same image_name, the same image will be reused."""
     img_path = temp_image_path(image_name, image_draw_fn)
-    return f'<img src="{img_path}"/>'
+    return rich_text_image_tag(img_path)
 
 
 def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Array) -> None:
@@ -395,17 +414,29 @@ def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Arra
 
 
 def np_composite_with_mask(source: NpUInt8Array, destination: NpUInt8Array, mask: NpUInt8Array) -> None:
-    """ Performs an image composition operation on two premultiplied ARGB images of equal size, writing
-    changes directly to the destination image, and using a mask of equal size to further restrict compositing based on
-    the mask alpha channel."""
-    alpha_mask = mask[:, :, 3] / 255.0
+    """Fades a premultiplied ARGB destination image toward a source image of equal size, in place, by a mask's alpha.
 
-    # Where the mask is 100% opaque, the source completely overrides the destination:
-    full_alpha = alpha_mask[:, :] == 1.0
-    destination[full_alpha, :] = source[full_alpha, :]
+    Each channel becomes floor((source * alpha + destination * (255 - alpha)) / 255), computed exactly in integers.
+    Where the mask is opaque, the destination takes the source's value, and where it is transparent, the destination
+    is unchanged. Two valid premultiplied pixels always blend into a valid one.
+    """
+    alpha = mask[:, :, 3:4].astype(np.uint16)
+    blended = source.astype(np.uint16)
+    blended *= alpha
+    np.subtract(255, alpha, out=alpha)
+    inverse_part = destination.astype(np.uint16)
+    inverse_part *= alpha
+    blended += inverse_part
+    destination[:] = div_255(blended)
 
-    # Where the mask has partial alpha, fade between source and destination based on mask alpha level:
-    partial_alpha = (alpha_mask[:, :] > 0) & (~full_alpha)
-    if np.any(partial_alpha):
-        destination[partial_alpha, :] = (source[partial_alpha, :] * alpha_mask[partial_alpha, None]
-                                         + destination[partial_alpha, :] * (1 - alpha_mask[partial_alpha, None]))
+
+def div_255(values: NpAnyArray) -> NpAnyArray:
+    """Divides a uint16 or wider array of values from 0 to 255 * 255 by 255, rounding down, in place, and returns it.
+
+    This is exact over that range, and faster than integer division.
+    """
+    shifted = values >> 8
+    values += shifted
+    values += 1
+    values >>= 8
+    return values

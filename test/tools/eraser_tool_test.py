@@ -57,3 +57,20 @@ class EraserToolTest(ToolTestCase):
         self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assert_images_equal(self.layer.image, initial_image)
+
+    def test_stroke_drawn_in_parts_is_one_undo_step(self) -> None:
+        """A stroke whose input is drawn to the layer in several parts mid-stroke, as the brush's buffer timer does
+           during a long stroke, is still one undo step that restores the layer."""
+        Cache().set(Cache.ERASER_TOOL_SIZE, 40)
+        initial_image = self.layer.image
+        UndoStack().clear()
+        self.mouse_press(QPoint(60, 100))
+        for i in range(1, 30):
+            self.mouse_move(QPoint(60 + i * 12, 100 + i * 9))
+            if i % 5 == 0:
+                self.eraser_tool.brush._draw_buffered_events()  # pylint: disable=protected-access
+        self.mouse_release(QPoint(60 + 30 * 12, 100 + 30 * 9))
+        self.assertNotEqual(self.layer.image, initial_image)
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        self.assert_images_equal(self.layer.image, initial_image)

@@ -1,8 +1,51 @@
-"""QLayout utility functions"""
+"""QLayout utility functions."""
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout, QHBoxLayout
+from PySide6.QtWidgets import QBoxLayout, QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout
+
+
+def layout_contents(layout: QLayout) -> list[QWidget | QLayout | None]:
+    """Returns what a layout holds, indexed by layout position: a widget, a nested layout, or None for a spacer.
+
+    Never call `QLayout.itemAt` or `QGridLayout.itemAtPosition` outside `clear_layout`-style `takeAt` loops. The
+    wrapper they return outlives its item when Qt deletes the item with its widget, and the stale wrapper corrupts the
+    heap. This finds contents with `QLayout.indexOf` instead. `test/layout_item_calls_test.py` fails on new calls.
+    """
+    contents: list[QWidget | QLayout | None] = [None] * layout.count()
+    parent = layout.parentWidget()
+    if parent is not None:
+        for child in parent.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly):
+            index = layout.indexOf(child)
+            if 0 <= index < len(contents):
+                contents[index] = child
+    for nested in layout.findChildren(QLayout, options=Qt.FindChildOption.FindDirectChildrenOnly):
+        index = layout.indexOf(nested)
+        if 0 <= index < len(contents):
+            contents[index] = nested
+    return contents
+
+
+def add_layout(parent: QBoxLayout | QGridLayout, child: QLayout, *args, **kwargs) -> None:
+    """Adds a child layout to a parent layout, forwarding the rest of the arguments to `addLayout`.
+
+    Add a child layout before adding anything to it, or build both before the parent has a widget. When the parent
+    layout has a parent widget, PySide's `addLayout` wraps every item already in the child and keeps those wrappers
+    alive with the parent layout, as `QLayout.itemAt` does (see `layout_contents`). A wrapper outlives its item once
+    the item's widget moves to another layout, is reparented or is deleted, and PySide later hands it back for a new
+    object at the same address or frees the item a second time. `QWidget.setLayout` wraps no items, so a layout built
+    without a widget can hold filled children. `test/layout_item_calls_test.py` fails on `addLayout`, `insertLayout`
+    and `addChildLayout` calls outside this module.
+
+    PySide 6.12.0 stops wrapping the child's items (PYSIDE-3469). `test/util/layout_test.py` pins the behavior of the
+    installed PySide, so it fails once this check is no longer needed.
+
+    Raises ValueError if `child` already holds items and `parent` has a parent widget.
+    """
+    if child.count() > 0 and parent.parentWidget() is not None:
+        raise ValueError(f'{type(child).__name__} already holds {child.count()} items. Add it to its parent before'
+                         ' filling it')
+    parent.addLayout(child, *args, **kwargs)
 
 
 def extract_layout_item(item: Optional[QLayoutItem]) -> QWidget | QLayout | QSpacerItem | None:
@@ -65,22 +108,3 @@ def synchronize_row_widths(rows: list[list[Optional[QWidget]]]) -> None:
             columns[i].append(widget)
     for column in columns:
         synchronize_widths(column)
-
-
-def wrap_widget_with_key_hints(widget: QWidget, left_hint: Optional[QWidget] = None,
-                               right_hint: Optional[QWidget] = None, parent: Optional[QWidget] = None,
-                               alignment=Qt.AlignmentFlag.AlignCenter) -> QWidget:
-    """Wraps a widget in a small container widget, with key hints on one or both sides."""
-    if left_hint is None and right_hint is None:
-        raise RuntimeError('At least one key hint label should be non-null')
-    container = QWidget(parent=parent)
-    layout = QHBoxLayout(container)
-    layout.setAlignment(alignment)
-    layout.setSpacing(1)
-    layout.setContentsMargins(1, 1, 1, 1)
-    if left_hint is not None:
-        layout.addWidget(left_hint)
-    layout.addWidget(widget)
-    if right_hint is not None:
-        layout.addWidget(right_hint)
-    return container

@@ -54,3 +54,12 @@ class NumpyImageUtilsTest(IntraPaintTestCase):
         average = total / count
         self.assertEqual(max_diff, 0, (f'color data distorted: max change={max_diff},'
                                        f' min nonzero={min_nonzero_diff}, average: {average}'))
+
+    def test_saturated_channels_clamp_to_255(self) -> None:
+        """libmypaint's full channel value is 1 << 15, which converts to 255 rather than wrapping to 0."""
+        np_image16 = np.array([[[32768, 32768, 32768, 32768], [0, 0, 0, 0], [16384, 100, 32767, 32768]]],
+                              dtype=np.uint16)
+        np_image8 = numpy_16bit_to_8bit(np_image16)
+        self.assertEqual(np_image8[0, 0].tolist(), [255, 255, 255, 255])
+        self.assertEqual(np_image8[0, 1].tolist(), [0, 0, 0, 0])
+        self.assertEqual(np_image8[0, 2].tolist(), [255, 0, 128, 255])

@@ -4,20 +4,23 @@ See sd_generator_test_case.py for how the snapshots work.
 """
 import json
 from typing import Any
+from unittest import mock
 from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, Qt
+from sd_backend_client import A1111Webservice, ParameterDef
+from sd_backend_client.api.a1111_webservice import ULTIMATE_UPSCALE_SCRIPT
+from sd_backend_client.api.webui.controlnet_webui_utils import get_all_preprocessors
 
-from src.api.a1111_webservice import A1111Webservice, ULTIMATE_UPSCALE_SCRIPT
-from src.api.controlnet.controlnet_unit import ControlKeyType
-from src.api.webui.controlnet_webui_utils import get_all_preprocessors
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs, save_value
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.undo_stack import UndoStack
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
-    UPSCALE_SIZE, solid_image, CONTEXT_PIN, GENERATION_SIZE
+    UPSCALE_SIZE, solid_image, CONTEXT_PIN, GENERATION_SIZE, GENERATION_AREA, SELECTION_BOUNDS
 
 Endpoints = A1111Webservice.Endpoints
 
@@ -36,37 +39,59 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         cache = Cache()
         cache.set(Cache.SAMPLING_METHOD, 'Euler a', add_missing_options=True)
         cache.set(Cache.MASKED_CONTENT, 'original')
+        cache.set(Cache.GENERATOR_SCALING_MODES, UPSCALER_NAMES)  # Set from the server's upscaler list on connecting.
+
+        # The library names each job with a random task id, which it sends as force_task_id:
+        task_id_patch = mock.patch.object(A1111Webservice, '_new_task_id',
+                                          staticmethod(lambda task_type: f'task({task_type}-TESTID1)'))
+        task_id_patch.start()
+        self.addCleanup(task_id_patch.stop)
 
         backend = self.backend
-        backend.route('GET', Endpoints.PROGRESS, {'progress': 0.0, 'eta_relative': 0.0, 'current_image': None})
+        backend.route('GET', Endpoints.PROGRESS, {
+            'progress': 0.0, 'eta_relative': 0.0, 'current_image': None, 'textinfo': None,
+            'state': {'skipped': False, 'interrupted': False, 'stopping_generation': False, 'job': '',
+                      'job_count': 0, 'job_timestamp': '0', 'job_no': 0, 'sampling_step': 0, 'sampling_steps': 0}})
         backend.route('POST', Endpoints.TXT2IMG, self._image_response)
         backend.route('POST', Endpoints.IMG2IMG, self._image_response)
         backend.route('POST', Endpoints.UPSCALE,
                       lambda _args: {'image': image_to_base64_png(solid_image(UPSCALE_SIZE, Qt.GlobalColor.green))})
         backend.route('GET', Endpoints.CONTROLNET_MODELS, {'model_list': [CANNY_MODEL, TILE_MODEL]})
         backend.route('GET', Endpoints.CONTROLNET_MODULES, {'module_list': ['none', 'canny', 'tile_resample']})
-        backend.route('GET', Endpoints.UPSCALERS, [{'name': name} for name in UPSCALER_NAMES])
+        backend.route('GET', Endpoints.UPSCALERS, [{'name': name, 'model_name': None, 'model_path': None, 'model_url': None, 'scale': 4.0}
+                                   for name in UPSCALER_NAMES])
 
         self.generator = SDWebUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
         self.capture_generated_images(self.generator)
-        # Progress polling runs in its own thread and sends nothing but GET requests:
-        self.generator._async_progress_check = lambda *_args: None  # type: ignore # pylint: disable=protected-access
 
     @staticmethod
     def _image_response(arguments: dict[str, Any]) -> dict[str, Any]:
         body = arguments['body']
         image_count = body['batch_size'] * body['n_iter']
         size = QSize(body['width'], body['height'])
+        seeds = [body['seed'] + i for i in range(image_count)]
+        info = {
+            'prompt': body['prompt'], 'all_prompts': [body['prompt']] * image_count,
+            'negative_prompt': body['negative_prompt'], 'all_negative_prompts': [body['negative_prompt']] * image_count,
+            'seed': body['seed'], 'all_seeds': seeds, 'subseed': 5678, 'all_subseeds': [5678] * image_count,
+            'subseed_strength': 0.0, 'width': body['width'], 'height': body['height'],
+            'sampler_name': body['sampler_name'], 'cfg_scale': body['cfg_scale'], 'batch_size': body['batch_size'],
+            'restore_faces': False, 'sd_model_name': 'dreamshaper_8', 'sd_model_hash': 'abcdef0123',
+            'sd_vae_name': None, 'sd_vae_hash': None, 'seed_resize_from_w': -1, 'seed_resize_from_h': -1,
+            'denoising_strength': None, 'extra_generation_params': {}, 'index_of_first_image': 0, 'infotexts': [],
+            'styles': [], 'job_timestamp': '20240101000000', 'clip_skip': 1,
+            'is_using_inpainting_conditioning': False, 'version': 'test'
+        }
         return {
             'images': [image_to_base64_png(solid_image(size, Qt.GlobalColor.blue)) for _ in range(image_count)],
-            'info': json.dumps({'seed': body['seed'], 'subseed': 5678})
+            'info': json.dumps(info)
         }
 
     @staticmethod
     def _set_canny_controlnet_unit() -> None:
         canny = get_all_preprocessors(['canny'])[0]
         Cache().set(Cache.CONTROLNET_ARGS_0_WEBUI,
-                    SdGeneratorTestCase.controlnet_unit(ControlKeyType.WEBUI, CANNY_MODEL, canny))
+                    SdGeneratorTestCase.controlnet_unit(CANNY_MODEL, canny))
 
     def _generate_and_check(self, snapshot_name: str) -> None:
         self.run_generate()
@@ -90,19 +115,42 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
         self._generate_and_check('img2img')
 
+
+    def test_img2img_flattens_transparent_source(self) -> None:
+        """Transparent source pixels are sent composited over the generation backdrop color."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
+        self.clear_source_corner()
+        self._generate_and_check('img2img_transparent_source')
+
     def test_inpaint(self) -> None:
         """Inpainting sends the init image and a grayscale mask, with the inpainting options."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._generate_and_check('inpaint')
 
+    def test_inpaint_soft_inpainting(self) -> None:
+        """Soft inpainting adds the WebUI script's arguments, with saved values replacing the script defaults."""
+        cache = Cache()
+        cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, True)
+        cache.set(Cache.SOFT_INPAINTING, True)
+        parameters = [ParameterDef(key='schedule_bias', display_name='Schedule bias', default_value=1.0, min_val=0.0,
+                                   max_val=8.0, step_val=0.1)]
+        save_parameter_defs(parameters)
+        save_value('schedule_bias', 2.5)
+        self.backend.route('GET', '/sdapi/v1/scripts', {'txt2img': [], 'img2img': ['soft inpainting']})
+        self.backend.route('GET', '/sdapi/v1/script-info', [])
+        self._generate_and_check('inpaint_soft_inpainting')
+        scripts = self.backend.posts()[0].arguments['body']['alwayson_scripts']
+        self.assertEqual(scripts['soft inpainting']['args'][:2], [True, 2.5])
+
     def test_inpaint_full_res(self) -> None:
-        """Inpainting at full resolution leaves cropping to the WebUI, so only the flag and padding change."""
+        """Limited context leaves cropping to the WebUI, so only the inpaint_full_res flag and padding change."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
 
     def test_inpaint_full_res_context_pin(self) -> None:
-        """With a pin stretching the crop, the image and mask are cropped locally and sent with full-res off."""
+        """With a pin stretching the crop, the image and mask are cropped locally and sent with inpaint_full_res off."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
@@ -113,14 +161,48 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         for image in self.generated_images.values():
             self.assertEqual(image.size(), GENERATION_SIZE)
 
+    def test_inpaint_full_res_tiling(self) -> None:
+        """Tiling sends inpainting requests with inpaint_full_res off, and leaves the context limit on."""
+        cache = Cache()
+        cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        cache.set(Cache.INPAINT_FULL_RES, True)
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        cache.set(Cache.WEBUI_TILING, True)
+        self._generate_and_check('inpaint_full_res_tiling')
+        body = self.backend.posts()[0].arguments['body']
+        self.assertTrue(body['tiling'])
+        self.assertFalse(body['inpaint_full_res'])
+        self.assertTrue(cache.get(Cache.INPAINT_FULL_RES))
+
     def test_inpaint_controlnet_reusing_generation_area(self) -> None:
         """A ControlNet unit reusing the generation area sends no image of its own when inpainting."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._set_canny_controlnet_unit()
         self._generate_and_check('inpaint_controlnet')
 
+    def test_paste_mask_is_the_selection_by_default(self) -> None:
+        """Without the blend-past-selection option the paste mask is the selection, so nothing outside it changes."""
+        mask = self.generator.get_paste_mask()
+        selection = SELECTION_BOUNDS.translated(-GENERATION_AREA.topLeft())
+        middle_y = selection.center().y()
+        self.assertEqual(mask.pixelColor(selection.left(), middle_y).alpha(), 255)
+        self.assertEqual(mask.pixelColor(selection.left() - 1, middle_y).alpha(), 0)
+
+    def test_paste_mask_covers_blur_reach(self) -> None:
+        """With the blend-past-selection option the paste mask is the selection grown by the blur band's reach at the
+        generation area's scale, hard-edged."""
+        AppConfig().set(AppConfig.INPAINT_BLEND_PAST_SELECTION, True)
+        # Blur 4 reaches 10 generation px, ceil(10 * 300 / 512) = 6 image px:
+        mask = self.generator.get_paste_mask()
+        selection = SELECTION_BOUNDS.translated(-GENERATION_AREA.topLeft())
+        middle_y = selection.center().y()
+        self.assertEqual(mask.pixelColor(selection.left() - 6, middle_y).alpha(), 255)
+        self.assertEqual(mask.pixelColor(selection.left() - 7, middle_y).alpha(), 0)
+        self.assertEqual(mask.pixelColor(selection.center()).alpha(), 255)
+        self.assertEqual({mask.pixelColor(x, middle_y).alpha() for x in range(mask.width())}, {0, 255})
+
     def test_connect_enables_inpaint_options(self) -> None:
-        """Connecting enables the inpainting crop and padding controls, and disconnecting disables them again."""
+        """Connecting enables the inpaint context controls, and disconnecting disables them again."""
         generator = self.generator
         assert isinstance(generator, SDWebUIGenerator)
         # Stub the backend queries, which have their own request snapshots, to test the shared connection logic:
@@ -129,7 +211,8 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
                                            'get_lora_model_info': [], 'cache_generator_specific_data': None,
                                            'get_controlnet_models': [], 'get_controlnet_preprocessors': [],
                                            'get_controlnet_types': {}, 'get_controlnet_unit_cache_keys': [],
-                                           'ultimate_upscale_script_available': False, 'clear_menus': None}
+                                           'ultimate_upscale_script_available': False, 'clear_menus': None,
+                                           '_load_soft_inpainting': None}
         for name, result in stubbed_results.items():
             setattr(generator, name, lambda *_args, value=result: value)
         generator._window = MagicMock()  # pylint: disable=protected-access
@@ -139,6 +222,16 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self.assertTrue(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
         generator.disconnect_or_disable()
         self.assertFalse(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
+
+    def test_disconnect_ends_tiling(self) -> None:
+        """Disconnecting the WebUI stops its tiling option from turning off the context limit."""
+        cache = Cache()
+        cache.set(Cache.INPAINT_FULL_RES, True)
+        cache.set(Cache.WEBUI_TILING, True)
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        self.assertFalse(cache.limited_context_in_effect())
+        self.generator.clear_cached_generator_data()
+        self.assertTrue(cache.limited_context_in_effect())
 
     def test_upscale_basic(self) -> None:
         """Upscaling without Stable Diffusion sends the whole image to the extras endpoint."""
@@ -179,7 +272,7 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         cache.set(Cache.SD_UPSCALING_STEP_COUNT, 15)
         tile = get_all_preprocessors(['tile_resample'])[0]
         cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS,
-                  self.controlnet_unit(ControlKeyType.WEBUI, TILE_MODEL, tile))
+                  self.controlnet_unit(TILE_MODEL, tile))
         self.generator.upscale_image(self.image_stack.qimage(), UPSCALE_SIZE, self.status, self.status)
         self.assert_requests_match_snapshot('upscale_stable_diffusion')
         self.assertEqual(self.status.emitted[-1].size(), UPSCALE_SIZE)

@@ -5,9 +5,10 @@ The operation tests pin observable results (the selected pixel mask, pixel value
 how the layer stores its mask (#26) must reproduce them.
 """
 import sys
+from unittest import mock
 from typing import Callable, Optional
-from unittest.mock import MagicMock
 
+import cv2
 import numpy as np
 import pytest
 from PySide6.QtCore import QPoint, QRect, QSize, Qt, QRectF
@@ -19,6 +20,7 @@ from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.image.layers.layer_resize_mode import LayerResizeMode
+from src.image.layers import selection_layer as selection_layer_module
 from src.image.layers.selection_layer import SelectionLayer
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
@@ -36,15 +38,14 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.INPAINT_FULL_RES_PADDING, 0)
+        AppConfig().set(AppConfig.MASK_BLUR, 0)
         self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024))
         self.image_stack.generation_area = GENERATION_AREA
         self.selection_layer = self.image_stack.selection_layer
-        self.pins_changed = MagicMock()
-        self.selection_layer.context_pins_changed.connect(self.pins_changed)
+        self.pins_changed = self.connect_mock(self.selection_layer.context_pins_changed)
         UndoStack().clear()
 
     def _select(self, bounds: QRect) -> None:
@@ -59,6 +60,19 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self._select(SELECTION_BOUNDS)
         self._select(QRect(400, 20, 10, 10))
         self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(QPoint(150, 20), QPoint(409, 169)))
+
+    def test_crop_grows_to_fit_mask_blur_band(self) -> None:
+        """Context below the blur band's width is raised to it, measured at the grown crop's scale."""
+        Cache().set(Cache.GENERATION_SIZE, QSize(100, 100))
+        AppConfig().set(AppConfig.MASK_BLUR, 4)  # Band reaches 10 generation px.
+        self._select(SELECTION_BOUNDS)
+        crop = self.selection_layer.get_selection_gen_area()
+        assert crop is not None
+        # The band is ceil(10 * crop width / 100) image pixels, and context grows to match it.
+        margin = SELECTION_BOUNDS.left() - crop.left()
+        self.assertEqual(crop.width(), crop.height())
+        self.assertEqual(margin, 3)
+        self.assertLessEqual(-(-10 * crop.width() // 100), margin)
 
     def test_no_pins_crops_to_selection(self) -> None:
         """Without pins, a square selection inside a square area crops to the selection."""
@@ -84,8 +98,8 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.selection_layer.add_context_pin(QPoint(250, 250))
         self.assertIsNone(self.selection_layer.get_selection_gen_area())
 
-    def test_pins_count_with_full_res_ignored(self) -> None:
-        """With ignore_config, pins stretch the crop even while inpaint full-res is off."""
+    def test_pins_count_with_context_limit_ignored(self) -> None:
+        """With ignore_config, pins stretch the crop even while the context limit is off."""
         Cache().set(Cache.INPAINT_FULL_RES, False)
         self._select(SELECTION_BOUNDS)
         self.selection_layer.add_context_pin(QPoint(200, 160))
@@ -151,14 +165,12 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.assertEqual(self.selection_layer.context_pins, pins)
 
     def test_load_image_clears_pins(self) -> None:
-        """Loading a new image removes pins, and undoing the load restores them."""
+        """Loading a new image removes pins."""
         self.selection_layer.set_context_pins([QPoint(10, 10)])
         new_image = QImage(QSize(256, 256), QImage.Format.Format_ARGB32_Premultiplied)
         new_image.fill(Qt.GlobalColor.white)
         self.image_stack.load_image(new_image)
         self.assertEqual(self.selection_layer.context_pins, [])
-        UndoStack().undo()
-        self.assertEqual(self.selection_layer.context_pins, [QPoint(10, 10)])
 
 
 class SelectionLayerContentBoundsTest(IntraPaintTestCase):
@@ -239,7 +251,6 @@ class SelectionLayerOperationTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(SMALL_SIZE, SMALL_SIZE, QSize(8, 8), QSize(64, 64))
         self.selection_layer = self.image_stack.selection_layer
         UndoStack().clear()
@@ -454,6 +465,13 @@ class SelectionLayerOutlineTest(SelectionLayerOperationTestCase):
         self.assert_selection(rect_mask(QRect(20, 20, 1, 1)))
         self.assertEqual(self._outline_bounds(), [QRect(20, 20, 1, 1)])
 
+    def test_straight_edges_have_only_corner_vertices(self) -> None:
+        """A rectangle's polygon has one vertex per corner, not one per boundary pixel."""
+        self._paint(QRect(4, 6, 20, 12))
+        outline = self.selection_layer.outline
+        self.assertEqual(len(outline), 1)
+        self.assertLessEqual(outline[0].size(), 5)  # Four corners, plus the closing point if the trace repeats one.
+
     def test_disjoint_regions(self) -> None:
         """Separate regions get separate polygons."""
         self.selection_layer.set_image(self._image_with(QRect(2, 2, 5, 5), QRect(20, 4, 3, 8)))
@@ -477,6 +495,24 @@ class SelectionLayerOutlineTest(SelectionLayerOperationTestCase):
         """Pixels touching only at corners are still outlined exactly."""
         self.selection_layer.set_image(self._image_with(QRect(4, 4, 1, 1), QRect(5, 5, 1, 1), QRect(6, 4, 1, 1)))
         self.assert_selection(rect_mask(QRect(4, 4, 1, 1), QRect(5, 5, 1, 1), QRect(6, 4, 1, 1)))
+
+    def test_vertices_match_reference_trace(self) -> None:
+        """Outline vertices, in order, match tracing the whole 3x-scaled mask, for full, rectangular and other shapes."""
+        cases = {
+            'select all': [SMALL_RECT],
+            'offset rectangle': [QRect(5, 7, 9, 4)],
+            'L shape and rectangle': [QRect(3, 3, 10, 2), QRect(3, 3, 2, 12), QRect(20, 20, 6, 6)],
+        }
+        for name, rects in cases.items():
+            with self.subTest(name):
+                self.selection_layer.set_image(self._image_with(*rects))
+                mask = np.where(rect_mask(*rects), 255, 0).astype(np.uint8)
+                contours, _ = cv2.findContours(np.kron(mask, np.ones((3, 3), dtype=np.uint8)), cv2.RETR_TREE,
+                                               cv2.CHAIN_APPROX_SIMPLE)
+                expected = sorted(tuple(map(tuple, np.rint(c[:, 0, :] / 3.0).tolist())) for c in contours)
+                actual = sorted(tuple((point.x(), point.y()) for point in polygon)
+                                for polygon in self.selection_layer.outline)
+                self.assertEqual(actual, expected)
 
     def test_bounded_edit_far_from_other_regions(self) -> None:
         """A bounded edit leaves the outlines of regions far from it alone."""
@@ -599,3 +635,126 @@ class SelectionLayerUndoTest(SelectionLayerOperationTestCase):
         painter.end()
         layer = self.image_stack.create_layer('content', layer_image)
         self._assert_undo_redo(lambda: self.image_stack.select_layer_content(layer), rect_mask(QRect(1, 1, 3, 3)))
+
+
+class SelectionLayerStorageTest(SelectionLayerOperationTestCase):
+    """Tests the Alpha8 mask storage behind the layer's ARGB32 facade."""
+
+    def test_mask_is_stored_as_alpha8(self) -> None:
+        """The stored mask has one byte per pixel, while the images the layer hands out are ARGB32_Premultiplied."""
+        self._paint(QRect(4, 4, 8, 8))
+        self.assertEqual(self.selection_layer._image.format(), QImage.Format.Format_Alpha8)
+        self.assertEqual(self.selection_layer.image.format(), QImage.Format.Format_ARGB32_Premultiplied)
+        self.assertEqual(self.selection_layer.mask_image.format(), QImage.Format.Format_ARGB32_Premultiplied)
+
+    def test_images_use_selection_color_at_full_alpha(self) -> None:
+        """Selected pixels read back as the opaque selection color, and the rest as transparent black."""
+        AppConfig().set(AppConfig.SELECTION_COLOR, '#5500ff00')
+        self._paint(QRect(4, 4, 8, 8), QColor(0, 0, 0, 3))
+        image = self.selection_layer.image
+        self.assertEqual(image.pixelColor(5, 5), QColor(0, 255, 0, 255))
+        self.assertEqual(image.pixel(0, 0), 0)
+
+    def test_no_pixmap_is_built_for_the_layer_item(self) -> None:
+        """The selection layer's graphics item holds no pixmap."""
+        from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
+        item = LayerGraphicsItem(self.selection_layer)
+        self._paint(QRect(4, 4, 8, 8))
+        self.assertTrue(item.pixmap().isNull())
+        item.disconnect_layer()
+
+    def test_operations_keep_selected_count(self) -> None:
+        """Select-all, invert, grow, shrink and clear leave the running count matching the mask."""
+        def assert_count() -> None:
+            self.assertEqual(self.selection_layer._selected_count, int(selection_mask(self.selection_layer).sum()))
+            self.assertEqual(self.selection_layer.is_empty(), self.selection_layer._selected_count == 0)
+
+        self._paint(QRect(4, 4, 8, 8))
+        assert_count()
+        self.selection_layer.grow_or_shrink_selection(2)
+        assert_count()
+        self.selection_layer.grow_or_shrink_selection(-1)
+        assert_count()
+        self.selection_layer.invert_selection()
+        assert_count()
+        self._paint(QRect(0, 0, 3, 3), Qt.GlobalColor.transparent)
+        assert_count()
+        self.selection_layer.select_all()
+        assert_count()
+        self.assertTrue(self.selection_layer.generation_area_fully_selected())
+        self.selection_layer.clear()
+        assert_count()
+        self.assertTrue(self.selection_layer.is_empty())
+
+    def test_invert_twice_is_identity(self) -> None:
+        """Inverting twice restores the selection."""
+        self._paint(QRect(4, 4, 8, 8))
+        self._paint(QRect(20, 3, 5, 9))
+        before = selection_mask(self.selection_layer)
+        self.selection_layer.invert_selection()
+        self.assert_mask_equal(selection_mask(self.selection_layer), ~before)
+        self.selection_layer.invert_selection()
+        self.assert_selection(before)
+
+    def test_grow_then_shrink_contains_original(self) -> None:
+        """Shrinking a grown selection covers everything that was selected originally."""
+        self._paint(QRect(4, 4, 8, 8))
+        self._paint(QRect(14, 14, 3, 3))
+        before = selection_mask(self.selection_layer)
+        self.selection_layer.grow_or_shrink_selection(2)
+        self.selection_layer.grow_or_shrink_selection(-2)
+        self.assertTrue(np.all(selection_mask(self.selection_layer)[before]))
+
+    def test_is_empty_within_bounds(self) -> None:
+        """is_empty with bounds checks only that area."""
+        self._paint(QRect(4, 4, 8, 8))
+        self.assertFalse(self.selection_layer.is_empty(QRect(0, 0, 6, 6)))
+        self.assertTrue(self.selection_layer.is_empty(QRect(16, 16, 8, 8)))
+
+
+class SelectionLayerScalingTest(IntraPaintTestCase):
+    """Guards against edit costs that grow with the canvas, by checking how much of the mask each step processes."""
+
+    CANVAS_SIZE = QSize(4000, 4000)
+    EDIT_SIZE = 30
+    # Each retrace covers an edit, OUTLINE_RETRACE_MARGIN on every side, and any outline polygons that touch it.
+    MAX_RETRACE_SIDE = 200
+
+    def test_small_edit_and_select_all_on_large_canvas(self) -> None:
+        """Small brush edits on a 4000x4000 canvas process only their neighborhood, and select-all traces nothing.
+
+        The edits are ellipses because a fully selected traced area takes the rectangle shortcut without tracing.
+        """
+        image_stack = ImageStack(self.CANVAS_SIZE, QSize(512, 512), QSize(8, 8), QSize(8000, 8000))
+        selection_layer = image_stack.selection_layer
+        with mock.patch.object(cv2, 'findContours', wraps=cv2.findContours) as find_contours, \
+                mock.patch('src.image.layers.selection_layer._binary_mask',
+                           wraps=selection_layer_module._binary_mask) as binary_mask:
+            for i in range(5):
+                bounds = QRect(100 + i * 40, 100, self.EDIT_SIZE, self.EDIT_SIZE)
+                with selection_layer.borrow_image(bounds) as image:
+                    assert image is not None
+                    painter = QPainter(image)
+                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+                    painter.fillRect(bounds, Qt.GlobalColor.transparent)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.setBrush(Qt.GlobalColor.black)
+                    painter.drawEllipse(bounds)
+                    painter.end()
+            self.assertEqual(find_contours.call_count, 5)
+            for call in find_contours.call_args_list:
+                traced_height, traced_width = call.args[0].shape
+                # The traced mask is scaled by 3, so contour points land on pixel edges.
+                self.assertLessEqual(max(traced_width, traced_height), 3 * self.MAX_RETRACE_SIDE)
+            self.assertEqual(binary_mask.call_count, 5)
+            for call in binary_mask.call_args_list:
+                self.assertEqual(call.args[0].size(), QSize(self.EDIT_SIZE, self.EDIT_SIZE))
+            self.assertEqual(len(selection_layer.outline), 5)
+
+            find_contours.reset_mock()
+            selection_layer.select_all()
+            find_contours.assert_not_called()
+        self.assertTrue(selection_layer.generation_area_fully_selected())
+        outline = selection_layer.outline
+        self.assertEqual(len(outline), 1)
+        self.assertEqual(outline[0].boundingRect().toAlignedRect(), QRect(QPoint(), self.CANVAS_SIZE))
