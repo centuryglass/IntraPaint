@@ -69,10 +69,10 @@ A brief comparison of the three WebUI options:
 - The "Describe" action on the [Image generation panel](./stable-diffusion.md#image-generation-panel) that automatically generates a prompt by using AI image analysis is exclusive to the WebUI.
 - The [Saved Prompt Style](./menu_options.md#view-saved-prompt-styles-ctrlalt1) window can only be accessed when using the WebUI generator.
 - The [LoRA option window](./menu_options.md#view-lora-models-ctrlalt2) is only capable of loading image previews when used with the WebUI generator.
-- The [ControlNet Panel](./stable-diffusion.md#controlnet-panel) provides extra controls for image resizing and VRAM management when used with the WebUI generator.
+- The [ControlNet Panel](./stable-diffusion.md#controlnet-panel) provides extra "Pixel perfect" and "Low VRAM" options when used with the WebUI generator.
 - The [Stable Diffusion settings tab](./stable-diffusion.md#stable-diffusion-settings) provides some WebUI-exclusive options that let you directly control how the generator caches and loads AI models.
-- When using the WebUI generator with a dedicated inpainting model, that model will automatically be configured for improved inpainting. When using the ComfyUI generator, you need to check an option in the [ComfyUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-comfyui-generator) to properly load inpainting models.
-- Options from the [WebUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-webui-generator) are exclusive to the WebUI image generator:
+- When using the WebUI generator with a dedicated inpainting model, that model will automatically be configured for improved inpainting. When using the ComfyUI generator, you need to check an option in the [Advanced section](./stable-diffusion.md#advanced-section-comfyui-generator) to properly load inpainting models.
+- Options from the [Advanced section](./stable-diffusion.md#advanced-section-webui-generator) are exclusive to the WebUI image generator:
   - Batch variation controls, which lets you set how similar different images within the same batch will be.
   - Seed resize controls, which help you regenerate similar images at different sizes.
   - The "Tiling" checkbox, which lets you generate images that can be seamlessly tiled.
@@ -95,10 +95,10 @@ flexible than any of the WebUI options, but the learning curve is also much stee
 ### IntraPaint features exclusive to the ComfyUI generator
 
 - Only the ComfyUI generator supports queued image generation. If you attempt to generate images with the ComfyUI generator active and some other program is using ComfyUI for image generation, you will be placed in a queue, and the loading screen will tell you your position in that queue.  When using the WebUI generator, image generation will immedately abort if you attempt it under the same circumstances.
-- Options from the [ComfyUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-comfyui-generator) are exclusive to the ComfyUI image generator:
+- Options from the [Advanced section](./stable-diffusion.md#advanced-section-comfyui-generator) are exclusive to the ComfyUI image generator:
   - The option to apply a specific config file when loading models, instead of selecting one automatically.
   - Tiled VAE encoding/decoding controls, which can decrease the amount of memory needed for generating very large images.
-  - A "Clear Memory" button, that makes the ComfyUI generator unload cached AI models from memory and otherwise free up memory resources.
+  - A "Clear GPU memory" action in the Image Generation panel's More menu, that makes the ComfyUI generator unload cached AI models from memory and otherwise free up memory resources.
 
 ---
 
