@@ -1,4 +1,6 @@
 """Tests that the exception hook shows one dialog at a time and still logs every exception."""
+import threading
+import traceback
 from unittest.mock import patch
 
 from src.util.qtexcepthook import QtExceptHook
@@ -65,3 +67,53 @@ class QtExceptHookTest(IntraPaintTestCase):
             hook._excepthook(*_exc_info())  # pylint: disable=protected-access
             hook._excepthook(*_exc_info())  # pylint: disable=protected-access
         self.assertEqual(exec_mock.call_count, 2)
+
+    def test_main_thread_exception_logged_with_traceback(self) -> None:
+        """An exception on the main thread is logged with its exc_info, so IntraPaint.log gets the traceback."""
+        hook = QtExceptHook()
+        exc_info = _exc_info()
+        with patch.object(hook._dialog, 'exec', return_value=0), patch('sys.__excepthook__'), \
+                self.assertLogs('src.util.qtexcepthook', 'ERROR') as logs:
+            hook._excepthook(*exc_info)  # pylint: disable=protected-access
+        self.assertEqual(1, len(logs.records))
+        self.assertEqual(exc_info, logs.records[0].exc_info)
+
+    def test_worker_thread_exception_logged_and_queued(self) -> None:
+        """An exception on a worker thread is logged there and shown through the main thread, not on the worker."""
+        hook = QtExceptHook()
+        queued: list = []
+        exc_info = _exc_info()
+
+        def _worker() -> None:
+            hook._excepthook(*exc_info)  # pylint: disable=protected-access
+
+        with patch.object(hook._dialog, 'exec', return_value=0) as exec_mock, patch('sys.__excepthook__'), \
+                patch('src.util.qtexcepthook.run_on_main_thread', queued.append), \
+                self.assertLogs('src.util.qtexcepthook', 'ERROR') as logs:
+            thread = threading.Thread(target=_worker)
+            thread.start()
+            thread.join()
+            exec_mock.assert_not_called()
+            self.assertEqual(1, len(queued))
+            queued[0]()
+            exec_mock.assert_called_once()
+        self.assertEqual(exc_info, logs.records[0].exc_info)
+
+    def test_report_has_no_locals_and_includes_extra_info(self) -> None:
+        """The report is a plain traceback without local variable values, followed by the environment details."""
+        hook = QtExceptHook(extra_info_cb=lambda: 'IntraPaint version: test')
+
+        def _raise() -> None:
+            secret = 'secret-local-value'  # pylint: disable=unused-variable
+            raise ValueError('boom')
+
+        try:
+            _raise()
+        except ValueError as err:
+            report = hook._report_text(type(err), err, err.__traceback__)  # pylint: disable=protected-access
+            traceback.clear_frames(err.__traceback__)
+            err.__traceback__ = None
+        self.assertNotIn('secret-local-value', report)
+        self.assertIn('ValueError: boom', report)
+        self.assertNotIn('\n\n', report.split('\n\nIntraPaint version')[0])
+        self.assertTrue(report.endswith('IntraPaint version: test'))

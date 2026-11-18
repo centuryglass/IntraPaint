@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
 # Source: http://blog.ssokolow.com/archives/2019/06/01/gui-error-handler-for-pyqt-5-x/
-# I removed a @pyqtSlot annotation from _cb_copy_to_clipboard, blocked activation outside the main thread, and
-# ported to PySide6, but it's otherwise unchanged.
-"""Shows uncaught exceptions in an error dialog, from Stephan Sokolow's Qt exception handler.
-
-Qt Exception Handler for Python 3.5+
-
-Additions copyright 2019, 2020 Stephan Sokolow
-
-Demonstration::
-
-    python3 qtexcepthook.py [--report-button]
+# Adapted from Stephan Sokolow's PyQt 5 exception handler. Local changes: ported to PySide6, blocked dialog
+# activation outside the main thread, logs every uncaught exception, shows worker-thread exceptions on the main
+# thread, and reports plain tracebacks plus environment details.
+"""Logs every uncaught exception and shows it in an error dialog.
 
 Usage::
 
-    import qtexcepthook
     app = QApplication(sys.argv)
     QtExceptHook().enable()
+
+Exceptions from any thread are logged with their traceback. The dialog only opens on the main thread, so an exception
+from a worker thread is queued there.
 
 Adapted from gtkexcepthook.py::
 
@@ -28,45 +23,28 @@ Adapted from gtkexcepthook.py::
     Message-ID: <1062087716.1196.5.camel@emperor.homelinux.net>
         "The license is whatever you want."
 
-Changes made to the Van Raemdonck version before porting off GTK+ 2.x:
-
-- Switched from auto-enable to ``gtkexcepthook.enable()`` to silence false
-  positive complaints from PyFlakes. (Borrowed naming convention from
-  :mod:`cgitb`)
-
-Changes made since the port to PyQt 5.x:
-
-- Heavily refactored for maintainability
-- Replaced most of the code with a call to
-  :meth:`traceback.TracebackException.format` after updating the minimum
-  supported Python version to 3.5.
-- Split out the email support into an easily-replaced callback
-- Integrated :meth:`QCoreApplication.applicationName` into the example e-mails.
-- Add a command-line parser to the demonstration code to make it easy to test
-  both with and without a reporting callback set.
+Additions copyright 2019, 2020 Stephan Sokolow
 """
 
 __author__ = 'Stephan Sokolow; Filip Van Raemdonck; Gustavo J A M Carneiro'
 __license__ = 'Public Domain'
 
-
-import getpass
-import socket
+import logging
 import sys
 import threading
 import traceback
-from gettext import gettext as _
-from smtplib import SMTP, SMTPException
+from types import TracebackType
 from typing import Callable, Optional
-# pylint: disable=unused-import,wrong-import-order
-from typing import Dict  # noqa
 
 # pylint: disable=no-name-in-module
 from PySide6.QtCore import (QEvent,
                             Slot)
 from PySide6.QtGui import QTextOption
 from PySide6.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
-from PySide6.QtWidgets import QPushButton  # noqa
+
+from src.util.main_thread import run_on_main_thread
+
+logger = logging.getLogger(__name__)
 
 #: The :meth:`QCoreApplication.translate` context for strings in this file
 TR_ID = 'excepthook'
@@ -90,7 +68,7 @@ class ResizableMessageBox(QMessageBox):  # pylint: disable=R0903
         16.04 LTS until the window is moved or resized.
     """
     def __init__(self, *args, **kwargs):
-        super(ResizableMessageBox, self).__init__(*args, *kwargs)
+        super().__init__(*args, **kwargs)
         self.setStyleSheet('QTextEdit { font-family: monospace; }')
 
     def event(self, event):
@@ -128,17 +106,19 @@ class QtExceptHook():
     :param recovery_cb: If provided, called before the :guilabel:`Quit` button quits. It should preserve the
         user's work for the next launch and return whether it did. The quit button's label says which.
     :param recovery_enabled_cb: Returns whether ``recovery_cb`` can preserve work, for the quit button's label.
+    :param extra_info_cb: If provided, returns environment details to append to every report.
     """
 
     def __init__(self, reporting_cb: Optional[Callable[[str], None]]=None, # type: ignore
                  recovery_cb: Optional[Callable[[], bool]] = None,
-                 recovery_enabled_cb: Optional[Callable[[], bool]] = None):
+                 recovery_enabled_cb: Optional[Callable[[], bool]] = None,
+                 extra_info_cb: Optional[Callable[[], str]] = None):
         """Initialize as much as possible on application startup.
 
         (Maximize the chance that a bug in the exception handling system will
         show up as early as possible.)
         """
-        self._extra_info = ''
+        self._extra_info_cb = extra_info_cb
         self._showing = False
         self._reporting_cb = reporting_cb
         self._recovery_cb = recovery_cb
@@ -190,29 +170,50 @@ class QtExceptHook():
         """Qt slot for the :guilabel:`Report bug...` button. """
         self._reporting_cb(self._dialog.detailedText())
 
-    def _excepthook(self, exc_type, exc_value, exc_traceback):
-        """Replacement system exception handler callback"""
-        if threading.current_thread() is not threading.main_thread():
-            return  # Qt UI actions outside the main thread cause segfaults, let threading code handle it.
+    def set_recovery(self, recovery_cb: Optional[Callable[[], bool]],
+                     recovery_enabled_cb: Optional[Callable[[], bool]] = None) -> None:
+        """Sets the Quit button's recovery callbacks, for hooks enabled before the recovery source exists."""
+        self._recovery_cb = recovery_cb
+        self._recovery_enabled_cb = recovery_enabled_cb
 
-        # Always reach the console: Qt prints only "Error calling Python override of ..." for exceptions raised in
-        # virtual overrides such as QStyle.styleHint, and the dialog is the only other place the traceback appears.
+    def _excepthook(self, exc_type, exc_value, exc_traceback):
+        """Replacement system exception handler callback. Runs on whichever thread raised the exception."""
+        # Always reach the log and the console: Qt prints only "Error calling Python override of ..." for exceptions
+        # raised in virtual overrides such as QStyle.styleHint.
+        logger.error('Uncaught exception', exc_info=(exc_type, exc_value, exc_traceback))
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
+        # Qt UI actions outside the main thread cause segfaults, so the dialog is queued there.
+        if threading.current_thread() is not threading.main_thread():
+            run_on_main_thread(lambda: self._show_dialog(exc_type, exc_value, exc_traceback))
+            return
+        self._show_dialog(exc_type, exc_value, exc_traceback)
+
+    def _report_text(self, exc_type: type[BaseException], exc_value: BaseException,
+                     exc_traceback: Optional[TracebackType]) -> str:
+        """Returns the bug report text: a plain traceback (no local variables) and the environment details."""
+        traceback_text = ''.join(traceback.TracebackException(exc_type, exc_value, exc_traceback).format())
+        extra_info = ''
+        if self._extra_info_cb is not None:
+            try:
+                extra_info = self._extra_info_cb()
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                extra_info = f'Failed to read environment details: {err}'
+        if extra_info:
+            traceback_text += f'\n{extra_info}'
+        return traceback_text
+
+    def _show_dialog(self, exc_type, exc_value, exc_traceback) -> None:
+        """Shows the dialog for an exception that was already logged. Main thread only."""
         # Showing the dialog runs style and paint callbacks. If one of them raises, it re-enters this hook while
         # the dialog is open, and a nested exec() call fails with "Recursive call detected", so the first dialog's
         # details are kept and the repeat is only logged.
         if self._showing:
             return
 
-        # Construct the text of the bug report
-        t_exception = traceback.TracebackException(
-            exc_type, exc_value, exc_traceback, capture_locals=True)
-        traceback_text = '\n'.join(t_exception.format())
-        if self._extra_info:
-            traceback_text += f'\n{self._extra_info}'
+        traceback_text = self._report_text(exc_type, exc_value, exc_traceback)
 
-        # Store it in the dialog where *everything* will retrieve it from
+        # Store it in the dialog where everything retrieves it from
         self._dialog.setDetailedText(traceback_text)
 
         if self._recovery_cb is not None:
@@ -237,49 +238,3 @@ class QtExceptHook():
     def enable(self):
         """Replace the default exception handler with this one"""
         sys.excepthook = self._excepthook
-
-    def set_extra_info(self, text: str):
-        """Set some arbitrary text to be appended to the traceback"""
-        self._extra_info = text or ''
-
-
-def make_email_sender(from_address: Optional[str]=None, smtp_host: str='localhost'
-                      ) -> Callable[[str], None]:
-    """A factory function for building working examples of traceback-reporting
-    handlers for :class:`QtExceptHook`'s ``reporting_cb`` constructor argument.
-
-    :param from_address: A "From" address that the selected mail server will
-        allow the message to be sent from. Falls back to the current username
-        for use with ``localhost`` as the default ``smtp_host`` value.
-    :param smtp_host: The fully-qualified domain name of the SMTP server to
-        use for sending the message. A port other than 25 may be specified by
-        using the form ``host:port``.
-
-    .. note:: Must be called after creating a ``QApplication``.
-    """
-    from_addr = from_address or getpass.getuser()
-    app_name = QApplication.instance().applicationName()
-
-    def send_email(traceback_text: str):
-        """Send the traceback to the developer as an e-mail"""
-        message = ('From: buggy_application\n'
-                   'To: bad_programmer\n'
-                   'Subject: Exception feedback for "%s"\n\n'
-                   '%s' % (app_name, traceback_text))
-
-        try:
-            smtp = SMTP()
-            smtp.connect(smtp_host)
-            smtp.sendmail(from_addr, (from_addr,), message)
-            smtp.quit()
-        except (socket.error, SMTPException):
-            QMessageBox(QMessageBox.Icon.Information,
-                _tr('SMTP Failure'),
-                _tr('An error was encountered while attempting to send '
-                    'your bug report. Please submit it manually.')).exec()
-        else:
-            QMessageBox(QMessageBox.Icon.Information,
-                _tr('Bug Reported'),
-                _tr('Your bug report was successfully sent.')).exec()
-    return send_email
-# vim: set sw=4 sts=4 expandtab :
