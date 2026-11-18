@@ -1,12 +1,13 @@
 """Control panel widget for the clone stamp tool."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import QPoint, Signal
 from PySide6.QtWidgets import QApplication, QGridLayout, QWidget
 
 from src.config.cache import Cache
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
+from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.clone_stamp_preview import (CloneStampStrokePreview, SOURCE_MODE_DYNAMIC_OFFSET,
                                                                   SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_STATIC)
 from src.ui.panel.tool_control_panels.stroke_block import (FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeToolPanel,
@@ -69,6 +70,7 @@ class CloneStampToolPanel(StrokeToolPanel):
         fields_layout.addWidget(self._x_field, 0, 0)
         fields_layout.addWidget(self._y_field, 1, 0)
         self._fields_layout = fields_layout
+        self._y_beside_x = False
         self._section = tool_section(SOURCE_SECTION_TITLE, self._source_mode_control, fields)
         self._column_width = max(FIELD_COLUMN_MAX_WIDTH, self._section.minimumSizeHint().width())
         self._section.setMaximumWidth(self._column_width)
@@ -101,11 +103,14 @@ class CloneStampToolPanel(StrokeToolPanel):
         self._x_field.valueChanged.connect(_update_x)
         self._y_field.valueChanged.connect(_update_y)
 
-    def set_orientation(self, orientation: Qt.Orientation) -> None:
-        """Passes the dock's orientation to the block, and puts X and Y side by side in a strip."""
-        super().set_orientation(orientation)
+    def _arrange_tool_sections(self, orientation: Orientation) -> None:
+        """Puts X and Y side by side in a strip, and stacks them in a side panel."""
+        strip = orientation == Orientation.STRIP
+        if self._y_beside_x == strip:
+            return
+        self._y_beside_x = strip
         self._fields_layout.removeWidget(self._y_field)
-        if orientation == Qt.Orientation.Horizontal:
+        if strip:
             self._fields_layout.addWidget(self._y_field, 0, 1)
         else:
             self._fields_layout.addWidget(self._y_field, 1, 0)

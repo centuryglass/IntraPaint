@@ -7,6 +7,8 @@ their items, and arrange their widgets in its `apply` callback.
 A subclass whose strip stacks sections in columns (`src.ui.layout.column_packing`) uses `_packer`: it passes its
 sections to `_packer.watch` once, calls `_packer.pack` when it arranges a strip and `_packer.release` when it arranges a
 side panel. The column budget is the planned height, and `fit_base_size` measures with every section in its own column.
+A subclass whose sections are packed by a child widget passes that child's packer to `__init__`, and gives it the
+budget.
 """
 from typing import Collection, Optional, Sequence
 
@@ -24,7 +26,7 @@ class FitToolPanel(QWidget):
     """A tool control panel planned by fit. Optional controls a plan leaves out go in `overflow_content`, which the
     Tools panel shows in its More popover."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, packer: Optional[SectionPacker] = None) -> None:
         super().__init__(parent)
         self._space: Optional[QSize] = None
         self._planning = False
@@ -33,7 +35,7 @@ class FitToolPanel(QWidget):
         self._overflow = QWidget()
         self._overflow_layout = QVBoxLayout(self._overflow)
         self._overflow_layout.setContentsMargins(0, 0, 0, 0)
-        self._packer = SectionPacker(self._column_budget, self._refit)
+        self._packer = packer if packer is not None else SectionPacker(self._column_budget, self._refit)
 
     def fit_base_size(self, orientation: Orientation) -> QSize:
         """Returns the minimum size with required items in their smallest forms, optional items left out, and every
@@ -98,28 +100,20 @@ class FitToolPanel(QWidget):
                 self._take_items(layout)
             for section in sections:
                 self._cap_width(section)
-
-            def _add_column(column: QWidget) -> None:
-                members = self._packer.plan[layout.count()]
-                column.setMaximumWidth(max(section.maximumWidth() for section in members))
-                layout.addWidget(column)
-
-            if self._packer.pack(sections, max(layout.spacing(), 0), _add_column, lambda: self._take_items(layout)):
+            spacing = max(layout.spacing(), 0)
+            if self._packer.pack(sections, spacing, layout.addWidget, lambda: self._take_items(layout)):
                 layout.addStretch(1)
             return
         layout.setDirection(QBoxLayout.Direction.TopToBottom)
         if not self._packer.packing:
             return
-        released = self._packer.release()
+        self._packer.release()
         self._take_items(layout)
         for section in sections:
             PackedColumns.detach(section)
             section.setMaximumWidth(QWIDGETSIZE_MAX)
             layout.addWidget(section)
         layout.addStretch(1)
-        # Leaving a packed column hid the sections that were shown:
-        for section in released:
-            section.show()
 
     @staticmethod
     def _take_items(layout: QBoxLayout) -> None:
@@ -139,13 +133,12 @@ class FitToolPanel(QWidget):
         after the last. Each column spans `row_span` rows and is as wide as its widest section allows. A column holding
         a section in `alone` takes the rows' height, and the others sit at the top.
 
-        The caller took `_packer.columns` out of the grid first, and calls `_packer.invalidate` when it did."""
+        The caller took the columns out of the grid first, with `_packer.clear_grid`."""
         added = first_column
 
         def _add_column(column: QWidget) -> None:
             nonlocal added
             members = self._packer.plan[added - first_column]
-            column.setMaximumWidth(max(section.maximumWidth() for section in members))
             if any(section in alone for section in members):
                 grid.addWidget(column, 0, added, row_span, 1)
             else:
@@ -168,16 +161,6 @@ class FitToolPanel(QWidget):
         layout = QGridLayout(body)
         layout.setContentsMargins(0, 0, 0, 0)
         return layout
-
-    @staticmethod
-    def _clear(layout: QGridLayout, widgets: tuple[QWidget, ...]) -> None:
-        """Takes widgets out of a grid and clears its stretch factors, so an arrangement leaves no trace of the last."""
-        for widget in widgets:
-            layout.removeWidget(widget)
-        for index in range(layout.rowCount()):
-            layout.setRowStretch(index, 0)
-        for index in range(layout.columnCount()):
-            layout.setColumnStretch(index, 0)
 
     @staticmethod
     def _cap_width(widget: QWidget) -> None:

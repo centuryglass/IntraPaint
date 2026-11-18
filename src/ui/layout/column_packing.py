@@ -6,12 +6,13 @@ sections, plans and fills the columns within the panel's budget, and plans again
 owner places the column widgets in its own layout.
 """
 from contextlib import contextmanager
-from typing import Callable, Collection, Iterator, Sequence
+from typing import Callable, Collection, Iterable, Iterator, Optional, Sequence
 
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 
 from src.ui.layout.panel_fit import fresh_minimum_size, held_weakly
 from src.ui.widget.panel_section import PanelSection
+from src.util.layout import clear_grid
 
 
 def pack_columns(heights: Sequence[int], budget: int, spacing: int, alone: Collection[int] = ()) -> list[list[int]]:
@@ -64,8 +65,9 @@ class PackedColumns:
 
     def fill(self, plan: list[tuple[QWidget, ...]], spacing: int, add_column: Callable[[QWidget], None],
              stretching: Collection[QWidget] = ()) -> None:
-        """Moves each plan entry's sections into a column, and adds each column in use to the owner's layout in order
-        with `add_column`. The columns are shown after they are added, since adding a widget to a layout reparents it.
+        """Moves each plan entry's sections into a column, caps the column at its widest section's maximum width, and
+        adds each column in use to the owner's layout in order with `add_column`. The columns are shown after they are
+        added, since adding a widget to a layout reparents it.
 
         The owner has removed `columns` from its layout. Sections are shown after the move, since reparenting hides a
         widget, so only sections that are shown belong in a plan. A section in `stretching` takes the column's spare
@@ -88,16 +90,22 @@ class PackedColumns:
             for widget in sections:
                 column_layout.insertWidget(column_layout.count() - 1, widget, 1 if widget in stretching else 0)
                 widget.show()
+            column.setMaximumWidth(max(widget.maximumWidth() for widget in sections))
             add_column(column)
             column.show()
         for column in self._columns[len(plan):]:
             column.hide()
 
     def release(self, sections: Sequence[QWidget]) -> None:
-        """Takes sections out of their columns and hides the columns, for an owner that stops packing. The owner puts
-        the sections back in its own layout and shows them."""
+        """Moves sections out of their columns to the columns' parent and shows them, then hides the columns, for an
+        owner that stops packing. The owner puts the sections back in its own layout, which leaves them shown since
+        their parent doesn't change."""
         for widget in sections:
             self.detach(widget)
+            column = widget.parentWidget()
+            if column is not None:
+                widget.setParent(column.parentWidget())
+                widget.show()
         for column in self._columns:
             column.hide()
         self._plan = []
@@ -114,7 +122,7 @@ class SectionPacker:
     """Packs a strip's sections into columns, for a panel that opts in to column packing.
 
     - The owner calls `pack` each time it arranges a strip, and `release` when it leaves one. Between the two the packer
-      is `packing`.
+      is `packing`. An owner arranging a grid takes the columns out with `clear_grid` first.
     - `pack` measures the shown sections with `fresh_minimum_size`, splits them into columns that fit `budget()` with
       `pack_columns`, and moves them into the columns. Hidden sections take no column.
     - `budget()` returns the height a column has, or zero before the owner's first plan, which gives every section its
@@ -176,6 +184,12 @@ class SectionPacker:
         layout."""
         self._placed = False
 
+    def clear_grid(self, grid: QGridLayout, widgets: Iterable[Optional[QWidget]] = ()) -> None:
+        """Takes the columns and `widgets` out of the owner's grid, clears its stretch factors, and makes the next
+        `pack` fill the columns."""
+        clear_grid(grid, (*widgets, *self.columns))
+        self.invalidate()
+
     def pack(self, sections: Sequence[QWidget], spacing: int, add_column: Callable[[QWidget], None],
              clear: Callable[[], None] = lambda: None, alone: Collection[QWidget] = ()) -> bool:
         """Packs the shown sections, in order, into columns with `spacing` between sections, and returns whether the
@@ -199,9 +213,9 @@ class SectionPacker:
         return True
 
     def release(self) -> list[QWidget]:
-        """Leaves packing. Takes the sections still in a column out of it and hides the columns, and returns those
-        sections in order. The owner removes `columns` from its layout, puts the sections back in it and shows them,
-        since reparenting hides a widget. A section the owner moved elsewhere since the last `pack` stays there."""
+        """Leaves packing. Moves the sections still in a column to the owner and shows them, hides the columns, and
+        returns those sections in order. The owner removes `columns` from its layout and puts the sections back in it.
+        A section the owner moved elsewhere since the last `pack` stays there."""
         released = [section for column in self._columns.plan for section in column if self.holds(section)]
         self._columns.release(released)
         self._packing = False

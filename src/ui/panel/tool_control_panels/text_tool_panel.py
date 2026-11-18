@@ -49,7 +49,7 @@ from src.ui.panel.tool_control_panels.text_preview import TextPreview, text_over
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
-from src.util.layout import add_layout
+from src.util.layout import add_layout, clear_grid
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.image_utils import get_color_icon
@@ -767,7 +767,7 @@ class TextToolPanel(FitToolPanel):
     def _arrange_font(self, combo: bool) -> None:
         """Puts the filter over the font list, or the font combo, then Size with its unit."""
         layout = self._font_layout
-        self._clear(layout, (self._font_filter, self._font_list, self._font_combo, self._size_field,
+        clear_grid(layout, (self._font_filter, self._font_list, self._font_combo, self._size_field,
                              self._size_unit))
         if combo:
             layout.addWidget(self._font_combo, 0, 0, 1, 2)
@@ -797,7 +797,7 @@ class TextToolPanel(FitToolPanel):
                    self._text_color_note, self._background_color_label, self._background_color_button,
                    self._use_background_button, self._fill_checkbox, self._box_fit_label, self._box_fit_control,
                    self._overflow_badge)
-        self._clear(layout, widgets)
+        clear_grid(layout, widgets)
         for row_layout in self._row_layouts:
             while row_layout.count() > 0:
                 row_layout.takeAt(0)
@@ -851,9 +851,9 @@ class TextToolPanel(FitToolPanel):
     def _arrange_sections(self, strip: bool, two_columns: bool, preview: bool, advanced: bool) -> None:
         """Places the text box and sections in strip columns, two side columns, or one, with spare room after them."""
         grid = self._grid
-        released = [] if strip else self._packer.release()
-        self._clear(grid, (self._text_box, *self._sections, *self._packer.columns))
-        self._packer.invalidate()
+        if not strip:
+            self._packer.release()
+        self._packer.clear_grid(grid, (self._text_box, *self._sections))
         for widget in (self._text_box, *self._sections):
             self._cap_width(widget)
         if strip:
@@ -888,9 +888,6 @@ class TextToolPanel(FitToolPanel):
                 grid.addWidget(widget, row, 0, Qt.AlignmentFlag.AlignTop)
             grid.setRowStretch(len(widgets), 1)
             used_columns = 1
-        # Leaving a packed column hid the sections that were shown:
-        for section in released:
-            section.show()
         self._stretch_grid_columns(grid, used_columns, strip)
         frame = self._text_box.frameWidth() * 2 + int(self._text_box.document().documentMargin() * 2)
         self._text_box.setMinimumHeight(max(self._text_box.fontMetrics().lineSpacing() * TEXT_BOX_MIN_LINES + frame,

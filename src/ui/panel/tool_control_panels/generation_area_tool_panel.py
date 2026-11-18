@@ -44,6 +44,7 @@ from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, 
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
+from src.util.layout import clear_grid
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, recent_frames, \
     parse_size, size_to_str, previous_frame
 
@@ -507,7 +508,7 @@ class GenerationAreaToolPanel(FitToolPanel):
             label.setMinimumWidth(label_width)
 
         box = self._recent_box_layout
-        self._clear(box, (self._recent_label, self._recent_row, self._custom_label, self._custom_input,
+        clear_grid(box, (self._recent_label, self._recent_row, self._custom_label, self._custom_input,
                           self._custom_hint))
         rows = ((self._recent_label, self._recent_row), (self._custom_label, self._custom_input))
         row = 0
@@ -524,7 +525,7 @@ class GenerationAreaToolPanel(FitToolPanel):
         box.setColumnStretch(1, 1)
 
         layout = self._presets_layout
-        self._clear(layout, (self._fit_label, self._fit_row, self._recent_box))
+        clear_grid(layout, (self._fit_label, self._fit_row, self._recent_box))
         if label_column:
             layout.addWidget(self._fit_label, 0, 0)
             layout.addWidget(self._fit_row, 0, 1)
@@ -543,7 +544,7 @@ class GenerationAreaToolPanel(FitToolPanel):
     @staticmethod
     def _arrange_buttons(layout: QGridLayout, buttons: tuple[QPushButton, ...], one_row: bool) -> None:
         """Puts buttons in one row, or in a grid of `GRID_COLUMNS`, with equal columns."""
-        FitToolPanel._clear(layout, buttons)
+        clear_grid(layout, buttons)
         columns = len(buttons) if one_row else GRID_COLUMNS
         for index, button in enumerate(buttons):
             layout.addWidget(button, index // columns, index % columns)
@@ -554,9 +555,9 @@ class GenerationAreaToolPanel(FitToolPanel):
         """Places the sections in strip columns or one side column, with spare room after them. The Sent to generator
         section goes to the overflow when the plan leaves it out while it is shown."""
         grid = self._grid
-        released = [] if strip else self._packer.release()
-        self._clear(grid, (*self._sections, *self._packer.columns))
-        self._packer.invalidate()
+        if not strip:
+            self._packer.release()
+        self._packer.clear_grid(grid, self._sections)
         for section in self._sections:
             self._cap_width(section)
         generator_in_panel = generator_placed or not self._resolution_shown
@@ -578,8 +579,5 @@ class GenerationAreaToolPanel(FitToolPanel):
                 grid.addWidget(section, index, 0, Qt.AlignmentFlag.AlignTop)
             grid.setRowStretch(len(shown), 1)
             used_columns = 1
-            # Leaving a packed column hid the sections that were shown:
-            for section in released:
-                section.show()
         self._stretch_grid_columns(grid, used_columns, strip)
         self._generator_section.setVisible(self._resolution_shown)

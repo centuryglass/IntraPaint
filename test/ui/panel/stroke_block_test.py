@@ -263,19 +263,17 @@ class StrokeBlockTest(IntraPaintTestCase):
             self.panel.set_fit_space(STRIP, QSize(1401, 400))
             self.assertTrue(self.block.arrangement.checks_stacked)
 
-    def test_orientation_reaches_subclass_sections(self) -> None:
-        """Planning for a strip calls set_orientation, so subclasses arrange their own sections."""
-        orientations = []
-        original = self.panel.set_orientation
-        self.panel.set_orientation = lambda o: (orientations.append(o), original(o))[1]  # type: ignore[method-assign]
-        try:
-            self.panel.set_fit_space(STRIP, QSize(1400, 160))
-            self.panel.set_fit_space(STRIP, QSize(1300, 160))
-        finally:
-            # The override holds the panel through `original`:
-            del self.panel.set_orientation
-        self.assertEqual(len(orientations), 1, orientations)
-        self.assertEqual(self.block.arrangement.orientation, STRIP)
+    def test_tool_sections_arrange_for_the_planned_orientation(self) -> None:
+        """Planning passes the planner's orientation to `_arrange_tool_sections`: the Clone stamp panel puts Source X
+        and Y side by side in a strip, and stacks them in a side panel."""
+        # pylint: disable=protected-access
+        panel = CloneStampToolPanel()
+        fields = panel._fields_layout
+        panel.set_fit_space(STRIP, QSize(1400, 160))
+        self.assertEqual(panel.stroke_block.arrangement.orientation, STRIP)
+        self.assertEqual(fields.getItemPosition(fields.indexOf(panel._y_field))[:2], (0, 1))
+        panel.set_fit_space(SIDE, QSize(340, 900))
+        self.assertEqual(fields.getItemPosition(fields.indexOf(panel._y_field))[:2], (1, 0))
 
     def test_tool_sections_join_the_arrangement(self) -> None:
         """A tool section goes below the block's sections in a side panel and in the next column in a strip, an

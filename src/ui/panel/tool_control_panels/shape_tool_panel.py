@@ -52,6 +52,7 @@ from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.panel.tool_control_panels.shape_preview import ShapePreview
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
+from src.util.layout import clear_grid
 from src.util.visual.shape_mode import ShapeMode
 from src.ui.input_fields.field_factory import create_control_widget
 
@@ -495,7 +496,7 @@ class ShapeToolPanel(FitToolPanel):
         """Puts the shape type over the Vertices and Inner radius row, with Antialiasing beside the shape type in a
         paired strip and under the fields in a roomy one. A side panel puts Antialiasing below every section."""
         layout = self._shape_layout
-        self._clear(layout, (self._shape_control, self._vertex_field, self._inner_radius_field,
+        clear_grid(layout, (self._shape_control, self._vertex_field, self._inner_radius_field,
                              self._antialias_checkbox))
         if paired:
             layout.addWidget(self._shape_control, 0, 0)
@@ -518,7 +519,7 @@ class ShapeToolPanel(FitToolPanel):
         widgets = (self._width_field, self._line_color_label, self._line_color_source, self._line_style_label,
                    self._pen_style_dropdown, self._dash_label, self._dash_textbox, self._dash_hint, self._join_label,
                    self._join_control)
-        self._clear(layout, widgets)
+        clear_grid(layout, widgets)
         if join_shown:
             self._overflow_layout.removeWidget(self._join_label)
             self._overflow_layout.removeWidget(self._join_control)
@@ -563,7 +564,7 @@ class ShapeToolPanel(FitToolPanel):
     def _arrange_fill(self) -> None:
         """Puts the fill color source and the fill pattern on separate labeled lines."""
         layout = self._fill_layout
-        self._clear(layout, (self._fill_color_label, self._fill_color_source, self._fill_style_label,
+        clear_grid(layout, (self._fill_color_label, self._fill_color_source, self._fill_style_label,
                              self._fill_style_dropdown))
         layout.addWidget(self._fill_color_label, 0, 0)
         layout.addWidget(self._fill_color_source, 0, 1)
@@ -575,9 +576,9 @@ class ShapeToolPanel(FitToolPanel):
         """Places the sections in strip columns, side by side under Shape, or stacked, with the preview after them or
         below them, and spare room last."""
         grid = self._grid
-        released = [] if strip else self._packer.release()
-        self._clear(grid, (*self._sections, self._antialias_checkbox, self._preview, *self._packer.columns))
-        self._packer.invalidate()
+        if not strip:
+            self._packer.release()
+        self._packer.clear_grid(grid, (*self._sections, self._antialias_checkbox, self._preview))
         for section in self._sections:
             self._cap_width(section)
         if strip:
@@ -599,9 +600,6 @@ class ShapeToolPanel(FitToolPanel):
                 grid.addWidget(self._preview, 0, columns, used_rows, 1)
                 columns += 1
             grid.setRowStretch(used_rows, SPARE_COLUMN_STRETCH)
-            # Leaving a packed column hid the sections that were shown:
-            for section in released:
-                section.show()
         for column in range(columns):
             grid.setColumnStretch(column, CONTENT_COLUMN_STRETCH)
         grid.setColumnStretch(columns, SPARE_COLUMN_STRETCH)
