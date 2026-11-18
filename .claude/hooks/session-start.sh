@@ -12,7 +12,7 @@ cd "${CLAUDE_PROJECT_DIR:-.}"
 
 # Uses gh when it's on PATH and authenticated, and the REST API otherwise; scripts/issues.py covers tokens and rate
 # limits. Either fetch is best-effort, since a rate-limited or failed one must not fail session start. When both fail,
-# an agent runs `scripts/issues.py --from-json` by hand with issue JSON from the GitHub MCP tools.
+# the hook prints no index, and AGENTS.md, "Tracking open work" says what the agent does then.
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
   issue_source=--fetch
 else
