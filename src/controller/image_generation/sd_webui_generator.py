@@ -88,7 +88,7 @@ SD_WEBUI_GENERATOR_DESCRIPTION = (f'{SD_WEBUI_GENERATOR_DESCRIPTION_HEADER}\n{SD
 SD_WEBUI_GENERATOR_SETUP_OPTIONS = _tr("""
 <h1>Stable Diffusion WebUI Generator Setup</h1>
 <p>
-    To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
+    To use the Stable Diffusion WebUI generator, you will need to download at least one Stable Diffusion model file, 
     install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
 </p>""") + GETTING_SD_MODELS + _tr("""
 <hr/>

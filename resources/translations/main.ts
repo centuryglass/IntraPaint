@@ -1683,7 +1683,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+        <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only changes the selected parts of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4709,7 +4709,7 @@
         <source>
 &lt;h1&gt;Stable Diffusion WebUI Generator Setup&lt;/h1&gt;
 &lt;p&gt;
-    To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
+    To use the Stable Diffusion WebUI generator, you will need to download at least one Stable Diffusion model file, 
     install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
 &lt;/p&gt;</source>
         <translation type="unfinished"></translation>
