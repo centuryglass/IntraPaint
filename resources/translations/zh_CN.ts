@@ -2282,7 +2282,7 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Line drawing modifier:</source>
-        <translation>画直线修饰键：</translation>
+        <translation>直线绘制修饰键：</translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
@@ -4038,7 +4038,7 @@
     <message>
         <location filename="../../src/controller/app_controller.py"/>
         <source>Clear recent files</source>
-        <translation>清除最近打开的文件</translation>
+        <translation>清空最近文件列表</translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
@@ -8590,7 +8590,7 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Fit</source>
-        <translation>适应</translation>
+        <translation>适配</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>

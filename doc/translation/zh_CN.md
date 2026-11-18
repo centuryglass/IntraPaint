@@ -151,6 +151,8 @@ Interface theme names, such as "IntraPaint Ink", are also kept.
 - Quotation marks are the mainland standard curly quotes “”. Both "…" and '…' in the English source become “…”, including quoted option values and other UI strings (“匹配区域”, “激活”).
 - 引用其他界面字符串时，使用该字符串的译文，去掉快捷字母、省略号和末尾冒号：「Manage layouts...」写作“管理布局”。
 - A reference to another UI string uses that string's translation, without its accelerator, ellipsis or trailing colon: "Manage layouts..." is written “管理布局”.
+- 清空列表的命令要写明清空的是列表，以免读成删除文件或对象：「Clear recent files」写作「清空最近文件列表」，而不是「清除最近打开的文件」。
+- A command that empties a list names the list, so it can't read as deleting the files or objects: "Clear recent files" is 清空最近文件列表, not 清除最近打开的文件.
 - 展开为数字或拉丁字母的占位符（{count}、{width}、{key}）与中文之间加半角空格，如「已启用 {count} 个控制单元」。展开为名称的占位符（{layout_name}、{filter_name}）放在引号里，不加空格，如「布局“{layout_name}”」。
 - A placeholder that expands to digits or Latin text ({count}, {width}, {key}) takes a half-width space on each side next to Chinese, as in 已启用 {count} 个控制单元. A placeholder that expands to a name ({layout_name}, {filter_name}) goes inside quotes with no space, as in 布局“{layout_name}”.
 - 中文文字中的括号用全角（），如「用户界面的主题（可能需要重启）」「{front_title}（+{count}）」；只有快捷字母的括号用半角：「文件(&F)」。
