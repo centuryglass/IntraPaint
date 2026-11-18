@@ -126,8 +126,8 @@ Interface theme names, such as "IntraPaint Ink", are also kept.
 
 ## 需要上下文才能翻译的字符串 / Strings that need context
 
-- 名词/动词同形的英文词：Fill、Clear、Select、Transform、Stroke、Invert、Float、Dock 等在中文里名词、动词通常同形（填充、清除、选择、变换、描边、反转、浮动、停靠），但 Filter 不同：名词是「滤镜」，动词（筛选列表）是「筛选」或「过滤」；Outline 作名词是「轮廓」，作动词是「描边」。翻译前仍要查看代码上下文。
-  English noun/verb words: Fill, Clear, Select, Transform, Stroke, Invert, Float, Dock and similar usually take one Chinese word for both (填充, 清除, 选择, 变换, 描边, 反转, 浮动, 停靠), but Filter differs: the noun is 滤镜 and the verb (filtering a list) is 筛选 or 过滤; Outline as a noun is 轮廓 and as a verb 描边. Check the code context before translating.
+- 名词/动词同形的英文词：Fill、Clear、Select、Transform、Stroke、Float、Dock 等在中文里名词、动词通常同形（填充、清除、选择、变换、描边、浮动、停靠），但 Filter 不同：名词是「滤镜」，动词（筛选列表）是「筛选」或「过滤」；Outline 作名词是「轮廓」，作动词是「描边」。Invert 按对象区分：反转颜色的滤镜是「反相」（Photoshop 用语），反转选区是「反选」。翻译前仍要查看代码上下文。
+  English noun/verb words: Fill, Clear, Select, Transform, Stroke, Float, Dock and similar usually take one Chinese word for both (填充, 清除, 选择, 变换, 描边, 浮动, 停靠), but Filter differs: the noun is 滤镜 and the verb (filtering a list) is 筛选 or 过滤; Outline as a noun is 轮廓 and as a verb 描边. Invert depends on what it inverts: the color filter is 反相 (Photoshop's word), and inverting a selection is 反选. Check the code context before translating.
 - 选项值：编辑模式、「Masked content」的值、分辨率规则等同时是配置文件保存的值。配置文件仍保存英文值，只翻译显示文字（`Config.get_option_display`），因此照常翻译。选项所属的设置就是它的上下文：「fill」「original」是「Masked content」的值，不是填充工具。
   Option values: the edit modes, the "Masked content" values, the resolution rules and similar options are also values saved in config files. Config files keep the English value and only its display is translated (`Config.get_option_display`), so they are translated like other strings. The setting an option belongs to is its context: "fill" and "original" are "Masked content" values, not the Fill tool.
 - 单位与短标签：px、pt、deg、x 以及 W:、H:、X:、R、G、B、H、S、V、L、C 保留拉丁字母。
@@ -147,6 +147,18 @@ Interface theme names, such as "IntraPaint Ink", are also kept.
 - Menu accelerators (the & in "Sl&iders") follow the Chinese software convention of a bracketed letter after the translation: 滑块(&I).
 - 中文无大小写规则；菜单、对话框、面板的标题措辞可以更完整，标签更短，与各软件惯例一致。
 - Chinese has no capitalization; menu, dialog and panel titles can be worded more fully and labels more briefly, following each program's conventions.
+- 引号用中国大陆标准的弯引号“”。英文原文的 "…" 和 '…' 都译为“…”，包括引用的选项值和其他界面字符串（“匹配区域”“激活”）。
+- Quotation marks are the mainland standard curly quotes “”. Both "…" and '…' in the English source become “…”, including quoted option values and other UI strings (“匹配区域”, “激活”).
+- 引用其他界面字符串时，使用该字符串的译文，去掉快捷字母、省略号和末尾冒号：「Manage layouts...」写作“管理布局”。
+- A reference to another UI string uses that string's translation, without its accelerator, ellipsis or trailing colon: "Manage layouts..." is written “管理布局”.
+- 展开为数字或拉丁字母的占位符（{count}、{width}、{key}）与中文之间加半角空格，如「已启用 {count} 个控制单元」。展开为名称的占位符（{layout_name}、{filter_name}）放在引号里，不加空格，如「布局“{layout_name}”」。
+- A placeholder that expands to digits or Latin text ({count}, {width}, {key}) takes a half-width space on each side next to Chinese, as in 已启用 {count} 个控制单元. A placeholder that expands to a name ({layout_name}, {filter_name}) goes inside quotes with no space, as in 布局“{layout_name}”.
+- 中文文字中的括号用全角（），如「用户界面的主题（可能需要重启）」「{front_title}（+{count}）」；只有快捷字母的括号用半角：「文件(&F)」。
+- Brackets in Chinese text are full-width （）, as in 用户界面的主题（可能需要重启） and {front_title}（+{count}）; only the accelerator's brackets are half-width: 文件(&F).
+- HTML 文本中，Qt 把段落内的换行显示为空格，而中文字之间不应有空格。保留原文的换行数，但把换行放在本来就需要空格的位置（中文与拉丁字母之间、标签旁），或放在段落开头和结尾。
+- In HTML text, Qt shows a line break inside a paragraph as a space, and Chinese characters take no space between them. Keep the source's number of line breaks, but put them where a space belongs anyway (between Chinese and Latin text, or beside a tag), or at the start or end of a paragraph.
+- 外部程序的界面名称（如 Stability Matrix 的 Packages、Settings、Extra Launch Arguments）保留英文原文，因为用户看到的那个程序可能是英文界面。
+- UI names from other programs (Stability Matrix's Packages, Settings and Extra Launch Arguments, for example) stay in English, since the user may be running that program in English.
 
 ## 待解决问题 / Open questions
 
