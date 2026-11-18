@@ -1,5 +1,5 @@
 """QLayout utility functions."""
-from typing import Optional
+from typing import Iterable, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QBoxLayout, QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout
@@ -79,6 +79,18 @@ def clear_layout(layout: QLayout, recursive=True, unparent=True, hide=False, cle
             layout.setRowStretch(row, 0)
         for column in range(layout.columnCount()):
             layout.setColumnStretch(column, 0)
+
+
+def clear_grid(layout: QGridLayout, widgets: Iterable[Optional[QWidget]]) -> None:
+    """Takes widgets out of a grid and clears its stretch factors, so an arrangement leaves no trace of the last. The
+    widgets keep their parent."""
+    for widget in widgets:
+        if widget is not None:
+            layout.removeWidget(widget)
+    for row in range(layout.rowCount()):
+        layout.setRowStretch(row, 0)
+    for column in range(layout.columnCount()):
+        layout.setColumnStretch(column, 0)
 
 
 def synchronize_widths(widgets: list[Optional[QWidget]]) -> None:

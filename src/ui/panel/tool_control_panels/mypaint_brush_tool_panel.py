@@ -76,7 +76,7 @@ class MyPaintBrushToolPanel(StrokeToolPanel):
         self._dynamics_body_layout.addWidget(self._dynamics)
         self._dynamics_section = PanelSection(DYNAMICS_SECTION_TITLE, dynamics_body)
         self._overflow_title = QLabel(DYNAMICS_SECTION_TITLE)
-        self.overflow_layout.addWidget(self._overflow_title)
+        self._overflow_layout.addWidget(self._overflow_title)
         self._overflow_title.hide()
 
         self.add_tool_section(self._brush_section, FitItem(REQUIRED, 2), self._apply_brush_form, stretch=True)
@@ -168,7 +168,7 @@ class MyPaintBrushToolPanel(StrokeToolPanel):
             self._overflow_title.hide()
             self._dynamics_body_layout.addWidget(self._dynamics)
         else:
-            self.overflow_layout.addWidget(self._overflow_title)
-            self.overflow_layout.addWidget(self._dynamics)
+            self._overflow_layout.addWidget(self._overflow_title)
+            self._overflow_layout.addWidget(self._dynamics)
             self._overflow_title.show()
         self._dynamics.show()
