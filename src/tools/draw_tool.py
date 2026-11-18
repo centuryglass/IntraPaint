@@ -51,10 +51,8 @@ class DrawTool(QtPaintBrushTool):
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
-        if len(eyedropper_hint) > 0:
-            eyedropper_hint = ' - ' + eyedropper_hint
-        return (f'{control_hint_draw_tool}{eyedropper_hint}<br/>{BrushTool.brush_control_hints()}'
-                f'<br/>{super().get_input_hint()}')
+        return BaseTool.join_hints(BaseTool.join_hints(control_hint_draw_tool, eyedropper_hint),
+                                   BrushTool.brush_control_hints(), super().get_input_hint(), separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

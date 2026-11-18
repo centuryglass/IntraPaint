@@ -56,6 +56,7 @@ from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.section_popover import SectionPopover
 from src.util.layout import add_layout
+from src.util.shared_text import keys_tooltip
 from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -73,7 +74,6 @@ COLOR_AND_OPTIONS_SECTION_TITLE = _tr('Color and options')
 OPTIONS_SECTION_TITLE = _tr('Options')
 PIXEL_SUFFIX = _tr(' px')
 PERCENT_SUFFIX = _tr('%')
-KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 
 BESIDE_FIELD_MIN_WIDTH = 200
 FIELD_COLUMN_MAX_WIDTH = 290
@@ -296,8 +296,7 @@ class StrokeBlock(QWidget):
                             display_scale=display_scale, parent=self)
         description = self._tooltip_overrides.get(key) or cache.get_tooltip(key)
         keys = KeyConfig()
-        field.setToolTip(KEYS_TOOLTIP.format(description=description, decrease=keys.get(decrease_key),
-                                             increase=keys.get(increase_key)))
+        field.setToolTip(keys_tooltip(description, keys.get(decrease_key), keys.get(increase_key)))
 
         def _field_changed(value: int | float) -> None:
             if cache.get(key) != value:

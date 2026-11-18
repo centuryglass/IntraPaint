@@ -86,3 +86,15 @@ PIL_SCALING_MODES = {
     _tr('Box'): Image.Resampling.BOX
 }
 COLOR_PICK_HINT = _tr('{modifier_or_modifiers}: pick color')
+KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
+KEY_TOOLTIP = _tr('{description}\nKey: {key}')
+
+
+def keys_tooltip(description: str, decrease_key: str, increase_key: str) -> str:
+    """Returns a tooltip that lists the keys that step a value down and up. An unbound key is left out, and the
+    description alone is returned when neither is bound."""
+    if decrease_key != '' and increase_key != '':
+        return KEYS_TOOLTIP.format(description=description, decrease=decrease_key, increase=increase_key)
+    if decrease_key != '' or increase_key != '':
+        return KEY_TOOLTIP.format(description=description, key=decrease_key or increase_key)
+    return description

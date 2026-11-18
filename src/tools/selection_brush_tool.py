@@ -82,7 +82,8 @@ class SelectionBrushTool(BrushTool):
         """Return text describing different input functionality."""
         select_hint = (CONTROL_HINT_SELECTION_TOOL.format(left_mouse_icon=left_button_hint_text())
                        + context_pin_control_hint(' - '))
-        return f'{select_hint}<br/>{BrushTool.brush_control_hints()}<br/>{super().get_input_hint()}'
+        return BrushTool.join_hints(select_hint, BrushTool.brush_control_hints(), super().get_input_hint(),
+                                   separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the selection control panel."""

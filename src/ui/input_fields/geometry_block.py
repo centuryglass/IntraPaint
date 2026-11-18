@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QAbstractButton, QApplication, QGridLayout, QSizeP
 from src.ui.input_fields.number_field import FIELD_HEIGHT, NumberField
 from src.ui.ink_style import ink_colors
 from src.util.shared_constants import FLOAT_MAX, FLOAT_MIN
+from src.util.shared_text import keys_tooltip
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.input_fields.geometry_block'
@@ -51,7 +52,6 @@ SCALE_Y_TOOLTIP = _tr('Vertical scale')
 ANGLE_TOOLTIP = _tr('Rotation angle')
 LOCK_TOOLTIP = _tr('Lock the width:height ratio')
 LOCK_TEMPORARY_TOOLTIP = _tr('Lock the width:height ratio ({modifier} locks it temporarily)')
-STEP_KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 PIXEL_SUFFIX = _tr(' px')
 DEGREE_SUFFIX = _tr(' deg')
 SCALE_SUFFIX = _tr('x')
@@ -407,8 +407,7 @@ class GeometryBlock(QWidget):
         """Adds the keys that step a field to its tooltip."""
         field = self._fields[name]
         description = self._base_tooltip(name)
-        field.setToolTip(STEP_KEYS_TOOLTIP.format(description=description, decrease=decrease_key,
-                                                  increase=increase_key))
+        field.setToolTip(keys_tooltip(description, decrease_key, increase_key))
 
     def _base_tooltip(self, name: str) -> str:
         return self._tooltips[name]
@@ -545,7 +544,8 @@ def bind_step_keys(block: GeometryBlock, hotkey_filter, key_config, predicate: C
             hotkey_filter.register_config_keybinding(f'_GeometryBlock_{id(block)}_{name}_{key}', _binding, key)
         block.set_step_key_tooltip(name, key_config().get(decrease_key), key_config().get(increase_key))
     modifier = key_config().get(key_config.FIXED_ASPECT_MODIFIER)
-    block.lock_button().setToolTip(LOCK_TEMPORARY_TOOLTIP.format(modifier=modifier))
+    block.lock_button().setToolTip(LOCK_TEMPORARY_TOOLTIP.format(modifier=modifier) if modifier != ''
+                                   else LOCK_TOOLTIP)
 
     def _modifiers_changed(modifiers: Qt.KeyboardModifier) -> None:
         block.set_temporary_lock(block.isVisible() and key_config.modifier_held(key_config.FIXED_ASPECT_MODIFIER,

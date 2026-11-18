@@ -58,9 +58,10 @@ class ShapeSelectionPanel(SelectionPanel):
         self._fixed_ratio = fixed_ratio
 
         def _update_ratio_tooltip(_=None) -> None:
-            fixed_ratio.setToolTip(FIXED_RATIO_TOOLTIP.format(
-                description=Cache().get_tooltip(Cache.SHAPE_SELECTION_FIXED_ASPECT),
-                keys=modifier_keys_text((KeyConfig.FIXED_ASPECT_MODIFIER,))))
+            description = Cache().get_tooltip(Cache.SHAPE_SELECTION_FIXED_ASPECT)
+            keys = modifier_keys_text((KeyConfig.FIXED_ASPECT_MODIFIER,))
+            fixed_ratio.setToolTip(FIXED_RATIO_TOOLTIP.format(description=description, keys=keys) if keys != ''
+                                   else description)
         KeyConfig().connect(fixed_ratio, KeyConfig.FIXED_ASPECT_MODIFIER, _update_ratio_tooltip)
         _update_ratio_tooltip()
         self.insert_into_layout(tool_section(SHAPE_SECTION_TITLE, self._shape_control, fixed_ratio))

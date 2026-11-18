@@ -112,7 +112,7 @@ class GenerationAreaTool(BaseTool):
             gen_area_hint = GEN_AREA_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                          right_mouse_icon=right_button_hint_text())
             aspect_hint = BaseTool.fixed_aspect_hint()
-        return f'{gen_area_hint}<br/>{aspect_hint}<br/>{super().get_input_hint()}'
+        return BaseTool.join_hints(gen_area_hint, aspect_hint, super().get_input_hint(), separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
