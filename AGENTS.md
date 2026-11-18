@@ -12,7 +12,7 @@ Rules for coding agents working in the IntraPaint codebase. Human-facing setup a
   - Would opening that file to make the edit surface it anyway?
   - Would a reader be better served finding it there?
 
-  A yes to any of these means the fact goes in that file's own comment (confirm it is there, or add it). Here it gets
+  A yes to any of these means the fact goes in that file's comment (confirm it is there, or add it). Here it gets
   at most a one-line pointer.
 - **Edit by replacing, not appending.** When a change makes a bullet wrong, rewrite that bullet; don't add a second one
   that corrects the first. When the code a bullet describes is gone, delete the bullet.
@@ -35,12 +35,12 @@ Forge/Automatic1111 WebUI). Python **3.11+**, targeting Windows and Linux (macOS
 
 In priority order:
 
-1. **The maintainer.** IntraPaint is their day-to-day inpainting tool for hobby projects. A change that degrades that
+1. **The portfolio.** The repo shows a large project built by hand before coding agents, and now also shows that
+   the maintainer can effectively direct agents to bring a personal project up to professional standards. The reader
+   is a reviewer or hiring manager skimming the repo, looking for CI that gates merges, tests that would catch a real
+   regression, honest docs and a clean issue history.
+2. **The maintainer.** IntraPaint is their day-to-day inpainting tool for hobby projects. A change that degrades that
    workflow (generate, compare, inpaint, repeat) needs a strong reason, however much polish it adds elsewhere.
-2. **The portfolio.** The repo shows a large project built by hand before coding agents, and now also shows that
-   agents can bring a personal project up to professional standards. The reader is a reviewer or hiring manager
-   skimming the repo, looking for CI that gates merges, tests that would catch a real regression, honest docs and a
-   clean issue history.
 3. **Other users.** It has downloads but no reported feedback. Keep it usable for them: every manual editing tool must
    work with no Stable Diffusion backend, and setup errors must say what to do.
 
@@ -72,7 +72,7 @@ pip install -r requirements-dev.txt   # for development: adds the test, lint and
 - **Entry point:** `IntraPaint.py` sets up logging/translations/import paths, then constructs `AppController`.
 - **`src/controller/app_controller.py`, `AppController`,** is the central coordinator: config init, image data
   (`ImageStack`), main window, menu structure, tool controller, generator selection, image I/O, and settings. Most
-  cross-cutting behavior routes through here. It and `src/image/layers/image_stack.py` are the two largest modules.
+  cross-cutting behavior routes through here.
 - **`src/controller/image_generation/`:** pluggable image generator backends behind a common interface
   (`sd_comfyui_generator`, `sd_webui_generator`, `null_generator`, `test_generator`, the GLID ones). The active
   generator is chosen by availability and the `--mode` flag.
@@ -146,14 +146,13 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
 
 | File | Covers |
 | --- | --- |
-| [`doc/agents/panel_layout.md`](doc/agents/panel_layout.md) | Where a panel's look comes from, and which layout problems fail tests: `src/ui/layout/`, `src/ui/panel/`, `test/ui/panel_capture.py`, `test/ui/panel_sweep_test.py` |
+| [`doc/agents/panel_layout.md`](doc/agents/panel_layout.md) | Where a panel's look comes from, and which layout problems fail tests: `src/ui/layout/`, `src/ui/panel/`, `test/ui/panel_capture.py`, `test/ui/panel_sweep_test.py`, `test/ui/panel_layout_test.py`, `scripts/capture_ui.py` |
 
 ## Comments and docs
 
 **Comments are reference, not advocacy.** A comment tells the next reader what is true of the code as it stands,
 quickly. It does not defend a design to a skeptic or argue against the version it replaced. These rules apply to
-comments and docstrings you write or touch, to this file, and to new docs under `doc/`. Existing human-written
-comments don't need rewriting to conform, and nothing enforces these rules mechanically.
+comments and docstrings you write or touch, to this file, and to new docs under `doc/`.
 
 - **Lead with the rule.** The first line of a comment or docstring is a standalone summary; a reader who stops there
   must lose no invariant.
@@ -199,8 +198,10 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   - A change confined to files no test imports runs no tests: Markdown, `doc/`, `scripts/` (except
     `build_translations.py`, which `test/scripts/` tests), `.claude/`, `.opencode/` and `.github/`.
   - A change under `src/` runs the matching directory under `test/` (`src/tools/` runs `test/tools/`), and every test
-    file that names a changed module (`grep -rl <module> test/`). A change under `src/ui/` runs all of `test/ui/`,
-    whose style and panel tests render every panel.
+    file that names a changed module (`grep -rl <module> test/`).
+  - A change that can alter a panel's look also runs `test/ui/panel_layout_test.py` and
+    `test/ui/style_gallery_test.py`, plus the slower `test/ui/panel_sweep_test.py` only for the scenes it reaches
+    (`-k <scene>`, with names from `SWEEP_SCENE_NAMES`). A change to `src/ui/layout/` reaches every scene.
   - The full suite runs when a change touches what every test depends on (`src/config/`, `src/util/`,
     `src/ui/theme.py`, `resources/`, `conftest.py`, `test/base_test_case.py`, `requirements*.txt`), when changing
     the cycle check (`test/qt_cycles.py`), and when the scope is unclear.
@@ -208,24 +209,14 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   `setUp` and `tearDown` reset the singletons listed in `reset_singletons`, and `setUp` changes to the project root.
   Tests share one process, so a test that changes any other singleton resets it too. `tearDown` deletes every
   parentless widget the test created, so a widget shared between tests is created in `setUpClass`.
-- **A test fails when it leaves Qt objects in reference cycles** (checked on Python
-  3.13 only), so a change in `src/` that adds a cycle fails the tests that reach it. `test/qt_cycles.py` describes the
-  check and its report of the code in each cycle.
+- **A test fails when it leaves Qt objects in reference cycles** (checked on Python 3.13 only), so a change in
+  `src/` that adds a cycle fails the tests that reach it. `test/qt_cycles.py` describes the check and its report of the
+  code in each cycle.
 - **Golden images go through `assert_image_matches_golden`**, and JSON snapshots through
   `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
 - **Style and panel layouts are pinned.** `test/ui/style_gallery_test.py` compares each standard control's states with
-  text-free goldens, and `test/ui/panel_layout_test.py` snapshots each panel's layout problems at extreme sizes, so a
-  change to the style, theme, fonts or any panel's layout can fail them. `test/ui/panel_sweep_test.py` checks every
-  dock panel across a grid of dock sizes against its `KNOWN_PROBLEMS`, so a fix removes the entry it fixes. A field
-  meant to be wider than `FIELD_MAX_WIDTH` declares it with `set_field_width_cap` (`src/ui/layout/panel_fit.py`).
-  `python scripts/capture_ui.py` saves the same renders as images. `test/ui/ui_capture.py` and
-  `test/ui/panel_capture.py` describe them.
-- **Panel layout work is checked on sweep sheets.** Before calling a layout change done, run
-  `python scripts/capture_ui.py --sheet --only <panel>` and read every sheet it prints, side and strip. For a tool's
-  controls, that includes `tools_panel_<tool>`, the Tools panel with that tool active. A sheet shows the panel at a
-  grid of dock sizes. Misalignment, stretched sections and wasted space show up there as hints, which no test fails
-  on. `doc/agents/panel_layout.md` says what a layout has to do and where its look comes from. The PR names the
-  sheets checked and what changed on them. The script's docstring covers the options.
+  text-free goldens, and the panel tests snapshot each panel's layout problems, so a change to the style, theme or
+  fonts can fail them. `doc/agents/panel_layout.md`, "How layouts are checked" covers the panel tests.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
   and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `sd_adapters/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.
@@ -247,7 +238,6 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   - **Tests don't depend on run order.** `pytest --random-order-bucket=global` shuffles the whole suite, and
     `.github/workflows/random-order.yml` runs it that way every week. `IntraPaintTestCase` fails a test that leaves the
     application's font, style, stylesheet or palette changed.
-  - `pytest-xdist` waits until the weekly shuffled runs stay green.
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, the lint check
   below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
 - Test coverage is sparse and unmeasured: treat the suite as a partial safety net, not an authoritative gate. A full
@@ -298,9 +288,7 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
     maintainer's permission to push to the branch you name, overriding a harness instruction to use only its branch.
   - If the remote refuses a push to your branch, push to the assigned one.
 - **One branch and one PR per piece of work, each branched from `integration`.** A session with several PRs uses a
-  separate branch for each. Don't stack PRs unless the maintainer asks.
-- The many other side branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are experiments/one-offs; ignore
-  them.
+  separate branch for each. A PR that depends on another PR's unmerged work branches from that PR's branch instead.
 
 ## Working with GitHub
 
@@ -341,10 +329,9 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
 - **An issue or comment an AI agent writes under the maintainer's account ends with a footer marking it as
   AI-generated**, e.g. `_Drafted with AI assistance._`, so it doesn't read as the maintainer arguing with themselves.
   Keep it tool-agnostic ("AI assistance", never a product name), since the maintainer uses more than one agent.
-- **An issue links a repo document by permalink, not by branch path.** Use a blob url pinned to a commit sha, with the
-  section's heading anchor (`.../blob/<sha>/doc/<file>.md#<heading>`), so the link still shows what
-  the issue was written against after the doc is edited, renamed or deleted. Code references by symbol name stay as
-  they are.
+- **An issue links a repo document by permalink.** Use a blob url pinned to a commit sha, with the section's heading
+  anchor (`.../blob/<sha>/doc/<file>.md#<heading>`), so the link still shows what the issue was written against after
+  the doc is edited, renamed or deleted. Code references by symbol name stay as they are.
 
 ## Tracking open work
 
@@ -357,7 +344,7 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
   | --- | --- |
   | `bug` | Something broken. A fix too big for one PR becomes a `project`. |
   | `needs planning` | Wanted, but open questions remain. The plan is worked out in the issue's comments. |
-  | `ready` | Fits one PR, can start now, and has no open questions. Any agent can follow it without judgment calls. |
+  | `ready` | Fits one PR, can start now, and has no open questions. Any agent can follow it without major judgment calls. |
   | `project` | The parent of multi-PR work. Each step is a sub-issue with its own category. |
   | `someday` | A long-term idea that isn't practical now. The maintainer reviews these from time to time. |
 
@@ -384,31 +371,19 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
   Leave out progress narration, drafts, options nobody seriously considered, and anything the PR description says.
   Post at most one comment per issue per session, when the session's work on it ends, with the footer in "An issue or
   comment an AI agent writes".
-- **A fact worth knowing is not a task.** It belongs in the owning module's comment, or here.
-- **Open issues are usually already in context.** The `SessionStart` hook (`.claude/hooks/session-start.sh`) runs
-  `scripts/issues.py`, which writes `.claude/cache/issues/` and prints its `index.md`. OpenCode's counterpart,
-  `.opencode/plugins/issue-cache.ts`, runs the same hook and injects `index.md` into the session's system prompt.
-  `index.md` lists open issues and only counts closed ones. `closed.md` lists the closed ones, and every issue has its
-  own file; read them when a closed issue matters. The cache is generated and gitignored; never edit it or treat it
-  as the source of truth. `scripts/issues.py`'s docstring covers the fetch paths and `INTRAPAINT_ISSUES_TOKEN`.
-- **When the hook produced nothing** (rate-limited, no token, or an agent that doesn't run Claude Code hooks), build
-  the cache by hand before concluding no issue covers something: fetch the issue list with whatever tool you have
-  (the GitHub MCP `list_issues`, `gh issue list --json ...`), save it as JSON, run
-  `python3 scripts/issues.py --from-json <path>`, then read `.claude/cache/issues/index.md`.
-
-## Cloud sessions
-
-`.claude/hooks/session-start.sh` refreshes the issue cache in every session (see "Tracking open work"). At the start
-of a Claude Code on the web session it also fetches the rest of the git history and the release tags (the clone starts
-shallow), installs the system libraries CI installs, creates `.venv` with Python 3.13 and `requirements-dev.txt`,
-builds `image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and `scripts/pylint_check.py` work without
-further setup.
+- **Open issues are usually already in context.** The `SessionStart` hook runs `scripts/issues.py`, which writes
+  `.claude/cache/issues/` and prints its `index.md`. `index.md` lists open issues and only counts closed ones.
+  `closed.md` lists the closed ones, and every issue has its own file; read them when a closed issue matters. The
+  cache is generated and gitignored; never edit it or treat it as the source of truth.
+- **If the hook produced nothing** (rate-limited, no token, or an agent that doesn't run Claude Code hooks),
+  warn the maintainer and continue without it. Before opening an issue, search GitHub's issues with whatever tool you
+  have.
 
 ## Legacy / don't-touch
 
 - **`src/glid_3_xl/`** and the GLID-3-XL generators/server are legacy. Assume they won't be touched unless something
   there is actively broken.
-- The project root contains a few vendored/symlinked library directories (e.g. `latent-diffusion`,
+- The project root may contain a few vendored/symlinked library directories (e.g. `latent-diffusion`,
   `taming-transformers`, `pyspacenav`, `colabFiles`) that are not part of the app's own source; don't treat them as
   code to modify. `lib/` is different: it holds the checked-in libmypaint binaries the app loads and bundles
   (`lib/README.md`).

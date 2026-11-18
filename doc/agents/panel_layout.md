@@ -68,14 +68,28 @@ These hold at every size.
 
 ## How layouts are checked
 
-`test/ui/panel_sweep_test.py` sweeps every panel across a grid of dock sizes. `find_layout_problems` and
-`find_arrangement_problems` in `test/ui/panel_capture.py` report each problem by kind.
+`test/ui/panel_sweep_test.py` sweeps every panel across a grid of dock sizes, and `test/ui/panel_layout_test.py`
+snapshots each panel's layout problems at extreme sizes in `test/resources/layout_snapshots/`. `find_layout_problems`
+and `find_arrangement_problems` in `test/ui/panel_capture.py` report each problem by kind.
+`python scripts/capture_ui.py` saves the same renders as images, which `test/ui/ui_capture.py` and
+`test/ui/panel_capture.py` describe.
 
 - **Problems fail the sweep** unless `KNOWN_PROBLEMS` lists them with the open issue that tracks them: `clipped`,
-  `squeezed`, `overlap` and `hidden with room`.
+  `squeezed`, `overlap` and `hidden with room`. A listed kind that no longer appears also fails, so a fix removes the
+  entry it fixes.
+- **A field meant to be wider than `FIELD_MAX_WIDTH`** declares it with `set_field_width_cap`
+  (`src/ui/layout/panel_fit.py`).
 - **Hints never fail a test:** every kind in `HINT_KINDS`. Sweep sheets caption them in amber. Change a layout for a
   hint only when the maintainer asks.
 - The other invariants have no sweep check.
 - **The sweep's host is a plain widget, not a dock.** `test/ui/window/docked_panel_resize_test.py` drags the separators
   around a panel docked in a `QMainWindow`, which is where a panel's size hints decide whether the dock overlaps its
   neighbors.
+
+## Sweep sheets
+
+**A multimodal agent checks non-trivial layout work on sweep sheets** before calling it done. Run
+`python scripts/capture_ui.py --sheet --only <panel>` and read every sheet it prints, side and strip. For a tool's
+controls, that includes `tools_panel_<tool>`, the Tools panel with that tool active. A sheet shows the panel at a grid
+of dock sizes. Misalignment, stretched sections and wasted space show up there as hints, which no test fails on. The
+PR names the sheets checked and what changed on them.
