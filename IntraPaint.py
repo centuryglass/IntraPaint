@@ -149,7 +149,7 @@ app.processEvents()
 # Load the chosen translation (src/util/translation.py explains why this happens before most imports):
 ui_language = resolve_language(saved_language_setting())
 logger.info(f'UI language: {ui_language}')
-translator = install_translation(app, ui_language)
+translators = install_translation(app, ui_language)
 
 # If relevant directories exist, update paths for GLID-3-XL dependencies:
 if not is_pyinstaller_bundle():

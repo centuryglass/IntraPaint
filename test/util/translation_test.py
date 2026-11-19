@@ -34,6 +34,22 @@ GERMAN_TS = """\
 """
 
 
+PLURAL_SOURCE = '%n file(s)'
+ENGLISH_TS = """\
+    <?xml version="1.0" encoding="utf-8"?>
+    <!DOCTYPE TS>
+    <TS version="2.1" language="en">
+    <context>
+        <name>test.translation</name>
+        <message numerus="yes">
+            <source>%n file(s)</source>
+            <translation><numerusform>%n file</numerusform><numerusform>%n files</numerusform></translation>
+        </message>
+    </context>
+    </TS>
+"""
+
+
 class TranslationTest(IntraPaintTestCase):
     """Language discovery, naming, selection and loading, against a temporary translation directory."""
 
@@ -111,22 +127,32 @@ class TranslationTest(IntraPaintTestCase):
         self.assertIn(ENGLISH, AppConfig().get_options(AppConfig.LANGUAGE))
         self.assertEqual(ENGLISH_NAME, AppConfig().get_option_display(ENGLISH))
 
-    def test_installs_only_the_chosen_translation(self) -> None:
-        """English installs nothing, and another language translates through its own file."""
+    def test_installs_english_plurals_under_every_language(self) -> None:
+        """English installs only `en.qm`, and another language installs on top of it, falling back to its forms."""
         app = QApplication.instance()
         assert isinstance(app, QApplication)
-        self.assertIsNone(install_translation(app, ENGLISH, self.dir))
-        self.assertIsNone(install_translation(app, 'de_DE', self.dir))
+        self.assertEqual([], install_translation(app, ENGLISH, self.dir))
+        self.assertEqual([], install_translation(app, 'de_DE', self.dir))
 
-        ts_path = os.path.join(self.dir, 'de_DE.ts')
-        with open(ts_path, 'w', encoding='utf-8') as file:
-            file.write(textwrap.dedent(GERMAN_TS))
-        build_translations.compile_qm(ts_path, os.path.join(self.dir, 'de_DE.qm'))
-        translator = install_translation(app, 'de_DE', self.dir)
-        self.assertIsNotNone(translator)
+        for code, text in (('en', ENGLISH_TS), ('de_DE', GERMAN_TS)):
+            ts_path = os.path.join(self.dir, f'{code}.ts')
+            with open(ts_path, 'w', encoding='utf-8') as file:
+                file.write(textwrap.dedent(text))
+            build_translations.compile_qm(ts_path, os.path.join(self.dir, f'{code}.qm'))
+        self.assertEqual([ENGLISH, 'de_DE'], available_languages(self.dir))
+        translators = install_translation(app, 'de_DE', self.dir)
         try:
+            self.assertEqual(2, len(translators))
             self.assertEqual('Öffnen', QApplication.translate(TEST_CONTEXT, 'Open'))
+            self.assertEqual('1 file', QApplication.translate(TEST_CONTEXT, PLURAL_SOURCE, None, 1))
+            self.assertEqual('3 files', QApplication.translate(TEST_CONTEXT, PLURAL_SOURCE, None, 3))
         finally:
-            app.removeTranslator(translator)
-            translator.setParent(None)
+            for translator in translators:
+                app.removeTranslator(translator)
+                translator.setParent(None)
         self.assertEqual('Open', QApplication.translate(TEST_CONTEXT, 'Open'))
+
+    def test_committed_english_plurals_are_installed(self) -> None:
+        """The test session installs the committed `en.qm`, as IntraPaint does, so counted text reads as English."""
+        self.assertEqual('1 layer', QApplication.translate('ui.panel.layer_ui.layer_panel', '%n layer(s)', None, 1))
+        self.assertEqual('6 layers', QApplication.translate('ui.panel.layer_ui.layer_panel', '%n layer(s)', None, 6))

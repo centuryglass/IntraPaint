@@ -15,6 +15,8 @@ prepare the environment that the Qt-based tests rely on:
   directory pytest is invoked from.
 - Back the config singletons with temporary copies of the `test/resources/*_test.json` fixtures, so
   tests that change settings can't rewrite the committed files.
+- Install the English plural forms (`src.util.translation.install_translation`) before any `src` module with
+  `_tr` constants is imported, as `IntraPaint.py` does, so counted text reads "1 layer" and "6 layers".
 - Apply the style, theme and font size from the app config fixture, so text metrics and colors match on every
   machine instead of following the platform's default font and palette.
 - Fail any test during which `HotkeyFilter` received an event source that isn't a QObject, the sign of a stale PySide
@@ -62,6 +64,7 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 import pytest
+from PySide6.QtCore import QTranslator
 from PySide6.QtGui import QTextDocumentFragment
 from PySide6.QtWidgets import (QApplication, QColorDialog, QDialog, QFileDialog, QFontDialog, QInputDialog, QMenu,
                                QMessageBox, QWidget)
@@ -74,6 +77,8 @@ _hang_watchdog = HangWatchdog()
 _modal_guard_patch = pytest.MonkeyPatch()
 _CONFIG_FIXTURE_DIR = os.path.join(_PROJECT_ROOT, 'test', 'resources')
 _config_copy_dir: Optional[str] = None
+# The translators pytest_sessionstart installs, kept referenced for the whole session:
+_translators: list[QTranslator] = []
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
@@ -86,9 +91,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     """
     global _config_copy_dir  # pylint: disable=global-statement
     _block_modal_dialogs(_modal_guard_patch)
-    _ = QApplication.instance() or QApplication(sys.argv)
+    app = QApplication.instance() or QApplication(sys.argv)
     # Imported here rather than at module level so PySide6 and the QApplication are ready first:
     # pylint: disable=import-outside-toplevel
+    from src.util.translation import ENGLISH, install_translation
+    _translators.extend(install_translation(app, ENGLISH))
     from src.config.application_config import AppConfig
     from src.config.cache import Cache
     from src.config.key_config import KeyConfig

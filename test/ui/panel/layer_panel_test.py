@@ -387,10 +387,10 @@ class LayerPanelTest(IntraPaintTestCase):
         self.bottom.opacity = 0.6
         self.bottom.composition_mode = CompositeMode.MULTIPLY
         self.assertEqual(self.row(self.bottom).meta_label.full_text, '60% · Multiply')
-        self.assertEqual(self.row(self.group).meta_label.full_text, '3 layer(s)')
+        self.assertEqual(self.row(self.group).meta_label.full_text, '3 layers')
         self.image_stack.remove_layer(self.inner_top)
-        self.assertEqual(self.row(self.group).meta_label.full_text, '2 layer(s)')
-        self.assertEqual(self.row(self.nested).meta_label.full_text, '1 layer(s)')
+        self.assertEqual(self.row(self.group).meta_label.full_text, '2 layers')
+        self.assertEqual(self.row(self.nested).meta_label.full_text, '1 layer')
 
     def test_rows_keep_one_height(self) -> None:
         """Every row is as tall as every other, with or without meta text, so selection never shifts the list."""
@@ -736,9 +736,9 @@ class LayerPanelTest(IntraPaintTestCase):
 
     def test_header_counts_layers(self) -> None:
         """The panel header counts every layer under the root."""
-        self.assertEqual(self.panel.header.description(), '6 layer(s)')
+        self.assertEqual(self.panel.header.description(), '6 layers')
         self.image_stack.remove_layer(self.group)
-        self.assertEqual(self.panel.header.description(), '1 layer(s)')
+        self.assertEqual(self.panel.header.description(), '1 layer')
 
     # Eye buttons:
 
@@ -935,16 +935,16 @@ class LayerPanelTest(IntraPaintTestCase):
         """A floating panel hides its header, whose name and layer count its title bar shows, and the title note
         follows the count."""
         header = self.panel.header
-        self.assertEqual(self.panel.title_note, '6 layer(s)')
+        self.assertEqual(self.panel.title_note, '6 layers')
         self.panel.host_floating_changed(True)
         flush_layouts()
         self.assertTrue(header.isHidden())
         self.image_stack.create_layer()
-        self.assertEqual(self.panel.title_note, '7 layer(s)')
+        self.assertEqual(self.panel.title_note, '7 layers')
         self.panel.host_floating_changed(False)
         flush_layouts()
         self.assertFalse(header.isHidden())
-        self.assertEqual(header.description(), '7 layer(s)')
+        self.assertEqual(header.description(), '7 layers')
 
     # Drag and drop:
 

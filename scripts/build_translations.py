@@ -4,6 +4,11 @@
 the `_tr` and `QApplication.translate` calls under `src/` and from the config definition files, by reading them with
 `ast` and `json`. No source file is modified, and no Qt tool runs during extraction.
 
+`en.ts` holds the English singular and plural forms of each plural message (a `_tr` call with a count, whose source
+has `%n`), and is created with the first one. The build adds new plural messages to it with empty forms, drops removed
+ones, and fails until every message's forms are written. It is compiled to `en.qm` like a translation, but has no
+`languages.json` entry and no glossary.
+
 Every other `.ts` file in `resources/translations/` is a translation into the language its `language` attribute names.
 Each is merged with the catalog: translations of strings still in the catalog are kept, new strings are added
 unfinished, and translations of removed strings are kept as vanished. Each is compiled with `lrelease` (see
@@ -69,6 +74,11 @@ from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS  # noqa: E4
 
 TRANSLATION_DIR = 'resources/translations'
 CATALOG_NAME = 'main.ts'
+# English plural forms for the catalog's plural messages. Qt only applies plural forms through a loaded translation, so
+# without this file English shows a plural source like '%n layer(s)' as written. src/util/translation.py loads it under
+# every language.
+ENGLISH_PLURALS_STEM = 'en'
+ENGLISH_PLURAL_FORM_COUNT = 2
 MANIFEST_NAME = 'languages.json'
 MANIFEST_MACHINE_TRANSLATED = 'machine_translated'
 GLOSSARY_DIR = 'doc/translation'
@@ -871,6 +881,38 @@ def glossary_problems(file_name: str, glossary: Glossary, catalog: Catalog) -> l
     return problems
 
 
+def english_plural_catalog(catalog: Catalog, existing: list[Message]) -> Catalog:
+    """Returns the English plural file's messages: the catalog's plural messages, with forms kept from `existing`.
+
+    Each message has ENGLISH_PLURAL_FORM_COUNT forms, and is finished when all of them are written, so an author only
+    fills in the forms. Messages no longer in the catalog are dropped.
+    """
+    plurals = Catalog()
+    for message in catalog.all_messages():
+        if message.plural:
+            plurals.add_message(message)
+    english = Catalog()
+    for message in merge_translations(plurals, existing).all_messages():
+        if message.translation_type == VANISHED:
+            continue
+        message.forms += [''] * (ENGLISH_PLURAL_FORM_COUNT - len(message.forms))
+        complete = len(message.forms) == ENGLISH_PLURAL_FORM_COUNT and all(message.forms)
+        message.translation_type = None if complete else UNFINISHED
+        english.add_message(message)
+    return english
+
+
+def english_plural_problems(file_name: str, english: Catalog) -> list[str]:
+    """Reports English plural messages without exactly ENGLISH_PLURAL_FORM_COUNT written forms, and broken forms."""
+    problems = [f'{file_name}: [{message.context}] {message.source!r}: needs its English singular and plural forms, '
+                f'in its {ENGLISH_PLURAL_FORM_COUNT} <numerusform> elements, such as "%n layer" and "%n layers".'
+                for message in english.all_messages() if message.translation_type == UNFINISHED]
+    problems.extend(placeholder_problems(file_name, english))
+    problems.extend(markup_problems(file_name, english))
+    problems.extend(accelerator_problems(file_name, ENGLISH_PLURALS_STEM, english))
+    return problems
+
+
 def _find_lrelease() -> str:
     """Locates an lrelease executable, preferring the one bundled with the PySide6 package.
 
@@ -961,8 +1003,30 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
 
     _update(CATALOG_NAME, write_ts(catalog).encode('utf-8'))
 
+    def _update_translation(file_name: str, merged: Catalog, language: str) -> None:
+        ts_text = write_ts(merged, language)
+        _update(file_name, ts_text.encode('utf-8'))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_ts = os.path.join(temp_dir, file_name)
+            temp_qm = os.path.join(temp_dir, f'{os.path.splitext(file_name)[0]}.qm')
+            with open(temp_ts, 'w', encoding='utf-8') as ts_file:
+                ts_file.write(ts_text)
+            compile_qm(temp_ts, temp_qm)
+            qm_content = _read_bytes(temp_qm)
+            assert qm_content is not None
+        _update(os.path.basename(temp_qm), qm_content)
+
+    english_name = f'{ENGLISH_PLURALS_STEM}.ts'
+    english_path = os.path.join(translation_dir, english_name)
+    english_existing = read_ts(english_path)[1] if os.path.isfile(english_path) else None
+    if english_existing is not None or any(message.plural for message in catalog.all_messages()):
+        english = english_plural_catalog(catalog, english_existing or [])
+        problems.extend(english_plural_problems(f'{TRANSLATION_DIR}/{english_name}', english))
+        _update_translation(english_name, english, ENGLISH_PLURALS_STEM)
+
     file_names = sorted(os.listdir(translation_dir))
-    translations = [os.path.splitext(name)[0] for name in file_names if name.endswith('.ts') and name != CATALOG_NAME]
+    translations = [os.path.splitext(name)[0] for name in file_names
+                    if name.endswith('.ts') and name not in (CATALOG_NAME, english_name)]
     problems.extend(manifest_problems(translation_dir, translations))
     glossary_dir = os.path.join(project_dir, *GLOSSARY_DIR.split('/'))
     english_rows: list[GlossaryRow] = []
@@ -979,7 +1043,7 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
         stem, extension = os.path.splitext(file_name)
         if extension == '.qm' and f'{stem}.ts' not in file_names:
             problems.append(f'{TRANSLATION_DIR}/{file_name} has no {stem}.ts to build it from. Remove it.')
-        if extension != '.ts' or file_name == CATALOG_NAME:
+        if extension != '.ts' or file_name in (CATALOG_NAME, english_name):
             continue
         language, existing = read_ts(os.path.join(translation_dir, file_name))
         if not language:
@@ -998,17 +1062,7 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
             problems.extend(_relative_problems(project_dir, glossary_parse_problems))
             if not glossary_parse_problems:
                 problems.extend(glossary_problems(f'{TRANSLATION_DIR}/{file_name}', glossary, merged))
-        ts_text = write_ts(merged, language)
-        _update(file_name, ts_text.encode('utf-8'))
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_ts = os.path.join(temp_dir, file_name)
-            temp_qm = os.path.join(temp_dir, f'{stem}.qm')
-            with open(temp_ts, 'w', encoding='utf-8') as ts_file:
-                ts_file.write(ts_text)
-            compile_qm(temp_ts, temp_qm)
-            qm_content = _read_bytes(temp_qm)
-            assert qm_content is not None
-        _update(f'{stem}.qm', qm_content)
+        _update_translation(file_name, merged, language)
     return problems, stale
 
 
