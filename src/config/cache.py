@@ -1,6 +1,6 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 from argparse import Namespace
-from typing import Any, Optional
+from typing import Optional
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
@@ -38,11 +38,6 @@ class Cache(CacheKeys, Config, metaclass=Singleton):
         self._geometry_timer.timeout.connect(self._check_bounds)
         self._final_bounds: dict[QWidget, QRect] = {}
         self._last_bounds: dict[QWidget, QRect] = {}
-
-    def _migrate_legacy_keys(self, json_data: dict[str, Any]) -> None:
-        """Converts the saved `color_select_mode` checkbox to `selection_fill_area`."""
-        if 'selection_fill_area' not in json_data and json_data.get('color_select_mode') is True:
-            json_data['selection_fill_area'] = 'By color'
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""

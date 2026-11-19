@@ -76,13 +76,13 @@ class MagicWandToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.mouse_drag([QPoint(4, 4)])
         self.assert_one_undo_step(self.empty, self._mask(LEFT_OF_STRIPE, STRIPE, RIGHT_OF_STRIPE))
 
-    def test_color_select_mode_ignores_connectivity(self) -> None:
+    def test_by_color_ignores_connectivity(self) -> None:
         """In color select mode, a click selects every pixel of the clicked color, connected or not."""
         Cache().set(Cache.SELECTION_FILL_AREA, FillArea.BY_COLOR.value)
         self.mouse_drag([QPoint(4, 4)])
         self.assert_one_undo_step(self.empty, self._mask(LEFT_OF_STRIPE, RIGHT_OF_STRIPE, ISLAND))
 
-    def test_color_select_mode_samples_offset_layer_at_click(self) -> None:
+    def test_by_color_samples_offset_layer_at_click(self) -> None:
         """On a layer moved right, color select mode matches the color of the layer pixel under the click."""
         self.layer.set_transform(QTransform.fromTranslate(8, 0))
         UndoStack().clear()
