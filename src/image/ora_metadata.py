@@ -8,22 +8,34 @@
   `<extension name="metadata">` element. XMP can't hold all of either (maker notes, envelope datasets).
 - DPI goes to the `<image>` element's `xres` and `yres` attributes.
 
+`read_ora_file_metadata` and `write_ora_file_metadata` read and replace these parts in an existing archive without
+loading its layers. They leave every other archive member as it was.
+
 The ICC profile and encoder details in `ImageMetadata.format_info` aren't stored. Pixels are converted to sRGB on load,
 so the profile no longer describes them, and no save writes the rest.
 """
+import io
 import json
 import logging
 import math
 import posixpath
+import zipfile
 from typing import Any, Optional
+from xml.etree.ElementTree import Element, ElementTree, fromstring
 
 from PIL import Image
 
 from src.image.image_metadata import ImageMetadata, DPI_INFO_KEY
-from src.image.ora_extensions import EXTENSION_DIRECTORY, METADATA_EXTENSION_NAME, OraReadContext
+from src.image.ora_extensions import EXTENSION_DIRECTORY, METADATA_EXTENSION_NAME, OraReadContext, XML_FILE_NAME, \
+    EXTENDED_DATA_XML_FILE_NAME, STACK_ELEMENT, EXTENSION_ELEMENT, EXTENSION_TAG_NAME, safe_relative_path
+from src.util.file_replace import replacing_file
 
 logger = logging.getLogger(__name__)
 
+METADATA_TAG = 'metadata'
+"""The `extended_data.xml` root attribute holding the text entries as JSON."""
+IMAGE_TAG_XRES = 'xres'  # int, optional (pixels per inch), written from `ImageMetadata` DPI
+IMAGE_TAG_YRES = 'yres'  # int, optional (pixels per inch), written from `ImageMetadata` DPI
 XMP_ARCHIVE_PATH = 'META-INF/metadata.xml'
 EXIF_ARCHIVE_PATH = posixpath.join(EXTENSION_DIRECTORY, METADATA_EXTENSION_NAME, 'exif.bin')
 """EXIF data as `Image.Exif.tobytes` writes it: an `Exif` header and a TIFF structure."""
@@ -149,3 +161,91 @@ def read_metadata(metadata_json: Optional[str], extension_payload: Optional[str]
         elif key == PAYLOAD_IPTC:
             metadata.set_iptc_data(data)
     return metadata
+
+
+class _ZipReadContext(OraReadContext):
+    """Reads metadata files straight from an open archive."""
+
+    def __init__(self, archive: zipfile.ZipFile) -> None:
+        super().__init__('')
+        self._archive = archive
+
+    def read_file(self, archive_path: str) -> Optional[bytes]:
+        """Returns a member's content, or None if the archive has no member at that path (or the path is invalid)."""
+        try:
+            return self._archive.read(safe_relative_path(archive_path))
+        except (ValueError, KeyError):
+            return None
+
+
+def _extension_payload(root: Element) -> Optional[str]:
+    for element in root.findall(EXTENSION_ELEMENT):
+        if element.get(EXTENSION_TAG_NAME) == METADATA_EXTENSION_NAME:
+            return element.text or ''
+    return None
+
+
+def read_ora_file_metadata(file_path: str) -> ImageMetadata:
+    """Reads the metadata of an .ora file without loading its layers."""
+    with zipfile.ZipFile(file_path) as archive:
+        context = _ZipReadContext(archive)
+        metadata_json = None
+        payload = None
+        extended_data = context.read_file(EXTENDED_DATA_XML_FILE_NAME)
+        if extended_data is not None:
+            extended_root = fromstring(extended_data)
+            metadata_json = extended_root.get(METADATA_TAG)
+            payload = _extension_payload(extended_root)
+        dpi = None
+        stack_data = context.read_file(XML_FILE_NAME)
+        if stack_data is not None:
+            image_root = fromstring(stack_data)
+            dpi = decode_dpi(image_root.get(IMAGE_TAG_XRES), image_root.get(IMAGE_TAG_YRES))
+        return read_metadata(metadata_json, payload, dpi, context)
+
+
+def _is_metadata_member(archive_path: str) -> bool:
+    """Returns whether a member is one of the files `metadata_archive_files` writes, which a metadata write replaces."""
+    return archive_path == XMP_ARCHIVE_PATH \
+        or archive_path.startswith(f'{EXTENSION_DIRECTORY}/{METADATA_EXTENSION_NAME}/')
+
+
+def _updated_extended_data(extended_data: Optional[bytes], metadata: ImageMetadata) -> bytes:
+    """Returns `extended_data.xml` with its text entry JSON and metadata extension element replaced."""
+    root = Element(STACK_ELEMENT) if extended_data is None else fromstring(extended_data)
+    metadata_json = metadata.to_ora_json()
+    if metadata_json is None:
+        root.attrib.pop(METADATA_TAG, None)
+    else:
+        root.set(METADATA_TAG, metadata_json)
+    for element in root.findall(EXTENSION_ELEMENT):
+        if element.get(EXTENSION_TAG_NAME) == METADATA_EXTENSION_NAME:
+            root.remove(element)
+    payload = metadata_extension_payload(metadata)
+    if payload is not None:
+        extension_element = Element(EXTENSION_ELEMENT)
+        extension_element.set(EXTENSION_TAG_NAME, METADATA_EXTENSION_NAME)
+        extension_element.text = payload
+        root.append(extension_element)
+    buffer = io.BytesIO()
+    ElementTree(root).write(buffer)
+    return buffer.getvalue()
+
+
+def write_ora_file_metadata(file_path: str, metadata: ImageMetadata) -> None:
+    """Replaces the metadata of an existing .ora file, copying its other members unchanged.
+
+    The text entries, EXIF data, IPTC datasets and XMP packet are replaced. `stack.xml`, and so the DPI, is left as it
+    is, since the metadata window can't change the DPI.
+    """
+    with replacing_file(file_path) as temp_path:
+        with zipfile.ZipFile(file_path) as source, zipfile.ZipFile(temp_path, 'w') as target:
+            extended_data = source.read(EXTENDED_DATA_XML_FILE_NAME) \
+                if EXTENDED_DATA_XML_FILE_NAME in source.namelist() else None
+            for info in source.infolist():
+                if _is_metadata_member(info.filename) or info.filename == EXTENDED_DATA_XML_FILE_NAME:
+                    continue
+                target.writestr(info, source.read(info))
+            target.writestr(EXTENDED_DATA_XML_FILE_NAME, _updated_extended_data(extended_data, metadata))
+            for archive_path, data in metadata_archive_files(metadata).items():
+                target.writestr(archive_path, data)

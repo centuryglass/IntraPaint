@@ -84,7 +84,7 @@ RGB_FORMATS = {'JPEG', 'JPG', 'MPO', 'PCX'}
 BINARY_FORMATS = {'XBM'}
 
 
-def _write_data_to_exif_description(exif: Optional[Image.Exif], data: Optional[str]) -> Optional[Image.Exif]:
+def write_data_to_exif_description(exif: Optional[Image.Exif], data: Optional[str]) -> Optional[Image.Exif]:
     """Stores a parameter string as the IFD0 ImageDescription, creating EXIF data if there is none.
 
     - Non-ASCII text is stored as UTF-8 bytes, which PIL writes unchanged. PIL writes a string's non-ASCII characters
@@ -139,12 +139,12 @@ _JPEG_APP13_MARKER = b'\xff\xed'
 _PHOTOSHOP_HEADER = b'Photoshop 3.0\0'
 _PHOTOSHOP_RESOURCE_SIGNATURE = b'8BIM'
 # Pillow's JPEG writer rejects an XMP packet longer than this, which is a segment minus its length field and header:
-_JPEG_XMP_MAX_SIZE = 65504
+JPEG_XMP_MAX_SIZE = 65504
 # The XMP tag of a TIFF's first IFD:
 _TIFF_XMP_TAG = 700
 
 
-def _iptc_app13_segment(iptc: bytes) -> Optional[bytes]:
+def iptc_app13_segment(iptc: bytes) -> Optional[bytes]:
     """Returns a JPEG APP13 segment holding IPTC datasets as a Photoshop resource, or None if it would be too long.
 
     The resource has an empty name, and its data is padded to an even length, as Photoshop's format requires.
@@ -165,13 +165,13 @@ def _jpeg_save_args(metadata: ImageMetadata) -> dict[str, Any]:
         args['comment'] = comment
     xmp = metadata.xmp_packet
     if xmp is not None:
-        if len(xmp) > _JPEG_XMP_MAX_SIZE:
+        if len(xmp) > JPEG_XMP_MAX_SIZE:
             logger.warning('XMP data is too long for a JPEG and was not saved')
         else:
             args['xmp'] = xmp
     iptc = metadata.iptc_data
     if iptc is not None and len(iptc) > 0:
-        segment = _iptc_app13_segment(iptc)
+        segment = iptc_app13_segment(iptc)
         if segment is None:
             logger.warning('IPTC data is too long for a JPEG and was not saved')
         else:
@@ -180,7 +180,8 @@ def _jpeg_save_args(metadata: ImageMetadata) -> dict[str, Any]:
 
 
 def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
-                             metadata: Optional[ImageMetadata] = None) -> None:
+                             metadata: Optional[ImageMetadata] = None,
+                             extra_save_args: Optional[dict[str, Any]] = None) -> None:
     """
     Save an image to disk, using one of the formats that supports preserving metadata
 
@@ -196,6 +197,8 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         the XMP packet. JPEG also keeps its comment and IPTC data, which no other format has a place for.
         `kept_kinds` in `src/image/metadata_save_rules.py` states these rules for the metadata window's note and the
         pre-save warning, so a change here changes it too.
+    extra_save_args: dict, optional
+        More `Image.save` arguments for TIFF and JPEG 2000 saves, such as a TIFF's compression or extra pages.
     """
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:
@@ -216,28 +219,30 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         image = qimage_to_pil_image(image)
     match file_format:
         case 'PNG':
-            image.save(file_path, 'PNG', pnginfo=_png_text_chunks(metadata), exif=exif)
+            image.save(file_path, 'PNG', pnginfo=png_text_chunks(metadata), exif=exif)
         case 'GIF':
             image.save(file_path, file_format, comment=comment_text)
         case  'JP2' | 'JPX' | 'J2C' | 'JPC':
-            image.save(file_path, comment=comment_text, exif=exif)
+            image.save(file_path, comment=comment_text, exif=exif, **(extra_save_args or {}))
         case 'JPG' | 'JPEG' | 'TIFF' | 'WEBP':
             if parameter_text != '':
-                _write_data_to_exif_description(exif, parameter_text)
+                write_data_to_exif_description(exif, parameter_text)
             save_args: dict[str, Any] = {}
             if file_format in ('JPG', 'JPEG'):
                 save_args = _jpeg_save_args(metadata)
             elif file_format == 'WEBP':
                 if metadata.xmp_packet is not None:
                     save_args['xmp'] = metadata.xmp_packet
-            elif metadata.xmp_packet is not None:  # Pillow's TIFF writer takes the XMP packet as a tag.
-                exif[_TIFF_XMP_TAG] = metadata.xmp_packet
+            else:
+                if metadata.xmp_packet is not None:  # Pillow's TIFF writer takes the XMP packet as a tag.
+                    exif[_TIFF_XMP_TAG] = metadata.xmp_packet
+                save_args.update(extra_save_args or {})
             _save_pil(image, file_path, file_format, exif, save_args)
         case _:
             raise ValueError(f'Unhandled format {file_format}')
 
 
-def _png_text_chunks(metadata: ImageMetadata) -> PngImagePlugin.PngInfo:
+def png_text_chunks(metadata: ImageMetadata) -> PngImagePlugin.PngInfo:
     """Returns every text entry as a PNG text chunk.
 
     Adds a `parameters` chunk if the parameters came from EXIF, and an XMP chunk if the packet came from another format.
@@ -381,6 +386,6 @@ def save_animation(frames: list[ImageFrame], file_path: str, options: AnimationS
         case 'WEBP':
             # An empty description would reload as an EXIF tag the image never had:
             if parameter_text != '' or (exif is not None and len(exif) > 0):
-                save_args['exif'] = _write_data_to_exif_description(exif, parameter_text or None)
+                save_args['exif'] = write_data_to_exif_description(exif, parameter_text or None)
     pil_frames = [qimage_to_pil_image(frame.image) for frame in frames]
     pil_frames[0].save(file_path, file_format, append_images=pil_frames[1:], **save_args)

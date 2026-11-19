@@ -155,6 +155,8 @@ The edited image model: layers, brushes, filters, MyPaint bindings, composite mo
   read.
 - `src/image/metadata_cache_fields.py`: The mapping between A1111 / Forge parameter fields and the `Cache` keys of the
   editor's generation settings.
+- `src/image/metadata_file.py`: Reads an image file's metadata, and writes edited metadata back to the file without
+  changing its pixels.
 - `src/image/metadata_save_rules.py`: Which parts of an image's metadata a save to each file format keeps.
 - `src/image/open_raster.py`: Provides compatibility between the OpenRaster file format and ImageStack object data.
 - `src/image/ora_extensions.py`: Extension points for the IntraPaint data `open_raster` stores in .ora files beyond the
@@ -272,6 +274,8 @@ The Qt user interface: windows, panels, widgets, input fields, canvas items, and
   rail inner edges.
 - `src/ui/ink_style.py`: Draws the IntraPaint Ink theme's controls: ink outlines, flat fills, and sticker-style primary
   actions.
+- `src/ui/metadata_mode.py`: Runs the standalone metadata mode, `IntraPaint.py --metadata [image]`, which opens only the
+  metadata window.
 - `src/ui/theme.py`: Applies the application's Qt style, theme and font size.
 
 ## `src/ui/graphics_items`
@@ -612,6 +616,8 @@ The main window and its dock system, and the secondary windows such as navigatio
 - `src/ui/window/rail_drag.py`: Dragging a dock's rail button: within its rail to tab or split the dock, or out of the
   rail into Qt's dock drag.
 - `src/ui/window/saved_layouts.py`: Named dock layouts, stored in the `Cache.SAVED_LAYOUTS` dict.
+- `src/ui/window/standalone_metadata_window.py`: The metadata window of the standalone metadata mode
+  (`IntraPaint.py --metadata`), which edits a file directly.
 - `src/ui/window/window_geometry.py`: Saves and restores top-level window geometry without letting saved values outrank
   the current displays.
 
@@ -625,6 +631,8 @@ Helpers not tied to one feature: threading, signals, singletons, argument parsin
 - `src/util/arg_parser.py`: Builds an argument parser for an image generation script.
 - `src/util/async_task.py`: Perform an async task in another thread.
 - `src/util/cached_data.py`: Utility class for tracking arbitrary cached data.
+- `src/util/file_replace.py`: Writes a file through a temporary file beside it, so a failed write leaves the original
+  unchanged.
 - `src/util/gc_paused.py`: Pauses Python's cyclic garbage collector around Qt calls that walk every live widget.
 - `src/util/generation_area_utils.py`: Pure helpers for generation area frames, resolution, follow-selection placement
   and handle resizing.

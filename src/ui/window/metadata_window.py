@@ -2,13 +2,18 @@
 
 `MetadataWindow` is non-modal and edits a copy of the open image's `ImageMetadata`. "Apply changes" emits
 `metadata_applied` with the edited copy, and the owner makes it the image's metadata, which a later save writes.
-Closing without applying discards the edits. The buttons that read from or write to the editor's generation settings
-change the editor at once, and are built by `show_editor_buttons`, so a mode without an editor can hide them.
+"Save to file" also writes the edits into the open file at once, without its pixels. Closing without applying discards
+the edits. The buttons that read from or write to the editor's generation settings change the editor at once, and are
+built by `show_editor_buttons`, so a mode without an editor can hide them.
+
+`StandaloneMetadataWindow` (`src/ui/window/standalone_metadata_window.py`) edits a file with no editor open. It
+overrides the class attributes that name the confirm action, and `_file_path_for_saves`.
 """
 import logging
 import os
 from typing import Any, Callable, NamedTuple, Optional
 
+from PIL import UnidentifiedImageError
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QCloseEvent, QFont, QIcon
@@ -17,12 +22,15 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QHBox
 
 from src.config.cache import Cache
 from src.image.image_metadata import A1111Parameters, ImageMetadata, ExifEntry, XMP_INFO_KEY
+from src.image.metadata_file import MetadataWriteMethod, format_writes_metadata, metadata_write_method, \
+    write_file_metadata
 from src.image.metadata_save_rules import MetadataKind, MetadataPart, format_keeps_metadata, format_name, \
     metadata_parts, split_metadata
 from src.image.metadata_cache_fields import PROMPT_FIELD, NEGATIVE_PROMPT_FIELD, apply_to_cache, update_from_cache, \
     cache_field_keys, read_field, write_field, differs_from_editor, editor_field_text
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.modal.dialog_footer import DialogFooter
+from src.ui.modal.modal_utils import request_choice, show_error_dialog
 from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA
@@ -84,6 +92,19 @@ REMOVE_LOCATION_TOOLTIP = _tr('Remove the EXIF GPS tags, and the city, state, co
                               ' XMP data. Captions, keywords and other text may still name a place.')
 REMOVE_ALL_LABEL = _tr('Remove all metadata')
 REMOVE_ALL_TOOLTIP = _tr('Remove every text entry, EXIF tag and embedded data block.')
+SAVE_TO_FILE_LABEL = _tr('Save to file')
+SAVE_TO_FILE_TOOLTIP = _tr('Apply the changes, and write the metadata into "{file_name}" now. The image itself is not'
+                           ' saved.')
+SAVE_TO_FILE_UNSAVED_TOOLTIP = _tr('The image hasn\'t been saved yet, so there is no file to write to.')
+SAVE_TO_FILE_UNSUPPORTED_TOOLTIP = _tr('IntraPaint can\'t write metadata into {file_format} files.')
+SAVED_TO_FILE_MESSAGE = _tr('Saved the metadata to "{file_name}".')
+SAVED_WITHOUT_PIXELS_MESSAGE = _tr('Saved the metadata to "{file_name}". Your unsaved edits to the image are not in'
+                                   ' the file yet.')
+SAVE_FAILED_TITLE = _tr('Saving the metadata failed')
+LOSSY_TITLE = _tr('Re-encode "{file_name}"?')
+LOSSY_MESSAGE = _tr('This file\'s image data is JPEG-compressed. Writing its metadata means re-encoding it, which loses'
+                    ' a little quality even at the highest setting.')
+REENCODE_LABEL = _tr('Re-encode at quality 100')
 APPLY_CHANGES_LABEL = _tr('Apply changes')
 CLOSE_LABEL = _tr('Close')
 DISCARD_LABEL = _tr('Discard changes')
@@ -200,7 +221,7 @@ def _configure_table(table: QTableWidget) -> None:
     table.verticalHeader().setVisible(False)
 
 
-class _MetadataRow(NamedTuple):
+class MetadataRow(NamedTuple):
     """One row of the All metadata table: a text entry, an EXIF tag, or a read-only IPTC, XMP or ICC row."""
     source: str
     name: str
@@ -219,14 +240,45 @@ class _MetadataRow(NamedTuple):
         return self.text_key is not None or self.exif is not None
 
 
+def metadata_rows(metadata: ImageMetadata, icc_row_value: str = ICC_ROW_VALUE) -> list[MetadataRow]:
+    """Returns the rows of the All metadata tab: text entries, EXIF tags, then read-only IPTC, XMP and ICC rows.
+
+    `icc_row_value` says what saves do with the color profile.
+    """
+    rows = [MetadataRow(SOURCE_TEXT, key, value, text_key=key) for key, value in metadata.text.items()]
+    for entry in metadata.exif_entries():
+        source = SOURCE_EXIF if entry.ifd is None else SOURCE_EXIF_GROUPS.get(entry.ifd, str(entry.ifd))
+        rows.append(MetadataRow(source, entry.name, _full_text(entry.value), exif=entry))
+    for iptc in metadata.iptc_entries():
+        rows.append(MetadataRow(SOURCE_IPTC, iptc.name, iptc.value))
+    xmp = metadata.format_info.get(XMP_INFO_KEY)
+    if xmp is not None:
+        rows.append(MetadataRow(SOURCE_XMP, XMP_ROW_NAME, _full_text(xmp)))
+    if metadata.has_icc_profile:
+        rows.append(MetadataRow(SOURCE_ICC, ICC_ROW_NAME, icc_row_value))
+    return rows
+
+
+class EditorFileHooks(NamedTuple):
+    """What "Save to file" needs from the editor."""
+    has_unsaved_edits: Callable[[], bool]
+    """Returns whether the open image has edits that aren't saved, which a metadata write leaves out."""
+    wait_for_save: Callable[[], None]
+    """Returns once any image save still writing in the background has finished, so the writes don't overlap."""
+
+
 class MetadataWindow(QDialog):
     """A non-modal window for viewing and editing a copy of one image's `ImageMetadata`."""
 
     metadata_applied = Signal(ImageMetadata)
     """Emitted with the edited metadata when the user applies their changes."""
 
+    _confirm_label = APPLY_CHANGES_LABEL
+    _unapplied_message = UNAPPLIED_MESSAGE
+    _icc_row_value = ICC_ROW_VALUE
+
     def __init__(self, metadata: ImageMetadata, get_file_path: Callable[[], str] = lambda: '',
-                 show_editor_buttons: bool = True) -> None:
+                 show_editor_buttons: bool = True, file_hooks: Optional[EditorFileHooks] = None) -> None:
         """Creates the window.
 
         Parameters
@@ -237,6 +289,8 @@ class MetadataWindow(QDialog):
             Returns the path the next save writes to, which decides the note about what the save keeps.
         show_editor_buttons: bool
             Whether to show the buttons that read from or write to the editor's generation settings.
+        file_hooks: EditorFileHooks, optional
+            Adds "Save to file", which writes the metadata into the file `get_file_path` names.
         """
         super().__init__()
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -251,7 +305,7 @@ class MetadataWindow(QDialog):
         self._field_rows: list[str] = []
         self._row_buttons: dict[str, tuple[QPushButton, QPushButton]] = {}
         self._prompt_buttons: dict[str, tuple[QPushButton, QPushButton]] = {}
-        self._metadata_rows: list[_MetadataRow] = []
+        self._metadata_rows: list[MetadataRow] = []
         self._other_views: list[str] = []
 
         layout = QVBoxLayout(self)
@@ -268,10 +322,15 @@ class MetadataWindow(QDialog):
         self._note_label = QLabel()
         self._note_label.setWordWrap(True)
         layout.addWidget(self._note_label)
-        self._footer = DialogFooter(APPLY_CHANGES_LABEL, self, cancel_text=CLOSE_LABEL)
+        self._footer = DialogFooter(self._confirm_label, self, cancel_text=CLOSE_LABEL)
         self._remove_all_button = self._footer.add_secondary_button(REMOVE_ALL_LABEL, destructive=True)
         self._remove_all_button.setToolTip(REMOVE_ALL_TOOLTIP)
         self._remove_all_button.clicked.connect(self._remove_all)
+        self._file_hooks = file_hooks
+        self._save_to_file_button: Optional[QPushButton] = None
+        if file_hooks is not None:
+            self._save_to_file_button = self._footer.add_secondary_button(SAVE_TO_FILE_LABEL)
+            self._save_to_file_button.clicked.connect(self.save_to_file)
         self._footer.accepted.connect(self.apply_changes)
         self._footer.rejected.connect(self.close)
         layout.addWidget(self._footer)
@@ -313,6 +372,22 @@ class MetadataWindow(QDialog):
         self._source = self._metadata.copy()
         self.metadata_applied.emit(self._source)
 
+    def save_to_file(self) -> bool:
+        """Applies the edits and writes the metadata into the open file, leaving its pixels as the file has them.
+
+        Returns whether the file was written. Failures are shown in a dialog.
+        """
+        if self._file_hooks is None:
+            return False
+        file_path = self._file_path_for_saves()
+        self._file_hooks.wait_for_save()
+        if not self._write_metadata(file_path):
+            return False
+        self.apply_changes()
+        message = SAVED_WITHOUT_PIXELS_MESSAGE if self._file_hooks.has_unsaved_edits() else SAVED_TO_FILE_MESSAGE
+        self._set_status(message.format(file_name=os.path.basename(file_path)))
+        return True
+
     def refresh(self) -> None:
         """Updates every tab from the metadata and the editor's settings."""
         self._refreshing = True
@@ -320,8 +395,7 @@ class MetadataWindow(QDialog):
             self._refresh_generation()
             self._refresh_all()
             self._refresh_other()
-            self._note_label.setText(save_format_note(self._metadata, self._get_file_path()))
-            self._remove_all_button.setEnabled(self._metadata.has_removable_data)
+            self._refresh_footer()
         finally:
             self._refreshing = False
 
@@ -332,11 +406,58 @@ class MetadataWindow(QDialog):
         super().closeEvent(event)
 
     def showEvent(self, event: Any) -> None:  # pylint: disable=invalid-name
-        """Updates the note, since the save path may have changed while the window was hidden."""
+        """Updates the note and "Save to file", since the save path may have changed while the window was hidden."""
         super().showEvent(event)
-        self._note_label.setText(save_format_note(self._metadata, self._get_file_path()))
+        self._refresh_footer()
 
     # Shared helpers:
+
+    def _file_path_for_saves(self) -> str:
+        """Returns the file the next save writes to, which "Save to file" writes and the save note describes."""
+        return self._get_file_path()
+
+    def _refresh_footer(self) -> None:
+        """Updates the save note and the footer buttons for the metadata and the file path."""
+        file_path = self._file_path_for_saves()
+        self._note_label.setText(save_format_note(self._metadata, file_path))
+        self._remove_all_button.setEnabled(self._metadata.has_removable_data)
+        if self._save_to_file_button is None:
+            return
+        if file_path == '' or not os.path.isfile(file_path):
+            tooltip = SAVE_TO_FILE_UNSAVED_TOOLTIP
+        elif not format_writes_metadata(file_path):
+            tooltip = SAVE_TO_FILE_UNSUPPORTED_TOOLTIP.format(
+                file_format=format_name(os.path.splitext(file_path)[1].lstrip('.')))
+        else:
+            tooltip = ''
+        self._save_to_file_button.setEnabled(tooltip == '')
+        self._save_to_file_button.setToolTip(tooltip or SAVE_TO_FILE_TOOLTIP.format(
+            file_name=os.path.basename(file_path)))
+
+    def _confirm_lossy_write(self, file_path: str, extra_choices: tuple[str, ...] = ()) -> Optional[int]:
+        """Asks before a write that re-encodes JPEG-compressed pixels.
+
+        Returns 0 to re-encode, the index of a choice in `extra_choices` plus one, or None to cancel.
+        """
+        return request_choice(self, LOSSY_TITLE.format(file_name=os.path.basename(file_path)), LOSSY_MESSAGE,
+                              [REENCODE_LABEL, *extra_choices])
+
+    def _write_metadata(self, file_path: str) -> bool:
+        """Writes the edited metadata into `file_path`, asking first if the write loses quality.
+
+        Returns whether the file was written. A failure is shown in a dialog.
+        """
+        try:
+            method = metadata_write_method(file_path)
+            if method == MetadataWriteMethod.LOSSY_REENCODE and self._confirm_lossy_write(file_path) != 0:
+                return False
+            write_file_metadata(file_path, self._metadata.copy(),
+                                allow_lossy=method == MetadataWriteMethod.LOSSY_REENCODE)
+        except (OSError, ValueError, UnidentifiedImageError) as err:
+            logger.error(f'Writing metadata to {file_path} failed: {err}')
+            show_error_dialog(self, SAVE_FAILED_TITLE, err)
+            return False
+        return True
 
     def _set_status(self, text: str) -> None:
         self._status_label.setText(text)
@@ -348,8 +469,8 @@ class MetadataWindow(QDialog):
         assert self._footer.cancel_button is not None
         self._footer.cancel_button.setText(DISCARD_LABEL if modified else CLOSE_LABEL)
         if modified:
-            self._set_status(UNAPPLIED_MESSAGE)
-        elif self._status_label.text() == UNAPPLIED_MESSAGE:
+            self._set_status(self._unapplied_message)
+        elif self._status_label.text() == self._unapplied_message:
             self._set_status('')
 
     def _edited(self) -> None:
@@ -706,24 +827,10 @@ class MetadataWindow(QDialog):
         row.addStretch(1)
         self._tabs.addTab(tab, ALL_TAB)
 
-    def _collect_rows(self) -> list[_MetadataRow]:
-        rows = [_MetadataRow(SOURCE_TEXT, key, value, text_key=key) for key, value in self._metadata.text.items()]
-        for entry in self._metadata.exif_entries():
-            source = SOURCE_EXIF if entry.ifd is None else SOURCE_EXIF_GROUPS.get(entry.ifd, str(entry.ifd))
-            rows.append(_MetadataRow(source, entry.name, _full_text(entry.value), exif=entry))
-        for iptc in self._metadata.iptc_entries():
-            rows.append(_MetadataRow(SOURCE_IPTC, iptc.name, iptc.value))
-        xmp = self._metadata.format_info.get(XMP_INFO_KEY)
-        if xmp is not None:
-            rows.append(_MetadataRow(SOURCE_XMP, XMP_ROW_NAME, _full_text(xmp)))
-        if self._metadata.has_icc_profile:
-            rows.append(_MetadataRow(SOURCE_ICC, ICC_ROW_NAME, ICC_ROW_VALUE))
-        return rows
-
     def _refresh_all(self) -> None:
         table = self._all_table
         selected = self._selected_row()
-        rows = self._collect_rows()
+        rows = metadata_rows(self._metadata, self._icc_row_value)
         table.blockSignals(True)
         try:
             if [(row.source, row.name) for row in rows] != [(row.source, row.name) for row in self._metadata_rows]:
@@ -748,7 +855,7 @@ class MetadataWindow(QDialog):
         self._remove_location_button.setEnabled(self._metadata.has_location_data)
         self._show_selected_row()
 
-    def _selected_row(self) -> Optional[_MetadataRow]:
+    def _selected_row(self) -> Optional[MetadataRow]:
         index = self._all_table.currentRow()
         if index < 0 or index >= len(self._metadata_rows) or len(self._all_table.selectedItems()) == 0:
             return None
@@ -774,7 +881,7 @@ class MetadataWindow(QDialog):
             finally:
                 self._refreshing = was_refreshing
 
-    def _set_row_value(self, row: _MetadataRow, value: str) -> None:
+    def _set_row_value(self, row: MetadataRow, value: str) -> None:
         if not row.editable or value == row.value:
             return
         if row.text_key is not None:
