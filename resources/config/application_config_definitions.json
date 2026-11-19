@@ -228,7 +228,7 @@
         "category": "Interface",
         "description": "When zooming in on individual inpainting options, focus the change region.",
         "type": "bool",
-        "default": false,
+        "default": true,
         "saved": true
     },
     "show_options_full_resolution": {

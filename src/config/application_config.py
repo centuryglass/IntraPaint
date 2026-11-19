@@ -32,6 +32,7 @@ class AppConfig(AppConfigKeys, Config, metaclass=Singleton):
     # Defaults from released versions, so installs that never changed them follow the current default:
     PREVIOUS_DEFAULTS = {
         'selection_color': ['#55ff0000'],
+        'selection_screen_zooms_to_changed': [False],
         'style': ['fusion'],
         'theme': ['None']
     }
