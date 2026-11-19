@@ -114,7 +114,6 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.math_utils import clamp
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
-from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
 from src.util.recent_files import recent_files, clear_recent_files
@@ -124,9 +123,6 @@ from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_ow
     set_clipboard_image
 from src.util.visual.display_size import get_screen_size
 from src.util.rich_text import rich_text_format
-
-# Optional spacenav support:
-SpacenavManager = optional_import('src.controller.spacenav_manager', attr_name='SpacenavManager')
 
 logger = logging.getLogger(__name__)
 
@@ -289,15 +285,6 @@ class AppController(MenuBuilder):
         self._settings_modal = SettingsModal(self._window)
         self.init_settings(self._settings_modal)
         self._settings_modal.changes_saved.connect(self.update_settings)
-
-        # TODO: Spacemouse support is broken due to some strange thread management issues that popped up around the
-        #       transition to Qt6. The feature was fairly underwhelming anyway, so fixing it is low priority.
-        # # Configure support for spacemouse panning, if relevant:
-        # if SpacenavManager is not None and self._window is not None:
-        #     assert SpacenavManager is not None
-        #     nav_manager = SpacenavManager(self._window, self._image_stack)
-        #     nav_manager.start_thread()
-        #     self._nav_manager = nav_manager
 
         # Set up menus:
         self.build_menus()

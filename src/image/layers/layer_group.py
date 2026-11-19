@@ -722,7 +722,7 @@ class LayerGroup(LayerParent):
         if not self._render_timer.isActive():
             self._render_timer.start()
 
-    def signal_content_changed(self, change_bounds: QRect) -> None:
+    def signal_content_changed(self, change_bounds: QRect, pixels_changed: bool = True) -> None:
         """Invalidates the cached tiles within change_bounds and the pixmap, then sends the content change signal.
 
         Empty change_bounds invalidate every tile. Content outside non-empty change_bounds must be unchanged, or the
@@ -737,7 +737,7 @@ class LayerGroup(LayerParent):
             if self._image is not None:
                 self._stale_area += self._tiles.tile_aligned(change_bounds)
         self.invalidate_pixmap()
-        super().signal_content_changed(change_bounds)
+        super().signal_content_changed(change_bounds, pixels_changed)
 
     def _start_render(self) -> None:
         """Invalidates the cached image and reports the union of the areas scheduled since the last render."""

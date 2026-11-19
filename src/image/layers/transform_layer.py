@@ -163,7 +163,9 @@ class TransformLayer(Layer):
             were rendered onto.
         """
         raster_offset = self._integer_translation(transform)
-        if raster_offset is not None and image_adjuster is None and transform_needs_smooth_sampling(self._transform):
+        # Hidden layers render nothing, so they skip the raster to keep from rebuilding it.
+        if raster_offset is not None and image_adjuster is None and self.visible \
+                and transform_needs_smooth_sampling(self._transform):
             raster = self._image_space_raster()
             if raster is not None:
                 origin, raster_image = raster
@@ -188,10 +190,21 @@ class TransformLayer(Layer):
             return QPoint(round(transform.dx()), round(transform.dy()))
         return None
 
-    def signal_content_changed(self, change_bounds: QRect) -> None:
-        """Updates the cached raster to match the change before reporting it."""
-        self._update_raster(change_bounds)
-        super().signal_content_changed(change_bounds)
+    def signal_content_changed(self, change_bounds: QRect, pixels_changed: bool = True) -> None:
+        """Updates the cached raster to match a pixel change before reporting it."""
+        if pixels_changed:
+            self._update_raster(change_bounds)
+        super().signal_content_changed(change_bounds, pixels_changed)
+
+    def set_visible(self, visible: bool) -> None:
+        """Sets whether this layer is visible, dropping the cached raster when it is hidden."""
+        if not visible:
+            self._drop_cached_renders()
+        super().set_visible(visible)
+
+    def _drop_cached_renders(self) -> None:
+        """Drops the cached raster."""
+        self._raster = None
 
     def _paint_raster(self, raster_image: QImage, origin: QPoint, area: QRect) -> None:
         """Redraws the part of the raster inside area (in raster coordinates) from the layer image."""
@@ -207,8 +220,9 @@ class TransformLayer(Layer):
         """Returns the layer image drawn through its transform, with the image position of its top left corner.
 
         Scaled and rotated layers are composited from this image with whole-pixel translations, so every pixel is
-        sampled once from the layer image, whatever region of the canvas is being rendered. The raster is rebuilt
-        when the transform changes, and its changed area is redrawn when the layer content changes.
+        sampled once from the layer image, whatever region of the canvas is being rendered. The changed area is
+        redrawn when the layer's pixels change. The raster is dropped when the transform changes, when the layer is
+        hidden and when its parent is cleared, and the next render rebuilds it.
         """
         if self._raster is None:
             layer_image = self.get_qimage()

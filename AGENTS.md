@@ -129,7 +129,7 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   without it.
 - **Ask the maintainer before adding a dependency,** and keep them minimal. Every new package has to survive both
   PyInstaller builds and the exact-pin policy under "Running".
-- **Optional dependencies stay optional.** Packages listed only in `optional-requirements.txt` (themes, `spnav`, the
+- **Optional dependencies stay optional.** Packages listed only in `optional-requirements.txt` (themes, the
   GLID-3-XL stack) are imported lazily or behind `try`/`except ImportError`, and IntraPaint must start without any of
   them installed.
 - Match the surrounding code's style, naming, and structure.
@@ -384,7 +384,7 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
 - **`src/glid_3_xl/`** and the GLID-3-XL generators/server are legacy. Assume they won't be touched unless something
   there is actively broken.
 - The project root may contain a few vendored/symlinked library directories (e.g. `latent-diffusion`,
-  `taming-transformers`, `pyspacenav`, `colabFiles`) that are not part of the app's own source; don't treat them as
+  `taming-transformers`, `colabFiles`) that are not part of the app's own source; don't treat them as
   code to modify. `lib/` is different: it holds the checked-in libmypaint binaries the app loads and bundles
   (`lib/README.md`).
 
