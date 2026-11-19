@@ -1,11 +1,13 @@
 """Launch test for a packaged IntraPaint build: fail unless the bundle starts and reaches the editing state.
 
 CI's bundle job (.github/workflows/ci.yml) runs this on each PyInstaller bundle, because a bundle can fail where
-a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Three checks:
+a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Four checks:
 1. `--help` exits cleanly. IntraPaint.py imports most of the app before parsing arguments, so this covers imports.
-2. A `--mode none` launch logs the change to the editing state within the timeout, without failing to load an optional
+2. `--metadata <image> --print` prints a test image's generation parameters and exits cleanly. That covers the
+   standalone metadata mode's startup path, which skips AppController.
+3. A `--mode none` launch logs the change to the editing state within the timeout, without failing to load an optional
    tool. That covers AppController and the main window. The app never exits on its own, so it's killed afterwards.
-3. On Linux, the idle app then uses at most `IDLE_CPU_LIMIT` of a core. That catches a relayout loop, an endless
+4. On Linux, the idle app then uses at most `IDLE_CPU_LIMIT` of a core. That catches a relayout loop, an endless
    animation or a fast polling timer, which only show up as CPU use. `test/controller/idle_activity_test.py` checks for
    the causes it can reach without running the event loop. The check reads `/proc`, so it doesn't run on Windows.
 
@@ -18,17 +20,22 @@ import argparse
 import os
 import queue
 import signal
+import struct
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import zlib
 
 EDITING_STATE_LINE = 'State change: from init to editing'
 # Logged by src/util/optional_import.py when an optional tool fails to import, e.g. the MyPaint brush tool when
 # libmypaint doesn't load. Other optional imports (themes, spacenav, GLID-3-XL) are expected to fail in a bundle.
 OPTIONAL_IMPORT_FAILURE = 'Failed to load optional import from src.tools.'
 HELP_TIMEOUT_SECONDS = 120
+METADATA_TEST_PARAMETERS = 'smoke test prompt'
+# The line `--print` writes for the test image's parameters: source, name and value, separated by tabs.
+METADATA_PRINT_LINE = f'Text\tparameters\t{METADATA_TEST_PARAMETERS}'
 # The app settles for IDLE_SETTLE_SECONDS after reaching the editing state, then its CPU use is measured over
 # IDLE_SAMPLE_SECONDS. An idle app uses well under 1% of a core, and the loops this catches use far more.
 IDLE_SETTLE_SECONDS = 3
@@ -62,6 +69,35 @@ def _check_help(executable: str, env: dict[str, str]) -> bool:
     print(result.stdout + result.stderr)
     if result.returncode != 0:
         print(f'FAIL: --help exited with code {result.returncode}')
+        return False
+    return True
+
+
+def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
+    return struct.pack('>I', len(data)) + chunk_type + data + struct.pack('>I', zlib.crc32(chunk_type + data))
+
+
+def _write_test_png(path: str) -> None:
+    """Writes a 1x1 grey PNG with a `parameters` text chunk, using only the standard library."""
+    header = struct.pack('>IIBBBBB', 1, 1, 8, 0, 0, 0, 0)
+    text = b'parameters\0' + METADATA_TEST_PARAMETERS.encode('latin-1')
+    with open(path, 'wb') as png_file:
+        png_file.write(b'\x89PNG\r\n\x1a\n' + _png_chunk(b'IHDR', header) + _png_chunk(b'tEXt', text)
+                       + _png_chunk(b'IDAT', zlib.compress(b'\0\x80')) + _png_chunk(b'IEND', b''))
+
+
+def _check_metadata_print(executable: str, env: dict[str, str], temp_dir: str) -> bool:
+    image_path = os.path.join(temp_dir, 'metadata_test.png')
+    _write_test_png(image_path)
+    print(f'Running {executable} --metadata {image_path} --print')
+    result = subprocess.run([executable, '--metadata', image_path, '--print'], env=env, capture_output=True, text=True,
+                            errors='replace', timeout=HELP_TIMEOUT_SECONDS, check=False)
+    print(result.stdout + result.stderr)
+    if result.returncode != 0:
+        print(f'FAIL: --metadata --print exited with code {result.returncode}')
+        return False
+    if METADATA_PRINT_LINE not in result.stdout.splitlines():
+        print(f'FAIL: --metadata --print did not print "{METADATA_PRINT_LINE}"')
         return False
     return True
 
@@ -157,7 +193,8 @@ def main() -> int:
     executable = os.path.abspath(args.executable)
     with tempfile.TemporaryDirectory() as temp_dir:
         env = _bundle_env(temp_dir)
-        if not _check_help(executable, env) or not _check_launch(executable, env, args.timeout):
+        if not _check_help(executable, env) or not _check_metadata_print(executable, env, temp_dir) \
+                or not _check_launch(executable, env, args.timeout):
             return 1
     print('PASS')
     return 0

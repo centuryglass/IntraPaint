@@ -377,6 +377,10 @@ IntraPaint can read and write the following AI image generation parameters in im
 
 It does this in a format compatible with the Stable Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "Image metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
 
+**Save to file** in the metadata window writes the metadata into the open file right away, without saving the image itself. PNG, JPEG, WebP, GIF and .ora files keep their image data exactly as it was. TIFF and JPEG 2000 files are re-encoded without loss, and IntraPaint asks first before re-encoding a JPEG-compressed TIFF.
+
+To view or edit an image's metadata without opening the editor, run `IntraPaint.py --metadata <image>`, or the packaged IntraPaint executable with the same option. Only the metadata window opens, with **Save** and **Save as...** buttons. Without an image, it asks for one. Add `--print` to print the metadata and exit instead of opening a window.
+
 ---
 
 ## Layer menu

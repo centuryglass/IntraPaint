@@ -105,7 +105,7 @@ from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
 from src.ui.window.dock_placement import DockEdge
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow
-from src.ui.window.metadata_window import MetadataWindow
+from src.ui.window.metadata_window import MetadataWindow, EditorFileHooks
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.window_geometry import restore_window
 from src.undo_stack import UndoStack
@@ -1303,7 +1303,10 @@ class AppController(MenuBuilder):
         """Opens the window for viewing and editing the image's metadata, or raises it if it is already open."""
         metadata = self._image_io.metadata
         if self._metadata_window is None:
-            self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH))
+            file_hooks = EditorFileHooks(has_unsaved_edits=lambda: not UndoStack().is_clean(),
+                                         wait_for_save=self._image_io.wait_for_pending_save)
+            self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH),
+                                                   file_hooks=file_hooks)
             self._metadata_window.metadata_applied.connect(self._apply_edited_metadata)
             self._image_io.on_metadata_replaced = self._metadata_window.set_metadata
         else:
