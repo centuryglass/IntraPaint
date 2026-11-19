@@ -1684,7 +1684,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+        <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only changes the selected parts of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4711,7 +4711,7 @@
         <source>
 &lt;h1&gt;Stable Diffusion WebUI Generator Setup&lt;/h1&gt;
 &lt;p&gt;
-    To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
+    To use the Stable Diffusion WebUI generator, you will need to download at least one Stable Diffusion model file, 
     install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
 &lt;/p&gt;</source>
         <translatorcomment>glossary: not "Steps" - the steps of this setup guide, not sampling steps.</translatorcomment>
@@ -5158,26 +5158,6 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
         <source>Quit (unsaved changes will be lost)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>SMTP Failure</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>An error was encountered while attempting to send your bug report. Please submit it manually.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Bug Reported</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Your bug report was successfully sent.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6312,12 +6292,12 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>Previous option ({key})</source>
+        <source>Previous option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>Next option ({key})</source>
+        <source>Next option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6372,12 +6352,47 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>{left_key}{right_key} browse &amp;nbsp; {first_key}-{last_key} open option &amp;nbsp; {up_key} single view &amp;nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {zoom_in_key}{zoom_out_key} zoom</source>
-        <translation>{left_key}{right_key} 浏览 &amp;nbsp; {first_key}-{last_key} 打开选项 &amp;nbsp; {up_key} 单张视图 &amp;nbsp; {pan_key}+{left_mouse_icon} 或 {middle_mouse_icon} 平移 &amp;nbsp; {zoom_in_key}{zoom_out_key} 缩放</translation>
+        <source>{keys} browse</source>
+        <translation>{keys} 浏览</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>{compare_key} hold: original &amp;nbsp; {left_key}{right_key} browse &amp;nbsp; {down_key} back to grid &amp;nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {v_scroll_icon} zoom</source>
+        <source>{first_key}-{last_key} open option</source>
+        <translation>{first_key}-{last_key} 打开选项</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{keys} single view</source>
+        <translation>{keys} 单张视图</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{keys} zoom</source>
+        <translation>{keys} 缩放</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{keys} hold: original</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{keys} back to grid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan</source>
+        <translation>{pan_key}+{left_mouse_icon} 或 {middle_mouse_icon} 平移</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{middle_mouse_icon} pan</source>
+        <translation>{middle_mouse_icon} 平移</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{v_scroll_icon} zoom</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6547,12 +6562,6 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Lock the width:height ratio ({modifier} locks it temporarily)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/input_fields/geometry_block.py"/>
-        <source>{description}
-Keys: {decrease} / {increase}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8702,12 +8711,17 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
-        <source>Hold {subtract_keys} to subtract. {line_keys} draws a straight line.</source>
+        <source>Hold {keys} to subtract.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
-        <source>Hold {subtract_keys} to subtract. {line_keys} draws a straight line. Right-click adds a context pin.</source>
+        <source>{keys} draws a straight line.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
+        <source>Right-click adds a context pin.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -9119,12 +9133,6 @@ Keys: {decrease} / {increase}</source>
         <source>%</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
-        <source>{description}
-Keys: {decrease} / {increase}</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>ui.panel.tool_control_panels.text_panel</name>
@@ -9176,12 +9184,6 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Font size</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
-        <source>{description}
-Keys: {decrease} / {increase}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10765,6 +10767,18 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>{modifier_or_modifiers}: pick color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/shared_text.py"/>
+        <source>{description}
+Keys: {decrease} / {increase}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/shared_text.py"/>
+        <source>{description}
+Key: {key}</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
