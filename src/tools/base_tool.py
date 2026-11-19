@@ -131,6 +131,12 @@ class BaseTool(QObject):
         return modifier_hint_str.format(modifier_or_modifiers=modifier)
 
     @staticmethod
+    def join_hints(*hints: str, separator: str = ' - ') -> str:
+        """Joins the non-empty hints with a separator, so an unbound modifier's empty hint leaves no stray separator.
+        Pass `separator='<br/>'` to stack hints on separate lines."""
+        return separator.join(hint for hint in hints if hint != '')
+
+    @staticmethod
     def fixed_aspect_hint() -> str:
         """Returns the hint for the fixed aspect ratio key, if set"""
         return f'{BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT)}'

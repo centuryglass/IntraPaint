@@ -82,7 +82,8 @@ class CloneStampTool(QtPaintBrushTool):
         """Return text describing different input functionality."""
         brush_hint = CLONE_STAMP_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                      right_mouse_icon=right_button_hint_text())
-        return f'{brush_hint}<br/>{BrushTool.brush_control_hints()}<br/>{BrushTool.get_input_hint(self)}'
+        return BrushTool.join_hints(brush_hint, BrushTool.brush_control_hints(), BrushTool.get_input_hint(self),
+                                   separator='<br/>')
 
     # noinspection PyMethodMayBeStatic
     def get_control_panel(self) -> Optional[QWidget]:

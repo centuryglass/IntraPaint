@@ -65,9 +65,8 @@ class FillTool(BaseTool):
         """Return text describing different input functionality."""
         fill_hint = FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
-        if len(eyedropper_hint) > 0:
-            eyedropper_hint = ' - ' + eyedropper_hint
-        return f'{fill_hint}{eyedropper_hint}<br/>{super().get_input_hint()}'
+        return BaseTool.join_hints(BaseTool.join_hints(fill_hint, eyedropper_hint), super().get_input_hint(),
+                                   separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

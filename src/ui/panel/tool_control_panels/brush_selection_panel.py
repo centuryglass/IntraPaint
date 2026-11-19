@@ -11,7 +11,8 @@ from src.ui.input_fields.selection_mode_bar import modifier_keys_text
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
-from src.ui.panel.tool_control_panels.stroke_block import KEYS_TOOLTIP, PIXEL_SUFFIX, tool_section
+from src.ui.panel.tool_control_panels.stroke_block import PIXEL_SUFFIX, tool_section
+from src.util.shared_text import keys_tooltip
 from src.util.visual.selection_mode import SelectionModifiers
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -27,9 +28,10 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 TOOL_MODE_SELECT = _tr('Select')
 TOOL_MODE_DESELECT = _tr('Deselect')
 BRUSH_SECTION_TITLE = _tr('Brush')
-MODE_HINT = _tr('Hold {subtract_keys} to subtract. {line_keys} draws a straight line.')
-MODE_HINT_WITH_PINS = _tr('Hold {subtract_keys} to subtract. {line_keys} draws a straight line. Right-click adds a '
-                          'context pin.')
+# The mode hint is these sentences joined by spaces, leaving out the ones whose modifier is unbound:
+HINT_SUBTRACT = _tr('Hold {keys} to subtract.')
+HINT_LINE = _tr('{keys} draws a straight line.')
+HINT_PINS = _tr('Right-click adds a context pin.')
 
 
 class BrushSelectionPanel(SelectionPanel):
@@ -45,9 +47,9 @@ class BrushSelectionPanel(SelectionPanel):
         size_field = SliderField(normalize_row_label(cache.get_label(Cache.SELECTION_BRUSH_SIZE)),
                                  cache.get(Cache.SELECTION_BRUSH_SIZE), minimum, maximum, step=step,
                                  suffix=PIXEL_SUFFIX, parent=self)
-        size_field.setToolTip(KEYS_TOOLTIP.format(description=cache.get_tooltip(Cache.SELECTION_BRUSH_SIZE),
-                                                  decrease=key_config.get(KeyConfig.BRUSH_SIZE_DECREASE),
-                                                  increase=key_config.get(KeyConfig.BRUSH_SIZE_INCREASE)))
+        size_field.setToolTip(keys_tooltip(cache.get_tooltip(Cache.SELECTION_BRUSH_SIZE),
+                                         key_config.get(KeyConfig.BRUSH_SIZE_DECREASE),
+                                         key_config.get(KeyConfig.BRUSH_SIZE_INCREASE)))
 
         def _field_changed(value: int | float) -> None:
             if cache.get(Cache.SELECTION_BRUSH_SIZE) != value:
@@ -59,9 +61,12 @@ class BrushSelectionPanel(SelectionPanel):
         self.insert_into_layout(tool_section(BRUSH_SECTION_TITLE, size_field))
 
         def _update_hint(_=None) -> None:
-            text = MODE_HINT_WITH_PINS if cache.get(Cache.IMAGE_GENERATION_AVAILABLE) else MODE_HINT
-            self.set_mode_hint(text.format(subtract_keys=modifier_keys_text((KeyConfig.SELECTION_SUBTRACT_MODIFIER,)),
-                                           line_keys=modifier_keys_text((KeyConfig.LINE_MODIFIER,))))
+            subtract_keys = modifier_keys_text((KeyConfig.SELECTION_SUBTRACT_MODIFIER,))
+            line_keys = modifier_keys_text((KeyConfig.LINE_MODIFIER,))
+            sentences = [HINT_SUBTRACT.format(keys=subtract_keys) if subtract_keys != '' else '',
+                         HINT_LINE.format(keys=line_keys) if line_keys != '' else '',
+                         HINT_PINS if cache.get(Cache.IMAGE_GENERATION_AVAILABLE) else '']
+            self.set_mode_hint(' '.join(sentence for sentence in sentences if sentence != ''))
         cache.connect(size_field, Cache.IMAGE_GENERATION_AVAILABLE, _update_hint)
         for config_key in (KeyConfig.SELECTION_SUBTRACT_MODIFIER, KeyConfig.LINE_MODIFIER):
             key_config.connect(size_field, config_key, _update_hint)

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.geometry_block import (ANGLE, GeometryBlock, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y,
-                                                bind_step_keys, MORE_KEY_STEPS)
+                                                bind_step_keys, MORE_KEY_STEPS, LOCK_TOOLTIP)
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -243,3 +243,18 @@ class GeometryBlockTest(IntraPaintTestCase):
         self.assertEqual(block.value(WIDTH), 1024)
         block.field(WIDTH).set_value(1)
         self.assertEqual(block.value(WIDTH), 64)
+
+    def test_tooltips_with_unbound_keys(self) -> None:
+        """An unbound step key leaves the 'Keys' line, and an unbound fixed-aspect modifier leaves the lock hint."""
+        key_config = KeyConfig()
+        key_config.set(KeyConfig.MOVE_LEFT, '')
+        key_config.set(KeyConfig.FIXED_ASPECT_MODIFIER, '')
+        block = GeometryBlock()
+        bind_step_keys(block, _FakeHotkeyFilter(), KeyConfig, lambda: True)
+        tooltip = block.field(X).toolTip()
+        self.assertIn(key_config.get(KeyConfig.MOVE_RIGHT), tooltip)
+        self.assertNotIn(' / ', tooltip)
+        self.assertEqual(block.lock_button().toolTip(), LOCK_TOOLTIP)
+        key_config.set(KeyConfig.MOVE_RIGHT, '')
+        bind_step_keys(block, _FakeHotkeyFilter(), KeyConfig, lambda: True)
+        self.assertNotIn('Key', block.field(X).toolTip())

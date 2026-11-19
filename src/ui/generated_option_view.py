@@ -263,7 +263,7 @@ class GeneratedOptionView(ImageGraphicsView):
                 label = CURRENT_CAPTION if i == 0 and reference_count > 1 else ORIGINAL_CAPTION
             if state.single_view and i >= reference_count:
                 label = SINGLE_VIEW_CAPTION.format(label=label, count=option_count)
-                if not state.comparing:
+                if not state.comparing and state.compare_key != '':
                     label = f'{label}  \u00b7  {COMPARE_HINT_CAPTION.format(key=state.compare_key)}'
             visible = rect.intersected(viewport_rect)
             caption = QRect(visible.left(), rect.bottom() + 1, visible.width(), CAPTION_HEIGHT)

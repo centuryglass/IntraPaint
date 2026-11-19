@@ -36,12 +36,14 @@ User settings:
 """
 import logging
 import os
+import platform
 import sys
 import webbrowser
 from argparse import Namespace
 from typing import Any, Optional, Callable
 from weakref import WeakSet
 
+import PySide6
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
@@ -221,6 +223,10 @@ class AppController(MenuBuilder):
         app.setApplicationDisplayName(APP_NAME)
         app.setApplicationVersion(APP_VERSION)
         config = AppConfig()
+        self._except_hook: Optional[QtExceptHook] = None
+        if config.get(AppConfig.USE_ERROR_HANDLER):
+            self._except_hook = QtExceptHook(extra_info_cb=self._environment_info)
+            self._except_hook.enable()
         cache = Cache()
         cache.apply_args(args)
         self._layer_dock_panel: Optional[LayerPanel] = None
@@ -242,6 +248,8 @@ class AppController(MenuBuilder):
         self.menu_window = self._window
         self._image_io = ImageIO(self._window, self._image_stack, lambda: self._generator)
         self._autosave = AutosaveController(self._image_stack, self._image_io, self._window)
+        if self._except_hook is not None:
+            self._except_hook.set_recovery(self._autosave.keep_for_recovery, lambda: self._autosave.enabled)
         self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
         self._window.confirm_close = self._confirm_quit
@@ -530,12 +538,19 @@ class AppController(MenuBuilder):
 
         self._tool_controller.active_tool_changed.connect(_update_last_active_tool)
 
+    def _environment_info(self) -> str:
+        """Returns the environment details appended to error reports."""
+        generator = self._generator.get_display_name() if self._generator is not None else 'none'
+        return '\n'.join((f'IntraPaint version: {APP_VERSION}',
+                          f'OS: {platform.platform()}',
+                          f'Python: {platform.python_version()}',
+                          f'PySide6: {PySide6.__version__}',
+                          f'PyInstaller bundle: {is_pyinstaller_bundle()}',
+                          f'Active generator: {generator}'))
+
     def start_app(self) -> None:
         """Start the application."""
         app = QApplication.instance() or QApplication(sys.argv)
-        if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
-            QtExceptHook(recovery_cb=self._autosave.keep_for_recovery,
-                         recovery_enabled_cb=lambda: self._autosave.enabled).enable()
         self._window.show()
         self._update_enabled_actions()
         restored = self._autosave.offer_recovery()

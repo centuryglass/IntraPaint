@@ -46,10 +46,6 @@
   "src/util/optional_import.py": {
     "broad-exception-caught": 1
   },
-  "src/util/qtexcepthook.py": {
-    "consider-using-f-string": 1,
-    "super-with-arguments": 1
-  },
   "src/util/visual/image_fill.py": {
     "raise-missing-from": 1,
     "unused-import": 1
