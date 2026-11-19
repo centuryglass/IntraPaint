@@ -429,6 +429,18 @@ class MetadataFileTest(IntraPaintTestCase):
                 if extension != 'gif':
                     self.assertEqual('Someone', loaded.exif[ExifTags.Base.Artist])
 
+    def test_tiff_metadata_can_be_copied_and_saved(self) -> None:
+        """A loaded TIFF's metadata copies and saves again, keeping its sub-IFD tags, after the file is closed."""
+        path = self._path('loaded.tiff')
+        save_image_with_metadata(self.image, path, _metadata_with_exif())
+        _, loaded = load_image(path)
+        copied = loaded.copy()
+        self.assertEqual(0.01, copied.exif.get_ifd(IFD.Exif)[ExifTags.Base.ExposureTime])
+        self.assertEqual('N', copied.exif.get_ifd(IFD.GPSInfo)[ExifTags.GPS.GPSLatitudeRef])
+        save_image_with_metadata(self.image, self._path('saved_again.tiff'), copied)
+        _, reloaded = load_image(self._path('saved_again.tiff'))
+        self.assertEqual('Someone', reloaded.exif[ExifTags.Base.Artist])
+
     def test_viewing_adds_no_empty_ifds(self) -> None:
         """Listing and looking up EXIF data of an image without sub-IFDs doesn't add empty ones to the saved file."""
         metadata = ImageMetadata({PARAMETERS_KEY: 'p'}, _exif({None: {ExifTags.Base.Artist: 'Someone'}}))

@@ -10,6 +10,7 @@ This module imports nothing from `src.config`: `image_format_utils` imports it, 
 `src/image/metadata_cache_fields.py`.
 """
 import copy
+import io
 import json
 import logging
 import re
@@ -292,7 +293,16 @@ class ImageMetadata:
                     text[COMMENT_KEY] = comment
                     continue
             format_info[key] = value
-        return ImageMetadata(text, image.getexif(), format_info)
+        exif = image.getexif()
+        exif_file = getattr(exif, 'fp', None)
+        if exif_file is not None and not isinstance(exif_file, io.BytesIO):
+            # A TIFF's EXIF reads its sub-IFDs from the image file when they are first used, so it can't be copied and
+            # breaks once the file closes. It reads them from an in-memory copy of the file instead:
+            position = exif_file.tell()
+            exif_file.seek(0)
+            exif.fp = io.BytesIO(exif_file.read())
+            exif_file.seek(position)
+        return ImageMetadata(text, exif, format_info)
 
     @classmethod
     def from_ora_json(cls, metadata_json: Optional[str]) -> 'ImageMetadata':
