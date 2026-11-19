@@ -5143,26 +5143,6 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Quit (unsaved changes will be lost)</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>SMTP Failure</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>An error was encountered while attempting to send your bug report. Please submit it manually.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Bug Reported</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Your bug report was successfully sent.</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>image.animation</name>
