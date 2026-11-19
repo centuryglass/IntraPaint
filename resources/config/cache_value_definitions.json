@@ -956,7 +956,7 @@
         "label": "Edit mode:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
+        "description": "Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only changes the selected parts of the generation area",
         "type": "string",
         "default": "Inpaint",
         "options": [
