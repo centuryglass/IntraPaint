@@ -147,7 +147,12 @@
       },
       "Reset panel layout",
       {
-        "Move all panels to edge": []
+        "Move all panels to edge": [
+          "Left",
+          "Right",
+          "Top",
+          "Bottom"
+        ]
       }
     ],
     "Fil&ters": [

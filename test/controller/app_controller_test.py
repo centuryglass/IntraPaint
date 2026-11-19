@@ -24,7 +24,7 @@ from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.display_size import get_screen_size
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, delete_widgets_created_since, reset_singletons
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -466,8 +466,6 @@ class TestLayerGroupTransformMenu(IntraPaintTestCase):
         self.group = self.image_stack.create_layer_group('group')
         self.child = self.image_stack.create_layer('child', layer_parent=self.group, layer_index=0)
         self.child.set_size(QSize(40, 20))
-        # Content past the canvas edge starts ImageStack's selection bounds timer, which would outlive the test:
-        self.child.set_transform(QTransform.fromTranslate(100, 100))
         self.image_stack.active_layer = self.group
 
     def test_mirror_reaches_children_only_once(self) -> None:
@@ -483,3 +481,29 @@ class TestLayerGroupTransformMenu(IntraPaintTestCase):
         rotated = self.child.transform
         self.image_stack.move_layer(self.child, self.image_stack.layer_stack, 0)
         self.assertEqual(self.child.transform, rotated)
+
+
+class TestAppControllerLifetime(IntraPaintTestCase):
+    """Tests that an AppController doesn't outlive its test."""
+
+    def test_freed_after_cleanup_without_a_collection(self) -> None:
+        """Once `tearDown`'s cleanup has run, dropping the controller frees it and its image stack without a garbage
+        collection, so a pending selection bounds timer can't fire in a later test."""
+        # The installed error handler is `sys.excepthook`, which conftest.py only restores after the test:
+        AppConfig().set(AppConfig.USE_ERROR_HANDLER, False)
+        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
+        args.mode = 'mock'
+        args.server_url = ''
+        args.fast_ngrok_connection = False
+        controller = AppController(args)
+        image_stack = controller._image_stack
+        layer = image_stack.create_layer('outside', layer_index=0)
+        layer.set_size(QSize(40, 20))
+        layer.set_transform(QTransform.fromTranslate(-20, -10))  # Content past the canvas edge starts the timer.
+        controller_ref = weakref.ref(controller)
+        image_stack_ref = weakref.ref(image_stack)
+        del controller, image_stack, layer
+        reset_singletons()
+        delete_widgets_created_since(self._existing_widgets)
+        self.assertIsNone(controller_ref())
+        self.assertIsNone(image_stack_ref())

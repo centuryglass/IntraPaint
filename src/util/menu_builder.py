@@ -144,7 +144,9 @@ class MenuBuilder:
                 existing_action.setVisible(True)
                 existing_action.setEnabled(True)
             return existing_action
-        action = QAction(title)
+        # The menu owns the action, so the action lasts as long as the menu and is deleted with it. Python owns a
+        # parentless action, and deletes it as soon as nothing else references it.
+        action = QAction(title, menu)
         if tooltip is not None and tooltip != '':
             action.setToolTip(tooltip)
         if keybinding is not None and keybinding != '':
