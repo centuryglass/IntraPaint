@@ -1,6 +1,7 @@
 """Tests flushing scheduled renders, what the view displays, and whether region renders match full renders."""
 import sys
 import unittest
+from unittest import mock
 
 import numpy as np
 from PySide6.QtCore import QPoint, QRect, QSize
@@ -11,9 +12,11 @@ from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import read_ora_image
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
+from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase, assert_images_equal
 from test.render_assertions import (assert_region_renders_match, assert_tiled_render_matches, clear_area,
@@ -236,6 +239,78 @@ class RegionRenderTest(RenderTestCase):
         layer.set_transform(QTransform.fromTranslate(60, 10).rotate(30))
         self.assertIsNot(layer._raster, raster)  # pylint: disable=protected-access
         assert_images_equal(full_render(self.image_stack), edited)
+
+    def test_smoothly_sampled_layers_in_every_mode(self) -> None:
+        """Scaled and rotated layers at partial opacity render the same in tiles, in every mode."""
+        transforms = {'scaled': QTransform.fromTranslate(11, 6).scale(1.3, 0.9),
+                      'rotated': QTransform.fromTranslate(60, 10).rotate(30)}
+        for name, transform in transforms.items():
+            layer = self.add_layer(name, transform, opacity=0.7)
+            for mode in CompositeMode:
+                with self.subTest(layer=name, mode=mode.name):
+                    layer.set_composition_mode(mode)
+                    self.assert_tiles_match()
+            self.image_stack.remove_layer(layer)
+
+    def test_pixel_exact_transforms_skip_raster(self) -> None:
+        """A 90-degree rotation, a flip and a 2x scale render the same in tiles without a cached raster."""
+        transforms = {'rotated 90': QTransform.fromTranslate(100, 10).rotate(90),
+                      'flipped': QTransform.fromTranslate(120, 20).scale(-1, 1),
+                      'scaled 2x': QTransform.fromTranslate(5, 5).scale(2, 2)}
+        for name, transform in transforms.items():
+            layer = self.add_layer(name, transform, opacity=0.7)
+            with self.subTest(layer=name):
+                self.assert_tiles_match()
+                self.assertIsNone(layer._raster)  # pylint: disable=protected-access
+            self.image_stack.remove_layer(layer)
+
+    def test_property_changes_keep_raster(self) -> None:
+        """Opacity, mode and visibility changes on a rotated layer composite from the raster without redrawing it."""
+        layer = self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30))
+        self.assert_tiles_match()
+        raster = layer._raster  # pylint: disable=protected-access
+        self.assertIsNotNone(raster)
+        with mock.patch.object(TransformLayer, '_paint_raster', autospec=True,
+                               side_effect=TransformLayer._paint_raster) as paint_raster:  # pylint: disable=protected-access
+            layer.set_opacity(0.6)
+            self.assert_tiles_match()
+            layer.set_composition_mode(CompositeMode.MULTIPLY)
+            self.assert_tiles_match()
+            self.assertIs(layer._raster, raster)  # pylint: disable=protected-access
+            group = self.image_stack.create_layer_group('group')
+            group.set_visible(False)
+            group.set_visible(True)
+            self.assert_tiles_match()
+            self.assertIs(layer._raster, raster)  # pylint: disable=protected-access
+            layer.set_visible(False)
+            layer.set_visible(True)
+            self.assertEqual(paint_raster.call_count, 0)
+
+    def test_hiding_drops_raster(self) -> None:
+        """Hiding a rotated layer drops its raster, and showing it again renders the same pixels as before."""
+        layer = self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30), mode=CompositeMode.SCREEN,
+                               opacity=0.8)
+        before = full_render(self.image_stack)
+        self.assertIsNotNone(layer._raster)  # pylint: disable=protected-access
+        layer.set_visible(False)
+        self.assertIsNone(layer._raster)  # pylint: disable=protected-access
+        self.assert_tiles_match()
+        self.assertIsNone(layer._raster)  # pylint: disable=protected-access
+        layer.set_visible(True)
+        assert_images_equal(full_render(self.image_stack), before)
+        self.assert_tiles_match()
+
+    def test_deleting_drops_raster(self) -> None:
+        """Deleting a rotated layer drops its raster, and undoing the deletion renders the same pixels as before."""
+        layer = self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30), opacity=0.7)
+        before = full_render(self.image_stack)
+        self.assertIsNotNone(layer._raster)  # pylint: disable=protected-access
+        self.image_stack.remove_layer(layer)
+        self.assertIsNone(layer._raster)  # pylint: disable=protected-access
+        UndoStack().undo()
+        self.assertTrue(self.image_stack.layer_stack.contains(layer))
+        assert_images_equal(full_render(self.image_stack), before)
+        self.assertIsNotNone(layer._raster)  # pylint: disable=protected-access
 
     def test_layer_move_test_image(self) -> None:
         """The nested, transformed groups in layer_move_test.ora render the same in tiles."""

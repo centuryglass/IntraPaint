@@ -100,6 +100,12 @@ class Layer(QObject, metaclass=_LayerMeta):
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
                                                'contain this one.')
         self._parent = None if new_parent is None else ref(new_parent)
+        if new_parent is None:
+            self._drop_cached_renders()
+
+    def _drop_cached_renders(self) -> None:
+        """Frees render caches that the next render can rebuild. Called when the layer is removed from its parent or
+           stops being shown."""
 
     @property
     def locked(self) -> bool:
@@ -301,7 +307,7 @@ class Layer(QObject, metaclass=_LayerMeta):
             self._opacity = opacity
             self.opacity_changed.emit(self, opacity)
             if self.visible:
-                self.signal_content_changed(self.bounds)
+                self.signal_content_changed(self.bounds, pixels_changed=False)
 
     def set_composition_mode(self, mode: CompositeMode) -> None:
         """Set the layer's composition mode."""
@@ -309,7 +315,7 @@ class Layer(QObject, metaclass=_LayerMeta):
             self._mode = mode
             self.composition_mode_changed.emit(self, mode)
             if self.visible and self.opacity > 0.0:
-                self.signal_content_changed(self.bounds)
+                self.signal_content_changed(self.bounds, pixels_changed=False)
 
     def set_visible(self, visible: bool) -> None:
         """Sets whether this layer is visible."""
@@ -317,7 +323,7 @@ class Layer(QObject, metaclass=_LayerMeta):
             with self.with_lock_disabled():  # Showing and hiding locked layers should be allowed
                 self._visible = visible
                 self.visibility_changed.emit(self, visible)
-                self.signal_content_changed(self.bounds)
+                self.signal_content_changed(self.bounds, pixels_changed=False)
 
     def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size, reporting both the old and new areas as changed."""
@@ -349,13 +355,16 @@ class Layer(QObject, metaclass=_LayerMeta):
 
     @contextmanager
     def with_visibility_forced(self) -> Generator[None, None, None]:
-        """Temporarily marks the layer visible without sending signals, so a render can show hidden content."""
+        """Temporarily marks the layer visible without sending signals, so a render can show hidden content. A hidden
+           layer drops the render caches built meanwhile."""
         visible = self._visible
         self._visible = True
         try:
             yield
         finally:
             self._visible = visible
+            if not visible:
+                self._drop_cached_renders()
 
     # Unimplemented interface:
 
@@ -541,8 +550,13 @@ class Layer(QObject, metaclass=_LayerMeta):
         """Returns the contents of a bounding QRect as a QImage."""
         return self.get_qimage().copy(bounds_rect)
 
-    def signal_content_changed(self, change_bounds: QRect) -> None:
-        """Send the content change signal, saving the timestamp."""
+    def signal_content_changed(self, change_bounds: QRect,
+                               pixels_changed: bool = True) -> None:  # pylint: disable=unused-argument
+        """Send the content change signal, saving the timestamp.
+
+        pixels_changed is False when only a property that affects compositing changed (opacity, mode, visibility), so
+        caches built from the layer's pixels stay valid.
+        """
         self._content_change_timestamp = datetime.datetime.now().timestamp()
         self.content_changed.emit(self, change_bounds)
 
