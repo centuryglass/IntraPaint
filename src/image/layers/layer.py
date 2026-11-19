@@ -550,7 +550,8 @@ class Layer(QObject, metaclass=_LayerMeta):
         """Returns the contents of a bounding QRect as a QImage."""
         return self.get_qimage().copy(bounds_rect)
 
-    def signal_content_changed(self, change_bounds: QRect, pixels_changed: bool = True) -> None:
+    def signal_content_changed(self, change_bounds: QRect,
+                               pixels_changed: bool = True) -> None:  # pylint: disable=unused-argument
         """Send the content change signal, saving the timestamp.
 
         pixels_changed is False when only a property that affects compositing changed (opacity, mode, visibility), so
