@@ -21,7 +21,8 @@ from src.ui.input_fields.field_factory import create_control_widget
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.panel_header import PanelPopover
-from src.util.visual.key_hint_text import key_hint_text, rich_text_key_hints
+from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
+from src.util.visual.key_hint_text import rich_text_key_hints
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, rich_text_key_hint, \
     vertical_scroll_hint_text
 
@@ -54,8 +55,8 @@ STOP_BUTTON_TOOLTIP = _tr('Stop generating and keep the finished options.')
 STOPPING_BUTTON_TEXT = _tr('Stopping...')
 PREVIOUS_BUTTON_TEXT = _tr('‹ Previous')
 NEXT_BUTTON_TEXT = _tr('Next ›')
-PREVIOUS_BUTTON_TOOLTIP = _tr('Previous option ({key})')
-NEXT_BUTTON_TOOLTIP = _tr('Next option ({key})')
+PREVIOUS_BUTTON_TOOLTIP = _tr('Previous option')
+NEXT_BUTTON_TOOLTIP = _tr('Next option')
 SEND_TO_LAYER_BUTTON_TEXT = _tr('Send to new layer')
 SAVE_TO_FILE_BUTTON_TEXT = _tr('Save to file...')
 MORE_BUTTON_TEXT = _tr('More')
@@ -67,12 +68,17 @@ USE_BUTTON_TOOLTIP = _tr('Apply the focused option and return to the editor.')
 USE_BUTTON_WAITING_TOOLTIP = _tr('This option is still generating.')
 HINT_BUTTON_TOOLTIP = _tr('Controls')
 
-GRID_CONTROL_HINT = _tr('{left_key}{right_key} browse &nbsp; {first_key}-{last_key} open option &nbsp; '
-                        '{up_key} single view &nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan '
-                        '&nbsp; {zoom_in_key}{zoom_out_key} zoom')
-SINGLE_CONTROL_HINT = _tr('{compare_key} hold: original &nbsp; {left_key}{right_key} browse &nbsp; '
-                          '{down_key} back to grid &nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan '
-                          '&nbsp; {v_scroll_icon} zoom')
+# One clause per hint, so `_control_hint` can drop the clause of an unbound key:
+HINT_BROWSE = _tr('{keys} browse')
+HINT_OPEN_OPTION = _tr('{first_key}-{last_key} open option')
+HINT_SINGLE_VIEW = _tr('{keys} single view')
+HINT_ZOOM = _tr('{keys} zoom')
+HINT_COMPARE = _tr('{keys} hold: original')
+HINT_BACK_TO_GRID = _tr('{keys} back to grid')
+HINT_PAN = _tr('{pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan')
+HINT_PAN_MIDDLE_ONLY = _tr('{middle_mouse_icon} pan')
+HINT_SCROLL_ZOOM = _tr('{v_scroll_icon} zoom')
+HINT_SEPARATOR = ' &nbsp; '
 
 VIEW_GRID = 'grid'
 VIEW_SINGLE = 'single'
@@ -267,13 +273,12 @@ class SelectorButtonBar(QWidget):
         key_config = KeyConfig()
         self._prev_button = QPushButton(PREVIOUS_BUTTON_TEXT)
         self._prev_button.clicked.connect(self.previous_requested)
-        self._prev_button.setToolTip(PREVIOUS_BUTTON_TOOLTIP.format(
-            key=key_hint_text(key_config.get(KeyConfig.MOVE_LEFT))))
+        self._prev_button.setToolTip(
+            shortcut_tooltip_text(PREVIOUS_BUTTON_TOOLTIP, key_config.get(KeyConfig.MOVE_LEFT)))
         self._layout.addWidget(self._prev_button)
         self._next_button = QPushButton(NEXT_BUTTON_TEXT)
         self._next_button.clicked.connect(self.next_requested)
-        self._next_button.setToolTip(NEXT_BUTTON_TOOLTIP.format(
-            key=key_hint_text(key_config.get(KeyConfig.MOVE_RIGHT))))
+        self._next_button.setToolTip(shortcut_tooltip_text(NEXT_BUTTON_TOOLTIP, key_config.get(KeyConfig.MOVE_RIGHT)))
         self._layout.addWidget(self._next_button)
 
         self._send_button = QPushButton(SEND_TO_LAYER_BUTTON_TEXT)
@@ -344,25 +349,31 @@ class SelectorButtonBar(QWidget):
 
 
 def _control_hint(single_view: bool, option_count: int) -> str:
-    """Returns one line of keycap hints for the grid or single view."""
+    """Returns one line of keycap hints for the grid or single view. A hint whose keys are all unbound is left out."""
     config = KeyConfig()
 
-    def _keys(config_key: str) -> str:
-        return rich_text_key_hints(config.get(config_key))
+    def _keys(*config_keys: str) -> str:
+        return ''.join(rich_text_key_hints(config.get(config_key)) for config_key in config_keys)
 
-    shared = {'left_key': _keys(KeyConfig.MOVE_LEFT),
-              'right_key': _keys(KeyConfig.MOVE_RIGHT),
-              'pan_key': _keys(KeyConfig.PAN_VIEW_KEY),
-              'left_mouse_icon': left_button_hint_text(),
-              'middle_mouse_icon': middle_button_hint_text()}
+    def _clause(template: str, *config_keys: str) -> str:
+        keys = _keys(*config_keys)
+        return template.format(keys=keys) if keys != '' else ''
+
+    pan_key = _keys(KeyConfig.PAN_VIEW_KEY)
+    if pan_key == '':
+        pan = HINT_PAN_MIDDLE_ONLY.format(middle_mouse_icon=middle_button_hint_text())
+    else:
+        pan = HINT_PAN.format(pan_key=pan_key, left_mouse_icon=left_button_hint_text(),
+                              middle_mouse_icon=middle_button_hint_text())
+    browse = _clause(HINT_BROWSE, KeyConfig.MOVE_LEFT, KeyConfig.MOVE_RIGHT)
     if single_view:
-        return SINGLE_CONTROL_HINT.format(compare_key=_keys(KeyConfig.COMPARE_ORIGINAL_MODIFIER),
-                                          down_key=_keys(KeyConfig.MOVE_DOWN),
-                                          v_scroll_icon=vertical_scroll_hint_text(),
-                                          **shared)
-    return GRID_CONTROL_HINT.format(first_key=rich_text_key_hint('0'),
-                                    last_key=rich_text_key_hint(str(max(option_count - 1, 0))),
-                                    up_key=_keys(KeyConfig.MOVE_UP),
-                                    zoom_in_key=_keys(KeyConfig.ZOOM_IN),
-                                    zoom_out_key=_keys(KeyConfig.ZOOM_OUT),
-                                    **shared)
+        clauses = [_clause(HINT_COMPARE, KeyConfig.COMPARE_ORIGINAL_MODIFIER), browse,
+                   _clause(HINT_BACK_TO_GRID, KeyConfig.MOVE_DOWN), pan,
+                   HINT_SCROLL_ZOOM.format(v_scroll_icon=vertical_scroll_hint_text())]
+    else:
+        clauses = [browse,
+                   HINT_OPEN_OPTION.format(first_key=rich_text_key_hint('0'),
+                                           last_key=rich_text_key_hint(str(max(option_count - 1, 0)))),
+                   _clause(HINT_SINGLE_VIEW, KeyConfig.MOVE_UP), pan,
+                   _clause(HINT_ZOOM, KeyConfig.ZOOM_IN, KeyConfig.ZOOM_OUT)]
+    return HINT_SEPARATOR.join(clause for clause in clauses if clause != '')

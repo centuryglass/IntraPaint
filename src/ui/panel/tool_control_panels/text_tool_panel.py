@@ -51,6 +51,7 @@ from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
 from src.util.layout import add_layout, clear_grid
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
+from src.util.shared_text import keys_tooltip
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.image_utils import get_color_icon
 
@@ -73,7 +74,6 @@ FONT_FILTER_PLACEHOLDER = _tr('Type to filter fonts')
 FONT_LIST_TOOLTIP = _tr('Font family')
 SIZE_LABEL = _tr('Size')
 SIZE_TOOLTIP = _tr('Font size')
-SIZE_KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 UNIT_PIXELS = _tr('px')
 UNIT_POINTS = _tr('pt')
 UNIT_PIXELS_TOOLTIP = _tr('Font size in pixels')
@@ -253,9 +253,8 @@ class TextToolPanel(FitToolPanel):
                 return True
             key_filter.register_config_keybinding(f'_TextToolPanel_{id(self)}_size_{key}', _step_size, key)
         keys = KeyConfig()
-        self._size_field.setToolTip(SIZE_KEYS_TOOLTIP.format(description=SIZE_TOOLTIP,
-                                                             decrease=keys.get(KeyConfig.ROTATE_CCW_KEY),
-                                                             increase=keys.get(KeyConfig.ROTATE_CW_KEY)))
+        self._size_field.setToolTip(keys_tooltip(SIZE_TOOLTIP, keys.get(KeyConfig.ROTATE_CCW_KEY),
+                                                     keys.get(KeyConfig.ROTATE_CW_KEY)))
 
         self._show_values()
         self._planner = FitPlanner([COLUMNS_ITEM, FONT_ITEM, STYLE_ITEM, PREVIEW_ITEM, ADVANCED_ITEM, HEADERS_ITEM],

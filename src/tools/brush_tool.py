@@ -172,9 +172,9 @@ class BrushTool(BaseTool):
                                      modifier_or_modifiers='{modifier_or_modifiers}')
         size_drag_hint = SIZE_DRAG_HINT.format(right_mouse_icon=right_button_hint_text(),
                                                modifier_or_modifiers='{modifier_or_modifiers}')
-        return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint)}'
-                f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}'
-                f' - {BaseTool.modifier_hint(KeyConfig.BRUSH_SIZE_DRAG_MODIFIER, size_drag_hint)}')
+        return BaseTool.join_hints(BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint),
+                                   BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT),
+                                   BaseTool.modifier_hint(KeyConfig.BRUSH_SIZE_DRAG_MODIFIER, size_drag_hint))
 
     def _size_drag_event(self, event: Optional[QMouseEvent]) -> bool:
         """Passes a mouse press, move or release to the size dragger, returning whether it belongs to a size drag.

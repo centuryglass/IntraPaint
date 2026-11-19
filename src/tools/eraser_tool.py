@@ -57,5 +57,5 @@ class EraserTool(QtPaintBrushTool):
         """Return text describing different input functionality."""
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
-        return (f'{control_hint_draw_tool}<br/>{BrushTool.brush_control_hints()}'
-                f'<br/>{BrushTool.get_input_hint(self)}')
+        return BrushTool.join_hints(control_hint_draw_tool, BrushTool.brush_control_hints(),
+                                   BrushTool.get_input_hint(self), separator='<br/>')

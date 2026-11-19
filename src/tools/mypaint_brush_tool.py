@@ -81,9 +81,8 @@ class MyPaintBrushTool(BrushTool):
         """Return text describing different input functionality."""
         brush_hint = BRUSH_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
-        if len(eyedropper_hint) > 0:
-            eyedropper_hint = ' - ' + eyedropper_hint
-        return f'{brush_hint}{eyedropper_hint}<br/>{BrushTool.brush_control_hints()}<br/>{super().get_input_hint()}'
+        return BaseTool.join_hints(BaseTool.join_hints(brush_hint, eyedropper_hint),
+                                   BrushTool.brush_control_hints(), super().get_input_hint(), separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

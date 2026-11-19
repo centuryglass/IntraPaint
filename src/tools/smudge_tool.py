@@ -121,7 +121,8 @@ class SmudgeTool(BrushTool):  # type: ignore
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         brush_hint = SMUDGE_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
-        return f'{brush_hint}<br/>{BrushTool.brush_control_hints()}<br/>{BrushTool.get_input_hint(self)}'
+        return BrushTool.join_hints(brush_hint, BrushTool.brush_control_hints(), BrushTool.get_input_hint(self),
+                                   separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the blur tool control panel."""
