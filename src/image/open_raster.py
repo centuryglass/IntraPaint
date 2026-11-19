@@ -423,13 +423,19 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
     else:
         file_path += ORA_FILE_EXTENSION
 
+    # encode_layer_group calls itself through its closure cell, a cycle that would hold `image_stack` until a garbage
+    # collection. Deleting the name empties the cell, even when encoding raises.
+    try:
+        layer_stack_data = encode_layer_group(image_stack.layer_stack)
+    finally:
+        del encode_layer_group
     image_data: dict[str, Any] = {
         DICT_ELEMENT_NAME: IMAGE_ELEMENT,
         IMAGE_TAG_VERSION: ORA_SPEC_VERSION,
         IMAGE_TAG_WIDTH: image_stack.width,
         IMAGE_TAG_HEIGHT: image_stack.height,
         IMAGE_TAG_NAME: image_name,
-        DICT_NESTED_CONTENT_NAME: [encode_layer_group(image_stack.layer_stack)]
+        DICT_NESTED_CONTENT_NAME: [layer_stack_data]
     }
     if foreign_document is not None:
         image_data.update(foreign_document.image_attributes)

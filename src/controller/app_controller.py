@@ -88,6 +88,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
+from src.ui.layout.panel_fit import held_weakly
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.layout_name_modal import prompt_layout_name, TITLE_SAVE
 from src.ui.modal.manage_layouts_modal import ManageLayoutsModal
@@ -225,7 +226,9 @@ class AppController(MenuBuilder):
         config = AppConfig()
         self._except_hook: Optional[QtExceptHook] = None
         if config.get(AppConfig.USE_ERROR_HANDLER):
-            self._except_hook = QtExceptHook(extra_info_cb=self._environment_info)
+            # The hook and the other objects the controller owns hold its callbacks weakly: an owned object that holds
+            # the controller makes a cycle, which leaves the whole window to the garbage collector.
+            self._except_hook = QtExceptHook(extra_info_cb=held_weakly(self._environment_info))
             self._except_hook.enable()
         cache = Cache()
         cache.apply_args(args)
@@ -246,13 +249,14 @@ class AppController(MenuBuilder):
         self._window = MainWindow(self._image_stack)
         self._recent_files_menu: Optional[QMenu] = None
         self.menu_window = self._window
-        self._image_io = ImageIO(self._window, self._image_stack, lambda: self._generator)
-        self._autosave = AutosaveController(self._image_stack, self._image_io, self._window)
+        self._image_io = ImageIO(self._window, self._image_stack, held_weakly(self._current_generator))
+        autosave = AutosaveController(self._image_stack, self._image_io, self._window)
+        self._autosave = autosave
         if self._except_hook is not None:
-            self._except_hook.set_recovery(self._autosave.keep_for_recovery, lambda: self._autosave.enabled)
+            self._except_hook.set_recovery(autosave.keep_for_recovery, lambda: autosave.enabled)
         self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
-        self._window.confirm_close = self._confirm_quit
+        self._window.confirm_close = held_weakly(self._confirm_quit)
         if args.window_size is not None:
             width, height = (int(dim) for dim in args.window_size.split('x'))
             self._window.setGeometry(0, 0, width, height)
@@ -389,31 +393,11 @@ class AppController(MenuBuilder):
 
         self._last_active = self._image_stack.active_layer
         self._active_layer_connections: list[tuple[Any, Any]] = []
-
-        def _connect_active_layer(layer: Layer) -> None:
-            """Refreshes menu actions when a property that enables or disables one changes on the active layer."""
-            signals = [layer.lock_changed, layer.opacity_changed, layer.composition_mode_changed]
-            if isinstance(layer, TransformLayer):
-                signals.append(layer.transform_changed)
-            self._active_layer_connections = [(sig, sig.connect(lambda *_: self._update_enabled_actions()))
-                                              for sig in signals]
-
-        def _disconnect_active_layer() -> None:
-            for signal, connection in self._active_layer_connections:
-                signal.disconnect(connection)
-            self._active_layer_connections = []
-
-        _connect_active_layer(self._last_active)
-
-        def _active_changed(active_layer: Layer) -> None:
-            _disconnect_active_layer()
-            self._last_active = active_layer
-            _connect_active_layer(active_layer)
-            self._update_enabled_actions()
-
-        self._image_stack.active_layer_changed.connect(_active_changed)
-        self._image_stack.selection_layer.content_changed.connect(
-            lambda _layer, _bounds: self._update_enabled_actions())
+        self._connect_active_layer(self._last_active)
+        # Signals of objects the controller owns connect to its bound methods, which Qt holds weakly. Qt holds a closure
+        # where the garbage collector can't see it, so a closure that captures `self` keeps the controller alive.
+        self._image_stack.active_layer_changed.connect(self._active_layer_changed)
+        self._image_stack.selection_layer.content_changed.connect(self._refresh_enabled_actions)
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().clean_changed.connect(lambda _clean: self._update_window_title())  # type: ignore
@@ -424,7 +408,7 @@ class AppController(MenuBuilder):
         restore_action = self.get_action_for_method(self.restore_previous_image_choices)
         assert restore_action is not None
         AppStateTracker.disconnect_from_state(restore_action)
-        self._window.previous_options_available.connect(lambda _available: self._update_enabled_actions())
+        self._window.previous_options_available.connect(self._refresh_enabled_actions)
         AppStateTracker.signal().connect(lambda _state: self._update_enabled_actions())
 
         # ToolPanel/ToolController: Set up editing tools:
@@ -455,23 +439,10 @@ class AppController(MenuBuilder):
         self._tool_controller.tool_added.connect(self._tool_panel.add_tool_button)
         self._tool_controller.tool_removed.connect(self._tool_panel.remove_tool_button)
 
-        def _update_image_cursor() -> None:
-            updated_active_tool = self._tool_controller.active_tool
-            if updated_active_tool is not None:
-                self._image_viewer.set_cursor(updated_active_tool.cursor)
-
-        def _update_cursor_and_control_hint(new_active_tool: BaseTool) -> None:
-            self._window.image_panel.set_control_hint(new_active_tool.get_input_hint())
-            if self._last_active_tool is not None:
-                self._last_active_tool.cursor_change.disconnect(_update_image_cursor)
-            new_active_tool.cursor_change.connect(_update_image_cursor)
-            self._last_active_tool = new_active_tool
-            _update_image_cursor()
-
-        self._tool_controller.active_tool_changed.connect(_update_cursor_and_control_hint)
+        self._tool_controller.active_tool_changed.connect(self._update_cursor_and_control_hint)
         active_tool = self._tool_controller.active_tool
         assert active_tool is not None
-        _update_cursor_and_control_hint(active_tool)
+        self._update_cursor_and_control_hint(active_tool)
         self._tool_panel.setup_active_tool(active_tool)
 
         self._window.tools_dock.set_content(self._tool_panel)
@@ -537,6 +508,44 @@ class AppController(MenuBuilder):
             cache.set(Cache.LAST_ACTIVE_TOOL, tool_value)
 
         self._tool_controller.active_tool_changed.connect(_update_last_active_tool)
+
+    def _connect_active_layer(self, layer: Layer) -> None:
+        """Refreshes menu actions when a property that enables or disables one changes on the active layer."""
+        signals = [layer.lock_changed, layer.opacity_changed, layer.composition_mode_changed]
+        if isinstance(layer, TransformLayer):
+            signals.append(layer.transform_changed)
+        self._active_layer_connections = [(sig, sig.connect(self._refresh_enabled_actions)) for sig in signals]
+
+    def _disconnect_active_layer(self) -> None:
+        for signal, connection in self._active_layer_connections:
+            signal.disconnect(connection)
+        self._active_layer_connections = []
+
+    def _active_layer_changed(self, active_layer: Layer) -> None:
+        self._disconnect_active_layer()
+        self._last_active = active_layer
+        self._connect_active_layer(active_layer)
+        self._update_enabled_actions()
+
+    def _refresh_enabled_actions(self, *_args) -> None:
+        """Calls `_update_enabled_actions`, ignoring the arguments of the signal connected to it."""
+        self._update_enabled_actions()
+
+    def _update_image_cursor(self) -> None:
+        updated_active_tool = self._tool_controller.active_tool
+        if updated_active_tool is not None:
+            self._image_viewer.set_cursor(updated_active_tool.cursor)
+
+    def _update_cursor_and_control_hint(self, new_active_tool: BaseTool) -> None:
+        self._window.image_panel.set_control_hint(new_active_tool.get_input_hint())
+        if self._last_active_tool is not None:
+            self._last_active_tool.cursor_change.disconnect(self._update_image_cursor)
+        new_active_tool.cursor_change.connect(self._update_image_cursor)
+        self._last_active_tool = new_active_tool
+        self._update_image_cursor()
+
+    def _current_generator(self) -> Optional[ImageGenerator]:
+        return self._generator
 
     def _environment_info(self) -> str:
         """Returns the environment details appended to error reports."""
