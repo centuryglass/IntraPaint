@@ -278,17 +278,12 @@ class Config:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
 
-    def _migrate_legacy_keys(self, json_data: dict[str, Any]) -> None:
-        """Override this to rewrite values saved under keys that no longer exist, in place. Runs as part of the
-           migration from unversioned files (version 0 to 1)."""
-
     def _migrate_unversioned(self, json_data: dict[str, Any]) -> None:
-        """Migration from version 0 to 1: converts legacy keys, then drops saved values that only held a default.
+        """Migration from version 0 to 1: drops saved values that only held a default.
 
         A non-pinned value is dropped when it equals the current default or one in `PREVIOUS_DEFAULTS`. Keys in
         `RESET_KEYS` are dropped whatever they hold.
         """
-        self._migrate_legacy_keys(json_data)
         for key in self.RESET_KEYS:
             json_data.pop(key, None)
         for key, entry in self._entries.items():
