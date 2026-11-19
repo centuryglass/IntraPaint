@@ -1,7 +1,7 @@
 # Machine translation process (draft)
 
-**Status: work in progress.** This is a first outline, written before any translation has been attempted. Expect it
-to change once a pilot language has been through it.
+**Status: work in progress.** The pilot language, Simplified Chinese, has been through its first batch. Expect the
+process to change until the pilot finishes.
 
 How IntraPaint gets AI-generated translations of its UI when the maintainer speaks only English and no native-speaking
 reviewer is available. The process aims for translations that are useful to people who don't read English well,
@@ -148,7 +148,11 @@ For each string:
 - **Use the glossary's rendering for every glossary term.** A term that needs a decision and isn't in the glossary
   goes into the English glossary and the per-language glossary in the same PR, before the strings that use it.
 - **Keep the source's mechanics:** every `{name}` and `%1` placeholder, HTML tags, line breaks, and the `&`
-  accelerator in the form the style section gives.
+  accelerator in the form the style section gives. Rich text shows a line break inside a paragraph as a space, so a
+  language written without spaces moves its line breaks to where its style section allows one.
+- **A string that names another UI string uses that string's translation,** such as a message that says to click
+  "Activate". When the named string belongs to a later batch, the batch PR lists the rendering it used, and that batch
+  uses the same words.
 - **Flag a string instead of forcing it.** A string that can't be translated correctly as written (assembled from
   fragments, one English string with two meanings in one context, an English-only plural) stays untranslated. The fix
   goes to the English source in a separate PR, such as a `_tr` disambiguation or a rewording, or into an issue. The
@@ -160,9 +164,9 @@ file. An entry is either translated and marked finished, or left empty. The buil
 an unfinished entry shows English instead of its draft.
 
 A glossary term the check flags and the translation should not render the glossary's way (the word has another sense in
-that string) is exempted in the entry's translator comment with a line `glossary: not "Term"` and the reason. `Term` is
-the English spelling as the glossary writes it. The check fails on an exemption whose term the source no longer
-contains.
+that string, as the steps of a setup guide are not sampling steps) is exempted in the entry's translator comment with a
+line `glossary: not "Term"` and the reason. `Term` is the English spelling as the glossary writes it. The check fails on
+an exemption whose term the source no longer contains.
 
 The batch PR names the translating model and the reviewing model, lists the flagged strings, summarizes the review's
 findings and how each was resolved, and names the UI sheets checked (step 6).
@@ -183,6 +187,11 @@ The translator, or the agent running the batch, answers every finding:
   until the question is decided.
 
 The review table and the answers go in the batch PR, in a collapsed `<details>` section.
+
+When the agent running the batch can't call a model from another family, it writes a review packet, and the
+maintainer gives the packet to the reviewing model and posts the table it returns on the batch PR. The packet holds
+"Reviewing as a model", the two glossaries, and for each string its context, source, translation and the code lines
+that use it, with no translator notes. The PR stays a draft until the review is answered.
 
 ### Reviewing as a model
 
@@ -224,8 +233,10 @@ Automated checks run on every translation file after every batch:
   script; the rules are `STYLE_RULES` and `LABEL_COLONS` in it, so a new language's checkable rules are added there).
 
 Then run `python scripts/capture_ui.py --sheet --language <code>` (and `--windows --language <code>`) for the batch's
-panels and windows, and look for clipped or overflowing text, which needs no knowledge of the language to spot. CJK
-glyphs come from the system's fonts, so the result depends on the machine. The batch PR names the sheets checked.
+panels and windows, and look for clipped or overflowing text, which needs no knowledge of the language to spot.
+Capturing the same sheets in English and comparing each cell's problems in the two sheets' `.json` files shows what the
+translation added. CJK glyphs come from the system's fonts, so the result depends on the machine. The batch PR names the
+sheets checked.
 
 Once every batch is merged, a model from a different family than the translator makes a consistency pass over the
 whole file, following "Reviewing as a model" for the Glossary category only, and lists every English string that has
