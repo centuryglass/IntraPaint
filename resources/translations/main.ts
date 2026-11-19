@@ -6054,11 +6054,6 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Zoom to changes needs a selection smaller than the generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Original image content</source>
         <translation type="unfinished"></translation>
     </message>

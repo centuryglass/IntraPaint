@@ -55,7 +55,6 @@ BATCH_DETAILS = _tr('{mode}, {width} x {height}, {count} options')
 READY_COUNT = _tr('{ready} of {total} ready')
 READY_COUNT_WITH_PROGRESS = _tr('{ready} of {total} ready - {progress}')
 REASON_NOT_INPAINTED = _tr('Only inpainted options have a selection.')
-REASON_NO_SMALLER_CHANGE = _tr('Zoom to changes needs a selection smaller than the generation area.')
 
 ORIGINAL_CONTENT_LABEL = _tr('Original image content')
 CURRENT_CONTENT_LABEL = _tr('Current image content')
@@ -416,12 +415,12 @@ class GeneratedImageSelector(QWidget):
             and batch.option_images[option_index] is not batch.loading_image
 
     def _update_view_options(self) -> None:
-        """Enables the view options that apply to the batch showing, and says why the others don't."""
+        """Disables "Show selection" for batches that weren't inpainted, and shows "Zoom to changes" only when the
+        selection was smaller than the generation area."""
         inpainted = self._session.current.edit_mode == EDIT_MODE_INPAINT
-        zoom_reason = REASON_NOT_INPAINTED if not inpainted \
-            else (REASON_NO_SMALLER_CHANGE if self._change_bounds is None else '')
-        selection_reason = '' if inpainted else REASON_NOT_INPAINTED
-        self._top_bar.set_option_reasons(selection_reason, zoom_reason)
+        self._top_bar.set_option_availability('' if inpainted else REASON_NOT_INPAINTED,
+                                              inpainted and self._change_bounds is not None)
+        self._fit_bars()
 
     def _update_status_text(self) -> None:
         batch = self._session.current

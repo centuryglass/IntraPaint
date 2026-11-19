@@ -310,6 +310,20 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.selector.restore_previous_options()
         self.assertEqual(self.selector._change_bounds, saved_change_bounds)
 
+    def test_zoom_to_changes_checkbox_shows_only_for_smaller_selection(self) -> None:
+        """The "Zoom to changes" checkbox is hidden unless the batch has a selection smaller than the generation area."""
+        select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
+        self.selector.start_new_options()
+        self._fill_batch()
+        self.assertIsNotNone(self.selector._change_bounds)
+        self.assertFalse(self.selector._top_bar.change_zoom_checkbox.isHidden())
+        self.selector.archive_current_options()
+
+        self.selector.start_new_options()
+        self.selector._change_bounds = None
+        self.selector._update_view_options()
+        self.assertTrue(self.selector._top_bar.change_zoom_checkbox.isHidden())
+
     def _switch_live_mode_to_img2img(self) -> None:
         """Moves the app's current mode away from the batch's inpaint mode."""
         cache = Cache()

@@ -152,10 +152,6 @@ class SelectorTopBar(QWidget):
                 container_layout.addWidget(checkbox)
                 boxes.append(checkbox)
             self._view_checkboxes.append((boxes[0], boxes[1]))
-        self._reason_label = QLabel()
-        self._reason_label.setWordWrap(True)
-        self._reason_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        popover_content.layout().addWidget(self._reason_label)
         self._layout.addWidget(self._view_options)
         self._popover = PanelPopover(self)
         self._popover.set_content(popover_content)
@@ -184,16 +180,13 @@ class SelectorTopBar(QWidget):
         self._view_mode_control.set_value(view_mode)
         self._view_mode_keycap.set_text(KeyConfig().get(KeyConfig.ZOOM_TOGGLE))
 
-    def set_option_reasons(self, selection_reason: str, zoom_reason: str) -> None:
-        """Disables "Show selection" and "Zoom to changes" when their reasons aren't empty, with the reason as the
-        tooltip. The popover also shows the zoom reason as text."""
+    def set_option_availability(self, selection_reason: str, zoom_applies: bool) -> None:
+        """Disables "Show selection" when `selection_reason` isn't empty, with the reason as the tooltip, and hides
+        "Zoom to changes" unless `zoom_applies`."""
         for selection_box, zoom_box in self._view_checkboxes:
             selection_box.setEnabled(selection_reason == '')
             selection_box.setToolTip(selection_reason)
-            zoom_box.setEnabled(zoom_reason == '')
-            zoom_box.setToolTip(zoom_reason)
-        self._reason_label.setText(zoom_reason)
-        self._reason_label.setVisible(zoom_reason != '')
+            zoom_box.setVisible(zoom_applies)
 
     def fit(self, width: int) -> None:
         """Moves the view options behind the "View" button when the bar is narrower than they need."""
