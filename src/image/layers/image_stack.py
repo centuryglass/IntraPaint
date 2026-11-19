@@ -163,14 +163,9 @@ class ImageStack(QObject):
         self._selection_update_timer = QTimer()
         self._selection_update_timer.setInterval(SELECTION_UPDATE_DELAY_MS)
         self._selection_update_timer.setSingleShot(True)
-
-        def _refresh_selection_bounds() -> None:
-            selection_bounds = self._selection_layer.transformed_bounds
-            content_bounds = self._layer_stack.bounds.united(self.bounds)
-            if not selection_bounds == content_bounds:
-                self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds),
-                                                          False)
-        self._selection_update_timer.timeout.connect(_refresh_selection_bounds)
+        # Signals of objects the stack owns connect to its bound methods, which Qt holds weakly. Qt holds a closure
+        # where the garbage collector can't see it, so a closure that captures `self` keeps the stack alive.
+        self._selection_update_timer.timeout.connect(self._refresh_selection_bounds)
 
         # Layer stack update handling:
         def _set_name(name: str) -> None:
@@ -179,36 +174,17 @@ class ImageStack(QObject):
         Cache().connect(self._layer_stack, Cache.LAST_FILE_PATH, _set_name)
         self._connect_layer(self._layer_stack)
 
-        # noinspection PyUnusedLocal
-        def _content_change(*_args):
-            if not self._render_timer.isActive():
-                self._render_timer.start()
-            if not self._selection_update_timer.isActive():
-                self._selection_update_timer.start()
-
-        self._layer_stack.content_changed.connect(_content_change)
-        self._layer_stack.visibility_changed.connect(_content_change)
-        self._layer_stack.opacity_changed.connect(_content_change)
-        self._layer_stack.composition_mode_changed.connect(_content_change)
+        self._layer_stack.content_changed.connect(self._layer_stack_changed)
+        self._layer_stack.visibility_changed.connect(self._layer_stack_changed)
+        self._layer_stack.opacity_changed.connect(self._layer_stack_changed)
+        self._layer_stack.composition_mode_changed.connect(self._layer_stack_changed)
         self._layer_stack.layer_added.connect(self._layer_added_slot)
         self._layer_stack.layer_removed.connect(self._layer_removed_slot)
 
         # Selection update handling:
 
-        # noinspection PyUnusedLocal
-        def handle_selection_layer_update(*_args):
-            """Refresh appropriate caches and send on signals if the selection layer changes."""
-            if self._selection_layer.visible:
-                self._emit_content_changed()
-
-        self._selection_layer.content_changed.connect(handle_selection_layer_update)
-
-        # noinspection PyUnusedLocal
-        def handle_selection_layer_visibility_change(*_args):
-            """Refresh appropriate caches and send on signals if the selection layer is shown or hidden."""
-            self._emit_content_changed()
-
-        self._selection_layer.content_changed.connect(handle_selection_layer_visibility_change)
+        self._selection_layer.content_changed.connect(self._selection_layer_updated)
+        self._selection_layer.content_changed.connect(self._selection_layer_visibility_changed)
 
     # PROPERTY DEFINITIONS:
 
@@ -1714,6 +1690,29 @@ class ImageStack(QObject):
         assert layer_index is not None
         assert layer_parent is not None
         return layer_parent, layer_index
+
+    def _refresh_selection_bounds(self) -> None:
+        """Grows or shrinks the selection layer to cover both the canvas and all layer content."""
+        selection_bounds = self._selection_layer.transformed_bounds
+        content_bounds = self._layer_stack.bounds.united(self.bounds)
+        if not selection_bounds == content_bounds:
+            self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds), False)
+
+    def _layer_stack_changed(self, *_args) -> None:
+        """Schedules a render and a selection bounds refresh after the layer stack changes."""
+        if not self._render_timer.isActive():
+            self._render_timer.start()
+        if not self._selection_update_timer.isActive():
+            self._selection_update_timer.start()
+
+    def _selection_layer_updated(self, *_args) -> None:
+        """Refresh appropriate caches and send on signals if the selection layer changes."""
+        if self._selection_layer.visible:
+            self._emit_content_changed()
+
+    def _selection_layer_visibility_changed(self, *_args) -> None:
+        """Refresh appropriate caches and send on signals if the selection layer is shown or hidden."""
+        self._emit_content_changed()
 
     def _connect_layer(self, layer: Layer) -> None:
         assert layer == self._layer_stack or self._layer_stack.contains_recursive(layer), (f'layer {layer.name}:'

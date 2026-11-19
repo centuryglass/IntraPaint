@@ -150,16 +150,9 @@ class BrushTool(BaseTool):
             Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
 
         if follow_active_layer:
-            # noinspection PyUnusedLocal
-            def _selection_layer_update(*_args) -> None:
-                if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
-                        or self._layer == image_stack.selection_layer:
-                    return
-                assert self._layer is not None
-                mask = image_stack.get_layer_selection_mask(self._layer)
-                self._brush.set_input_mask(mask)
-
-            image_stack.selection_layer.content_changed.connect(_selection_layer_update)
+            # Qt holds a closure connected here where the garbage collector can't see it, so one that captures `self`
+            # would keep the tool and its image stack alive. Qt holds the bound method weakly.
+            image_stack.selection_layer.content_changed.connect(self._selection_layer_update_slot)
 
             image_stack.active_layer_changed.connect(self._active_layer_change_slot)
             self.layer = image_stack.active_layer
@@ -574,6 +567,14 @@ class BrushTool(BaseTool):
             self.adjust_brush_size(offset)
             return True
         return False
+
+    def _selection_layer_update_slot(self, *_args) -> None:
+        """Refreshes the brush's input mask when the selection changes while painting is restricted to it."""
+        if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
+                or self._layer == self._image_stack.selection_layer:
+            return
+        mask = self._image_stack.get_layer_selection_mask(self._layer)
+        self._brush.set_input_mask(mask)
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         if isinstance(active_layer, ImageLayer):
