@@ -17,7 +17,7 @@ Extraction fails, naming the file and line, on calls it can't extract:
 - `_tr`, or `translate(TR_ID, ...)`, in a file with no module-level `TR_ID`.
 - A `_tr` call whose source text or disambiguation isn't a string literal. Text built at runtime has no catalog entry.
   Pass the variable parts as `str.format` placeholders.
-- A `_tr` call with a plural count, which the catalog doesn't support.
+- A `_tr` call with a plural count whose source text has no `%n`.
 - A `translate` call whose literal context is neither the file's `TR_ID` nor a config definition context.
 
 A translation file fails when it doesn't match a fresh merge, when its `.qm` file is missing or stale, or when a
@@ -57,7 +57,7 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional, TypeVar
 from xml.sax.saxutils import escape, quoteattr
 
@@ -109,6 +109,14 @@ class Message:
     translation: str = ''
     translation_type: Optional[str] = UNFINISHED
     translator_comment: Optional[str] = None
+    # A plural message (the source has `%n`) is translated by one form per plural form of the language.
+    plural: bool = False
+    forms: list[str] = field(default_factory=list)
+
+    @property
+    def translated(self) -> bool:
+        """Returns whether the message has any translation text."""
+        return any(form != '' for form in self.forms) if self.plural else self.translation != ''
 
     @property
     def key(self) -> tuple[str, str, Optional[str]]:
@@ -122,12 +130,12 @@ class Catalog:
     def __init__(self) -> None:
         self._contexts: dict[str, dict[tuple[str, Optional[str]], Message]] = {}
 
-    def add(self, context: str, source: str, comment: Optional[str], location: str) -> None:
+    def add(self, context: str, source: str, comment: Optional[str], location: str, plural: bool = False) -> None:
         """Adds a message, or adds a location to the message already added with the same context, source and comment."""
         messages = self._contexts.setdefault(context, {})
         message = messages.get((source, comment))
         if message is None:
-            message = Message(context, source, comment)
+            message = Message(context, source, comment, plural=plural)
             messages[(source, comment)] = message
         if location not in message.locations:
             message.locations.append(location)
@@ -254,10 +262,11 @@ def extract_python(path: str, display_path: str, location: str, catalog: Catalog
             if comment is None:
                 _problem(node, 'The disambiguation is not a string literal.')
                 continue
-        if count_arg is not None and not (isinstance(count_arg, ast.Constant) and count_arg.value == -1):
-            _problem(node, 'Plural forms are not supported. Format the count into the text instead.')
+        plural = count_arg is not None and not (isinstance(count_arg, ast.Constant) and count_arg.value == -1)
+        if plural and '%n' not in source:
+            _problem(node, 'A _tr call with a count needs \'%n\' in its source text.')
             continue
-        catalog.add(context, source, comment, location)
+        catalog.add(context, source, comment, location, plural)
 
 
 def extract_definitions(path: str, display_path: str, location: str, context: str, catalog: Catalog,
@@ -316,7 +325,7 @@ def write_ts(catalog: Catalog, language: Optional[str] = None) -> str:
     for context in catalog.contexts():
         lines += ['<context>', f'    <name>{escape(context)}</name>']
         for message in catalog.messages(context):
-            lines.append('    <message>')
+            lines.append('    <message numerus="yes">' if message.plural else '    <message>')
             for location in sorted(message.locations):
                 lines.append(f'        <location filename={quoteattr(location)}/>')
             lines.append(f'        <source>{escape(message.source)}</source>')
@@ -325,7 +334,11 @@ def write_ts(catalog: Catalog, language: Optional[str] = None) -> str:
             if message.translator_comment:
                 lines.append(f'        <translatorcomment>{escape(message.translator_comment)}</translatorcomment>')
             type_attribute = '' if message.translation_type is None else f' type="{message.translation_type}"'
-            lines.append(f'        <translation{type_attribute}>{escape(message.translation)}</translation>')
+            if message.plural:
+                forms = ''.join(f'<numerusform>{escape(form)}</numerusform>' for form in message.forms or [''])
+                lines.append(f'        <translation{type_attribute}>{forms}</translation>')
+            else:
+                lines.append(f'        <translation{type_attribute}>{escape(message.translation)}</translation>')
             lines.append('    </message>')
         lines.append('</context>')
     lines.append('</TS>')
@@ -340,13 +353,17 @@ def read_ts(path: str) -> tuple[Optional[str], list[Message]]:
         context = context_element.findtext('name', '')
         for message_element in context_element.iter('message'):
             translation_element = message_element.find('translation')
+            forms = [] if translation_element is None else [
+                ''.join(form.itertext()) for form in translation_element.findall('numerusform')]
             messages.append(Message(
                 context=context,
                 source=message_element.findtext('source', ''),
                 comment=message_element.findtext('comment'),
                 translation='' if translation_element is None else ''.join(translation_element.itertext()),
                 translation_type=None if translation_element is None else translation_element.get('type'),
-                translator_comment=message_element.findtext('translatorcomment')))
+                translator_comment=message_element.findtext('translatorcomment'),
+                plural=message_element.get('numerus') == 'yes',
+                forms=forms))
     return root.get('language'), messages
 
 
@@ -360,19 +377,25 @@ def merge_translations(catalog: Catalog, existing: list[Message]) -> Catalog:
     merged = Catalog()
     for message in catalog.all_messages():
         old = previous.pop(message.key, None)
-        new_message = Message(message.context, message.source, message.comment, list(message.locations))
+        new_message = Message(message.context, message.source, message.comment, list(message.locations),
+                              plural=message.plural)
         if old is not None:
-            new_message.translation = old.translation
+            new_message.translation = '' if message.plural else old.translation
+            new_message.forms = list(old.forms) if message.plural else []
+            if message.plural and old.plural != message.plural:
+                new_message.forms = [old.translation] if old.translation else []
+            elif not message.plural and old.plural:
+                new_message.translation = next((form for form in old.forms if form), '')
             new_message.translator_comment = old.translator_comment
-            if old.translation == '' or old.translation_type in (UNFINISHED, VANISHED, OBSOLETE):
+            if not new_message.translated or old.translation_type in (UNFINISHED, VANISHED, OBSOLETE):
                 new_message.translation_type = UNFINISHED
             else:
                 new_message.translation_type = None
         merged.add_message(new_message)
     for old in previous.values():
-        if old.translation != '':
+        if old.translated:
             merged.add_message(Message(old.context, old.source, old.comment, [], old.translation, VANISHED,
-                                       old.translator_comment))
+                                       old.translator_comment, old.plural, list(old.forms)))
     return merged
 
 
@@ -398,9 +421,19 @@ def _for_language(table: dict[str, _LanguageValue], language: str) -> Optional[_
 
 
 def _finished(catalog: Catalog) -> list[Message]:
-    """Returns the messages the checks apply to: those with a translation that is not vanished."""
-    return [message for message in catalog.all_messages()
-            if message.translation != '' and message.translation_type != VANISHED]
+    """Returns the messages the checks apply to: those with a translation that is not vanished.
+
+    A plural message yields one message per non-empty form, each marked `plural`, so checks see one text at a time.
+    """
+    checked = []
+    for message in catalog.all_messages():
+        if message.translation_type == VANISHED:
+            continue
+        if message.plural:
+            checked.extend(replace(message, translation=form) for form in message.forms if form != '')
+        elif message.translation != '':
+            checked.append(message)
+    return checked
 
 
 def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
@@ -409,6 +442,10 @@ def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
     for message in _finished(catalog):
         expected = _placeholders(message.source)
         actual = _placeholders(message.translation)
+        if message.plural and expected is not None and actual is not None:
+            # A plural form may spell a count out ('one layer') instead of using %n.
+            expected = [name for name in expected if name != '%n']
+            actual = [name for name in actual if name != '%n']
         if expected is not None and actual != expected:
             found = 'braces that do not parse' if actual is None else f'placeholders {actual}'
             problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has {found}, '

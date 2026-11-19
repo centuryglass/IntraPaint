@@ -52,7 +52,7 @@ General vocabulary shared with Photoshop, GIMP and Krita. Per-language glossarie
 | "Nearest", "Bilinear", "Bicubic", "Lanczos", "Hamming", "Box" (scaling algorithms) | Resampling methods named after their algorithms. | Scale image window, Settings > Editing | "Nearest", "Bilinear", "Bicubic", "Lanczos", "Hamming", "Box" |
 | Line join / "Join" | How the corners of a shape outline are drawn. | Shape tool | "Join" |
 | "Miter", "Bevel", "Round" (line join styles) | The line join values: a sharp corner, a cut-off corner and a rounded corner. | Shape tool | "Miter", "Bevel", "Round" |
-| Vertex / vertices | A corner point of a polygon or star. | Shape tool | "Vertices", "Vertex count:", "{shape}, {count} vertices" |
+| Vertex / vertices | A corner point of a polygon or star. | Shape tool | "Vertices", "Vertex count:", "{shape}, %n vertex/vertices" |
 | Kerning | Adjustment of the spacing between pairs of letters. | Text tool | "Kerning" |
 
 ## Stable Diffusion terms

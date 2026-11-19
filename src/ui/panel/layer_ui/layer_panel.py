@@ -54,8 +54,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 WINDOW_TITLE = _tr('Image Layers')
 PANEL_TITLE = _tr('Layers')
-ONE_LAYER_DESCRIPTION = _tr('1 layer')
-LAYER_COUNT_DESCRIPTION = _tr('{count} layers')
 ADD_BUTTON_TITLE = _tr('Add layer')
 ADD_BUTTON_TOOLTIP = _tr('Create a new layer above the current active layer.')
 ADD_GROUP_BUTTON_TITLE = _tr('Add layer group')
@@ -385,7 +383,7 @@ class LayerPanel(DockPanel):
 
     def _layer_count_change_slot(self, *_args) -> None:
         count = len(self._image_stack.layer_stack.recursive_child_layers)
-        description = ONE_LAYER_DESCRIPTION if count == 1 else LAYER_COUNT_DESCRIPTION.format(count=count)
+        description = _tr('%n layer(s)', None, count)
         self.header.set_description(description)
         self.set_title_note(description)
         self._update_select_buttons()

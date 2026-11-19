@@ -134,12 +134,45 @@ class BuildTranslationsTest(IntraPaintTestCase):
             BUILT = _tr('In ' + PATH)
             FORMATTED = _tr(f'In {PATH}')
             PLURAL = _tr('{n} files', None, 2)
+            GOOD = _tr('%n file(s)', None, 2)
             STRAY = QApplication.translate('application_config', 'Developer')
         """)
         _, problems = build_translations.build_catalog(self.project)
         self.assertEqual(['src/ui/bad_calls.py:5:', 'src/ui/bad_calls.py:6:', 'src/ui/bad_calls.py:7:',
-                          'src/ui/bad_calls.py:8:', 'src/ui/no_tr_id.py:2:'],
+                          'src/ui/bad_calls.py:9:', 'src/ui/no_tr_id.py:2:'],
                          sorted(problem.split(' ')[0] for problem in problems))
+
+    def test_plural_messages_are_numerus_entries_with_checked_forms(self) -> None:
+        """A `_tr` call with a count extracts a `numerus` message, and every form is checked on its own."""
+        self._write('src/ui/plural.py', """
+            from PySide6.QtWidgets import QApplication
+            TR_ID = 'ui.plural'
+            def _tr(key, disambiguation=None, n=-1):
+                return QApplication.translate(TR_ID, key, disambiguation, n)
+            FILES = _tr('%n file(s) in {folder}', None, 2)
+        """)
+        build_translations.build(self.project)
+        self.assertIn('<message numerus="yes">', self._read('resources/translations/main.ts'))
+        source = '%n file(s) in {folder}'
+
+        def _forms(*forms: str) -> list[str]:
+            directory = self._path('resources/translations')
+            for name in os.listdir(directory):
+                if name.endswith(('.ts', '.qm')) and name != build_translations.CATALOG_NAME:
+                    os.remove(os.path.join(directory, name))
+            self._write('resources/translations/languages.json', '{"fr_FR": {"machine_translated": true}}')
+            body = ''.join(f'<numerusform>{form}</numerusform>' for form in forms)
+            self._write('resources/translations/fr_FR.ts',
+                        '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE TS>\n<TS version="2.1" language="fr_FR">'
+                        '<context><name>ui.plural</name><message numerus="yes">'
+                        f'<source>{source}</source><translation>{body}</translation></message></context></TS>\n')
+            build_translations.build(self.project)
+            return build_translations.build(self.project, check=True)[0]
+
+        self.assertEqual([], _forms('un fichier dans {folder}', '%n fichiers dans {folder}'))
+        problems = _forms('un fichier', '%n fichiers dans {folder}')
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn('{folder}', problems[0])
 
     def test_check_reports_a_stale_catalog_without_writing_it(self) -> None:
         """A rebuild settles the catalog, and a new string makes `--check` fail until the next rebuild."""

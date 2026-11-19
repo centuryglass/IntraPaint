@@ -77,8 +77,6 @@ JOIN_LABEL = _tr('Join')
 NO_LINE_TEXT = _tr('none')
 PIXEL_SUFFIX = _tr(' px')
 DASH_HINT = _tr('Dash and gap lengths in px, in pairs')
-SHAPE_SUMMARY_STAR = _tr('{shape}, {count} points')
-SHAPE_SUMMARY_POLYGON = _tr('{shape}, {count} vertices')
 OUTLINE_SUMMARY = _tr('{width} {style}')
 
 # Pairs of whole numbers separated by spaces, such as "6 3" or "6 3 2 3":
@@ -434,11 +432,11 @@ class ShapeToolPanel(FitToolPanel):
 
     def _shape_summary(self) -> str:
         mode = ShapeMode[self._shape_control.value()]
-        count = self._vertex_field.value_text()
+        count = int(self._vertex_field.value())
         if mode == ShapeMode.STAR:
-            return SHAPE_SUMMARY_STAR.format(shape=mode.display_text(), count=count)
+            return _tr('{shape}, %n point(s)', None, count).format(shape=mode.display_text())
         if mode == ShapeMode.POLYGON:
-            return SHAPE_SUMMARY_POLYGON.format(shape=mode.display_text(), count=count)
+            return _tr('{shape}, %n vertex/vertices', None, count).format(shape=mode.display_text())
         return mode.display_text()
 
     def _outline_summary(self) -> str:

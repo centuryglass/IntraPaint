@@ -153,11 +153,7 @@ GENERATION_MODE_NONE = 'none'
 GENERATION_MODE_TEST = 'mock'
 GENERATION_MODE_AUTO = 'auto'
 
-CONTROLNET_BADGE_TOOLTIP_ONE = _tr('ControlNet: 1 unit on', 'Tooltip of the ControlNet rail button')
-CONTROLNET_BADGE_TOOLTIP_MANY = _tr('ControlNet: {count} units on', 'Tooltip of the ControlNet rail button')
 CONTROLNET_BADGE_SKIPPED = '!'
-CONTROLNET_BADGE_TOOLTIP_SKIPPED = _tr('ControlNet: {count} of {enabled} units on are skipped. Inpainting units only '
-                                       'apply in Inpaint mode.', 'Tooltip of the ControlNet rail button')
 MENU_FILE = _tr('&File')
 MENU_EDIT = _tr('&Edit')
 MENU_VIEW = _tr('&View')
@@ -582,11 +578,12 @@ class AppController(MenuBuilder):
             if enabled == 0:
                 dock.set_badge('')
             elif skipped > 0:
-                dock.set_badge(CONTROLNET_BADGE_SKIPPED,
-                               CONTROLNET_BADGE_TOOLTIP_SKIPPED.format(count=skipped, enabled=enabled), caution=True)
+                tooltip = _tr('ControlNet: %n of {enabled} unit(s) on are skipped. Inpainting units only apply in '
+                              'Inpaint mode.', 'Tooltip of the ControlNet rail button', skipped)
+                dock.set_badge(CONTROLNET_BADGE_SKIPPED, tooltip.format(enabled=enabled), caution=True)
             else:
-                dock.set_badge(str(enabled), CONTROLNET_BADGE_TOOLTIP_ONE if enabled == 1
-                               else CONTROLNET_BADGE_TOOLTIP_MANY.format(count=enabled))
+                dock.set_badge(str(enabled), _tr('ControlNet: %n unit(s) on',
+                                                 'Tooltip of the ControlNet rail button', enabled))
 
         for key in [*keys, Cache.EDIT_MODE]:
             cache.connect(dock, key, _update)

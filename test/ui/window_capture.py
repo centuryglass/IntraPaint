@@ -141,9 +141,9 @@ def _warning_box(_controller: 'AppController') -> QWidget:
 
 def _confirm_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
-    from src.controller.image_io import LARGE_ANIMATION_BUTTON, LARGE_ANIMATION_MESSAGE, LARGE_ANIMATION_TITLE
+    from src.controller.image_io import LARGE_ANIMATION_BUTTON, LARGE_ANIMATION_TITLE, large_animation_message
     from src.ui.modal.modal_utils import request_confirmation
-    message = LARGE_ANIMATION_MESSAGE.format(file_name='walk_cycle.gif', frame_count=480, size_gb=1.4)
+    message = large_animation_message(480).format(file_name='walk_cycle.gif', size_gb=1.4)
     return _message_box(lambda: request_confirmation(None, LARGE_ANIMATION_TITLE, message, None,
                                                      QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No,
                                                      confirm_label=LARGE_ANIMATION_BUTTON))
