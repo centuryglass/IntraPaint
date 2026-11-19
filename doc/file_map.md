@@ -96,7 +96,6 @@ Coordinators that connect the image model, tools, UI, config and generators arou
 - `src/controller/generation_area_controller.py`: Keeps the generation resolution, recent frame sizes and generation
   area position in step with the image.
 - `src/controller/image_io.py`: ImageIO owns opening and saving image files for the application.
-- `src/controller/spacenav_manager.py`: Enables moving the edited image section using a spacemouse.
 - `src/controller/tool_controller.py`: Manages available tools and handles tool input events.
 
 ## `src/controller/image_generation`

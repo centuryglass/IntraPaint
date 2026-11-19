@@ -3,7 +3,7 @@
     "duplicate-code": 39
   },
   "src/controller/app_controller.py": {
-    "fixme": 2,
+    "fixme": 1,
     "too-many-lines": 1
   },
   "src/controller/image_generation/generation_session.py": {

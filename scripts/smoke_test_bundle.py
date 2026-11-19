@@ -26,7 +26,7 @@ import time
 
 EDITING_STATE_LINE = 'State change: from init to editing'
 # Logged by src/util/optional_import.py when an optional tool fails to import, e.g. the MyPaint brush tool when
-# libmypaint doesn't load. Other optional imports (themes, spacenav, GLID-3-XL) are expected to fail in a bundle.
+# libmypaint doesn't load. Other optional imports (themes, GLID-3-XL) are expected to fail in a bundle.
 OPTIONAL_IMPORT_FAILURE = 'Failed to load optional import from src.tools.'
 HELP_TIMEOUT_SECONDS = 120
 # The app settles for IDLE_SETTLE_SECONDS after reaching the editing state, then its CPU use is measured over

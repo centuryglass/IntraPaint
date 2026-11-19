@@ -2,9 +2,6 @@
 qt-material==2.14
 pyqtdarktheme==0.1.7
 
-# Allows using a SpaceMouse for panning:
-spnav
-
 # Needed for GLID-3-XL local mode:
 torch~=2.3.0
 torchvision~=0.18.0a0
