@@ -9,6 +9,7 @@ from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.libmypaint import TILE_DIM
+from src.util.visual.image_utils import image_data_as_numpy_8bit_readonly
 from src.util.visual.image_utils import create_transparent_image
 from test.image.brush.brush_test_case import BrushTestCase, LAYER_SIZE, StrokePoint, brush_test_pattern, \
     opacity_gradient_image, line_points, rect_mask
@@ -224,6 +225,52 @@ class MyPaintLayerBrushTest(BrushTestCase):
         self.layer.alpha_locked = True
         self.stroke(zigzag_points())
         self.assertEqual(self.brush.brush.get_value(MyPaintBrush.LOCK_ALPHA), lock_alpha)
+
+    def stroke_darkness(self, color: QColor, points: list[StrokePoint]) -> int:
+        """Draws one stroke on a white layer and returns how much it darkened the layer, summed over every channel."""
+        white = QImage(LAYER_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        white.fill(QColor(255, 255, 255))
+        self.use_layer(white)
+        self.brush.brush_color = color
+        image = self.stroke(points)
+        return int((255 - image_data_as_numpy_8bit_readonly(image)[:, :, :3].astype(int)).sum())
+
+    def test_color_alpha_lightens_stroke(self) -> None:
+        """A color with alpha 128 paints lighter than the same opaque color, keeping pressure-driven opacity."""
+        points = line_points(QPoint(15, 64), QPoint(175, 64), 8)
+        # PRESSURE_SIZED_BRUSH's radius grows with pressure, so these pressures and size keep its dabs on the layer.
+        light_points: list[StrokePoint] = [(x, y, 0.4) for x, y, *_ in points]
+        heavy_points: list[StrokePoint] = [(x, y, 0.7) for x, y, *_ in points]
+        self.brush.brush_size = 6
+        for brush_path in (BULK_BRUSH, PRESSURE_SIZED_BRUSH):
+            with self.subTest(brush=brush_path):
+                self.brush.brush_path = brush_path
+                for pressure_points in (light_points, heavy_points):
+                    opaque = self.stroke_darkness(QColor(0, 0, 0, 255), pressure_points)
+                    translucent = self.stroke_darkness(QColor(0, 0, 0, 128), pressure_points)
+                    self.assertGreater(translucent, 0)
+                    self.assertLess(translucent, opaque)
+                light = self.stroke_darkness(QColor(0, 0, 0, 128), light_points)
+                heavy = self.stroke_darkness(QColor(0, 0, 0, 128), heavy_points)
+                self.assertLess(light, heavy)
+
+    def test_opacity_setting_restored_after_translucent_stroke(self) -> None:
+        """A stroke with a translucent color leaves the brush's opacity_multiply value and curves unchanged."""
+        self.brush.brush_path = PRESSURE_SIZED_BRUSH
+        mp_brush = self.brush.brush
+        before = mp_brush.get_value(MyPaintBrush.OPAQUE_MULTIPLY)
+        mp_brush.scale_opacity(1.0)
+        saved = mp_brush._saved_opacity  # pylint: disable=protected-access
+        mp_brush.restore_opacity()
+        self.assertIsNotNone(saved)
+        assert saved is not None
+        self.assertGreater(len(saved[1]), 0)
+        self.brush.brush_color = QColor(0, 0, 0, 100)
+        self.stroke(zigzag_points())
+        self.assertEqual(mp_brush.get_value(MyPaintBrush.OPAQUE_MULTIPLY), before)
+        mp_brush.scale_opacity(1.0)
+        self.assertEqual(mp_brush._saved_opacity, saved)  # pylint: disable=protected-access
+        mp_brush.restore_opacity()
 
     def assert_mid_stroke_writes_match_one_write(self, brush_path: str) -> None:
         """Asserts that writing changed tiles back to the layer after every input point gives the same result as
