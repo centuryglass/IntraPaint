@@ -211,6 +211,16 @@ def load_libmypaint() -> CDLL:
     lib.mypaint_brush_get_base_value.argtypes = [c_void_p, c_int]  # (brush, setting ID)
     lib.mypaint_brush_set_base_value.restype = None
     lib.mypaint_brush_set_base_value.argtypes = [c_void_p, c_int, c_float]  # (brush, setting ID, value)
+    lib.mypaint_brush_get_mapping_n.restype = c_int
+    lib.mypaint_brush_get_mapping_n.argtypes = [c_void_p, c_int, c_int]  # (brush, setting ID, input ID)
+    lib.mypaint_brush_get_mapping_point.restype = None
+    lib.mypaint_brush_get_mapping_point.argtypes = [c_void_p, c_int, c_int, c_int,  # brush, setting, input, index,
+                                                    POINTER(c_float), POINTER(c_float)]  # x out, y out
+    lib.mypaint_brush_set_mapping_point.restype = None
+    lib.mypaint_brush_set_mapping_point.argtypes = [c_void_p, c_int, c_int, c_int,  # brush, setting, input, index,
+                                                    c_float, c_float]  # x, y
+    lib.mypaint_brush_input_from_cname.restype = c_int
+    lib.mypaint_brush_input_from_cname.argtypes = [c_char_p]
 
     # Brush settings:
     lib.mypaint_brush_setting_info.restype = POINTER(MyPaintBrushSettingInfo)

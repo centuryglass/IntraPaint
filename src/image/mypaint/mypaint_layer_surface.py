@@ -239,7 +239,7 @@ class MyPaintLayerSurface(QObject):
         return True
 
     def start_stroke(self) -> None:
-        """Start a brush stroke."""
+        """Start a brush stroke, scaling the brush's opacity by its color's alpha until end_stroke."""
         if not self._should_allow_stroke():
             return
         assert self._layer is not None
@@ -248,6 +248,9 @@ class MyPaintLayerSurface(QObject):
             # can't pick up paint the lock hides.
             self._saved_lock_alpha = self.brush.get_value(MyPaintBrush.LOCK_ALPHA)
             self.brush.set_value(MyPaintBrush.LOCK_ALPHA, 1.0)
+        alpha = self.brush.color.alphaF()
+        if alpha < 1.0:
+            self.brush.scale_opacity(alpha)
         libmypaint.mypaint_brush_reset(self.brush.brush_ptr)
         libmypaint.mypaint_brush_new_stroke(self.brush.brush_ptr)
         self._stroke_starting = True
@@ -278,6 +281,7 @@ class MyPaintLayerSurface(QObject):
         if self._saved_lock_alpha is not None:
             self.brush.set_value(MyPaintBrush.LOCK_ALPHA, self._saved_lock_alpha)
             self._saved_lock_alpha = None
+        self.brush.restore_opacity()
 
     def basic_stroke_to(self, x: float, y: float) -> None:
         """Continue a brush stroke, without tablet inputs, at MOUSE_PRESSURE."""
