@@ -10,6 +10,10 @@ translations follow a separate process, drafted in [`doc/machine_translation.md`
 - Each other `.ts` file is a translation, named after its language and region code (`es_MX.ts` for Spanish - Mexico).
 - Each translation has a compiled `.qm` file of the same name. The `.qm` files are generated and committed with their
   `.ts` files.
+- `en.ts` holds the English singular and plural forms of each string with a count, such as `%n layer(s)`. Qt applies
+  plural forms only through a loaded translation, so IntraPaint loads the compiled `en.qm` under every language. The
+  build adds each new counted string to it with empty forms and fails until both are written, such as `%n layer` and
+  `%n layers`. It isn't a language, so it has no `languages.json` entry and isn't offered in the language list.
 - `languages.json` has an entry for each translation, saying whether it was machine-translated:
   `"es_MX": {"machine_translated": false}`. The build fails when a translation has no entry.
 

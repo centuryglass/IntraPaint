@@ -45,8 +45,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 META_SEPARATOR = _tr(' · ', 'separates the parts of a layer row\'s meta line')
 META_OPACITY = _tr('{percent}%')
-META_ONE_LAYER = _tr('1 layer')
-META_LAYER_COUNT = _tr('{count} layers')
 TEXT_LAYER_MARK = _tr('Aa', 'marks text layer thumbnails')
 EXPAND_TOOLTIP = _tr('Show or hide the layers in this group')
 SIZE_TOOLTIP = _tr('{width} x {height} px at ({x}, {y})', 'layer thumbnail tooltip')
@@ -124,7 +122,7 @@ def layer_meta_text(layer: Layer) -> str:
     if layer.composition_mode != CompositeMode.NORMAL:
         parts.append(str(layer.composition_mode))
     if isinstance(layer, LayerGroup):
-        parts.append(META_ONE_LAYER if layer.count == 1 else META_LAYER_COUNT.format(count=layer.count))
+        parts.append(_tr('%n layer(s)', None, layer.count))
     return META_SEPARATOR.join(parts)
 
 

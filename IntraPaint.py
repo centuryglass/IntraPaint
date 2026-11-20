@@ -144,7 +144,7 @@ except ImportError:
 # Load the chosen translation (src/util/translation.py explains why this happens before most imports):
 ui_language = resolve_language(saved_language_setting())
 logger.info(f'UI language: {ui_language}')
-translator = install_translation(app, ui_language)
+translators = install_translation(app, ui_language)
 
 if args.metadata is not None or args.print_metadata:
     # The standalone metadata mode skips the splash screen, the editor and the generators. Its imports stay light,

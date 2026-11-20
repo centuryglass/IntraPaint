@@ -44,7 +44,6 @@ REMOVE_BUTTON_LABEL = _tr('Re&move')
 REMOVE_BUTTON_TOOLTIP = _tr('Remove the current color from the saved colors')
 REMOVE_ACTION_LABEL = _tr('Remove')
 RECENT_COLORS_LABEL = _tr('Recent colors')
-RECENT_COLORS_SUMMARY = _tr('{count} colors')
 RECENT_COLORS_TOOLTIP = _tr('Colors you chose most recently, newest first. Click a color to use it again, or drag it '
                             'to the saved colors.')
 
@@ -226,7 +225,7 @@ class RecentColorsRow(QWidget):
     @staticmethod
     def summary() -> str:
         """Returns the recent color count, for a collapsed section's header."""
-        return RECENT_COLORS_SUMMARY.format(count=len(color_controller.recent_colors()))
+        return _tr('%n color(s)', None, len(color_controller.recent_colors()))
 
     @property
     def grid(self) -> ColorSwatchGrid:

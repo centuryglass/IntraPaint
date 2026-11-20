@@ -78,9 +78,13 @@ METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
 LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: {file_list}')
 LARGE_ANIMATION_TITLE = _tr('Open every frame?')
-LARGE_ANIMATION_MESSAGE = _tr('{file_name} has {frame_count} frames. Opening each one as a layer will use about'
-                              ' {size_gb:.1f} GB of memory.\n\nChoose "No" to open only the first frame.')
 LARGE_ANIMATION_BUTTON = _tr('Open all frames')
+
+
+def large_animation_message(frame_count: int) -> str:
+    """Returns the large-animation prompt's text, with `{file_name}` and `{size_gb}` left to format."""
+    return _tr('{file_name} has %n frame(s). Opening each one as a layer will use about {size_gb:.1f} GB of memory.'
+               '\n\nChoose "No" to open only the first frame.', None, frame_count)
 
 # Decoded frame data, in bytes, above which opening an animation asks before loading every frame.
 LARGE_ANIMATION_BYTES = 1024 ** 3
@@ -615,8 +619,8 @@ class ImageIO:
         frame_bytes = frame_count * frame_size.width() * frame_size.height() * 4  # ARGB32 pixels
         if frame_bytes <= LARGE_ANIMATION_BYTES:
             return True
-        message = rich_text_format(LARGE_ANIMATION_MESSAGE, file_name=os.path.basename(file_path),
-                                   frame_count=frame_count, size_gb=frame_bytes / 1024 ** 3)
+        message = rich_text_format(large_animation_message(frame_count), file_name=os.path.basename(file_path),
+                                   size_gb=frame_bytes / 1024 ** 3)
         return request_confirmation(self._window, LARGE_ANIMATION_TITLE, message, None,
                                     QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No,
                                     confirm_label=LARGE_ANIMATION_BUTTON)

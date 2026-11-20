@@ -1,7 +1,9 @@
 """Chooses the UI language and loads its translation at startup.
 
 Each translation is a `.qm` file in `resources/translations/`, named after its language code (`zh_CN.qm`), with an
-entry in the `languages.json` manifest beside it. English is the source language and has no file.
+entry in the `languages.json` manifest beside it. English is the source language. Its only file is `en.qm`, which
+holds the English singular and plural forms of plural strings (`_tr` calls with a count), and is installed under every
+language so that a translation without a plural string's forms falls back to English forms instead of the source text.
 
 The translator is installed before most of `src/` is imported, because config labels and module-level `_tr`
 constants are translated once, when they are created. This module therefore imports nothing that constructs a config,
@@ -58,7 +60,8 @@ def available_languages(translation_dir: str = TRANSLATION_DIR) -> list[str]:
         file_names = os.listdir(translation_dir)
     except OSError:
         file_names = []
-    codes = sorted(name[:-len('.qm')] for name in file_names if name.endswith('.qm'))
+    codes = sorted(code for code in (name[:-len('.qm')] for name in file_names if name.endswith('.qm'))
+                   if code != ENGLISH)
     return [ENGLISH, *codes]
 
 
@@ -133,17 +136,20 @@ def saved_language_setting(config_path: str = APP_CONFIG_PATH) -> str:
 
 
 def install_translation(app: QApplication, language: str,
-                        translation_dir: str = TRANSLATION_DIR) -> Optional[QTranslator]:
-    """Loads a language's `.qm` file into a new translator and installs it, unless the language is English.
+                        translation_dir: str = TRANSLATION_DIR) -> list[QTranslator]:
+    """Installs the English plural forms, then the chosen language's translation unless it is English.
 
-    Returns the translator, which must be kept referenced while it is installed, or None if nothing was installed.
+    Qt searches the most recently installed translator first, so the chosen language overrides the English forms.
+    Returns the installed translators, which must stay referenced while they are installed.
     """
-    if language == ENGLISH:
-        return None
-    translator = QTranslator(app)
-    qm_path = os.path.join(translation_dir, f'{language}.qm')
-    if not translator.load(qm_path):
-        logger.error(f'Failed to load translation {qm_path}, using English.')
-        return None
-    app.installTranslator(translator)
-    return translator
+    translators = []
+    for code in (ENGLISH, language) if language != ENGLISH else (ENGLISH,):
+        translator = QTranslator(app)
+        qm_path = os.path.join(translation_dir, f'{code}.qm')
+        if not translator.load(qm_path):
+            fallback = 'English plurals will show their source text' if code == ENGLISH else 'using English'
+            logger.error(f'Failed to load translation {qm_path}, {fallback}.')
+            continue
+        app.installTranslator(translator)
+        translators.append(translator)
+    return translators

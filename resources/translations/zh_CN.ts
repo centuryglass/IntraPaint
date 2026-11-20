@@ -3949,24 +3949,6 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>ControlNet: 1 unit on</source>
-        <comment>Tooltip of the ControlNet rail button</comment>
-        <translation>ControlNet：已启用 1 个控制单元</translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>ControlNet: {count} units on</source>
-        <comment>Tooltip of the ControlNet rail button</comment>
-        <translation>ControlNet：已启用 {count} 个控制单元</translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>ControlNet: {count} of {enabled} units on are skipped. Inpainting units only apply in Inpaint mode.</source>
-        <comment>Tooltip of the ControlNet rail button</comment>
-        <translation>ControlNet：已启用的 {enabled} 个控制单元中有 {count} 个被跳过。局部重绘控制单元仅在局部重绘模式下生效。</translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
         <source>&amp;File</source>
         <translation>文件(&amp;F)</translation>
     </message>
@@ -4079,6 +4061,33 @@
         <location filename="../../src/controller/app_controller.py"/>
         <source>Create without saving</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>ControlNet: %n of {enabled} enabled unit(s) skipped. Inpainting units only apply in Inpaint mode.</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation><numerusform>ControlNet：已启用的 {enabled} 个控制单元中有 %n 个被跳过。局部重绘控制单元仅在局部重绘模式下生效。</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>ControlNet: %n unit(s) on</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation><numerusform>ControlNet：已启用 %n 个控制单元</numerusform></translation>
+    </message>
+    <message>
+        <source>ControlNet: 1 unit on</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation type="vanished">ControlNet：已启用 1 个控制单元</translation>
+    </message>
+    <message>
+        <source>ControlNet: {count} units on</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation type="vanished">ControlNet：已启用 {count} 个控制单元</translation>
+    </message>
+    <message>
+        <source>ControlNet: {count} of {enabled} units on are skipped. Inpainting units only apply in Inpaint mode.</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation type="vanished">ControlNet：已启用的 {enabled} 个控制单元中有 {count} 个被跳过。局部重绘控制单元仅在局部重绘模式下生效。</translation>
     </message>
 </context>
 <context>
@@ -4957,15 +4966,15 @@
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
-
-Choose "No" to open only the first frame.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_io.py"/>
         <source>Open all frames</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/controller/image_io.py"/>
+        <source>{file_name} has %n frame(s). Opening each one as a layer will use about {size_gb:.1f} GB of memory.
+
+Choose "No" to open only the first frame.</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
@@ -6051,11 +6060,6 @@ Please remember to include the traceback from the Details expander.</source>
     <name>ui.generated_image_selector</name>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>{mode}, {width} x {height}, {count} options</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
         <source>{ready} of {total} ready</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6148,6 +6152,11 @@ Please remember to include the traceback from the Details expander.</source>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Image content was added as new layer "{new_layer_name}" at the top of the layer stack</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>{mode}, {width} x {height}, %n option(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
 </context>
 <context>
@@ -8333,16 +8342,6 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
-        <source>1 layer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
-        <source>{count} layers</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Add layer</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8461,6 +8460,11 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Select next layer</source>
         <translation type="unfinished"></translation>
     </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>%n layer(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.layer_ui.layer_properties</name>
@@ -8500,16 +8504,6 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
-        <source>1 layer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
-        <source>{count} layers</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
         <source>Aa</source>
         <comment>marks text layer thumbnails</comment>
         <translation type="unfinished"></translation>
@@ -8536,6 +8530,11 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Empty group</source>
         <comment>layer thumbnail tooltip</comment>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>%n layer(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
 </context>
 <context>
@@ -9067,18 +9066,18 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
-        <source>{shape}, {count} points</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
-        <source>{shape}, {count} vertices</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>{width} {style}</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>{shape}, %n point(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>{shape}, %n vertex/vertices</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
     <message>
         <location filename="../../src/util/visual/shape_mode.py"/>
@@ -9783,13 +9782,13 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
-        <source>{count} colors</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
         <source>Colors you chose most recently, newest first. Click a color to use it again, or drag it to the saved colors.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>%n color(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
 </context>
 <context>

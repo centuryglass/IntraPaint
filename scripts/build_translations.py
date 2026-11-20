@@ -4,6 +4,11 @@
 the `_tr` and `QApplication.translate` calls under `src/` and from the config definition files, by reading them with
 `ast` and `json`. No source file is modified, and no Qt tool runs during extraction.
 
+`en.ts` holds the English singular and plural forms of each plural message (a `_tr` call with a count, whose source
+has `%n`), and is created with the first one. The build adds new plural messages to it with empty forms, drops removed
+ones, and fails until every message's forms are written. It is compiled to `en.qm` like a translation, but has no
+`languages.json` entry and no glossary.
+
 Every other `.ts` file in `resources/translations/` is a translation into the language its `language` attribute names.
 Each is merged with the catalog: translations of strings still in the catalog are kept, new strings are added
 unfinished, and translations of removed strings are kept as vanished. Each is compiled with `lrelease` (see
@@ -17,7 +22,7 @@ Extraction fails, naming the file and line, on calls it can't extract:
 - `_tr`, or `translate(TR_ID, ...)`, in a file with no module-level `TR_ID`.
 - A `_tr` call whose source text or disambiguation isn't a string literal. Text built at runtime has no catalog entry.
   Pass the variable parts as `str.format` placeholders.
-- A `_tr` call with a plural count, which the catalog doesn't support.
+- A `_tr` call with a plural count whose source text has no `%n`.
 - A `translate` call whose literal context is neither the file's `TR_ID` nor a config definition context.
 
 A translation file fails when it doesn't match a fresh merge, when its `.qm` file is missing or stale, or when a
@@ -57,7 +62,7 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional, TypeVar
 from xml.sax.saxutils import escape, quoteattr
 
@@ -69,6 +74,11 @@ from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS  # noqa: E4
 
 TRANSLATION_DIR = 'resources/translations'
 CATALOG_NAME = 'main.ts'
+# English plural forms for the catalog's plural messages. Qt only applies plural forms through a loaded translation, so
+# without this file English shows a plural source like '%n layer(s)' as written. src/util/translation.py loads it under
+# every language.
+ENGLISH_PLURALS_STEM = 'en'
+ENGLISH_PLURAL_FORM_COUNT = 2
 MANIFEST_NAME = 'languages.json'
 MANIFEST_MACHINE_TRANSLATED = 'machine_translated'
 GLOSSARY_DIR = 'doc/translation'
@@ -109,6 +119,14 @@ class Message:
     translation: str = ''
     translation_type: Optional[str] = UNFINISHED
     translator_comment: Optional[str] = None
+    # A plural message (the source has `%n`) is translated by one form per plural form of the language.
+    plural: bool = False
+    forms: list[str] = field(default_factory=list)
+
+    @property
+    def translated(self) -> bool:
+        """Returns whether the message has any translation text."""
+        return any(form != '' for form in self.forms) if self.plural else self.translation != ''
 
     @property
     def key(self) -> tuple[str, str, Optional[str]]:
@@ -122,12 +140,12 @@ class Catalog:
     def __init__(self) -> None:
         self._contexts: dict[str, dict[tuple[str, Optional[str]], Message]] = {}
 
-    def add(self, context: str, source: str, comment: Optional[str], location: str) -> None:
+    def add(self, context: str, source: str, comment: Optional[str], location: str, plural: bool = False) -> None:
         """Adds a message, or adds a location to the message already added with the same context, source and comment."""
         messages = self._contexts.setdefault(context, {})
         message = messages.get((source, comment))
         if message is None:
-            message = Message(context, source, comment)
+            message = Message(context, source, comment, plural=plural)
             messages[(source, comment)] = message
         if location not in message.locations:
             message.locations.append(location)
@@ -254,10 +272,11 @@ def extract_python(path: str, display_path: str, location: str, catalog: Catalog
             if comment is None:
                 _problem(node, 'The disambiguation is not a string literal.')
                 continue
-        if count_arg is not None and not (isinstance(count_arg, ast.Constant) and count_arg.value == -1):
-            _problem(node, 'Plural forms are not supported. Format the count into the text instead.')
+        plural = count_arg is not None and not (isinstance(count_arg, ast.Constant) and count_arg.value == -1)
+        if plural and '%n' not in source:
+            _problem(node, 'A _tr call with a count needs \'%n\' in its source text.')
             continue
-        catalog.add(context, source, comment, location)
+        catalog.add(context, source, comment, location, plural)
 
 
 def extract_definitions(path: str, display_path: str, location: str, context: str, catalog: Catalog,
@@ -316,7 +335,7 @@ def write_ts(catalog: Catalog, language: Optional[str] = None) -> str:
     for context in catalog.contexts():
         lines += ['<context>', f'    <name>{escape(context)}</name>']
         for message in catalog.messages(context):
-            lines.append('    <message>')
+            lines.append('    <message numerus="yes">' if message.plural else '    <message>')
             for location in sorted(message.locations):
                 lines.append(f'        <location filename={quoteattr(location)}/>')
             lines.append(f'        <source>{escape(message.source)}</source>')
@@ -325,7 +344,11 @@ def write_ts(catalog: Catalog, language: Optional[str] = None) -> str:
             if message.translator_comment:
                 lines.append(f'        <translatorcomment>{escape(message.translator_comment)}</translatorcomment>')
             type_attribute = '' if message.translation_type is None else f' type="{message.translation_type}"'
-            lines.append(f'        <translation{type_attribute}>{escape(message.translation)}</translation>')
+            if message.plural:
+                forms = ''.join(f'<numerusform>{escape(form)}</numerusform>' for form in message.forms or [''])
+                lines.append(f'        <translation{type_attribute}>{forms}</translation>')
+            else:
+                lines.append(f'        <translation{type_attribute}>{escape(message.translation)}</translation>')
             lines.append('    </message>')
         lines.append('</context>')
     lines.append('</TS>')
@@ -340,13 +363,17 @@ def read_ts(path: str) -> tuple[Optional[str], list[Message]]:
         context = context_element.findtext('name', '')
         for message_element in context_element.iter('message'):
             translation_element = message_element.find('translation')
+            forms = [] if translation_element is None else [
+                ''.join(form.itertext()) for form in translation_element.findall('numerusform')]
             messages.append(Message(
                 context=context,
                 source=message_element.findtext('source', ''),
                 comment=message_element.findtext('comment'),
                 translation='' if translation_element is None else ''.join(translation_element.itertext()),
                 translation_type=None if translation_element is None else translation_element.get('type'),
-                translator_comment=message_element.findtext('translatorcomment')))
+                translator_comment=message_element.findtext('translatorcomment'),
+                plural=message_element.get('numerus') == 'yes',
+                forms=forms))
     return root.get('language'), messages
 
 
@@ -360,19 +387,25 @@ def merge_translations(catalog: Catalog, existing: list[Message]) -> Catalog:
     merged = Catalog()
     for message in catalog.all_messages():
         old = previous.pop(message.key, None)
-        new_message = Message(message.context, message.source, message.comment, list(message.locations))
+        new_message = Message(message.context, message.source, message.comment, list(message.locations),
+                              plural=message.plural)
         if old is not None:
-            new_message.translation = old.translation
+            new_message.translation = '' if message.plural else old.translation
+            new_message.forms = list(old.forms) if message.plural else []
+            if message.plural and old.plural != message.plural:
+                new_message.forms = [old.translation] if old.translation else []
+            elif not message.plural and old.plural:
+                new_message.translation = next((form for form in old.forms if form), '')
             new_message.translator_comment = old.translator_comment
-            if old.translation == '' or old.translation_type in (UNFINISHED, VANISHED, OBSOLETE):
+            if not new_message.translated or old.translation_type in (UNFINISHED, VANISHED, OBSOLETE):
                 new_message.translation_type = UNFINISHED
             else:
                 new_message.translation_type = None
         merged.add_message(new_message)
     for old in previous.values():
-        if old.translation != '':
+        if old.translated:
             merged.add_message(Message(old.context, old.source, old.comment, [], old.translation, VANISHED,
-                                       old.translator_comment))
+                                       old.translator_comment, old.plural, list(old.forms)))
     return merged
 
 
@@ -398,9 +431,19 @@ def _for_language(table: dict[str, _LanguageValue], language: str) -> Optional[_
 
 
 def _finished(catalog: Catalog) -> list[Message]:
-    """Returns the messages the checks apply to: those with a translation that is not vanished."""
-    return [message for message in catalog.all_messages()
-            if message.translation != '' and message.translation_type != VANISHED]
+    """Returns the messages the checks apply to: those with a translation that is not vanished.
+
+    A plural message yields one message per non-empty form, each marked `plural`, so checks see one text at a time.
+    """
+    checked = []
+    for message in catalog.all_messages():
+        if message.translation_type == VANISHED:
+            continue
+        if message.plural:
+            checked.extend(replace(message, translation=form) for form in message.forms if form != '')
+        elif message.translation != '':
+            checked.append(message)
+    return checked
 
 
 def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
@@ -409,6 +452,10 @@ def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
     for message in _finished(catalog):
         expected = _placeholders(message.source)
         actual = _placeholders(message.translation)
+        if message.plural and expected is not None and actual is not None:
+            # A plural form may spell a count out ('one layer') instead of using %n.
+            expected = [name for name in expected if name != '%n']
+            actual = [name for name in actual if name != '%n']
         if expected is not None and actual != expected:
             found = 'braces that do not parse' if actual is None else f'placeholders {actual}'
             problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has {found}, '
@@ -834,6 +881,38 @@ def glossary_problems(file_name: str, glossary: Glossary, catalog: Catalog) -> l
     return problems
 
 
+def english_plural_catalog(catalog: Catalog, existing: list[Message]) -> Catalog:
+    """Returns the English plural file's messages: the catalog's plural messages, with forms kept from `existing`.
+
+    Each message has ENGLISH_PLURAL_FORM_COUNT forms, and is finished when all of them are written, so an author only
+    fills in the forms. Messages no longer in the catalog are dropped.
+    """
+    plurals = Catalog()
+    for message in catalog.all_messages():
+        if message.plural:
+            plurals.add_message(message)
+    english = Catalog()
+    for message in merge_translations(plurals, existing).all_messages():
+        if message.translation_type == VANISHED:
+            continue
+        message.forms += [''] * (ENGLISH_PLURAL_FORM_COUNT - len(message.forms))
+        complete = len(message.forms) == ENGLISH_PLURAL_FORM_COUNT and all(message.forms)
+        message.translation_type = None if complete else UNFINISHED
+        english.add_message(message)
+    return english
+
+
+def english_plural_problems(file_name: str, english: Catalog) -> list[str]:
+    """Reports English plural messages without exactly ENGLISH_PLURAL_FORM_COUNT written forms, and broken forms."""
+    problems = [f'{file_name}: [{message.context}] {message.source!r}: needs its English singular and plural forms, '
+                f'in its {ENGLISH_PLURAL_FORM_COUNT} <numerusform> elements, such as "%n layer" and "%n layers".'
+                for message in english.all_messages() if message.translation_type == UNFINISHED]
+    problems.extend(placeholder_problems(file_name, english))
+    problems.extend(markup_problems(file_name, english))
+    problems.extend(accelerator_problems(file_name, ENGLISH_PLURALS_STEM, english))
+    return problems
+
+
 def _find_lrelease() -> str:
     """Locates an lrelease executable, preferring the one bundled with the PySide6 package.
 
@@ -924,8 +1003,30 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
 
     _update(CATALOG_NAME, write_ts(catalog).encode('utf-8'))
 
+    def _update_translation(file_name: str, merged: Catalog, language: str) -> None:
+        ts_text = write_ts(merged, language)
+        _update(file_name, ts_text.encode('utf-8'))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_ts = os.path.join(temp_dir, file_name)
+            temp_qm = os.path.join(temp_dir, f'{os.path.splitext(file_name)[0]}.qm')
+            with open(temp_ts, 'w', encoding='utf-8') as ts_file:
+                ts_file.write(ts_text)
+            compile_qm(temp_ts, temp_qm)
+            qm_content = _read_bytes(temp_qm)
+            assert qm_content is not None
+        _update(os.path.basename(temp_qm), qm_content)
+
+    english_name = f'{ENGLISH_PLURALS_STEM}.ts'
+    english_path = os.path.join(translation_dir, english_name)
+    english_existing = read_ts(english_path)[1] if os.path.isfile(english_path) else None
+    if english_existing is not None or any(message.plural for message in catalog.all_messages()):
+        english = english_plural_catalog(catalog, english_existing or [])
+        problems.extend(english_plural_problems(f'{TRANSLATION_DIR}/{english_name}', english))
+        _update_translation(english_name, english, ENGLISH_PLURALS_STEM)
+
     file_names = sorted(os.listdir(translation_dir))
-    translations = [os.path.splitext(name)[0] for name in file_names if name.endswith('.ts') and name != CATALOG_NAME]
+    translations = [os.path.splitext(name)[0] for name in file_names
+                    if name.endswith('.ts') and name not in (CATALOG_NAME, english_name)]
     problems.extend(manifest_problems(translation_dir, translations))
     glossary_dir = os.path.join(project_dir, *GLOSSARY_DIR.split('/'))
     english_rows: list[GlossaryRow] = []
@@ -942,7 +1043,7 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
         stem, extension = os.path.splitext(file_name)
         if extension == '.qm' and f'{stem}.ts' not in file_names:
             problems.append(f'{TRANSLATION_DIR}/{file_name} has no {stem}.ts to build it from. Remove it.')
-        if extension != '.ts' or file_name == CATALOG_NAME:
+        if extension != '.ts' or file_name in (CATALOG_NAME, english_name):
             continue
         language, existing = read_ts(os.path.join(translation_dir, file_name))
         if not language:
@@ -961,17 +1062,7 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
             problems.extend(_relative_problems(project_dir, glossary_parse_problems))
             if not glossary_parse_problems:
                 problems.extend(glossary_problems(f'{TRANSLATION_DIR}/{file_name}', glossary, merged))
-        ts_text = write_ts(merged, language)
-        _update(file_name, ts_text.encode('utf-8'))
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_ts = os.path.join(temp_dir, file_name)
-            temp_qm = os.path.join(temp_dir, f'{stem}.qm')
-            with open(temp_ts, 'w', encoding='utf-8') as ts_file:
-                ts_file.write(ts_text)
-            compile_qm(temp_ts, temp_qm)
-            qm_content = _read_bytes(temp_qm)
-            assert qm_content is not None
-        _update(f'{stem}.qm', qm_content)
+        _update_translation(file_name, merged, language)
     return problems, stale
 
 

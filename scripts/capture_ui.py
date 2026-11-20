@@ -80,7 +80,7 @@ def _requested_language() -> str:
 # installed before the imports below. An unknown language is rejected by the full parser in `main`.
 _APP = QApplication.instance() or QApplication(sys.argv)
 _LANGUAGE = _requested_language()
-_TRANSLATOR = install_translation(_APP, _LANGUAGE) if _LANGUAGE in available_languages() else None
+_TRANSLATORS = install_translation(_APP, _LANGUAGE if _LANGUAGE in available_languages() else ENGLISH)
 
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation

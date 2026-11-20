@@ -51,7 +51,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-BATCH_DETAILS = _tr('{mode}, {width} x {height}, {count} options')
 READY_COUNT = _tr('{ready} of {total} ready')
 READY_COUNT_WITH_PROGRESS = _tr('{ready} of {total} ready - {progress}')
 REASON_NOT_INPAINTED = _tr('Only inpainted options have a selection.')
@@ -433,9 +432,9 @@ class GeneratedImageSelector(QWidget):
             else:
                 text = READY_COUNT.format(ready=ready, total=total)
         else:
-            text = BATCH_DETAILS.format(mode=Cache().get_option_display(batch.edit_mode),
-                                        width=batch.generation_area.width(), height=batch.generation_area.height(),
-                                        count=len(self._option_items) - batch.reference_count)
+            text = _tr('{mode}, {width} x {height}, %n option(s)', None, len(self._option_items) - batch.reference_count
+                       ).format(mode=Cache().get_option_display(batch.edit_mode),
+                                width=batch.generation_area.width(), height=batch.generation_area.height())
         self._top_bar.set_status(text)
 
     def _update_controls(self) -> None:
