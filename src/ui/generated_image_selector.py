@@ -791,11 +791,9 @@ class GeneratedImageSelector(QWidget):
     def _capture_manual_view(self) -> None:
         """Adds the pan and zoom the user made since the option showing was displayed to the manual view.
 
-        Read from where the view actually is: zooming around the cursor moves the view without updating
-        `ImageGraphicsView.offset`, so the offset can't be trusted to describe the pan. Only the change from the
-        view as last read back is added, because the view's integer scroll positions make an absolute reading differ
-        from the value applied, and re-deriving the manual view from absolute readings would compound that error on
-        every step.
+        Read from where the view is shown. Only the change from the view as last read back is added, because the
+        view places content in whole widget pixels, so an absolute reading differs from the value applied. Re-deriving
+        the manual view from absolute readings would compound that error on every step.
         """
         if self._applied_center is None or self._applied_scale <= 0:
             return

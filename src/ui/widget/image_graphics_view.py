@@ -23,6 +23,13 @@ ZOOM_FACTOR = 1.1
 MOVE_MORE_STEPS = 10
 
 
+def _whole_indent(scroll: float) -> float:
+    """Rounds a scroll position to the nearest pixel, nudged a quarter pixel away from zero so that Qt's truncation
+    toward zero lands on that pixel despite float error."""
+    nearest = round(scroll)
+    return nearest + (0.25 if nearest >= 0 else -0.25)
+
+
 class ImageGraphicsView(QGraphicsView):
     """A QGraphicsView meant for displaying image content without using scrollbars."""
 
@@ -44,12 +51,13 @@ class ImageGraphicsView(QGraphicsView):
         self._event_filters: list[ref[QObject]] = []
         self._last_widget_cursor_pos: Optional[QPoint] = None
         self._last_scene_cursor_pos: Optional[QPointF] = None
-        self._centered_on = QPointF(self.width() // 2, self.height() // 2)
+        # The scene point shown at the widget center. With the scale, it is the only view position state.
+        self._center = QPointF(0.0, 0.0)
+        self._last_emitted_offset = QPoint(0, 0)
         self._mouse_navigation_enabled = True
 
         self._default_content_scale = 1.0
         self._content_scale_adjustment = 0.0
-        self._offset = QPointF(0.0, 0.0)
         self._widget_drag_point: Optional[QPoint] = None
         # Space-held panning: whether the pan key is down, whether a left-button drag started while it was, and the
         # cursor to restore when the hold ends:
@@ -108,7 +116,6 @@ class ImageGraphicsView(QGraphicsView):
                     if not self.isVisible():
                         return False
                     self.offset = QPointF(self.offset.x() + x, self.offset.y() + y)
-                    self.resizeEvent(None)
                     return True
                 binding_id = f'ImageGraphicsView_{id(self)}_{pan_key}'
                 HotkeyFilter.instance().register_config_keybinding(binding_id, _pan, pan_key)
@@ -201,12 +208,13 @@ class ImageGraphicsView(QGraphicsView):
         return final_coordinates
 
     def center_on_point(self, scene_pt: QPointF) -> None:
-        """Scroll content to center scene point pos within the view.
+        """Moves the view so that scene point `scene_pt` is at the widget center."""
+        self._center = QPointF(scene_pt)
+        self._update_scale_and_transform()
 
-        The offset setter moves the view relative to the stored center, so it keeps full precision: rounding it would
-        add the rounding error to every pan step."""
-        super().centerOn(scene_pt)
-        self._centered_on = QPointF(scene_pt)
+    def _content_center(self) -> QPointF:
+        """Returns the center of the content in scene coordinates, where the default view is centered."""
+        return QPointF(self._content_size.width() / 2, self._content_size.height() / 2)
 
     def set_cursor(self, new_cursor: Optional[QCursor]) -> None:
         """Sets the cursor over the scene, or restores the default cursor if None. While the pan key is held, the hand
@@ -259,9 +267,7 @@ class ImageGraphicsView(QGraphicsView):
         """Resets the scale to fit content in the view and re-centers the scene."""
         scale_will_change = self._content_scale_adjustment != 0.0
         self._content_scale_adjustment = 0.0
-        self.offset = QPoint(0, 0)
-        self.center_on_point(QPointF(self._content_size.width() / 2, self._content_size.height() / 2))
-        self._update_scale_and_transform()
+        self.center_on_point(self._content_center())
         if scale_will_change:
             self.scale_changed.emit(self.scene_scale)
 
@@ -272,7 +278,7 @@ class ImageGraphicsView(QGraphicsView):
     @property
     def is_at_default_view(self) -> bool:
         """Returns whether the scale and offsets are both at default values."""
-        return self._content_scale_adjustment == 0.0 and self._offset == QPointF(0.0, 0.0)
+        return self._content_scale_adjustment == 0.0 and self._center == self._content_center()
 
     @property
     def content_size(self) -> Optional[QSize]:
@@ -287,8 +293,7 @@ class ImageGraphicsView(QGraphicsView):
             return
         self._content_size.setWidth(new_size.width())
         self._content_size.setHeight(new_size.height())
-        self.center_on_point(QPointF(new_size.width() / 2, new_size.height() / 2))
-        self._update_scale_and_transform()
+        self.center_on_point(self._content_center())
         self.resetCachedContent()
         self.update()
 
@@ -303,75 +308,34 @@ class ImageGraphicsView(QGraphicsView):
 
         The scene point under the cursor stays in place, wherever the cursor is in the view. With no cursor position,
         the content center stays in place."""
-        initial_scale = self.scene_scale
         new_scale = max(new_scale, 0.01)
-        self._content_scale_adjustment = new_scale - self._default_content_scale
-
-        view_content_bounds = self.widget_content_bounds
         if self._last_scene_cursor_pos is not None and self._last_widget_cursor_pos is not None:
             fixed_scene_pos = self._last_scene_cursor_pos
-            fixed_widget_pos = self._last_widget_cursor_pos
+            fixed_widget_pos = QPointF(self._last_widget_cursor_pos)
         else:
-            fixed_scene_pos = QPointF(self._content_size.width() / 2, self._content_size.height() / 2)
-            fixed_widget_pos = view_content_bounds.center()
-
-        scale_change = new_scale / initial_scale
+            fixed_scene_pos = self._content_center()
+            fixed_widget_pos = self.widget_content_bounds.toRectF().center()
+        self._content_scale_adjustment = new_scale - self._default_content_scale
         widget_center = QPointF(self.width() / 2, self.height() / 2)
-        center_offset = widget_center - fixed_widget_pos
-        center_offset.setX(center_offset.x() / scale_change)
-        center_offset.setY(center_offset.y() / scale_change)
-        new_widget_center = fixed_widget_pos + center_offset.toPoint()
-        new_scene_center = self.widget_point_to_scene(new_widget_center)
-        self.center_on_point(new_scene_center)
-        self._update_scale_and_transform()
-
-        new_fixed_scene_point = self.widget_point_to_scene(fixed_widget_pos)
-        rounding_error = new_fixed_scene_point - fixed_scene_pos
-
-        # Tweak offset/scale to deal with rounding errors:
-        if abs(rounding_error.x()) > 0.01 or abs(rounding_error.y()) > 0.01:
-            horizontal_scroll = self.horizontalScrollBar()
-            vertical_scroll = self.verticalScrollBar()
-            x_scroll = int(horizontal_scroll.value() - rounding_error.x())
-            y_scroll = int(vertical_scroll.value() - rounding_error.y())
-            if horizontal_scroll.minimum() <= x_scroll <= horizontal_scroll.maximum() \
-                    and vertical_scroll.minimum() <= y_scroll <= vertical_scroll.maximum():
-                self.horizontalScrollBar().setValue(x_scroll)
-                self.verticalScrollBar().setValue(y_scroll)
-                self._offset -= rounding_error
-                self._centered_on -= rounding_error
-                self.offset_changed.emit(self._offset.toPoint())
-            else:
-                self.offset -= rounding_error
-        self._update_scale_and_transform()
+        self.center_on_point(fixed_scene_pos + (widget_center - fixed_widget_pos) / new_scale)
         self.scale_changed.emit(new_scale)
 
     def scale_without_fixed_scene_point(self, new_scale: float) -> None:
         """Updates image content scale without fixing any particular scene point within the view."""
         new_scale = max(new_scale, 0.01)
         self._content_scale_adjustment = new_scale - self._default_content_scale
-        self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
-                                     self._content_size.height() / 2 + self._offset.y()))
         self._update_scale_and_transform()
         self.scale_changed.emit(new_scale)
 
     @property
     def offset(self) -> QPointF:
-        """Gets the image offset in image/scene pixels."""
-        return QPointF(self._offset)
+        """Gets the view center's distance from the content center, in image/scene pixels."""
+        return self._center - self._content_center()
 
     @offset.setter
     def offset(self, new_offset: QPoint | QPointF) -> None:
-        """Updates the image offset, moving the view center by the change.
-
-        The change applies to the stored center, not one read back from the view, which would add up to a widget pixel
-        of rounding to each call and send slow pan drags in the wrong direction."""
-        change = (QPointF(new_offset) if isinstance(new_offset, QPoint) else new_offset) - self._offset
-        self._offset.setX(float(new_offset.x()))
-        self._offset.setY(float(new_offset.y()))
-        self.center_on_point(self._centered_on + change)
-        self.offset_changed.emit(self._offset.toPoint())
-        self._update_scale_and_transform()
+        """Moves the view center to the content center plus `new_offset`."""
+        self.center_on_point(self._content_center() + QPointF(new_offset))
 
     @property
     def background(self) -> QPixmap | None:
@@ -419,18 +383,27 @@ class ImageGraphicsView(QGraphicsView):
         # will adjust the overall scale, while leaving the offset relative to the default scale unchanged:
         adjusted_scale = self._default_content_scale + self._content_scale_adjustment
 
-        # Adjust the scene viewpoint/scrolling based on scale and offset:
+        # Size the scene rect to the displayed content, so it always fits the viewport and never scrolls:
         scene_window_width = displayed_content_size.width() / adjusted_scale
         scene_window_height = displayed_content_size.height() / adjusted_scale
-        content_rect_f = QRectF(self._centered_on.x() - scene_window_width / 2,
-                                self._centered_on.y() - scene_window_height / 2,
+        # QGraphicsView centers a scene rect that fits the viewport, truncating the indent to whole pixels. Snapping
+        # the rect's center so that indent is already whole puts _center within half a pixel of the widget center:
+        viewport = self.viewport()
+        half_width, half_height = viewport.width() / 2, viewport.height() / 2
+        rect_center_x = (_whole_indent(self._center.x() * adjusted_scale - half_width) + half_width) / adjusted_scale
+        rect_center_y = (_whole_indent(self._center.y() * adjusted_scale - half_height) + half_height) / adjusted_scale
+        content_rect_f = QRectF(rect_center_x - scene_window_width / 2,
+                                rect_center_y - scene_window_height / 2,
                                 scene_window_width, scene_window_height)
         if content_rect_f != self._scene.sceneRect():
             self._scene.setSceneRect(content_rect_f)
-        self.setTransform(QTransform.fromTranslate(self._offset.x(), self._offset.y())
-                          * QTransform.fromScale(adjusted_scale, adjusted_scale))
+        self.setTransform(QTransform.fromScale(adjusted_scale, adjusted_scale))
         if scale_changed:
             self.scale_changed.emit(adjusted_scale)
+        offset = self.offset.toPoint()
+        if offset != self._last_emitted_offset:
+            self._last_emitted_offset = offset
+            self.offset_changed.emit(offset)
         self.view_changed.emit()
         self.update()
 
@@ -683,11 +656,6 @@ class ImageGraphicsView(QGraphicsView):
         self.cursor_moved.emit(None)
         super().leaveEvent(event)
 
-    def scrollContentsBy(self, dx: int, dy: int) -> None:  # pylint: disable=invalid-name  # Qt override
-        """Report scrolling as a view change, since centering on a point scrolls without a transform update."""
-        super().scrollContentsBy(dx, dy)
-        self.view_changed.emit()
-
     def scroll_content(self, unused_dx: int | float, unused_dy: int | float) -> bool:
         """Scroll content by the given offset, returning whether content was able to move."""
         return False
@@ -700,15 +668,8 @@ class ImageGraphicsView(QGraphicsView):
         """Adjust viewport scale and offset to center a selected area in the view."""
         self.reset_scale()  # Reset zoom without clearing 'follow_generation_area' flag.
         margin = max(int(bounds.width() / 20), int(bounds.height() / 20), 10)
-        content_size = self.content_size
-        assert content_size is not None
-        # QRect.center() sits half a pixel before the middle of an even-sized rectangle, so use the float rectangle:
-        bounds_center = QRectF(bounds).center()
-        self.offset = QPointF(bounds_center.x() - content_size.width() / 2,
-                              bounds_center.y() - content_size.height() / 2)
         self._content_scale_adjustment = (get_scaled_placement(self.size(), bounds.size(), 0).width()
                                           / (bounds.width() + margin)) - self._default_content_scale
-        self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
-                                     self._content_size.height() / 2 + self._offset.y()))
-        self._update_scale_and_transform()
+        # QRect.center() sits half a pixel before the middle of an even-sized rectangle, so use the float rectangle:
+        self.center_on_point(QRectF(bounds).center())
         self.scale_changed.emit(self.scene_scale)

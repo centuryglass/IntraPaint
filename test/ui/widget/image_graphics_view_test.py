@@ -252,6 +252,30 @@ class OffsetTest(ImageGraphicsViewTestCase):
                 self.assert_points_close(QPointF(widget_point), QPointF(self.view.scene_point_to_widget(scene_point)),
                                          1.0)
 
+    def _assert_offset_matches_view(self) -> None:
+        """Asserts that the offset is the shown center's distance from the content center, within one widget pixel."""
+        content_center = QPointF(CONTENT_SIZE.width() / 2, CONTENT_SIZE.height() / 2)
+        shown_offset = self.scene_point_at(self.view.rect().center()) - content_center
+        self.assert_points_close(shown_offset, self.view.offset, 1.0 / self.view.scene_scale + 1e-6)
+
+    def test_offset_follows_cursor_zoom(self) -> None:
+        """Zooming toward an off-center cursor moves the view, and the offset and offset_changed report the move."""
+        offsets: list[QPoint] = []
+        self.view.offset_changed.connect(offsets.append)
+        self.view.set_cursor_pos(QPoint(60, 98))
+        self.view.scene_scale = self.view.scene_scale * 3.0
+        self._assert_offset_matches_view()
+        self.assertNotEqual(self.view.offset.toPoint(), QPoint(0, 0))
+        self.assertEqual(offsets, [self.view.offset.toPoint()])
+
+    def test_content_size_change_resets_offset(self) -> None:
+        """A content size change recenters the view, so a pan made before it leaves no offset and the view counts as
+        the default view."""
+        self.view.offset = QPointF(40.0, -25.0)
+        self.view.content_size = QSize(CONTENT_SIZE.width() * 2, CONTENT_SIZE.height())
+        self.assertEqual(self.view.offset, QPointF(0.0, 0.0))
+        self.assertTrue(self.view.is_at_default_view)
+
 
 class PanDragTest(ImageGraphicsViewTestCase):
     """Tests middle-button pan drags, which keep the grabbed scene point under the cursor at any drag speed."""
