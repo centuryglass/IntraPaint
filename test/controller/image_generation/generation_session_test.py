@@ -248,6 +248,11 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         self.session.generation_ended.connect(lambda: self.events.append('ended'))
         self.session.stop_requested.connect(lambda: self.events.append('stop'))
         self.session.image_ready.connect(lambda _image, idx: self.events.append(f'image {idx}'))
+        # Qt holds the lambdas above, which capture this test case.
+        for signal in (self.session.generation_started, self.session.generation_finished,
+                       self.session.generation_failed, self.session.generation_ended, self.session.stop_requested,
+                       self.session.image_ready):
+            self.addCleanup(signal.disconnect)
         start_patch = patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
         self.addCleanup(start_patch.stop)

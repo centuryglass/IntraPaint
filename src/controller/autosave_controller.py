@@ -419,6 +419,8 @@ class AutosaveController(QObject):
         self._running_tasks.add(task)
 
         def _task_finished() -> None:
+            # Qt holds this closure, which captures `task`. The bare disconnect avoids naming the closure, a cycle.
+            task.finish_signal.disconnect()
             self._running_tasks.discard(task)
             if self._pending_write is task:  # Otherwise `_wait_for_write` already applied the result.
                 self._wait_for_write()

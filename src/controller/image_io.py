@@ -280,6 +280,8 @@ class ImageIO:
         self._pending_save = task
 
         def _finished() -> None:
+            # Qt holds this closure, which captures `task`. The bare disconnect avoids naming the closure, a cycle.
+            task.finish_signal.disconnect()
             if self._pending_save is task:
                 self._pending_save = None
             if len(errors) == 0 and os.path.isfile(file_path):
@@ -295,6 +297,7 @@ class ImageIO:
                                               rich_text_format(SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE, file_path=file_path))
                 logger.error(f'save failed: {error}')
                 show_error_dialog(self._window, SAVE_ERROR_TITLE, error)
+            errors.clear()  # An error's traceback reaches `_write`, whose closure holds this list.
             if self._save_wait_loop is not None:
                 self._save_wait_loop.quit()
 

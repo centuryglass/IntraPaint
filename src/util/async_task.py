@@ -9,6 +9,21 @@ from src.util.main_thread import assert_main_thread
 ThreadAction: TypeAlias = Callable[..., None]
 
 
+class _TaskRunner(QRunnable):
+    """Runs an AsyncTask in the global thread pool.
+
+    Defined at module level: a class created inside `AsyncTask.start` is a reference cycle that keeps the task alive.
+    """
+
+    def __init__(self, task: 'AsyncTask') -> None:
+        super().__init__()
+        self._task = task
+
+    def run(self) -> None:
+        """Run the AsyncTask on the pool's thread."""
+        self._task.run()
+
+
 class AsyncTask(QObject):
     """Run an async task in another thread.
 
@@ -32,13 +47,7 @@ class AsyncTask(QObject):
 
     def start(self):
         """Start the thread, caching the AsyncTask to prevent deletion."""
-        task = self
-
-        class _TaskRunner(QRunnable):
-            def run(self):
-                """Start the AsyncTask within the global thread pool."""
-                task.run()
-        QThreadPool.globalInstance().start(_TaskRunner())
+        QThreadPool.globalInstance().start(_TaskRunner(self))
 
     def run(self) -> None:
         """Run the action, passing in available signals and sending a finish signal on exit."""

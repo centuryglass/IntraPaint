@@ -110,6 +110,7 @@ class TestImageIO(ImageIOTestCase):
                 self.image_io.save_as(os.path.join(save_dir, 'missing', f'bad.{extension}'))
                 self.image_io.wait_for_pending_save()
         self.assertEqual(2, error_dialog.call_count)
+        error_dialog.reset_mock()  # Its recorded errors hold tracebacks that reach the window.
         self.assertEqual([True, True], dialog_threads)
         self.assertEqual('', Cache().get(Cache.LAST_FILE_PATH))
 
@@ -416,8 +417,9 @@ class TestUnsavedChanges(ImageIOTestCase):
     def setUp(self) -> None:
         super().setUp()
         patcher = patch('src.controller.image_io.request_save_loss_choice', return_value=SAVE_ANYWAY)
-        patcher.start()
+        loss_choice = patcher.start()
         self.addCleanup(patcher.stop)
+        self.addCleanup(loss_choice.reset_mock)  # Its recorded arguments include the window.
 
     def _load_single_layer(self) -> None:
         self.image_stack.load_image(QImage(QSize(16, 16), QImage.Format.Format_ARGB32_Premultiplied))
@@ -468,9 +470,10 @@ class TestUnsavedChanges(ImageIOTestCase):
         """A save whose write fails leaves the document modified."""
         self._load_single_layer()
         self.image_stack.create_layer('edit')
-        with patch('src.controller.image_io.show_error_dialog'):
+        with patch('src.controller.image_io.show_error_dialog') as error_dialog:
             self.image_io.save_as(os.path.join(self.temp_dir.name, 'missing', 'bad.png'))
             self.image_io.wait_for_pending_save()
+        error_dialog.reset_mock()  # Its recorded errors hold tracebacks that reach the window.
         self.assertFalse(UndoStack().is_clean())
 
     def test_prompt_skipped_when_clean(self) -> None:
@@ -512,8 +515,9 @@ class TestUnsavedChanges(ImageIOTestCase):
         for selected_path in (None, bad_path):
             with patch(self.CHOICE, return_value=UNSAVED_SAVE), \
                     patch('src.controller.image_io.open_image_file', return_value=selected_path), \
-                    patch('src.controller.image_io.show_error_dialog'):
+                    patch('src.controller.image_io.show_error_dialog') as error_dialog:
                 self.assertFalse(self.image_io.confirm_unsaved_changes('Quit without saving'))
+            error_dialog.reset_mock()  # Its recorded errors hold tracebacks that reach the window.
         self.assertFalse(UndoStack().is_clean())
 
     def test_reload_prompts_only_when_modified(self) -> None:
