@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Optional, cast, Callable, TypeAlias, Generator
+from typing import Optional, cast, Callable, TypeAlias, Generator, Iterable
 
 import numpy as np
 from PIL import Image
@@ -119,6 +119,8 @@ class ImageStack(QObject):
     layer_added = Signal(Layer)
     layer_removed = Signal(Layer)
     active_layer_changed = Signal(Layer)
+    selected_layers_changed = Signal()
+    """Emitted when the set of selected layers changes, after any `active_layer_changed` the same change causes."""
     layer_order_changed = Signal()
 
     def __init__(self,
@@ -155,6 +157,8 @@ class ImageStack(QObject):
         self._render_timer.setInterval(RENDER_DELAY_MS)
         self._render_timer.timeout.connect(self._emit_content_changed)
         self._active_layer_id = self._layer_stack.id
+        # IDs of the selected layers. See `selected_layers` for the rules the set follows.
+        self._selected_layer_ids: set[int] = {self._active_layer_id}
 
         # Create selection layer:
         self._selection_layer = SelectionLayer(image_size, self.generation_area_bounds_changed)
@@ -201,7 +205,7 @@ class ImageStack(QObject):
 
     @active_layer.setter
     def active_layer(self, new_active_layer: Layer) -> None:
-        """Updates the active layer."""
+        """Updates the active layer as an undo step, collapsing `selected_layers` to it."""
         last_active = self.active_layer
         parent_iter: Layer = new_active_layer
         next_parent: Optional[LayerParent] = parent_iter.layer_parent
@@ -211,6 +215,7 @@ class ImageStack(QObject):
         assert parent_iter == self._layer_stack, (f'active layer {new_active_layer.name}:{new_active_layer.id} not '
                                                   'found in layer stack.')
         if last_active == new_active_layer:
+            self._set_selected_ids({new_active_layer.id})
             return
 
         def _set_active(layer=new_active_layer):
@@ -230,6 +235,96 @@ class ImageStack(QObject):
     def active_layer_id(self, new_active_id: int) -> None:
         assert new_active_id == self._layer_stack.id or self._layer_stack.get_layer_by_id(new_active_id) is not None
         self._active_layer_id = new_active_id
+        self._set_selected_ids({new_active_id})
+
+    @property
+    def selected_layers(self) -> set[Layer]:
+        """Returns the layers selected in the layer panel, which bulk commands act on. Tools act on the active layer.
+
+        - The set always holds the active layer, so it is never empty.
+        - Setting the active layer any other way than `select_layers` collapses the set to the active layer.
+        - Removing a layer, including by undo or redo, removes it and its descendants from the set.
+        - The root is selected only alone.
+        - Changing the set is not an undo step. Only the active layer change inside `select_layers` is one.
+        """
+        return set(self.selected_layers_in_order())
+
+    @property
+    def selected_layer_count(self) -> int:
+        """Returns the number of selected layers."""
+        return len(self._selected_layer_ids)
+
+    def is_layer_selected(self, layer: Layer) -> bool:
+        """Returns whether a layer is in `selected_layers`."""
+        return layer.id in self._selected_layer_ids
+
+    def selected_layers_in_order(self) -> list[Layer]:
+        """Returns `selected_layers` in stack order, top to bottom."""
+        return [layer for layer in self.all_layers() if layer.id in self._selected_layer_ids]
+
+    def effective_selected_layers(self) -> list[Layer]:
+        """Returns the selected layers bulk commands act on, in stack order: every selected layer with no selected
+        ancestor, so a command never acts on a layer twice."""
+        effective: list[Layer] = []
+        for layer in self.selected_layers_in_order():
+            parent = layer.layer_parent
+            while parent is not None and parent.id not in self._selected_layer_ids:
+                parent = parent.layer_parent
+            if parent is None:
+                effective.append(layer)
+        return effective
+
+    def select_layers(self, layers: Iterable[Layer], active_layer: Optional[Layer] = None) -> None:
+        """Selects a set of layers, making one of them active.
+
+        Changing the active layer is an undo step, as with the `active_layer` setter. Selecting the other layers is not.
+        The root is dropped from a set of more than one layer.
+
+        Parameters
+        ----------
+        layers: Iterable[Layer]
+            The layers to select. `active_layer` joins them if missing.
+        active_layer: Layer, optional
+            The layer to make active. If None, the active layer stays active if it is in `layers`, and otherwise the
+            topmost layer in `layers` becomes active.
+        """
+        layers, active_layer = self._valid_selection(layers, active_layer)
+        if active_layer != self.active_layer:
+            self.active_layer = active_layer
+        self._set_selected_ids({layer.id for layer in layers})
+
+    def apply_layer_selection(self, layers: Iterable[Layer], active_layer: Optional[Layer] = None) -> None:
+        """Selects layers like `select_layers` without touching the undo history, for use inside undo closures."""
+        layers, active_layer = self._valid_selection(layers, active_layer)
+        self._set_active_layer_internal(active_layer)
+        self._set_selected_ids({layer.id for layer in layers})
+
+    def _valid_selection(self, layers: Iterable[Layer],
+                         active_layer: Optional[Layer]) -> tuple[list[Layer], Layer]:
+        """Returns a selection request with the root dropped from a multi-selection, and the layer to make active."""
+        selected = list(dict.fromkeys(layers))
+        if active_layer is not None and active_layer not in selected:
+            selected.append(active_layer)
+        assert len(selected) > 0, 'The layer selection is never empty'
+        for layer in selected:
+            assert layer == self._layer_stack or self._layer_stack.contains_recursive(layer), \
+                f'selected layer {layer.name}:{layer.id} not found in layer stack.'
+        if len(selected) > 1 and self._layer_stack in selected:
+            assert active_layer != self._layer_stack, 'The root is selected only alone'
+            selected.remove(self._layer_stack)
+        if active_layer is None:
+            if self.active_layer in selected:
+                active_layer = self.active_layer
+            else:
+                active_layer = next(layer for layer in self.all_layers() if layer in selected)
+        return selected, active_layer
+
+    def _set_selected_ids(self, layer_ids: set[int]) -> None:
+        """Replaces the selected IDs, emitting `selected_layers_changed` if they changed."""
+        assert self._active_layer_id in layer_ids
+        if layer_ids != self._selected_layer_ids:
+            self._selected_layer_ids = set(layer_ids)
+            self.selected_layers_changed.emit()
 
     @property
     def layer_stack(self) -> LayerGroup:
@@ -1339,18 +1434,21 @@ class ImageStack(QObject):
     def select_layer_content(self, layer: Optional[Layer] = None) -> None:
         """Selects all pixels in a layer that are not fully transparent.  Defaults to the active layer if the layer
         parameter is None."""
-        if layer is None:
-            layer = self.active_layer
-        assert layer != self.selection_layer
+        self.select_layers_content([self.active_layer if layer is None else layer])
+
+    def select_layers_content(self, layers: list[Layer]) -> None:
+        """Replaces the selection with every pixel that is not fully transparent in any of a list of layers."""
         selection_image = create_transparent_image(self.selection_layer.size)
         painter = QPainter(selection_image)
-        if isinstance(layer, TransformLayer):
-            painter.setTransform(layer.transform * self.selection_layer.transform.inverted()[0])
-        else:
-            offset = layer.bounds.topLeft()
-            painter.setTransform(self.selection_layer.transform.inverted()[0] * QTransform.fromTranslate(offset.x(),
-                                                                                                         offset.y()))
-        painter.drawImage(0, 0, layer.image)
+        for layer in layers:
+            assert layer != self.selection_layer
+            if isinstance(layer, TransformLayer):
+                painter.setTransform(layer.transform * self.selection_layer.transform.inverted()[0])
+            else:
+                offset = layer.bounds.topLeft()
+                painter.setTransform(self.selection_layer.transform.inverted()[0]
+                                     * QTransform.fromTranslate(offset.x(), offset.y()))
+            painter.drawImage(0, 0, layer.image)
         painter.end()
         self.selection_layer.image = selection_image
 
@@ -1574,6 +1672,7 @@ class ImageStack(QObject):
             assert active_layer is not None, f'failed to find layer {new_active_id}'
             self._active_layer_id = new_active_id
             self.active_layer_changed.emit(active_layer)
+            self._set_selected_ids({new_active_id})
 
         _load()
         self._finish_load()
@@ -1617,6 +1716,7 @@ class ImageStack(QObject):
         self.selection_layer.set_transform(QTransform())
         assert self.selection_layer.transformed_bounds.size() == new_size
         self._active_layer_id = self._layer_stack.id
+        self._set_selected_ids({self._active_layer_id})
         while self._layer_stack.count > 0:
             self._remove_layer_internal(self._layer_stack.child_layers[0])
 
@@ -1748,6 +1848,7 @@ class ImageStack(QObject):
             if self._active_layer_id is self._layer_stack.id:
                 self._active_layer_id = layer.id
                 self.active_layer_changed.emit(layer)
+                self._set_selected_ids({layer.id})
         if layer.shown and not layer.empty:
             self._last_change_timestamp = datetime.datetime.now().timestamp()
             self._trigger_content_render()
@@ -1782,6 +1883,10 @@ class ImageStack(QObject):
         if next_active_id != self.active_layer_id:
             self._set_active_layer_internal(next_active_id)
         layer_parent.remove_layer(layer)
+        removed_ids = {layer.id}
+        if isinstance(layer, LayerGroup):
+            removed_ids.update(child.id for child in layer.recursive_child_layers)
+        self._set_selected_ids(self._selected_layer_ids - removed_ids)
         self._update_z_values()
         if self._layer_stack.count == 0:
             AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
@@ -1805,7 +1910,10 @@ class ImageStack(QObject):
         if layer == self.active_layer:
             return
         self._active_layer_id = layer_id
+        # The selection collapses first, so `active_layer_changed` slots never see the new layer unselected:
+        self._selected_layer_ids = {layer_id}
         self.active_layer_changed.emit(layer)
+        self.selected_layers_changed.emit()
 
     def _get_closest_valid_generation_area(self, initial_area: QRect, image_bounds: Optional[QRect] = None) -> QRect:
         if image_bounds is None:

@@ -3509,6 +3509,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Select all layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select every layer in the layer panel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Grow selection</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3569,7 +3579,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Create a duplicate of the active layer.</source>
+        <source>Create a duplicate of each selected layer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3589,7 +3599,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Delete the active layer.</source>
+        <source>Delete the selected layers.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3610,6 +3620,26 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Switch to the next layer down.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Extend layer selection up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Add the layer above the active layer to the selected layers.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Extend layer selection down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Add the layer below the active layer to the selected layers.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8177,6 +8207,21 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Below {name}</source>
         <translation type="unfinished"></translation>
     </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>%n layer(s) into {name}</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>%n layer(s) above {name}</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>%n layer(s) below {name}</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.layer_ui.layer_menu</name>
@@ -8282,6 +8327,11 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Select contents of selected layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
         <source>Crop and resize</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8294,6 +8344,21 @@ Please remember to include the traceback from the Details expander.</source>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
         <source>{src_layer_name} copied content</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Duplicate %n layer(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Delete %n layer(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>%n layer(s)</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
 </context>
 <context>
@@ -8340,12 +8405,22 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Create a duplicate of each selected layer above it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Delete layer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Delete the active layer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Delete every selected layer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8427,6 +8502,11 @@ Please remember to include the traceback from the Details expander.</source>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Select next layer</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>%n layer(s) selected</source>
+        <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
     <message numerus="yes">
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>

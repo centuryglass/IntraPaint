@@ -82,6 +82,7 @@ from src.image.layers.image_stack_utils import resize_image_stack_to_content, cr
     scale_all_layers, crop_layer_to_selection, crop_image_stack_to_gen_area
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers import layer_selection_ops
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
@@ -99,6 +100,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
+from src.ui.panel.layer_ui.layer_menu import delete_layers_text, duplicate_layers_text
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.theme import apply_appearance_config
 from src.ui.window import saved_layouts
@@ -381,6 +383,7 @@ class AppController(MenuBuilder):
         # where the garbage collector can't see it, so a closure that captures `self` keeps the controller alive.
         self._image_stack.active_layer_changed.connect(self._active_layer_changed)
         self._image_stack.selection_layer.content_changed.connect(self._refresh_enabled_actions)
+        self._image_stack.selected_layers_changed.connect(self._refresh_enabled_actions)
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().clean_changed.connect(lambda _clean: self._update_window_title())  # type: ignore
@@ -819,6 +822,20 @@ class AppController(MenuBuilder):
                     or not isinstance(next_layer, TransformLayer) \
                     or next_layer.layer_parent != active_layer.layer_parent:
                 merge_down_action.setEnabled(False)
+
+        # Duplicate and delete act on every selected layer, and delete refuses a selection with any locked layer:
+        selected_count = self._image_stack.selected_layer_count
+        copy_action = self.get_action_for_method(self.copy_layer)
+        delete_action = self.get_action_for_method(self.delete_layer)
+        if selected_count > 1:
+            copy_action.setText(duplicate_layers_text(selected_count))
+            delete_action.setText(delete_layers_text(selected_count))
+            delete_action.setEnabled(_test_state(self.delete_layer) and all(
+                not layer.locked and not layer.parent_locked
+                for layer in self._image_stack.effective_selected_layers()))
+        else:
+            copy_action.setText(KeyConfig().get_label(KeyConfig.COPY_LAYER_SHORTCUT))
+            delete_action.setText(KeyConfig().get_label(KeyConfig.DELETE_LAYER_SHORTCUT))
 
         # "Merge group" should also be disabled for empty/flat groups:
         merge_group_action = self.get_action_for_method(self.merge_group)
@@ -1372,6 +1389,11 @@ class AppController(MenuBuilder):
         """Selects all pixels in the active layer that are not fully transparent."""
         self._image_stack.select_layer_content()
 
+    @menu_action(MENU_SELECT, 'select_all_layers_shortcut', 311, valid_app_states=[APP_STATE_EDITING])
+    def select_all_layers(self) -> None:
+        """Selects every layer in the layer panel."""
+        layer_selection_ops.select_all_layers(self._image_stack)
+
     @menu_action(MENU_SELECT, 'grow_selection_shortcut', 320,
                  valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def grow_selection(self, num_pixels=1) -> None:
@@ -1412,19 +1434,31 @@ class AppController(MenuBuilder):
         """Select the layer below the current active layer."""
         self._image_stack.offset_active_selection(1)
 
-    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_up_shortcut', 422,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'extend_layer_selection_up_shortcut', 422,
+                 valid_app_states=[APP_STATE_EDITING])
+    def extend_layer_selection_up(self) -> None:
+        """Add the layer above the active layer to the selected layers, and make it active."""
+        layer_selection_ops.extend_layer_selection(self._image_stack, -1)
+
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'extend_layer_selection_down_shortcut', 423,
+                 valid_app_states=[APP_STATE_EDITING])
+    def extend_layer_selection_down(self) -> None:
+        """Add the layer below the active layer to the selected layers, and make it active."""
+        layer_selection_ops.extend_layer_selection(self._image_stack, 1)
+
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_up_shortcut', 424,
                  valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
         self._image_stack.move_layer_by_offset(-1)
 
-    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_down_shortcut', 423,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_down_shortcut', 425,
                  valid_app_states=[APP_STATE_EDITING])
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
         self._image_stack.move_layer_by_offset(1)
 
-    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_to_top_shortcut', 424,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_to_top_shortcut', 426,
                  valid_app_states=[APP_STATE_EDITING])
     def move_layer_to_top(self) -> None:
         """Move the active layer to the top of the layer stack."""
@@ -1482,13 +1516,13 @@ class AppController(MenuBuilder):
     @menu_action(MENU_LAYER, 'copy_layer_shortcut', 402,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:
-        """Duplicate the active layer."""
-        self._image_stack.copy_layer()
+        """Duplicate the selected layers."""
+        layer_selection_ops.duplicate_selected_layers(self._image_stack)
 
     @menu_action(MENU_LAYER, 'delete_layer_shortcut', 403, valid_app_states=[APP_STATE_EDITING])
     def delete_layer(self) -> None:
-        """Delete the active layer."""
-        self._image_stack.remove_layer()
+        """Delete the selected layers."""
+        layer_selection_ops.delete_selected_layers(self._image_stack)
 
     @menu_action(MENU_LAYER, 'merge_layer_down_shortcut', 440,
                  valid_app_states=[APP_STATE_EDITING], separator_before=True)

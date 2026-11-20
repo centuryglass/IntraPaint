@@ -39,7 +39,48 @@ Choose "No" to open only the first frame.</numerusform></translation>
     </message>
 </context>
 <context>
+    <name>ui.panel.layer_ui.layer_list</name>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>%n layer(s) into {name}</source>
+        <translation><numerusform>%n layer into {name}</numerusform><numerusform>%n layers into {name}</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>%n layer(s) above {name}</source>
+        <translation><numerusform>%n layer above {name}</numerusform><numerusform>%n layers above {name}</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>%n layer(s) below {name}</source>
+        <translation><numerusform>%n layer below {name}</numerusform><numerusform>%n layers below {name}</numerusform></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.layer_ui.layer_menu</name>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Duplicate %n layer(s)</source>
+        <translation><numerusform>Duplicate %n layer</numerusform><numerusform>Duplicate %n layers</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Delete %n layer(s)</source>
+        <translation><numerusform>Delete %n layer</numerusform><numerusform>Delete %n layers</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>%n layer(s)</source>
+        <translation><numerusform>%n layer</numerusform><numerusform>%n layers</numerusform></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.layer_ui.layer_panel</name>
+    <message numerus="yes">
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>%n layer(s) selected</source>
+        <translation><numerusform>%n layer selected</numerusform><numerusform>%n layers selected</numerusform></translation>
+    </message>
     <message numerus="yes">
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>%n layer(s)</source>

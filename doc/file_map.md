@@ -207,6 +207,8 @@ Layer types, and the `ImageStack` that holds the layer tree, the selection layer
 - `src/image/layers/layer_group.py`: Represents a group of linked image layers that can be manipulated as one in limited
   ways.
 - `src/image/layers/layer_resize_mode.py`: Options for resizing image layers when scaling the image canvas.
+- `src/image/layers/layer_selection_ops.py`: Commands that act on every selected layer: duplicate, delete, move, and
+  selection changes.
 - `src/image/layers/non_destructive_layer.py`: Base class for layers that render their image from source data and refuse
   pixel edits until converted.
 - `src/image/layers/selection_layer.py`: A layer used to mark masked regions for inpainting.

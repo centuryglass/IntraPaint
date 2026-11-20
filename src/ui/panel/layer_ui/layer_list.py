@@ -5,12 +5,18 @@
 - The list rebuilds its row order from the layer stack on every structural signal (`_sync`), creating rows for new
   layers and deleting rows for removed ones, so nested changes and undo can't leave it out of step.
 - Activating a layer, or adding one, expands the groups above it. Locking a group collapses it and the groups in it.
-- Dragging a row onto the list moves its layer. The upper half of a row inserts above it, and the lower half below it,
+- Clicks select layers (`ImageStack.selected_layers`). A click selects one layer. Ctrl+click (Cmd on macOS) adds or
+  removes one. Shift+click selects the shown rows from the anchor, the row last clicked or Ctrl+clicked, to the clicked
+  row. A right-click keeps a selection that holds the row, and otherwise selects the row alone. A plain click on a row
+  in a multi-selection collapses it on release, so the press can start a drag of every selected layer.
+- Dragging a row onto the list moves its layer, or every selected layer if the row is selected
+  (`layer_selection_ops.move_layers`). The upper half of a row inserts above it, and the lower half below it,
   or into an expanded group at its top. A marker shows where the layer lands, indented to its depth, with a label
   naming the spot. A drop inside a group outlines the group's row and its visible rows in the selection stripe color,
   and a drop onto a locked group outlines only that group's row in the refused-drop color, with no marker.
 """
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer
@@ -21,6 +27,7 @@ from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QMenu, 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.layer_selection_ops import move_layers, moved_by_drag, selected_layers_can_move_into
 from src.ui.ink_style import ROW_HOVER
 from src.ui.panel.layer_ui.layer_menu import build_layer_menu
 from src.ui.panel.layer_ui.layer_row import (INDENT, MIN_NAME_TEXT, ROW_PADDING, ROW_SPACING, SELECTION_STRIPE_WIDTH,
@@ -42,6 +49,28 @@ IMAGE_STRIP_TOOLTIP = _tr('The whole image. Click to select it.')
 DROP_INTO_LABEL = _tr('Into {name}')
 DROP_ABOVE_LABEL = _tr('Above {name}')
 DROP_BELOW_LABEL = _tr('Below {name}')
+
+
+class DropKind(Enum):
+    """Where a drop lands relative to the layer its label names."""
+    INTO = 'into'
+    ABOVE = 'above'
+    BELOW = 'below'
+
+
+def drop_label(kind: DropKind, name: str, count: int) -> str:
+    """Returns the label naming where `count` dragged layers would land, into, above or below the layer `name`."""
+    if count <= 1:
+        single = {DropKind.INTO: DROP_INTO_LABEL, DropKind.ABOVE: DROP_ABOVE_LABEL, DropKind.BELOW: DROP_BELOW_LABEL}
+        return single[kind].format(name=name)
+    if kind == DropKind.INTO:
+        text = _tr('%n layer(s) into {name}', None, count)
+    elif kind == DropKind.ABOVE:
+        text = _tr('%n layer(s) above {name}', None, count)
+    else:
+        text = _tr('%n layer(s) below {name}', None, count)
+    return text.format(name=name)
+
 
 # Rows the list keeps room for, under the image strip:
 MIN_VISIBLE_ROWS = 2
@@ -129,8 +158,11 @@ class ImageStrip(QWidget):
         self._size_label.setText(IMAGE_SIZE_TEXT.format(width=size.width(), height=size.height()))
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
-        """Selects the root on a left or right click, so the context menu acts on the active layer."""
+        """Selects only the root on a left or right click, so the context menu acts on the active layer. Ctrl+click and
+        Shift+click do nothing, since the root can't join a multi-selection."""
         assert event is not None
+        if event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier):
+            return
         if event.button() in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
             self._image_stack.active_layer = self._image_stack.layer_stack
 
@@ -193,7 +225,9 @@ class _DropSpot:
     index: int
     marker_y: int
     depth: int
-    label: str
+    # Whether the drop lands into, above or below the layer named `name`:
+    kind: DropKind
+    name: str
 
 
 class LayerList(QScrollArea):
@@ -231,6 +265,10 @@ class LayerList(QScrollArea):
         self._outlined_rows: list[LayerRow] = []
         # Where a drop would put the dragged layer: its new parent and index.
         self._drop_target: Optional[tuple[LayerGroup, int]] = None
+        # The layer Shift+click ranges start from: the last one clicked or Ctrl+clicked.
+        self._anchor: Optional[Layer] = None
+        # The selected layer a plain press landed on in a multi-selection, which its click collapses the selection to:
+        self._pending_collapse: Optional[Layer] = None
 
         self._scroll_timer = QTimer(self)
         self._scroll_timer.setInterval(SCROLL_TIMER_INTERVAL_MS)
@@ -241,8 +279,10 @@ class LayerList(QScrollArea):
         image_stack.layer_removed.connect(self._sync)
         image_stack.layer_order_changed.connect(self._sync)
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        image_stack.selected_layers_changed.connect(self._selection_change_slot)
         self._sync()
         self._active_layer_change_slot(image_stack.active_layer)
+        self._selection_change_slot()
 
     @property
     def image_strip(self) -> ImageStrip:
@@ -364,7 +404,11 @@ class LayerList(QScrollArea):
         row.set_thumbnail_size(self._thumbnail_size)
         row.set_meta_shown(self._meta_shown)
         row.set_active(layer is self._image_stack.active_layer)
+        row.set_selected(self._image_stack.is_layer_selected(layer))
         row.expanded_changed.connect(self._update_row_visibility)
+        row.pressed.connect(self._row_pressed)
+        row.clicked.connect(self._row_clicked)
+        row.drag_started.connect(self._drag_started_slot)
         row.drag_ended.connect(self._drag_ended_slot)
         if isinstance(layer, LayerGroup):
             layer.lock_changed.connect(self._group_lock_slot)
@@ -435,6 +479,67 @@ class LayerList(QScrollArea):
             self._open_parent_groups(active_layer)
             self.ensureWidgetVisible(self._rows[active_layer], 0, 0)
 
+    def _selection_change_slot(self) -> None:
+        """Gives every selected row the selection fill."""
+        for layer, row in self._rows.items():
+            row.set_selected(self._image_stack.is_layer_selected(layer))
+
+    # Selection clicks:
+
+    def _row_pressed(self, layer: Layer, button: Qt.MouseButton, modifiers: Qt.KeyboardModifier) -> None:
+        """Changes the selection for a press on a layer's row. See the module docstring for each input."""
+        self._pending_collapse = None
+        stack = self._image_stack
+        selected = stack.is_layer_selected(layer)
+        if button == Qt.MouseButton.RightButton:
+            if not selected:
+                self._select_only(layer)
+            return
+        if modifiers & Qt.KeyboardModifier.ControlModifier:
+            self._toggle_selected(layer)
+        elif modifiers & Qt.KeyboardModifier.ShiftModifier:
+            self._select_range(layer)
+        elif selected and stack.selected_layer_count > 1:
+            self._pending_collapse = layer
+        else:
+            self._select_only(layer)
+
+    def _row_clicked(self, layer: Layer) -> None:
+        """Collapses a multi-selection to a row clicked without modifiers."""
+        if self._pending_collapse is layer:
+            self._pending_collapse = None
+            self._select_only(layer)
+
+    def _select_only(self, layer: Layer) -> None:
+        self._anchor = layer
+        self._image_stack.select_layers([layer], layer)
+
+    def _toggle_selected(self, layer: Layer) -> None:
+        """Adds a layer to the selection and makes it active, or removes it. Removing the active layer makes the
+        topmost layer still selected active. The only selected layer stays selected."""
+        stack = self._image_stack
+        self._anchor = layer
+        if not stack.is_layer_selected(layer):
+            stack.select_layers([*stack.selected_layers_in_order(), layer], layer)
+            return
+        remaining = [selected for selected in stack.selected_layers_in_order() if selected is not layer]
+        if len(remaining) == 0:
+            return
+        stack.select_layers(remaining, remaining[0] if layer is stack.active_layer else stack.active_layer)
+
+    def _select_range(self, layer: Layer) -> None:
+        """Selects the shown rows from the anchor to a layer's row, and makes the layer active."""
+        shown = [row_layer for row_layer in self._order if not self._rows[row_layer].isHidden()]
+        anchor = self._anchor
+        if anchor is None or anchor not in shown:
+            active = self._image_stack.active_layer
+            anchor = active if active in shown else None
+        if anchor is None or layer not in shown:
+            self._select_only(layer)
+            return
+        start, end = sorted((shown.index(anchor), shown.index(layer)))
+        self._image_stack.select_layers(shown[start:end + 1], layer)
+
     # Drag and drop:
 
     def _drop_spot(self, y: int) -> _DropSpot:
@@ -442,13 +547,13 @@ class LayerList(QScrollArea):
         root = self._image_stack.layer_stack
         shown = [self._rows[layer] for layer in self._order if not self._rows[layer].isHidden()]
         if len(shown) == 0:
-            return _DropSpot(root, 0, self._strip.geometry().bottom() + 1, 0, DROP_INTO_LABEL.format(name=root.name))
+            return _DropSpot(root, 0, self._strip.geometry().bottom() + 1, 0, DropKind.INTO, root.name)
         if y < shown[0].y():
             return _DropSpot(root, 0, self._strip.geometry().bottom() + 1, 0,
-                             DROP_ABOVE_LABEL.format(name=shown[0].layer.name))
+                             DropKind.ABOVE, shown[0].layer.name)
         if y >= shown[-1].geometry().bottom():
             return _DropSpot(root, root.count, shown[-1].geometry().bottom() + 1, 0,
-                             DROP_BELOW_LABEL.format(name=shown[-1].layer.name))
+                             DropKind.BELOW, shown[-1].layer.name)
         row = next(row for row in shown if row.y() <= y <= row.geometry().bottom())
         layer = row.layer
         parent = layer.layer_parent
@@ -456,12 +561,12 @@ class LayerList(QScrollArea):
         index = parent.get_layer_index(layer)
         assert index is not None
         if y < row.y() + row.height() // 2:
-            return _DropSpot(parent, index, row.y(), row.depth, DROP_ABOVE_LABEL.format(name=layer.name))
+            return _DropSpot(parent, index, row.y(), row.depth, DropKind.ABOVE, layer.name)
         if isinstance(layer, LayerGroup) and row.is_expanded():
             return _DropSpot(layer, 0, row.geometry().bottom() + 1, row.depth + 1,
-                             DROP_INTO_LABEL.format(name=layer.name))
+                             DropKind.INTO, layer.name)
         return _DropSpot(parent, index + 1, row.geometry().bottom() + 1, row.depth,
-                         DROP_BELOW_LABEL.format(name=layer.name))
+                         DropKind.BELOW, layer.name)
 
     def drop_target(self, y: int) -> Optional[tuple[LayerGroup, int, int, int]]:
         """Returns where a layer dropped at a y position in the list's content would land: its new parent and index,
@@ -496,9 +601,8 @@ class LayerList(QScrollArea):
         event.accept()
         position = event.position().toPoint()
         spot = self._drop_spot(position.y())
-        moved = source.layer
         self._clear_drop_target()
-        if spot.parent is moved or (isinstance(moved, LayerGroup) and moved.contains_recursive(spot.parent)):
+        if not selected_layers_can_move_into(self._image_stack, source.layer, spot.parent):
             pass
         elif spot.parent.locked or spot.parent.parent_locked:
             self._outline_rows([spot.parent], refused_drop_color())
@@ -509,7 +613,7 @@ class LayerList(QScrollArea):
                                             max(self._content.width() - x, 0), INSERT_MARKER_HEIGHT)
             self._insert_marker.show()
             self._insert_marker.raise_()
-            self._show_drop_label(spot)
+            self._show_drop_label(spot, len(moved_by_drag(self._image_stack, source.layer)))
             if spot.parent is not self._image_stack.layer_stack:
                 self._outline_rows([spot.parent, *(layer for layer in spot.parent.recursive_child_layers)],
                                    selection_stripe_color(self))
@@ -524,22 +628,15 @@ class LayerList(QScrollArea):
         if not isinstance(source, LayerRow) or target is None:
             return
         event.accept()
-        moved = source.layer
         new_parent, index = target
-        if new_parent is moved.layer_parent:
-            current_index = new_parent.get_layer_index(moved)
-            assert current_index is not None
-            if index > current_index:
-                index -= 1
-            if index == current_index:
-                return
-        self._image_stack.move_layer(moved, new_parent, index)
+        move_layers(self._image_stack, moved_by_drag(self._image_stack, source.layer), new_parent, index)
 
-    def _show_drop_label(self, spot: _DropSpot) -> None:
-        """Puts the landing spot's name at the marker's right end, above the line unless that leaves the list."""
+    def _show_drop_label(self, spot: _DropSpot, count: int) -> None:
+        """Puts the landing spot's name, with the count of `count` moved layers above one, at the marker's right end,
+        above the line unless that leaves the list."""
         label = self._drop_label
         label.refresh_colors()
-        label.setText(spot.label)
+        label.setText(drop_label(spot.kind, spot.name, count))
         label.adjustSize()
         x = max(self._content.width() - label.width(), 0)
         y = spot.marker_y - INSERT_MARKER_HEIGHT // 2 - label.height()
@@ -564,6 +661,9 @@ class LayerList(QScrollArea):
         for row in self._outlined_rows:
             row.set_drop_outline(None)
         self._outlined_rows = []
+
+    def _drag_started_slot(self) -> None:
+        self._pending_collapse = None
 
     def _drag_ended_slot(self) -> None:
         self._clear_drop_target()
