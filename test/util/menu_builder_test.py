@@ -76,3 +76,15 @@ class MenuBuilderTest(IntraPaintTestCase):
         self.assertEqual(_names(), [first, second, '----', third, fourth, '----'])
         late.build_menus()
         self.assertEqual(_names(), [first, second, late_label, '----', third, fourth, '----'])
+
+    def test_action_found_after_its_text_changes(self) -> None:
+        """An action's owner can change the text it shows, and lookups still find it by the title it was added with."""
+        window = QMainWindow()
+        builder = _Builder()
+        builder.menu_window = window
+        builder.build_menus()
+        action = builder.get_action_for_method(builder.first)
+        action.setText('Undo 3 things')
+        self.assertIs(builder.get_action_for_method(builder.first), action)
+        builder.build_menus()
+        self.assertEqual(len(builder.menu_actions(MENU)), 5)

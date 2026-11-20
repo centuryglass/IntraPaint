@@ -17,6 +17,9 @@ GenericFn = TypeVar('GenericFn', bound=Callable[..., Any])
 
 IS_MENU_ACTION_ATTR = '_is_menu_action'
 MENU_DATA_ATTR = '_menu_data'
+# The QAction property holding the title an action was added with. Lookups match it, so an owner may change the shown
+# text (as `AppController` does for counted labels) without losing the action:
+MENU_TITLE_PROPERTY = 'menu_builder_title'
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +150,7 @@ class MenuBuilder:
         # The menu owns the action, so the action lasts as long as the menu and is deleted with it. Python owns a
         # parentless action, and deletes it as soon as nothing else references it.
         action = QAction(title, menu)
+        action.setProperty(MENU_TITLE_PROPERTY, title)
         if tooltip is not None and tooltip != '':
             action.setToolTip(tooltip)
         if keybinding is not None and keybinding != '':
@@ -358,10 +362,13 @@ def _menu_set_visible(menu: QMenu, visible: bool) -> None:
 
 
 def _action_has_title(action: Optional[QAction | QMenu], title: str) -> bool:
+    """Returns whether an action or menu has a title, ignoring mnemonics. An action added by `add_menu_action` matches
+    the title it was added with (`MENU_TITLE_PROPERTY`), whatever text it shows now."""
     if action is None:
         return False
     if isinstance(action, QAction):
-        action_title = action.text()
+        added_title = action.property(MENU_TITLE_PROPERTY)
+        action_title = added_title if isinstance(added_title, str) else action.text()
     else:
         assert isinstance(action, QMenu)
         action_title = action.title()

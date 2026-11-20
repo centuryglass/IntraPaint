@@ -162,3 +162,37 @@ class TestAppControllerMenus(IntraPaintTestCase):
         self.assertTrue(action.isEnabled())
         layer.opacity = 1.0
         self.assertFalse(action.isEnabled())
+
+
+class TestAppControllerLayerSelectionMenus(IntraPaintTestCase):
+    """Tests the Layer menu actions that act on every selected layer."""
+
+    def setUp(self):
+        super().setUp()
+        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
+        args.mode = 'mock'
+        args.server_url = ''
+        args.fast_ngrok_connection = False
+        self.controller = AppController(args)
+        self.image_stack = self.controller._image_stack
+        root = self.image_stack.layer_stack
+        self.lower = self.image_stack.create_layer('lower', layer_parent=root, layer_index=0)
+        self.upper = self.image_stack.create_layer('upper', layer_parent=root, layer_index=0)
+
+    def test_actions_follow_a_multi_selection(self):
+        """Selecting several layers gives duplicate and delete plural labels, and the menu actions stay usable through
+        later updates, a duplicate, an undo and a return to one selected layer."""
+        copy_action = self.controller.get_action_for_method(self.controller.copy_layer)
+        delete_action = self.controller.get_action_for_method(self.controller.delete_layer)
+        single_copy_text = copy_action.text()
+        self.image_stack.select_layers([self.upper, self.lower], self.upper)
+        self.assertEqual(copy_action.text(), 'Duplicate 2 layers')
+        self.assertEqual(delete_action.text(), 'Delete 2 layers')
+        self.assertIs(self.controller.get_action_for_method(self.controller.copy_layer), copy_action)
+        copy_action.trigger()
+        self.assertEqual(['upper copy', 'upper', 'lower copy', 'lower', 'layer 1'],
+                         [layer.name for layer in self.image_stack.layer_stack.child_layers])
+        self.controller.undo()
+        self.image_stack.active_layer = self.lower
+        self.assertEqual(copy_action.text(), single_copy_text)
+        self.assertIs(self.controller.get_action_for_method(self.controller.delete_layer), delete_action)
