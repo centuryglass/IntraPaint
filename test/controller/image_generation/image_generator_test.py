@@ -90,12 +90,22 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.session.generation_finished.connect(lambda: setattr(self, 'finished', self.finished + 1))
         self.session.progress_changed.connect(self.progress.append)
         self.session.image_ready.connect(lambda image, index: self.previews.__setitem__(index, image))
+        self.addCleanup(self._release_session)  # Qt holds the lambdas above, which capture this test case.
         # Results reach the session's consumers through a main-thread timer, which these tests bypass:
         self.generator._cache_generated_image = self.session.store_result  # type: ignore # pylint: disable=protected-access
 
         start_patch = mock.patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
         self.addCleanup(start_patch.stop)
+
+    def _release_session(self) -> None:
+        """Disconnects the lambdas Qt holds, and drops the references the window mock and generator keep."""
+        for signal in (self.session.generation_started, self.session.generation_failed,
+                       self.session.generation_finished, self.session.progress_changed, self.session.image_ready):
+            signal.disconnect()
+        del self.window.generation_session
+        self.window.reset_mock()
+        del self.generator._cache_generated_image  # pylint: disable=protected-access
 
     def _generated_images(self, count: int = BATCH_COUNT * BATCH_SIZE) -> list[QImage]:
         return [_solid(GENERATION_AREA.size(), GENERATED_COLOR) for _ in range(count)]
