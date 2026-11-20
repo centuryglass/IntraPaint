@@ -471,7 +471,7 @@ class AppController(MenuBuilder):
                 elif self._sd_comfyui_generator.is_available():
                     self.load_image_generator(self._sd_comfyui_generator)
                 elif self._glid_web_generator.is_available():
-                    self.load_image_generator(self._glid_generator)
+                    self.load_image_generator(self._glid_web_generator)
                 elif args.dev:
                     self.load_image_generator(self._test_generator)
                 elif not is_pyinstaller_bundle() and self._glid_generator.is_available():
