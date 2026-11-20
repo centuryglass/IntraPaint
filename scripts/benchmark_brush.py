@@ -1,4 +1,4 @@
-"""Benchmark for the smudge, filter, draw, eraser, clone stamp and MyPaint brushes: times long, fast strokes on a large layer.
+"""Times long, fast strokes on a large layer with the smudge, filter, draw, eraser, clone stamp and MyPaint brushes.
 
 The test suite never measures wall-clock time, so brush performance is checked here instead. Each case draws one
 stroke whose input points are far apart, as a fast mouse drag produces. Input arrives every INPUT_INTERVAL_SECONDS,

@@ -85,6 +85,8 @@ pip install -r requirements-dev.txt   # for development: adds the test, lint and
 - **On-canvas markers register with `ImageViewer.canvas_extras`** (`src/ui/canvas_extras.py`), which groups them by
   category so each category can be hidden. A tool that adds a marker to the viewer's scene registers it there.
 - **`src/util/`:** helpers, including `visual/image_fill` (Cython-compiled).
+- **`doc/file_map.md` lists every source file with its docstring summary.** It can help with orientation, though
+  searching the tree directly is often faster.
 
 ## Config system (important)
 
@@ -177,6 +179,9 @@ comments and docstrings you write or touch, to this file, and to new docs under 
   One clause per sentence, real lists for list-shaped content, and symbols rather than their current values.
 - **Module docstrings say what the file is for** and which decision it embodies. Match the surrounding comment
   density, and don't narrate what the code does line by line.
+- **Every module and package docstring opens with a one-line summary,** in the format `scripts/file_map.py` describes.
+  Update it when the file's purpose changes. `.githooks/pre-commit` regenerates `doc/file_map.md` from the summaries on
+  each commit, and CI's markdown job fails on a missing or malformed summary or a stale map. Don't edit the map by hand.
 - **ASCII hyphens, not em dashes,** in comments and markdown.
 
 ## Testing
@@ -196,7 +201,7 @@ comments and docstrings you write or touch, to this file, and to new docs under 
 - **Run the tests a change can reach, not the whole suite.** CI runs every test on every push, so a local run only has
   to catch what the change could break.
   - A change confined to files no test imports runs no tests: Markdown, `doc/`, `scripts/` (except
-    `build_translations.py`, which `test/scripts/` tests), `.claude/`, `.opencode/` and `.github/`.
+    `build_translations.py`, which `test/scripts/` tests), `.claude/`, `.opencode/`, `.githooks/` and `.github/`.
   - A change under `src/` runs the matching directory under `test/` (`src/tools/` runs `test/tools/`), and every test
     file that names a changed module (`grep -rl <module> test/`).
   - A change that can alter a panel's look also runs `test/ui/panel_layout_test.py` and

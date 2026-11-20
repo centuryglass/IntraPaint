@@ -1,5 +1,4 @@
-"""Brush size drag gesture shared by the brush tools: the size drag modifier plus a right-button drag sets the brush
-size.
+"""Brush size drag gesture shared by the brush tools: the size drag modifier plus a right-button drag sets the size.
 
 The brush outline stays at the press point while the drag sets its radius to the pointer's distance from that point,
 in image pixels. Release keeps the new size, and `cancel` restores the size from before the drag. Brush size is config,

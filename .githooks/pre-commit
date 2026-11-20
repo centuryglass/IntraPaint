@@ -1,0 +1,12 @@
+#!/bin/sh
+# Regenerates doc/file_map.md from the staged files and stages it, so a commit that changes a listed file carries the
+# updated map. scripts/file_map.py (--staged) decides whether the commit needs it and never fails the commit.
+#
+# Git runs hooks from this directory only once a clone sets `git config core.hooksPath .githooks`.
+# .claude/hooks/session-start.sh sets it for agent sessions; README's contributing steps ask humans to.
+python=python3
+command -v "$python" >/dev/null 2>&1 || python=python
+if ! "$python" scripts/file_map.py --staged; then
+  echo "scripts/file_map.py failed; CI's file map check will catch a stale map." >&2
+fi
+exit 0
