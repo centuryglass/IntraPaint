@@ -36,11 +36,13 @@ from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.text_layer import TextLayer, ORA_TEXT_DATA_TAG
 from src.image.ora_extensions import (OraWriteContext, OraReadContext, layer_loaders, document_extensions,
                                       register_layer_loader, EXTENSION_ELEMENT, EXTENSION_TAG_NAME,
-                                      EXTENSION_DIRECTORY, METADATA_EXTENSION_NAME, safe_relative_path)
+                                      EXTENSION_DIRECTORY, METADATA_EXTENSION_NAME, safe_relative_path,
+                                      XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME, STACK_ELEMENT,
+                                      MERGED_IMAGE_FILE_NAME)
 from src.image.ora_foreign_data import (OraArchiveFile, OraForeignDocumentData, OraForeignLayerData,
                                         pixel_fingerprint)
 from src.image.ora_metadata import (XMP_ARCHIVE_PATH, metadata_archive_files, metadata_extension_payload, encode_dpi,
-                                    decode_dpi, read_metadata)
+                                    decode_dpi, read_metadata, METADATA_TAG, IMAGE_TAG_XRES, IMAGE_TAG_YRES)
 from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import read_qimage
@@ -51,12 +53,9 @@ logger = logging.getLogger(__name__)
 ORA_FILE_EXTENSION = '.ora'
 MIMETYPE_FILE_NAME = 'mimetype'
 MIMETYPE_FILE_CONTENT = 'image/openraster'
-XML_FILE_NAME = 'stack.xml'
-EXTENDED_DATA_XML_FILE_NAME = 'extended_data.xml'
 DATA_DIRECTORY_NAME = 'data'
 THUMBNAIL_DIRECTORY_NAME = 'Thumbnails'
 THUMBNAIL_FILE_NAME = 'thumbnail.png'
-MERGED_IMAGE_FILE_NAME = 'mergedimage.png'  # Required by the ORA spec; other programs read it as a preview
 
 BOOLEAN_TRUE_STR = 'true'
 # BOOLEAN_FALSE_STR = 'false'
@@ -74,8 +73,6 @@ IMAGE_ELEMENT = 'image'
 IMAGE_TAG_VERSION = 'version'
 IMAGE_TAG_WIDTH = 'w'  # int
 IMAGE_TAG_HEIGHT = 'h'  # int
-IMAGE_TAG_XRES = 'xres'  # int, optional (pixels per inch), written from `ImageMetadata` DPI
-IMAGE_TAG_YRES = 'yres'  # int, optional (pixels per inch), written from `ImageMetadata` DPI
 IMAGE_TAG_NAME = 'name'  # str
 
 # layerCommonAttributes XML tags:
@@ -94,7 +91,6 @@ ATTR_TAG_X_POS = 'x'  # int, optional
 ATTR_TAG_Y_POS = 'y'  # int, optional
 
 # stack XML element tags:
-STACK_ELEMENT = 'stack'
 STACK_TAG_ISOLATION = 'isolation'  # str
 # valid isolation strings:
 ISOLATION_AUTO = 'auto'
@@ -130,11 +126,6 @@ EXTENSION_ATTRIBUTES = 'extension_attributes'
 TEXT_DATA_TAG = ORA_TEXT_DATA_TAG
 # Attributes written by this module, which layer extensions can't use:
 RESERVED_EXTENDED_TAGS = frozenset({LAYER_TAG_SRC, TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED})
-
-# Metadata support:
-# The extended data root's 'metadata' attribute holds the `ImageMetadata` text entries as JSON. The other parts go where
-# `src/image/ora_metadata.py` describes.
-METADATA_TAG = 'metadata'
 
 # Attributes IntraPaint reads on each element. Any other attribute is foreign data, kept by `OraForeignLayerData`:
 IMAGE_KNOWN_ATTRIBUTES = frozenset({IMAGE_TAG_VERSION, IMAGE_TAG_WIDTH, IMAGE_TAG_HEIGHT, IMAGE_TAG_NAME,
@@ -423,13 +414,19 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
     else:
         file_path += ORA_FILE_EXTENSION
 
+    # encode_layer_group calls itself through its closure cell, a cycle that would hold `image_stack` until a garbage
+    # collection. Deleting the name empties the cell, even when encoding raises.
+    try:
+        layer_stack_data = encode_layer_group(image_stack.layer_stack)
+    finally:
+        del encode_layer_group
     image_data: dict[str, Any] = {
         DICT_ELEMENT_NAME: IMAGE_ELEMENT,
         IMAGE_TAG_VERSION: ORA_SPEC_VERSION,
         IMAGE_TAG_WIDTH: image_stack.width,
         IMAGE_TAG_HEIGHT: image_stack.height,
         IMAGE_TAG_NAME: image_name,
-        DICT_NESTED_CONTENT_NAME: [encode_layer_group(image_stack.layer_stack)]
+        DICT_NESTED_CONTENT_NAME: [layer_stack_data]
     }
     if foreign_document is not None:
         image_data.update(foreign_document.image_attributes)

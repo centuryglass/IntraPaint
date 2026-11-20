@@ -5,9 +5,9 @@
     <name>controller.app_controller</name>
     <message numerus="yes">
         <location filename="../../src/controller/app_controller.py"/>
-        <source>ControlNet: %n of {enabled} unit(s) on are skipped. Inpainting units only apply in Inpaint mode.</source>
+        <source>ControlNet: %n of {enabled} enabled unit(s) skipped. Inpainting units only apply in Inpaint mode.</source>
         <comment>Tooltip of the ControlNet rail button</comment>
-        <translation><numerusform>ControlNet: %n of {enabled} units on is skipped. Inpainting units only apply in Inpaint mode.</numerusform><numerusform>ControlNet: %n of {enabled} units on are skipped. Inpainting units only apply in Inpaint mode.</numerusform></translation>
+        <translation><numerusform>ControlNet: %n of {enabled} enabled units skipped. Inpainting units only apply in Inpaint mode.</numerusform><numerusform>ControlNet: %n of {enabled} enabled units skipped. Inpainting units only apply in Inpaint mode.</numerusform></translation>
     </message>
     <message numerus="yes">
         <location filename="../../src/controller/app_controller.py"/>

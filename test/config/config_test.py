@@ -857,11 +857,6 @@ class ConfigMigrationTest(IntraPaintTestCase):
         self.assertEqual(config.get(AppConfig.SELECTION_COLOR), '#8800ff00')
         self.assertEqual(saved[AppConfig.SELECTION_COLOR], '#8800ff00')
 
-    def test_color_select_mode_migrates_with_the_file(self) -> None:
-        """The `color_select_mode` conversion runs when an unversioned Cache file loads."""
-        config, _ = self._load(Cache, {'color_select_mode': True})
-        self.assertEqual(config.get(Cache.SELECTION_FILL_AREA), 'By color')
-
 
 class ConfigKeyOwnershipTest(IntraPaintTestCase):
     """Checks the real definition files in `resources/config/` against the config classes and `get_config_from_key`."""

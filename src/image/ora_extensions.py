@@ -12,7 +12,8 @@ Two kinds of extension exist, both stored in `extended_data.xml`:
 Other programs' data is not an extension: `src/image/ora_foreign_data.py` carries it where those programs put it.
 
 This module imports no layer classes, so layer modules can use it. `open_raster` owns the archive layout and drives
-both registries.
+both registries. The archive's file names live here so `src/image/ora_metadata.py` can read and write an archive's
+metadata without importing `open_raster`.
 """
 import os
 import posixpath
@@ -23,6 +24,11 @@ if TYPE_CHECKING:
     from src.image.layers.image_stack import ImageStack
     from src.image.layers.layer import Layer
 
+XML_FILE_NAME = 'stack.xml'
+EXTENDED_DATA_XML_FILE_NAME = 'extended_data.xml'
+MERGED_IMAGE_FILE_NAME = 'mergedimage.png'  # Required by the ORA spec; other programs read it as a preview
+STACK_ELEMENT = 'stack'
+"""The root element of both XML files."""
 EXTENSION_ELEMENT = 'extension'
 EXTENSION_TAG_NAME = 'name'
 LAYER_FILE_DIRECTORY = 'data'

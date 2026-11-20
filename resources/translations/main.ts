@@ -4062,7 +4062,7 @@
     </message>
     <message numerus="yes">
         <location filename="../../src/controller/app_controller.py"/>
-        <source>ControlNet: %n of {enabled} unit(s) on are skipped. Inpainting units only apply in Inpaint mode.</source>
+        <source>ControlNet: %n of {enabled} enabled unit(s) skipped. Inpainting units only apply in Inpaint mode.</source>
         <comment>Tooltip of the ControlNet rail button</comment>
         <translation type="unfinished"><numerusform></numerusform></translation>
     </message>
@@ -6043,11 +6043,6 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Zoom to changes needs a selection smaller than the generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Original image content</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6748,6 +6743,24 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
         <source>H:</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.metadata_mode</name>
+    <message>
+        <location filename="../../src/ui/metadata_mode.py"/>
+        <source>Opening the image failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/metadata_mode.py"/>
+        <source>--print needs an image: IntraPaint.py --metadata &lt;image&gt; --print</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/metadata_mode.py"/>
+        <source>{file_name} has no metadata.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -10244,6 +10257,56 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Save to file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Apply the changes, and write the metadata into "{file_name}" now. The image itself is not saved.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>The image hasn't been saved yet, so there is no file to write to.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>IntraPaint can't write metadata into {file_format} files.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Saved the metadata to "{file_name}".</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Saved the metadata to "{file_name}". Your unsaved edits to the image are not in the file yet.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Saving the metadata failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Re-encode "{file_name}"?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>This file's image data is JPEG-compressed. Writing its metadata means re-encoding it, which loses a little quality even at the highest setting.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Re-encode at quality 100</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
         <source>Apply changes</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10511,6 +10574,59 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.window.standalone_metadata_window</name>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>{file_name} - Image metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Save as...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Save a copy with this metadata. A copy in another format is re-encoded from the image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Changes are not kept until you click "Save".</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Embedded. Saving keeps it, since the image's colors depend on it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Close without saving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>Save a copy as PNG</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>{file_format} files can't hold this metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/standalone_metadata_window.py"/>
+        <source>IntraPaint can't write metadata into {file_format} files. Save a PNG copy of the image with the metadata instead?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -16,10 +16,11 @@ app = QApplication.instance() or QApplication(sys.argv)
 
 VIEW_SIZE = QSize(400, 300)
 CONTENT_SIZE = QSize(512, 384)
-# Distance in scene pixels that a zoom may move the scene point it holds under the cursor. Issue #836 tracks the drift.
-ANCHOR_TOLERANCE = 2.0
-# Distance in widget pixels between the view center and the center of the bounds zoom_to_bounds shows (issue #836).
-ZOOM_TO_BOUNDS_CENTER_TOLERANCE = 6.0
+# Distance in widget pixels that a zoom may move the scene point it holds under the cursor. The view scrolls in whole
+# widget pixels, so a point can land one pixel away.
+ANCHOR_TOLERANCE = 1.0
+# Distance in widget pixels between the view center and the center of the bounds zoom_to_bounds shows.
+ZOOM_TO_BOUNDS_CENTER_TOLERANCE = 1.0
 
 
 class ImageGraphicsViewTestCase(IntraPaintTestCase):
@@ -31,7 +32,6 @@ class ImageGraphicsViewTestCase(IntraPaintTestCase):
         super().setUp()
         self.view = ImageGraphicsView(use_keybindings=self.use_keybindings)
         self.view.resize(VIEW_SIZE)
-        # The base view divides by the content width on every resize, so content_size comes before show().
         self.view.content_size = CONTENT_SIZE
         self.view.show()
 
@@ -101,7 +101,8 @@ class ZoomAnchorTest(ImageGraphicsViewTestCase):
             self.view.set_cursor_pos(cursor)
         before = self.scene_point_at(held_widget_point)
         self.view.scene_scale = self.view.scene_scale * scale_multiplier
-        self.assert_points_close(before, self.scene_point_at(held_widget_point), ANCHOR_TOLERANCE)
+        scene_tolerance = ANCHOR_TOLERANCE / self.view.scene_scale + 1e-6
+        self.assert_points_close(before, self.scene_point_at(held_widget_point), scene_tolerance)
 
     def test_zoom_in_holds_point_under_cursor(self) -> None:
         """Zooming in with the cursor over the content keeps the scene point under the cursor in place."""
@@ -293,6 +294,20 @@ class PanDragTest(ImageGraphicsViewTestCase):
         for _ in range(20):
             self.view.offset = self.view.offset
         self.assert_points_close(before, self.scene_point_at(center), 1.0)
+
+
+class UnsetContentSizeTest(IntraPaintTestCase):
+    """Tests a base view that is shown or resized before content_size is set."""
+
+    def test_show_and_resize_without_content_size(self) -> None:
+        """The view tolerates having no content, and fits content set afterward."""
+        view = ImageGraphicsView(use_keybindings=False)
+        view.resize(VIEW_SIZE)
+        view.show()
+        view.resize(VIEW_SIZE + QSize(20, 20))
+        view.content_size = CONTENT_SIZE
+        self.assertGreater(view.scene_scale, 0.0)
+        self.assertTrue(view.is_at_default_view)
 
 
 class ZoomToBoundsTest(ImageGraphicsViewTestCase):

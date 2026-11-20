@@ -329,7 +329,7 @@ class ImageGraphicsView(QGraphicsView):
         rounding_error = new_fixed_scene_point - fixed_scene_pos
 
         # Tweak offset/scale to deal with rounding errors:
-        if abs(rounding_error.x()) > 0.01 or abs(rounding_error.y() > 0.01):
+        if abs(rounding_error.x()) > 0.01 or abs(rounding_error.y()) > 0.01:
             horizontal_scroll = self.horizontalScrollBar()
             vertical_scroll = self.verticalScrollBar()
             x_scroll = int(horizontal_scroll.value() - rounding_error.x())
@@ -402,15 +402,13 @@ class ImageGraphicsView(QGraphicsView):
         painter.drawRect(border_rect)
 
     def _update_scale_and_transform(self):
-        if self.content_size is None:
-            raise RuntimeError('ImageGraphicsView implementations must set content_size in __init__ before the ' +
-                               'first resizeEvent is triggered')
+        if self._content_size.width() <= 0 or self._content_size.height() <= 0:
+            # Nothing to fit until content_size is set; the setter runs this again.
+            return
         # Calculate default scale: Scene content is centered in the widget, and scaled evenly to the largest size with
         # the same aspect ratio that would fit within the widget bounds while leaving `self._border_size()` px empty:
         border_size = self._border_size()
         content_size = self._content_size
-        if content_size is None:
-            return
         self._content_rect = get_scaled_placement(self.size(), content_size, border_size)
         displayed_content_size = self._content_rect.size()
         new_scale = displayed_content_size.width() / content_size.width()
@@ -425,7 +423,7 @@ class ImageGraphicsView(QGraphicsView):
         scene_window_width = displayed_content_size.width() / adjusted_scale
         scene_window_height = displayed_content_size.height() / adjusted_scale
         content_rect_f = QRectF(self._centered_on.x() - scene_window_width / 2,
-                                self._centered_on.y() - scene_window_height // 2,
+                                self._centered_on.y() - scene_window_height / 2,
                                 scene_window_width, scene_window_height)
         if content_rect_f != self._scene.sceneRect():
             self._scene.setSceneRect(content_rect_f)
@@ -704,8 +702,10 @@ class ImageGraphicsView(QGraphicsView):
         margin = max(int(bounds.width() / 20), int(bounds.height() / 20), 10)
         content_size = self.content_size
         assert content_size is not None
-        self.offset = QPoint(int(bounds.center().x() - (content_size.width() // 2)),
-                             int(bounds.center().y() - (content_size.height() // 2)))
+        # QRect.center() sits half a pixel before the middle of an even-sized rectangle, so use the float rectangle:
+        bounds_center = QRectF(bounds).center()
+        self.offset = QPointF(bounds_center.x() - content_size.width() / 2,
+                              bounds_center.y() - content_size.height() / 2)
         self._content_scale_adjustment = (get_scaled_placement(self.size(), bounds.size(), 0).width()
                                           / (bounds.width() + margin)) - self._default_content_scale
         self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),

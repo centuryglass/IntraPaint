@@ -206,6 +206,27 @@ def request_unsaved_changes_choice(parent: Optional[QWidget], file_name: str, di
     return UNSAVED_CANCEL
 
 
+def request_choice(parent: Optional[QWidget], title: str, message: str, choices: list[str]) -> Optional[int]:
+    """Asks the user to pick one of several actions, or cancel.
+
+    Returns the index in `choices` of the clicked button, or None for Cancel. `message` is rich text (see
+    `_set_title_and_message`). The first choice is the default button, and closing the box counts as Cancel.
+    """
+    message_box = _new_message_box(parent)
+    _set_title_and_message(message_box, title, message)
+    message_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
+    message_box.setIcon(QMessageBox.Icon.Question)
+    buttons = [message_box.addButton(choice, QMessageBox.ButtonRole.AcceptRole) for choice in choices]
+    cancel_button = message_box.addButton(QMessageBox.StandardButton.Cancel)
+    if len(buttons) > 0:
+        message_box.setDefaultButton(buttons[0])
+    message_box.setEscapeButton(cancel_button)
+    message_box.exec()
+    clicked = message_box.clickedButton()
+    message_box.deleteLater()
+    return buttons.index(clicked) if clicked in buttons else None
+
+
 def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
                         reminder_config_key: Optional[str]) -> None:
     """Show a warning dialog, optionally with a 'don't show again' checkbox.
@@ -275,11 +296,14 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
 
 def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
                     selected_file: str = '') -> Optional[str]:
-    """Opens an image file for editing, saving, etc."""
+    """Opens an image file for editing, saving, etc.
+
+    `selected_file` starts the dialog on that file. A save dialog also starts on a file that doesn't exist yet.
+    """
     file_filter = IMAGE_LOAD_FILTER if mode == LOAD_IMAGE_MODE else IMAGE_SAVE_FILTER
     file_dialog = QFileDialog(parent, filter=file_filter)
     file_dialog.setWindowTitle(TITLE_LOAD_IMAGE if mode == LOAD_IMAGE_MODE else TITLE_SAVE_IMAGE)
-    if os.path.isfile(selected_file):
+    if os.path.isfile(selected_file) or (mode == SAVE_IMAGE_MODE and selected_file != ''):
         file_dialog.selectFile(selected_file)
     if mode == LOAD_IMAGE_MODE:
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)

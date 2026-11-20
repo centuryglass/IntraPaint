@@ -312,7 +312,7 @@ class DockRailTest(IntraPaintTestCase):
 
         dock.set_badge('1', 'ControlNet: 1 unit on')
         self.assertFalse(_has_caution_pixel())
-        dock.set_badge('!', 'ControlNet: 1 of 1 units on are skipped.', caution=True)
+        dock.set_badge('!', 'ControlNet: 1 of 1 enabled units skipped.', caution=True)
         self.assertTrue(dock.badge_caution)
         self.assertTrue(_has_caution_pixel())
         self.assertIn('skipped', button.toolTip())

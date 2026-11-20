@@ -70,6 +70,11 @@ parser.add_argument('--edit_height', type=int, required=False, default=256,
 parser.add_argument(TIMELAPSE_MODE_FLAG, action='store_true',
                     help='makes minor changes to UI to simplify recording smooth timelapse editing footage')
 parser.add_argument('--cursor_debug', action='store_true')
+parser.add_argument('--metadata', type=str, nargs='?', const='', default=None, metavar='IMAGE',
+                    help='open only the metadata window, to view and edit the metadata of IMAGE without opening the '
+                         'editor. Without IMAGE, a file dialog asks for one.')
+parser.add_argument('--print', dest='print_metadata', action='store_true',
+                    help='with --metadata IMAGE, print the metadata of IMAGE and exit, without opening a window')
 parser.add_argument('--server_url', type=str, required=False, default='',
                     help='Image generation server URL (web mode only. If not provided and mode=web or stable, you'
                          ' will be prompted for a URL on launch.')
@@ -113,7 +118,8 @@ def _filtered_qt_message_handler(msg_type: QtMsgType, context, message: str) -> 
 qInstallMessageHandler(_filtered_qt_message_handler)
 
 logging.basicConfig(level=logging.INFO, handlers=handlers)
-print(f'Logs will be saved at {LOG_FILE_PATH}')
+if not args.print_metadata:  # --print output is the metadata alone, so it can be piped.
+    print(f'Logs will be saved at {LOG_FILE_PATH}')
 logger = logging.getLogger(__name__)
 
 
@@ -135,6 +141,17 @@ try:
 except ImportError:
     pass  # Not using the pyinstaller bundle
 
+# Load the chosen translation (src/util/translation.py explains why this happens before most imports):
+ui_language = resolve_language(saved_language_setting())
+logger.info(f'UI language: {ui_language}')
+translators = install_translation(app, ui_language)
+
+if args.metadata is not None or args.print_metadata:
+    # The standalone metadata mode skips the splash screen, the editor and the generators. Its imports stay light,
+    # see src/ui/metadata_mode.py:
+    from src.ui.metadata_mode import run_metadata_mode
+    sys.exit(run_metadata_mode(app, args.metadata or '', args.print_metadata))
+
 # show Qt splash screen:
 splash_screen_image = QPixmap(f'{PROJECT_DIR}/resources/IntraPaint_banner.jpg')
 screen = app.primaryScreen()
@@ -145,11 +162,6 @@ splash_screen.setGeometry(splash_screen_bounds)
 splash_screen.show()
 splash_screen.raise_()
 app.processEvents()
-
-# Load the chosen translation (src/util/translation.py explains why this happens before most imports):
-ui_language = resolve_language(saved_language_setting())
-logger.info(f'UI language: {ui_language}')
-translators = install_translation(app, ui_language)
 
 # If relevant directories exist, update paths for GLID-3-XL dependencies:
 if not is_pyinstaller_bundle():

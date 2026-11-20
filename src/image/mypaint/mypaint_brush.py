@@ -1,6 +1,6 @@
 """Python wrapper for libmypaint brush data."""
 import logging
-from ctypes import c_void_p, c_float, c_char_p, c_int
+from ctypes import c_void_p, c_float, c_char_p, c_int, byref
 from typing import Optional
 
 from PySide6.QtCore import Qt, QByteArray, QFile, QIODevice
@@ -9,6 +9,9 @@ from PySide6.QtGui import QColor
 from src.image.mypaint.libmypaint import libmypaint
 
 logger = logging.getLogger(__name__)
+
+# Saved opaque_multiply state: its base value, and each input's curve points.
+_SavedOpacity = tuple[float, dict[int, list[tuple[float, float]]]]
 
 
 class MyPaintBrush:
@@ -20,6 +23,7 @@ class MyPaintBrush:
         self._brush = libmypaint.mypaint_brush_new()
         libmypaint.mypaint_brush_from_defaults(self._brush)
         self._path: Optional[str] = None
+        self._saved_opacity: Optional[_SavedOpacity] = None
         self.set_value(MyPaintBrush.COLOR_H, 0.0)
         self.set_value(MyPaintBrush.COLOR_S, 0.0)
         self.set_value(MyPaintBrush.COLOR_V, 0.0)
@@ -59,6 +63,7 @@ class MyPaintBrush:
         """Load a brush from a byte array, optionally preserving brush size."""
         size = -1.0 if not preserve_size else self.get_value(MyPaintBrush.RADIUS_LOGARITHMIC)
 
+        self._saved_opacity = None
         libmypaint.mypaint_brush_from_defaults(self._brush)
         c_string = c_char_p(content.data())
         if not bool(libmypaint.mypaint_brush_from_string(self._brush, c_string)):
@@ -75,13 +80,52 @@ class MyPaintBrush:
 
     @color.setter
     def color(self, new_color: QColor | Qt.GlobalColor) -> None:
-        """Updates the brush color."""
+        """Updates the brush color. MyPaintLayerSurface applies its alpha to each stroke with scale_opacity."""
         if isinstance(new_color, Qt.GlobalColor):
             new_color = QColor(new_color)
         self._color = new_color
         self.set_value(MyPaintBrush.COLOR_H, max(self._color.hue(), 0) / 360.0)
         self.set_value(MyPaintBrush.COLOR_S, self._color.saturation() / 255.0)
         self.set_value(MyPaintBrush.COLOR_V, self._color.value() / 255.0)
+
+    def scale_opacity(self, factor: float) -> None:
+        """Multiplies the brush's dab opacity by factor, until restore_opacity is called.
+
+        This scales opaque_multiply's base value and every input curve, so pressure-driven opacity keeps its shape.
+        libmypaint clamps opaque * opaque_multiply to 1 after the factor applies, so a brush whose product exceeds 1
+        loses part of the factor. Loading a brush discards the saved state, since the new brush holds its own values.
+        """
+        self.restore_opacity()
+        setting = MyPaintBrush.OPAQUE_MULTIPLY
+        base_value = self.get_value(setting)
+        curves: dict[int, list[tuple[float, float]]] = {}
+        x, y = c_float(0.0), c_float(0.0)
+        for input_id in range(_INPUT_COUNT):
+            points = []
+            for index in range(libmypaint.mypaint_brush_get_mapping_n(self._brush, setting, input_id)):
+                libmypaint.mypaint_brush_get_mapping_point(self._brush, setting, input_id, index, byref(x), byref(y))
+                points.append((x.value, y.value))
+            if len(points) > 0:
+                curves[input_id] = points
+        self._saved_opacity = (base_value, curves)
+        self._set_opacity_multiply(base_value * factor, {input_id: [(px, py * factor) for px, py in points]
+                                                         for input_id, points in curves.items()})
+
+    def restore_opacity(self) -> None:
+        """Undoes scale_opacity, if it was called since the brush last loaded."""
+        if self._saved_opacity is None:
+            return
+        base_value, curves = self._saved_opacity
+        self._saved_opacity = None
+        self._set_opacity_multiply(base_value, curves)
+
+    def _set_opacity_multiply(self, base_value: float, curves: dict[int, list[tuple[float, float]]]) -> None:
+        """Writes opaque_multiply's base value and the given curve points, keeping each curve's point count."""
+        setting = MyPaintBrush.OPAQUE_MULTIPLY
+        libmypaint.mypaint_brush_set_base_value(self._brush, c_int(setting), c_float(base_value))
+        for input_id, points in curves.items():
+            for index, (x, y) in enumerate(points):
+                libmypaint.mypaint_brush_set_mapping_point(self._brush, setting, input_id, index, x, y)
 
     def get_value(self, setting: int) -> float:
         """Returns a brush setting value."""
@@ -193,6 +237,20 @@ def _get_setting_count() -> int:
     """
     setting_names = [name.lower() for name in MyPaintBrush.__annotations__ if name.isupper()]
     return 1 + max(libmypaint.mypaint_brush_setting_from_cname(name.encode('utf-8')) for name in setting_names)
+
+
+def _get_input_count() -> int:
+    """Returns the number of brush inputs in the loaded libmypaint, from the highest id a known input name resolves to.
+
+    libmypaint aborts on an out-of-range input id, like it does for settings (see _get_setting_count).
+    """
+    input_names = ('pressure', 'speed1', 'speed2', 'random', 'stroke', 'direction', 'tilt_declination',
+                   'tilt_ascension', 'custom', 'direction_angle', 'attack_angle', 'tilt_declinationx',
+                   'tilt_declinationy', 'gridmap_x', 'gridmap_y', 'viewzoom', 'barrel_rotation', 'brush_radius')
+    return 1 + max(libmypaint.mypaint_brush_input_from_cname(name.encode('utf-8')) for name in input_names)
+
+
+_INPUT_COUNT = _get_input_count()
 
 
 def _load_brush_settings():
