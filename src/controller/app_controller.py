@@ -1300,7 +1300,7 @@ class AppController(MenuBuilder):
         metadata = self._image_io.metadata
         if self._metadata_window is None:
             file_hooks = EditorFileHooks(has_unsaved_edits=lambda: not UndoStack().is_clean(),
-                                         wait_for_save=self._image_io.wait_for_pending_save)
+                                         wait_for_save=held_weakly(self._image_io.wait_for_pending_save))
             self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH),
                                                    file_hooks=file_hooks)
             self._metadata_window.metadata_applied.connect(self._apply_edited_metadata)
