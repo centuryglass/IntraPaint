@@ -466,7 +466,7 @@ class AppController(MenuBuilder):
                     self.load_image_generator(self._sd_comfyui_generator)
                 elif server_url == DEFAULT_GLID_URL:
                     self.load_image_generator(self._glid_web_generator)
-                if self._sd_webui_generator.is_available():
+                elif self._sd_webui_generator.is_available():
                     self.load_image_generator(self._sd_webui_generator)
                 elif self._sd_comfyui_generator.is_available():
                     self.load_image_generator(self._sd_comfyui_generator)
