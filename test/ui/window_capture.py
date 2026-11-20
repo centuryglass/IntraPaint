@@ -223,12 +223,31 @@ def _settings_modal(controller: 'AppController', category: str) -> QWidget:
     return modal
 
 
+def _untranslated_categories() -> dict[str, str]:
+    """Maps each settings category title, as the modal shows it, to the category the config definition names."""
+    # pylint: disable=import-outside-toplevel
+    import json
+    from src.config.application_config import AppConfig, CONFIG_DEFINITIONS as APP_DEFINITIONS
+    from src.config.key_config import KeyConfig, CONFIG_DEFINITIONS as KEY_DEFINITIONS
+    categories: dict[str, str] = {}
+    for config, path in ((AppConfig(), APP_DEFINITIONS), (KeyConfig(), KEY_DEFINITIONS)):
+        with open(path, encoding='utf-8') as file:
+            definitions = json.load(file)
+        for key, definition in definitions.items():
+            categories.setdefault(config.get_category(key), definition['category'])
+    return categories
+
+
 def _settings_scenes(controller: 'AppController') -> list[WindowScene]:
+    """Returns one scene per settings category, named from the category's untranslated name so names match across
+    capture languages."""
     # pylint: disable=protected-access
     modal = _settings_modal(controller, '')
+    untranslated = _untranslated_categories()
     scenes = []
     for category in modal.categories():
-        name = 'settings_' + ''.join(char if char.isalnum() else '_' for char in category.lower())
+        raw = untranslated.get(category, category)
+        name = 'settings_' + ''.join(char if char.isalnum() else '_' for char in raw.lower())
         scenes.append(WindowScene(name, lambda c, cat=category: _settings_modal(c, cat), lambda _w: fractional_size(),
                                   resizable=True, full_content=True))
     return scenes
