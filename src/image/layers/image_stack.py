@@ -184,7 +184,6 @@ class ImageStack(QObject):
         # Selection update handling:
 
         self._selection_layer.content_changed.connect(self._selection_layer_updated)
-        self._selection_layer.content_changed.connect(self._selection_layer_visibility_changed)
 
     # PROPERTY DEFINITIONS:
 
@@ -1709,10 +1708,6 @@ class ImageStack(QObject):
         """Refresh appropriate caches and send on signals if the selection layer changes."""
         if self._selection_layer.visible:
             self._emit_content_changed()
-
-    def _selection_layer_visibility_changed(self, *_args) -> None:
-        """Refresh appropriate caches and send on signals if the selection layer is shown or hidden."""
-        self._emit_content_changed()
 
     def _connect_layer(self, layer: Layer) -> None:
         assert layer == self._layer_stack or self._layer_stack.contains_recursive(layer), (f'layer {layer.name}:'

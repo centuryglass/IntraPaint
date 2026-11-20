@@ -342,6 +342,17 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.clear_selected()
         self.assert_image_matches_golden(self.image_stack.qimage(crop_to_image=False), SELECTION_CLEARED_PNG)
 
+    def test_selection_change_emits_content_changed_once(self) -> None:
+        """A change to the visible selection emits content_changed once, and a change to a hidden selection emits
+        nothing."""
+        self.image_stack.selection_layer.select_all()
+        self.content_changed_mock.assert_called_once()
+
+        self.content_changed_mock.reset_mock()
+        self.image_stack.selection_layer.set_visible(False)
+        self.image_stack.selection_layer.clear()
+        self.content_changed_mock.assert_not_called()
+
     def test_borrow_layer_image(self) -> None:
         """Confirm that setting layer images within the stack still works correctly"""
         read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
