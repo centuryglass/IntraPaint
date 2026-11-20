@@ -16,13 +16,14 @@ The description is optional and drawn dim.
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen, QResizeEvent
+from PySide6.QtGui import QIcon, QPaintEvent, QPainter, QPainterPath, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QStyle, QStyleOptionToolButton,
                                QToolButton, QVBoxLayout, QWidget)
 
 from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
+from src.ui.window.floating_edge import draw_dock_frame
 from src.util.layout import add_layout
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -132,6 +133,14 @@ class PanelPopover(QFrame):
         if content is not None:
             self.layout().addWidget(content)
             content.show()
+
+    def paintEvent(self, event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
+        """Draws the same outline a floating `PanelDock` gets (`FloatingEdge`) over the popover's edge.
+
+        `POPOVER_MARGIN` keeps the hosted widget off the edge pixels, so nothing paints over the outline.
+        """
+        super().paintEvent(event)
+        draw_dock_frame(self)
 
     def hideEvent(self, event) -> None:  # pylint: disable=invalid-name
         """Emits `closed`."""

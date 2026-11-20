@@ -259,6 +259,17 @@ class PanelPopoverTest(IntraPaintTestCase):
         self.assertLess(geometry.bottom(), anchor.top())
         self.assertTrue(self.screen.contains(geometry), geometry)
 
+    def test_outline_surrounds_content(self) -> None:
+        """The popover's edge pixels are the dock outline color, and its interior keeps the background."""
+        self._place_anchor(self.screen.top() + 20)
+        self.popover.popup_below(self.anchor)
+        image = self.popover.grab().toImage()
+        width, height = image.width(), image.height()
+        edge = app.style().colors.panel_edge.name()  # type: ignore[attr-defined]
+        for x, y in ((0, height // 2), (width - 1, height // 2), (width // 2, 0), (width // 2, height - 1)):
+            self.assertEqual(image.pixelColor(x, y).name(), edge, f'({x}, {y}) is not outlined')
+        self.assertNotEqual(image.pixelColor(width // 2, 3).name(), edge)
+
     def test_shrinks_to_the_room_but_not_below_its_minimum(self) -> None:
         """A requested height taller than the room on either side shrinks to that room, but not below the content's
         minimum."""

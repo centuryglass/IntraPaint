@@ -3,13 +3,22 @@
 Qt paints a floating dock's frame on the dock itself and reserves room for it only when it decides the window manager
 draws no frame. With a custom title bar that decision can go either way, and the content then covers the frame. This
 overlay draws the same `QStyle.PE_FrameDockWidget` primitive (`InkStyle` outlines it in `InkColors.panel_edge`) above
-the content.
+the content. `PanelPopover` draws the same outline with `draw_dock_frame`.
 """
 from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPaintEvent, QPainter
 from PySide6.QtWidgets import QStyle, QStyleOptionFrame, QWidget
+
+
+def draw_dock_frame(widget: QWidget) -> None:
+    """Draws the floating-dock outline over all of `widget`. Call from its `paintEvent`."""
+    option = QStyleOptionFrame()
+    option.initFrom(widget)
+    painter = QPainter(widget)
+    widget.style().drawPrimitive(QStyle.PrimitiveElement.PE_FrameDockWidget, option, painter, widget)
+    painter.end()
 
 
 class FloatingEdge(QWidget):
@@ -29,8 +38,4 @@ class FloatingEdge(QWidget):
 
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws the frame primitive."""
-        option = QStyleOptionFrame()
-        option.initFrom(self)
-        painter = QPainter(self)
-        self.style().drawPrimitive(QStyle.PrimitiveElement.PE_FrameDockWidget, option, painter, self)
-        painter.end()
+        draw_dock_frame(self)
