@@ -8,11 +8,12 @@ import weakref
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, QColor
 from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64, \
-    image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, div_255, np_composite_with_mask
+    image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, div_255, np_composite_with_mask, \
+    ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA, ARGB32_COLOR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
 from test.base_test_case import IntraPaintTestCase
 
@@ -54,6 +55,17 @@ class TestImageUtils(IntraPaintTestCase):
         channel_difference = np.abs(np.asarray(converted, dtype=np.int16)
                                     - np.asarray(self.pil_image_argb.convert('RGBA'), dtype=np.int16))
         self.assertLessEqual(channel_difference.max(), 1)
+
+    def test_argb32_channel_indexes_match_pixel_layout(self) -> None:
+        """Test that the ARGB32 channel constants index each channel of a QImage's pixel buffer."""
+        image = QImage(QSize(2, 2), QImage.Format.Format_ARGB32)
+        image.fill(QColor(10, 20, 30, 40))
+        pixel = image_data_as_numpy_8bit(image)[0, 0]
+        self.assertEqual(pixel[ARGB32_RED], 10)
+        self.assertEqual(pixel[ARGB32_GREEN], 20)
+        self.assertEqual(pixel[ARGB32_BLUE], 30)
+        self.assertEqual(pixel[ARGB32_ALPHA], 40)
+        self.assertEqual(sorted(pixel[ARGB32_COLOR].tolist()), [10, 20, 30])
 
     def test_numpy_view_keeps_image_alive(self) -> None:
         """A numpy view of a QImage's pixels stays valid after the caller drops its QImage reference."""
