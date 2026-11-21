@@ -318,10 +318,11 @@ class SettingsModal(QDialog):
         if isinstance(control, CheckBox):
             control.setText('')  # The row label names a check box.
 
+        # The callback captures only `self`: extra captured variables make the main window leave reference cycles.
         def _add_change(new_value: Any, name=key) -> None:
             self._changes[name] = new_value
             self._refresh_key(name)
-            if isinstance(control, (KeybindingField, ModifierSettingField)):
+            if isinstance(self._inputs.get(name), (KeybindingField, ModifierSettingField)):
                 self._refresh_binding_problems()
 
         control.valueChanged.connect(_add_change)  # type: ignore[attr-defined]
