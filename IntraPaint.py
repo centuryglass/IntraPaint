@@ -39,6 +39,7 @@ from PySide6.QtCore import QObject, QEvent, QtMsgType, qFormatLogMessage, qInsta
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel, QMenu
 
+from src.app_context import AppContext, install_context
 from src.util.arg_parser import build_arg_parser
 from src.util.optional_import import check_import
 from src.util.translation import install_translation, resolve_language, saved_language_setting
@@ -131,6 +132,9 @@ def exit_log():
 atexit.register(exit_log)
 
 app = QApplication.instance() or QApplication(sys.argv)
+# The context that owns every global service (src/app_context.py). Services construct on first use, which needs the
+# QApplication.
+install_context(AppContext())
 
 # close pyinstaller splash screen, if running from bundled executable:
 try:

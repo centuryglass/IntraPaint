@@ -64,12 +64,13 @@ Developer tools: builds, CI checks, code generation and UI captures. None of the
 
 IntraPaint's application source: config, controllers, the image model, editing tools, UI and utilities.
 
+- `src/app_context.py`: Holds the application's global services in one replaceable `AppContext`.
 - `src/hotkey_filter.py`: Passes ImageViewer input events to an active editing tool.
 - `src/undo_stack.py`: Global stack for tracking undo/redo state, as a thin wrapper over a QUndoStack.
 
 ## `src/config`
 
-Typed, JSON-backed config singletons: app settings, cached values, keybindings and WebUI settings.
+Typed, JSON-backed config services: app settings, cached values, keybindings and WebUI settings.
 
 - `src/config/a1111_config.py`: Provides access to configurable options for the Automatic1111 or Forge Stable Diffusion
   WebUI.
@@ -627,7 +628,7 @@ The main window and its dock system, and the secondary windows such as navigatio
 
 ## `src/util`
 
-Helpers not tied to one feature: threading, signals, singletons, argument parsing, platform and Qt layouts.
+Helpers not tied to one feature: threading, signals, argument parsing, platform and Qt layouts.
 
 - `src/util/active_text_field_tracker.py`: Tracks whether the active widget is a text field, and which of its edit
   actions are available.
@@ -661,7 +662,6 @@ Helpers not tied to one feature: threading, signals, singletons, argument parsin
 - `src/util/shared_constants.py`: Assorted constants required in multiple areas.
 - `src/util/shared_text.py`: Translated display text shared by several modules.
 - `src/util/signals_blocked.py`: Implements Qt signal blocking as a contextmanager.
-- `src/util/singleton.py`: Metaclass used to ensure only a single instance of a class object exists.
 - `src/util/system_clipboard.py`: Image exchange with the system clipboard, tracking images IntraPaint itself wrote.
 - `src/util/translation.py`: Chooses the UI language and loads its translation at startup.
 - `src/util/validation.py`: Provides a convenience function for miscellaneous validation.

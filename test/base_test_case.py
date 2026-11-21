@@ -1,6 +1,7 @@
 """Shared base class and helpers for IntraPaint tests.
 
-- `IntraPaintTestCase` resets the singletons that carry state between tests, before and after every test.
+- `IntraPaintTestCase` installs a fresh `AppContext` (`install_test_context`) before and after every test, so each
+  test gets new global services.
 - `assert_image_matches_golden` compares a rendered image to a committed golden image. It's the one code path for
   golden images.
 - `assert_images_equal` compares two images the test produced, saving both to a temporary directory on failure.
@@ -19,10 +20,11 @@ import importlib
 import json
 import os
 import pkgutil
+import shutil
 import sys
 import tempfile
 import unittest
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -32,15 +34,12 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
 from shiboken6 import getAllValidWrappers
 
-from src.config.a1111_config import A1111Config
+from src.app_context import AppContext, AppService, install_context
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.ui.theme import apply_appearance_config
-from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
-from src.util.singleton import Singleton
 from test import qt_cycles
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -104,51 +103,45 @@ def release_held_input() -> None:
         widget.deleteLater()
 
 
-def _reset_a1111_config() -> None:
-    # A1111Config is only created when the WebUI generator connects. Creating it here would leave it in a state no
-    # test expects.
-    if A1111Config in Singleton._instances:
-        A1111Config()._reset()  # pylint: disable=protected-access
-
-
-def _reset_app_state_tracker() -> None:
-    # Constructing it only to reset it would add a QObject no test asked for.
-    if AppStateTracker in Singleton._instances:
-        AppStateTracker()._reset()  # pylint: disable=protected-access
-
-
-def _reset_hotkey_filter() -> None:
-    # HotkeyFilter needs a QApplication to construct, and an instance that doesn't exist has no state to reset.
-    if HotkeyFilter.shared_instance is not None:
-        HotkeyFilter.shared_instance._reset()  # pylint: disable=protected-access
-
-
-# Maps each global service class (a `Singleton` metaclass user, or a class with a `shared_instance` attribute) to the
-# call that discards its test state. A new global service needs an entry, or `global_services_without_reset` reports it.
-SINGLETON_RESETS: dict[type, Callable[[], None]] = {
-    AppConfig: lambda: AppConfig()._reset(),  # pylint: disable=protected-access
-    KeyConfig: lambda: KeyConfig()._reset(),  # pylint: disable=protected-access
-    Cache: lambda: Cache()._reset(),  # pylint: disable=protected-access
-    A1111Config: _reset_a1111_config,
-    UndoStack: lambda: UndoStack()._reset(),  # pylint: disable=protected-access
-    AppStateTracker: _reset_app_state_tracker,
-    HotkeyFilter: _reset_hotkey_filter,
+# The committed config fixture each test context's configs load a copy of:
+CONFIG_FIXTURES: dict[type, str] = {
+    AppConfig: 'app_config_test.json',
+    KeyConfig: 'key_config_test.json',
+    Cache: 'cache_test.json'
 }
+_config_copy_dir: Optional[str] = None
 
 
-def reset_singletons() -> None:
-    """Discards all changes to config values, undo history and app state, and all connections, hotkey bindings and
-    modifier connections held by the global services in `SINGLETON_RESETS`."""
-    for reset in SINGLETON_RESETS.values():
-        reset()
+def install_test_context() -> AppContext:
+    """Installs and returns a fresh `AppContext` whose configs load new copies of the `CONFIG_FIXTURES` files.
+
+    The copies are rewritten for every context, in one temporary directory, so a test that saves config changes can't
+    change the committed fixtures or what the next test loads. `remove_test_config_copies` deletes the directory.
+    """
+    global _config_copy_dir  # pylint: disable=global-statement
+    if _config_copy_dir is None:
+        _config_copy_dir = tempfile.mkdtemp(prefix='intrapaint-test-config-')
+    arguments: dict[type, tuple[str]] = {}
+    for config_class, file_name in CONFIG_FIXTURES.items():
+        copy_path = os.path.join(_config_copy_dir, file_name)
+        shutil.copyfile(os.path.join(TEST_RESOURCE_DIR, file_name), copy_path)
+        arguments[config_class] = (copy_path,)
+    context = AppContext(arguments)
+    install_context(context)
+    return context
 
 
-def global_services() -> set[type]:
-    """Returns every global service class under `src/`: each class using the `Singleton` metaclass and each class with
-    a `shared_instance` attribute.
+def remove_test_config_copies() -> None:
+    """Deletes the directory of config copies `install_test_context` writes to."""
+    global _config_copy_dir  # pylint: disable=global-statement
+    if _config_copy_dir is not None:
+        shutil.rmtree(_config_copy_dir, ignore_errors=True)
+        _config_copy_dir = None
 
-    Imports every module under `src/` to find them, since `Singleton._instances` lists only classes already
-    constructed. Modules that fail to import (missing optional dependencies) are skipped."""
+
+def import_src_modules() -> None:
+    """Imports every module under `src/` except the legacy `src/glid_3_xl/`, skipping any that fail to import (missing
+    optional dependencies)."""
     src_dir = os.path.join(PROJECT_ROOT, 'src')
     for module_info in pkgutil.walk_packages([src_dir], prefix='src.'):
         if module_info.name.startswith('src.glid_3_xl'):
@@ -157,20 +150,26 @@ def global_services() -> set[type]:
             importlib.import_module(module_info.name)
         except ImportError:
             continue
-    found: set[type] = set()
+
+
+def stored_service_instances() -> list[str]:
+    """Returns the module-level and class-level attributes under `src/` that hold a global service instance, by name.
+
+    Such an attribute keeps the instance of the context that was installed when it was set, after a new context
+    replaces it."""
+    import_src_modules()
+    found: list[str] = []
     for module_name, module in list(sys.modules.items()):
         if not module_name.startswith('src.') or module_name.startswith('src.glid_3_xl'):
             continue
-        for member in list(vars(module).values()):
-            if (isinstance(member, type) and member.__module__ == module_name
-                    and (isinstance(member, Singleton) or 'shared_instance' in vars(member))):
-                found.add(member)
-    return found
-
-
-def global_services_without_reset() -> set[type]:
-    """Returns the global service classes that have no entry in `SINGLETON_RESETS`."""
-    return global_services() - set(SINGLETON_RESETS)
+        for name, member in list(vars(module).items()):
+            if isinstance(type(member), AppService):
+                found.append(f'{module_name}.{name}')
+            elif isinstance(member, type) and member.__module__ == module_name:
+                found.extend(f'{module_name}.{member.__qualname__}.{attribute}'
+                             for attribute, value in list(vars(member).items())
+                             if isinstance(type(value), AppService))
+    return sorted(found)
 
 
 def parentless_widgets() -> set[QWidget]:
@@ -343,10 +342,10 @@ def layout_item_wrapper_count() -> int:
 class IntraPaintTestCase(unittest.TestCase):
     """Base class for IntraPaint tests, keeping tests independent of the order they run in.
 
-    Config values, config connections, the undo history, app state and hotkey bindings are singletons that persist
-    across tests. They're reset before each test, so it starts from the test config defaults, and again after it, so it
-    can't leave state behind for tests that don't use this class. Widgets with no parent that the test created are
-    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project
+    A fresh `AppContext` is installed before each test (`install_test_context`), so it gets new config, undo history,
+    app state and hotkey services loaded from the test config fixtures. Another is installed after it, closing the
+    test's services, so it can't leave state or connections behind for tests that don't use this class. Widgets with
+    no parent that the test created are deleted after it, with their children, and the system clipboard is cleared. The working directory is the project
     root during every test, since resources and the config definitions load from paths relative to it.
 
     A test fails if it changes the application's font, style, stylesheet or palette without restoring them, since every
@@ -361,13 +360,13 @@ class IntraPaintTestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         os.chdir(PROJECT_ROOT)
-        reset_singletons()
+        install_test_context()
         self._existing_widgets = parentless_widgets()
         self._layout_item_wrappers = layout_item_wrapper_count()
         self._appearance = app_appearance()
 
     def tearDown(self) -> None:
-        reset_singletons()
+        install_test_context()
         # Clipboard content set from Python must not outlive the test: the offscreen platform deletes it after the
         # interpreter shuts down, which crashes the test process on exit.
         QApplication.clipboard().clear()

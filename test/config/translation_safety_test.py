@@ -77,9 +77,10 @@ class OptionDisplayTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self._translate = QApplication.translate
+        edit_modes = Cache().get_options(Cache.EDIT_MODE)  # Constructing the Cache translates, so it comes first.
 
         def _shout(context: str, text: str, *args, **kwargs) -> str:
-            if context == 'config.cache' and text in Cache().get_options(Cache.EDIT_MODE):
+            if context == 'config.cache' and text in edit_modes:
                 return text.upper()
             return self._translate(context, text, *args, **kwargs)
         patcher = patch.object(QApplication, 'translate', side_effect=_shout)

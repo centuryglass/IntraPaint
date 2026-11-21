@@ -85,7 +85,8 @@ _TRANSLATORS = install_translation(_APP, _LANGUAGE if _LANGUAGE in available_lan
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
-from test.base_test_case import reset_singletons
+from src.config.cache import Cache
+from test.base_test_case import install_test_context, remove_test_config_copies
 from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
                                    find_layout_problems, is_hint, layout_report, layout_widget_rects, misaligned_edges,
                                    mock_app_controller, panel_scenes, tools_panel_scenes)
@@ -168,28 +169,17 @@ def _wanted(name: str, filters: list[str]) -> bool:
     return len(filters) == 0 or any(part in name for part in filters)
 
 
-def _set_up_config(config_dir: str, edit_mode: Optional[str]) -> None:
-    """Sets up config the way the panel layout test does: conftest.py's fixture copies, then IntraPaintTestCase's
-    reset. A non-None edit_mode is stored as `Cache.EDIT_MODE`."""
-    # pylint: disable=import-outside-toplevel
-    from src.config.application_config import AppConfig
-    from src.config.cache import Cache
-    from src.config.key_config import KeyConfig
-    for config_class, file_name in ((AppConfig, 'app_config_test.json'), (KeyConfig, 'key_config_test.json'),
-                                    (Cache, 'cache_test.json')):
-        copy_path = os.path.join(config_dir, file_name)
-        shutil.copyfile(os.path.join(PROJECT_ROOT, 'test', 'resources', file_name), copy_path)
-        config_class(copy_path)
-    reset_singletons()
+def _set_up_config(edit_mode: Optional[str]) -> None:
+    """Installs the test `AppContext` the panel layout test uses, storing a non-None edit_mode as `Cache.EDIT_MODE`."""
+    install_test_context()
     if edit_mode is not None:
         Cache().set(Cache.EDIT_MODE, edit_mode)
 
 
 def capture_all(output_dir: str, filters: list[str], edit_mode: Optional[str]) -> None:
     """Captures everything into output_dir. See the module docstring for its layout."""
-    config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
     try:
-        _set_up_config(config_dir, edit_mode)
+        _set_up_config(edit_mode)
         controller = mock_app_controller()
 
         gallery_paths = [_save(labeled_gallery_image(control), output_dir, f'gallery/{control.name}.png')
@@ -214,14 +204,13 @@ def capture_all(output_dir: str, filters: list[str], edit_mode: Optional[str]) -
             json.dump(report, report_file, indent=2)
         _write_index(output_dir, gallery_paths, report)
     finally:
-        shutil.rmtree(config_dir, ignore_errors=True)
+        remove_test_config_copies()
 
 
 def capture_windows(output_dir: str, filters: list[str]) -> None:
     """Captures every secondary window into output_dir. See the module docstring for its layout."""
-    config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
     try:
-        _set_up_config(config_dir, None)
+        _set_up_config(None)
         controller = mock_app_controller()
         report: dict[str, dict[str, dict]] = {}
         for scene in window_scenes(controller):
@@ -240,7 +229,7 @@ def capture_windows(output_dir: str, filters: list[str]) -> None:
             json.dump(report, report_file, indent=2)
         _write_index(output_dir, [], report, 'IntraPaint window captures')
     finally:
-        shutil.rmtree(config_dir, ignore_errors=True)
+        remove_test_config_copies()
 
 
 def _sheet_font() -> QFont:
@@ -354,10 +343,9 @@ def _write_sheet_index(output_dir: str, sheet_paths: list[str]) -> None:
 def capture_sheets(output_dir: str, filters: list[str], widths: list[int], heights: list[int], scale: float,
                    overlay: bool, edit_mode: Optional[str]) -> list[str]:
     """Saves sweep sheets into output_dir and returns their paths. See the module docstring for its layout."""
-    config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
     sheet_paths: list[str] = []
     try:
-        _set_up_config(config_dir, edit_mode)
+        _set_up_config(edit_mode)
         controller = mock_app_controller()
         scenes: list[PanelScene] = [scene for scene in panel_scenes(controller) + tools_panel_scenes(controller)
                                     if scene.fixed_sizes is None and _wanted(scene.name, filters)]
@@ -379,7 +367,7 @@ def capture_sheets(output_dir: str, filters: list[str], widths: list[int], heigh
                     host.release()
         _write_sheet_index(output_dir, sheet_paths)
     finally:
-        shutil.rmtree(config_dir, ignore_errors=True)
+        remove_test_config_copies()
     return sheet_paths
 
 
