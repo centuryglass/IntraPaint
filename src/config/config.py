@@ -256,19 +256,15 @@ class Config:
                 self._read_from_json()
             else:
                 self._write_to_json()
-        # The state `_reset` restores:
-        self._initial_state = {key: entry.snapshot_state() for key, entry in self._entries.items()}
 
-    def _reset(self) -> None:
-        """Restores every entry to its state at the end of construction, and discards all connections. For testing use
-        only.
+    def close(self) -> None:
+        """Discards any pending save and removes every connection. `AppContext.close` calls this.
 
-        Pending saves are cancelled, so a change made before the reset never reaches the JSON file.
+        A change made before closing never reaches the JSON file, so a replaced context can't overwrite the file its
+        successor reads.
         """
         self._save_timer.stop()
         with self._lock:
-            for key, entry in self._entries.items():
-                entry.restore_state(self._initial_state[key])
             for registry in (self._connected, self._option_connected):
                 for connections in registry.values():
                     for connection in [*connections.values()]:

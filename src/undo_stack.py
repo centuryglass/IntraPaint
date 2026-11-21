@@ -7,8 +7,8 @@ from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL, QCoreApplica
 from PySide6.QtGui import QUndoStack, QUndoCommand
 from shiboken6 import isValid
 
+from src.app_context import AppService
 from src.config.application_config import AppConfig
-from src.util.singleton import Singleton
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class _CallableCommand(QUndoCommand):
             self._on_error(err)
 
 
-class UndoStack(metaclass=Singleton):
+class UndoStack(metaclass=AppService):
     """Manages the application's shared undo history.
 
     The history also tracks whether the document matches its file: one history state is clean, the state the open
@@ -329,23 +329,17 @@ class UndoStack(metaclass=Singleton):
         self._apply_undo_limit()
         self._emit_count_changes()
 
-    def _reset(self) -> None:
-        """Disconnects everything connected to the history signals, then clears the undo/redo history.
+    def close(self) -> None:
+        """Disconnects everything connected to the history signals. `AppContext.close` calls this.
 
-        Tests call this between cases. A connected slot that captures its owner keeps it alive for as long as the
-        connection exists, so connections left behind would keep every earlier test's widgets alive.
+        A connected slot that captures its owner keeps the owner alive for as long as the connection exists, which is
+        as long as anything still holds this stack.
         """
         for signal, signature in ((self.undo_count_changed, 'undo_count_changed(int)'),
                                   (self.redo_count_changed, 'redo_count_changed(int)'),
                                   (self.clean_changed, 'clean_changed(bool)')):
             if self._signal_manager.receivers(SIGNAL(signature)) > 0:
                 signal.disconnect()
-        self._open_group_depth = 0
-        self._unrecorded_depth = 0
-        self._gesture_open = False
-        self._group_started = False
-        self._errors.clear()
-        self.clear()
 
     def _apply_undo_limit(self) -> None:
         # QUndoStack treats a limit of 0 as unlimited, so the smallest history is one entry.

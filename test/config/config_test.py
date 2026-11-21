@@ -2,7 +2,7 @@
 definition files map onto the config classes.
 
 Most tests use `_ScratchConfig`, a private `Config` backed by a temporary definition file that covers every value type.
-The shared singletons stay untouched, so these tests can construct, save and reload a config freely.
+The global services stay untouched, so these tests can construct, save and reload a config freely.
 """
 import json
 import os
@@ -25,7 +25,6 @@ from src.config.config_entry import RangeKey
 from src.config.config_from_key import get_config_from_key
 from src.config.key_config import KeyConfig
 from src.ui.theme import THEME_INK, THEME_SYSTEM
-from src.util.singleton import Singleton
 from test.base_test_case import IntraPaintTestCase, PROJECT_ROOT
 
 # Upper bound for a worker thread that should finish immediately. Only a deadlock reaches it.
@@ -111,7 +110,7 @@ DEFINITION_FILE_CLASSES: dict[str, type[Config]] = {
 
 
 class _ScratchConfig(Config):
-    """A `Config` that isn't one of the shared singletons, backed by files in a temporary directory."""
+    """A `Config` that isn't a global service, backed by files in a temporary directory."""
 
     def __init__(self, definition_path: str, json_path: str) -> None:
         super().__init__(definition_path, json_path)
@@ -139,7 +138,7 @@ class ConfigTest(IntraPaintTestCase):
         config and would leave Qt objects in a reference cycle.
         """
         config = _ScratchConfig(self.definition_path, self.json_path)
-        self.addCleanup(config._reset)  # pylint: disable=protected-access
+        self.addCleanup(config.close)
         self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
         return config
 
@@ -397,7 +396,7 @@ class ConfigTest(IntraPaintTestCase):
             with self.subTest(deleted=deleted):
                 config = _ScratchConfig(self.definition_path, self.json_path)
                 self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
-                self.addCleanup(config._reset)  # pylint: disable=protected-access
+                self.addCleanup(config.close)
                 owner = QLabel()
                 config.connect(owner, STR_KEY, lambda _value: None)
                 config.connect_to_option_changes(owner, OPTION_KEY, lambda _options: None)
@@ -688,53 +687,24 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(config.get(FLOAT_KEY), DEFAULT_VALUES[FLOAT_KEY])
         self.assertEqual(config.get_range(FLOAT_KEY), (0.0, 1.0, 0.1))
 
-    def test_reset_restores_loaded_state(self) -> None:
-        """`_reset` restores the values and options the config had once constructed, not the definition's, and the
-        definition's ranges."""
-        saved_values = {STR_KEY: 'saved', OPTION_KEY: 'second', INT_KEY: 7}
-        self._write_saved_values(saved_values)
-        config = self._config()
-        config.set(STR_KEY, 'changed', save_change=False)
-        config.update_options(OPTION_KEY, ['x', 'y'])
-        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
-        config._entries[INT_KEY].maximum = 30  # pylint: disable=protected-access
-        config._reset()  # pylint: disable=protected-access
-        self.assertEqual(config.get(STR_KEY), 'saved')
-        self.assertEqual(config.get(OPTION_KEY), 'second')
-        self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
-        self.assertEqual(config.get_default(OPTION_KEY), 'first')
-        self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
-        self.assertEqual(config.get(INT_KEY), 7)
-        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 10)
-
-    def test_reset_survives_changes_to_restored_values(self) -> None:
-        """A change after one `_reset` doesn't reach the state the next `_reset` restores."""
-        config = self._config()
-        config._reset()  # pylint: disable=protected-access
-        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
-        config.add_option(OPTION_KEY, 'third')
-        config._reset()  # pylint: disable=protected-access
-        self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
-        self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
-
-    def test_reset_discards_connections(self) -> None:
-        """Value and option callbacks connected before `_reset` don't run after it."""
+    def test_close_discards_connections(self) -> None:
+        """Value and option callbacks connected before `close` don't run after it."""
         config = self._config()
         values: list[Any] = []
         option_lists: list[list[Any]] = []
         config.connect(self, OPTION_KEY, values.append)
         config.connect_to_option_changes(self, OPTION_KEY, option_lists.append)
-        config._reset()  # pylint: disable=protected-access
+        config.close()
         config.update_options(OPTION_KEY, ['x', 'y'])
         self.assertEqual(values, [])
         self.assertEqual(option_lists, [])
 
-    def test_reset_cancels_pending_save(self) -> None:
-        """A change saved before `_reset` never reaches the JSON file."""
+    def test_close_cancels_pending_save(self) -> None:
+        """A change saved before `close` never reaches the JSON file."""
         config = self._config()
         saved_values = self._read_saved_values()
         config.set(STR_KEY, 'changed')
-        config._reset()  # pylint: disable=protected-access
+        config.close()
         self.assertFalse(config._save_timer.isActive())  # pylint: disable=protected-access
         self.assertEqual(self._read_saved_values(), saved_values)
 
@@ -815,19 +785,15 @@ class AppConfigDataDirTest(IntraPaintTestCase):
 class ConfigMigrationTest(IntraPaintTestCase):
     """Loads unversioned files into the real `AppConfig` and `Cache`, to check the version 0 to 1 migration."""
 
-    def _load(self, config_class: type[Config], saved: dict[str, Any]) -> tuple[Config, dict[str, Any]]:
+    def _load(self, config_class: type[AppConfig] | type[Cache], saved: dict[str, Any]) -> tuple[Config, dict[str, Any]]:
         """Creates a temporary instance of a shared config from a saved file, returning it and the rewritten file."""
         temp_dir = tempfile.mkdtemp(prefix='intrapaint-config-migration-test-')
         self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         path = os.path.join(temp_dir, 'saved.json')
         with open(path, 'w', encoding='utf-8') as file:
             json.dump(saved, file)
-        # pylint: disable=protected-access
-        previous = Singleton._instances.pop(config_class)
-        self.addCleanup(Singleton._instances.__setitem__, config_class, previous)
-        config = config_class(path)
-        self.addCleanup(config._save_timer.stop)
-        self.addCleanup(Singleton._instances.pop, config_class, None)
+        config = config_class.create(path)
+        self.addCleanup(config.close)
         with open(path, encoding='utf-8') as file:
             return config, json.load(file)
 
@@ -863,12 +829,7 @@ class ConfigKeyOwnershipTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # A1111Config normally exists only once the WebUI generator connects (see reset_singletons). Create it for
-        # this test and discard it afterward, unless an earlier test already created it.
-        # pylint: disable=protected-access
-        if A1111Config not in Singleton._instances:
-            self.addCleanup(Singleton._instances.pop, A1111Config, None)
-        A1111Config()
+        A1111Config()  # Normally created only once the WebUI generator connects.
 
     def _definition_keys(self) -> dict[str, list[str]]:
         """Returns each definition file's keys, by file name."""

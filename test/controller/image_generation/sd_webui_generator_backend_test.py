@@ -16,7 +16,6 @@ from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.shared_text import DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT
-from src.util.singleton import Singleton
 from test.controller.image_generation.fake_sd_backend import FakeResponse, image_to_png_bytes
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, solid_image
 
@@ -43,10 +42,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # A1111Config normally exists only once the WebUI generator connects (see reset_singletons):
-        if A1111Config not in Singleton._instances:  # pylint: disable=protected-access
-            self.addCleanup(Singleton._instances.pop, A1111Config, None)  # pylint: disable=protected-access
-        A1111Config()  # Sets the A1111Config key constants.
+        A1111Config()  # Normally created only once the WebUI generator connects.
         self.remote_options: dict[str, Any] = {A1111Config.SD_MODEL_CHECKPOINT: MODEL_TITLES[0],
                                                A1111Config.CLIP_STOP_AT_LAST_LAYERS: 1,
                                                'some_unused_option': True}

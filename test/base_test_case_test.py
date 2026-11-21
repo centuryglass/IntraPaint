@@ -15,9 +15,12 @@ from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_INIT, APP_STATE_LOADING
+from src.app_context import current_context
+from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from test.base_test_case import (IntraPaintTestCase, PROJECT_ROOT, assert_image_matches_golden, assert_images_equal,
-                                 assert_json_matches_snapshot, global_services_without_reset, reset_singletons,
-                                 tested_image_path)
+                                 assert_json_matches_snapshot, install_test_context, press_key,
+                                 stored_service_instances, tested_image_path)
 
 IMAGE_SIZE = QSize(8, 4)
 
@@ -173,15 +176,16 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_hotkeys_reset_before_and_after(self) -> None:
-        """Hotkey bindings and modifier connections made outside a test, or inside one, don't outlive it."""
-        hotkey_filter = HotkeyFilter.instance()
+        """Hotkey bindings and modifier connections made outside a test, or inside one, don't outlive it, and a
+        replaced filter no longer sees key presses."""
         widget = QWidget()
         observed: dict[str, int] = {}
+        filters: dict[str, HotkeyFilter] = {}
 
         def _press_key_and_change_modifiers() -> None:
-            key_event = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_F12, Qt.KeyboardModifier.NoModifier)
-            QApplication.sendEvent(widget, key_event)
-            hotkey_filter.modifiers_changed.emit(Qt.KeyboardModifier.ShiftModifier)
+            press_key(widget, Qt.Key.Key_F12)
+            for hotkey_filter in filters.values():
+                hotkey_filter.modifiers_changed.emit(Qt.KeyboardModifier.ShiftModifier)
 
         outside_hotkey = MagicMock(return_value=True)
         outside_listener = MagicMock()
@@ -194,12 +198,15 @@ class IntraPaintTestCaseTest(unittest.TestCase):
                 _press_key_and_change_modifiers()
                 observed['outside_hotkey'] = outside_hotkey.call_count
                 observed['outside_listener'] = outside_listener.call_count
+                hotkey_filter = HotkeyFilter.instance()
+                filters['inside'] = hotkey_filter
                 hotkey_filter.register_keybinding('test.inside', inside_hotkey, QKeySequence(Qt.Key.Key_F12))
                 hotkey_filter.modifiers_changed.connect(inside_listener)
                 hotkey_filter.set_default_focus(widget)
 
-        hotkey_filter.register_keybinding('test.outside', outside_hotkey, QKeySequence(Qt.Key.Key_F12))
-        hotkey_filter.modifiers_changed.connect(outside_listener)
+        filters['outside'] = HotkeyFilter.instance()
+        filters['outside'].register_keybinding('test.outside', outside_hotkey, QKeySequence(Qt.Key.Key_F12))
+        filters['outside'].modifiers_changed.connect(outside_listener)
         result = unittest.TestResult()
         _Case('test_body').run(result)
         self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
@@ -207,7 +214,8 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         _press_key_and_change_modifiers()
         inside_hotkey.assert_not_called()
         inside_listener.assert_not_called()
-        self.assertIsNone(hotkey_filter.default_focus())
+        self.assertIsNone(filters['inside'].default_focus())
+        filters.clear()
         del widget  # Empties the cell that _Case and _press_key_and_change_modifiers share.
 
     def test_state_signals_reset_before_and_after(self) -> None:
@@ -244,25 +252,59 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         _change_undo_count_and_state(APP_STATE_EDITING)
         inside_listener.assert_not_called()
 
-    def test_every_global_service_has_a_reset(self) -> None:
-        """Every `Singleton` class and every class with a `shared_instance` under `src/` has a SINGLETON_RESETS entry.
+    def test_each_test_gets_fresh_services(self) -> None:
+        """A test's global services are new instances, which no service from outside it is."""
+        services = (AppConfig, Cache, KeyConfig, UndoStack, AppStateTracker, HotkeyFilter)
+        outside = {service: service() for service in services}
+        inside: dict[type, object] = {}
 
-        A new global service that holds state needs a reset in test/base_test_case.py, or it leaks between tests."""
-        missing = sorted(f'{cls.__module__}.{cls.__qualname__}' for cls in global_services_without_reset())
-        self.assertEqual(missing, [], 'Add these to SINGLETON_RESETS in test/base_test_case.py')
+        class _Case(IntraPaintTestCase):
+            def test_body(self) -> None:
+                """Records the test's service instances."""
+                inside.update({service: service() for service in services})
 
-    def test_app_state_widget_connections_reset(self) -> None:
-        """A widget registered through set_enabled_states is disconnected by reset_singletons, so later state changes
-        don't toggle it."""
+        result = unittest.TestResult()
+        _Case('test_body').run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+        after = {service: service() for service in services}
+        for service in services:
+            with self.subTest(service=service.__name__):
+                self.assertIsNot(inside[service], outside[service])
+                self.assertIsNot(after[service], inside[service])
+                self.assertIsNot(after[service], outside[service])
+        outside.clear()
+        inside.clear()
+
+    def test_test_context_loads_fresh_fixture_copies(self) -> None:
+        """A config change saved in one test context doesn't reach the next one's file."""
+        default_max_undo = AppConfig().get(AppConfig.MAX_UNDO)
+        AppConfig().set(AppConfig.MAX_UNDO, default_max_undo + 1)
+        current_context().service(AppConfig)._write_to_json()  # pylint: disable=protected-access
+        install_test_context()
+        self.assertEqual(AppConfig().get(AppConfig.MAX_UNDO), default_max_undo)
+
+    def test_no_stored_service_instances(self) -> None:
+        """No module-level or class-level attribute under `src/` holds a global service instance.
+
+        Such an attribute keeps the instance from the context installed when it was set, after `IntraPaintTestCase`
+        installs the next test's context."""
+        self.assertEqual(stored_service_instances(), [],
+                         'Look the service up when it is needed, e.g. AppConfig(), instead of storing it')
+
+    def test_app_state_widget_connections_dropped(self) -> None:
+        """A widget registered through set_enabled_states is disconnected when the next context is installed, so later
+        state changes don't toggle it."""
         widget = QWidget()
         self.addCleanup(widget.deleteLater)
+        old_tracker = AppStateTracker()
         AppStateTracker.set_enabled_states(widget, [APP_STATE_EDITING])
         self.assertFalse(widget.isEnabled())
-        reset_singletons()
+        install_test_context()
         widget.setEnabled(False)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
+        old_tracker._set_app_state(APP_STATE_EDITING)  # pylint: disable=protected-access
         self.assertFalse(widget.isEnabled())
-        reset_singletons()
+        del old_tracker
 
     def test_widgets_created_in_test_are_deleted(self) -> None:
         """Parentless widgets a test creates are deleted after it, including one that Python can't collect, while

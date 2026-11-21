@@ -954,9 +954,10 @@ class GeneratedImageSelectorInputTest(_RunScreenTestCase):
 
     def test_context_menu_save_asks_for_a_path(self) -> None:
         """The menu's save action saves its option to the chosen path."""
-        with patch('src.ui.generated_image_selector.open_image_file', return_value='/tmp/out.png'), \
+        with patch('src.ui.generated_image_selector.open_image_file', return_value='/tmp/out.png') as open_file, \
                 patch.object(self.session, 'save_to_file') as save:
             self._open_menu(2, trigger=1)
+        open_file.reset_mock()  # Its recorded call holds the selector, which test/qt_cycles.py would count.
         save.assert_called_once_with(2, '/tmp/out.png')
 
     def test_context_menu_send_to_new_layer_keeps_the_screen_open(self) -> None:
@@ -969,13 +970,15 @@ class GeneratedImageSelectorInputTest(_RunScreenTestCase):
 
     def test_save_to_file_saves_the_option(self) -> None:
         """Saving writes the option to the chosen path, and cancelling the dialog writes nothing."""
-        with patch('src.ui.generated_image_selector.open_image_file', return_value='/tmp/out.png'), \
+        with patch('src.ui.generated_image_selector.open_image_file', return_value='/tmp/out.png') as open_file, \
                 patch.object(self.session, 'save_to_file') as save:
             self.selector._save_to_file(2)
+        open_file.reset_mock()  # Its recorded call holds the selector, which test/qt_cycles.py would count.
         save.assert_called_once_with(2, '/tmp/out.png')
-        with patch('src.ui.generated_image_selector.open_image_file', return_value=None), \
+        with patch('src.ui.generated_image_selector.open_image_file', return_value=None) as open_file, \
                 patch.object(self.session, 'save_to_file') as save:
             self.selector._save_to_file(2)
+        open_file.reset_mock()
         save.assert_not_called()
         self.assertIsNotNone(self.selector._toast_message)
 

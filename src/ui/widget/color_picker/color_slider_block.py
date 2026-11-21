@@ -130,7 +130,7 @@ class ColorSliderBlock(QWidget):
     def __init__(self, parent: Optional[QWidget] = None, save_mode: bool = True) -> None:
         """Creates the block, reading and saving its mode in `Cache.COLOR_SLIDER_MODE` if `save_mode` is true."""
         super().__init__(parent)
-        # Cache key attributes exist only once the Cache singleton is constructed, so this can't be a default argument.
+        # Cache key attributes exist only once a Cache is constructed, so this can't be a default argument.
         self._mode_key: Optional[str] = Cache.COLOR_SLIDER_MODE if save_mode else None
         mode = Cache().get(self._mode_key) if self._mode_key is not None else MODE_RGB
         self._mode = mode if mode in MODES else MODE_RGB

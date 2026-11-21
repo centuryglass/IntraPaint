@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 from typing import Optional
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from PIL import Image, PngImagePlugin, ExifTags
 from PIL.ExifTags import IFD
@@ -51,6 +51,15 @@ class ImageIOTestCase(IntraPaintTestCase):
         self.temp_dir.cleanup()
         super().tearDown()
 
+    @staticmethod
+    def _forget_calls(*mocks: MagicMock) -> None:
+        """Clears mocks' recorded calls, whose arguments hold the window.
+
+        A mock the test patched can outlive the test's last garbage collection, and a window it holds then counts as
+        left in a reference cycle (test/qt_cycles.py)."""
+        for mock in mocks:
+            mock.reset_mock()
+
     def _layer_names_bottom_up(self) -> list[str]:
         return [layer.name for layer in sorted(self.image_stack.top_level_layers, key=lambda layer: layer.z_value)]
 
@@ -60,7 +69,6 @@ class TestImageIO(ImageIOTestCase):
 
     @patch('src.controller.image_io.request_unsaved_changes_choice', return_value=UNSAVED_DISCARD)
     def test_image_save_and_load(self, _choice):
-        AppConfig()._reset()
         AppConfig().set(AppConfig.WARN_BEFORE_RGB_SAVE, False)
         AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
         AppConfig().set(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA, False)
@@ -273,7 +281,6 @@ class TestSaveLossWarning(ImageIOTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig()._reset()
         self.image_io.load(LAYER_IMAGE)
         Cache().set(Cache.LAST_FILE_PATH, '')
 
@@ -286,9 +293,10 @@ class TestSaveLossWarning(ImageIOTestCase):
             return choice
 
         path = os.path.join(self.temp_dir.name, 'out.png')
-        with patch('src.controller.image_io.request_save_loss_choice', side_effect=_answer):
+        with patch('src.controller.image_io.request_save_loss_choice', side_effect=_answer) as dialog:
             self.image_io.save_as(path)
             self.image_io.wait_for_pending_save()
+        self._forget_calls(dialog)
         return path, calls
 
     def test_cancel_writes_nothing(self) -> None:
@@ -349,7 +357,6 @@ class TestMetadataLossWarning(ImageIOTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig()._reset()
         AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
         self.image_io.load(LAYER_IMAGE)
         self.image_io.metadata = ImageMetadata({'comment': 'a note', 'Author': 'me'},
@@ -513,11 +520,11 @@ class TestUnsavedChanges(ImageIOTestCase):
         self.image_stack.create_layer('edit')
         bad_path = os.path.join(self.temp_dir.name, 'missing', 'bad.ora')
         for selected_path in (None, bad_path):
-            with patch(self.CHOICE, return_value=UNSAVED_SAVE), \
-                    patch('src.controller.image_io.open_image_file', return_value=selected_path), \
+            with patch(self.CHOICE, return_value=UNSAVED_SAVE) as choice, \
+                    patch('src.controller.image_io.open_image_file', return_value=selected_path) as open_file, \
                     patch('src.controller.image_io.show_error_dialog') as error_dialog:
                 self.assertFalse(self.image_io.confirm_unsaved_changes('Quit without saving'))
-            error_dialog.reset_mock()  # Its recorded errors hold tracebacks that reach the window.
+            self._forget_calls(choice, open_file, error_dialog)  # Recorded errors also hold tracebacks.
         self.assertFalse(UndoStack().is_clean())
 
     def test_reload_prompts_only_when_modified(self) -> None:
@@ -614,7 +621,7 @@ class TestSaveAnimation(ImageIOTestCase):
         # Decline the metadata prompt and hide the data loss warnings, which would block offscreen:
         for target, return_value in (('request_confirmation', False), ('show_warning_dialog', None)):
             patcher = patch(f'src.controller.image_io.{target}', return_value=return_value)
-            patcher.start()
+            self.addCleanup(self._forget_calls, patcher.start())
             self.addCleanup(patcher.stop)
 
     def _saved_frame_durations(self, file_path: str) -> list[Optional[int]]:
@@ -627,9 +634,10 @@ class TestSaveAnimation(ImageIOTestCase):
             with self.subTest(extension=extension), patch(
                     self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))) as mock_modal:
                 path = os.path.join(self.temp_dir.name, f'saved.{extension}')
-                with patch('src.controller.image_io.open_image_file', return_value=path):
+                with patch('src.controller.image_io.open_image_file', return_value=path) as open_file:
                     self.image_io.save_as()
                     self.image_io.wait_for_pending_save()
+                self._forget_calls(open_file)
                 mock_modal.assert_called_once()
                 self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
                 self.image_io.load(path)
@@ -640,10 +648,11 @@ class TestSaveAnimation(ImageIOTestCase):
         """A WebP animation saved from an image with no metadata reloads with no EXIF tags."""
         self.image_io.load(self.gif_path)
         path = os.path.join(self.temp_dir.name, 'plain.webp')
-        with patch(self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))), \
-                patch('src.controller.image_io.open_image_file', return_value=path):
+        with patch(self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))) as mock_modal, \
+                patch('src.controller.image_io.open_image_file', return_value=path) as open_file:
             self.image_io.save_as()
             self.image_io.wait_for_pending_save()
+        self._forget_calls(mock_modal, open_file)
         self.image_io.load(path)
         self.assertEqual([], self.image_io.metadata.exif_entries())
 
@@ -651,20 +660,22 @@ class TestSaveAnimation(ImageIOTestCase):
         """Choosing a flattened save in the modal writes a single frame."""
         self.image_io.load(self.gif_path)
         path = os.path.join(self.temp_dir.name, 'flat.webp')
-        with patch(self.SAVE_MODAL, return_value=(True, None)), \
-                patch('src.controller.image_io.request_save_loss_choice', return_value=SAVE_ANYWAY), \
-                patch('src.controller.image_io.open_image_file', return_value=path):
+        with patch(self.SAVE_MODAL, return_value=(True, None)) as mock_modal, \
+                patch('src.controller.image_io.request_save_loss_choice', return_value=SAVE_ANYWAY) as dialog, \
+                patch('src.controller.image_io.open_image_file', return_value=path) as open_file:
             self.image_io.save_as()
             self.image_io.wait_for_pending_save()
+        self._forget_calls(mock_modal, dialog, open_file)
         self.assertEqual(count_image_frames(path), 1)
 
     def test_cancel_saves_nothing(self) -> None:
         """Canceling the animation modal writes no file."""
         self.image_io.load(self.gif_path)
         path = os.path.join(self.temp_dir.name, 'canceled.gif')
-        with patch(self.SAVE_MODAL, return_value=(False, None)), \
-                patch('src.controller.image_io.open_image_file', return_value=path):
+        with patch(self.SAVE_MODAL, return_value=(False, None)) as mock_modal, \
+                patch('src.controller.image_io.open_image_file', return_value=path) as open_file:
             self.image_io.save_as()
+        self._forget_calls(mock_modal, open_file)
         self.assertFalse(os.path.exists(path))
 
     def test_plain_save_reuses_options(self) -> None:

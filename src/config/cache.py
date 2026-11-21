@@ -5,10 +5,10 @@ from typing import Optional
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
 
+from src.app_context import AppService
 from src.config.config import Config
 from src.config.generated_keys import CacheKeys
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
-from src.util.singleton import Singleton
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.json'
 DEFAULT_FILE_PATH = f'{DATA_DIR}/.cache.json'
@@ -26,7 +26,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 SCALING_OPTION_NONE = _tr('None')
 
 
-class Cache(CacheKeys, Config, metaclass=Singleton):
+class Cache(CacheKeys, Config, metaclass=AppService):
     """Use the Config module's data sharing capabilities to cache temporary values."""
 
     def __init__(self, json_path: str = DEFAULT_FILE_PATH) -> None:
@@ -37,6 +37,13 @@ class Cache(CacheKeys, Config, metaclass=Singleton):
         self._geometry_timer.timeout.connect(self._check_bounds)
         self._final_bounds: dict[QWidget, QRect] = {}
         self._last_bounds: dict[QWidget, QRect] = {}
+
+    def close(self) -> None:
+        """Discards pending saves and connections, as `Config.close` does, and stops restoring window bounds."""
+        super().close()
+        self._geometry_timer.stop()
+        self._final_bounds.clear()
+        self._last_bounds.clear()
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""

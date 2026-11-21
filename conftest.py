@@ -13,8 +13,8 @@ prepare the environment that the Qt-based tests rely on:
   Text then lays out the same whatever fonts a machine has installed. A developer's own `FONTCONFIG_FILE` wins.
 - Ensure the project root is importable, so `from src... import ...` works regardless of the
   directory pytest is invoked from.
-- Back the config singletons with temporary copies of the `test/resources/*_test.json` fixtures, so
-  tests that change settings can't rewrite the committed files.
+- Install an `AppContext` whose configs load temporary copies of the `test/resources/*_test.json` fixtures
+  (`test.base_test_case.install_test_context`), so tests that change settings can't rewrite the committed files.
 - Install the English plural forms (`src.util.translation.install_translation`) before any `src` module with
   `_tr` constants is imported, as `IntraPaint.py` does, so counted text reads "1 layer" and "6 layers".
 - Apply the style, theme and font size from the app config fixture, so text metrics and colors match on every
@@ -75,41 +75,32 @@ from test.hang_diagnostics import HangWatchdog
 _hang_watchdog = HangWatchdog()
 # Holds the modal dialog guard from pytest_sessionstart until pytest_sessionfinish:
 _modal_guard_patch = pytest.MonkeyPatch()
-_CONFIG_FIXTURE_DIR = os.path.join(_PROJECT_ROOT, 'test', 'resources')
-_config_copy_dir: Optional[str] = None
 # The translators pytest_sessionstart installs, kept referenced for the whole session:
 _translators: list[QTranslator] = []
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
-    """Create the config singletons from temporary copies of the committed config fixtures, then apply their appearance.
+    """Install the test `AppContext`, whose configs load temporary copies of the committed fixtures, then apply their
+    appearance.
 
-    This runs before test collection. Config classes are singletons, so these are the instances every later
-    `AppConfig('test/resources/app_config_test.json')`-style call returns, and the path in those calls is ignored.
-    The modal dialog guard goes up first, so a config that opens a warning dialog, such as `KeyConfig` finding a key
-    error, aborts the run with the dialog's text instead of hanging before any test starts.
+    This runs before test collection, so the configs modules read at import time are the test context's.
+    `IntraPaintTestCase` installs a fresh context for every test. The modal dialog guard goes up first, so a config
+    that opens a warning dialog, such as `KeyConfig` finding a key error, aborts the run with the dialog's text instead
+    of hanging before any test starts.
     """
-    global _config_copy_dir  # pylint: disable=global-statement
     _block_modal_dialogs(_modal_guard_patch)
     app = QApplication.instance() or QApplication(sys.argv)
     # Imported here rather than at module level so PySide6 and the QApplication are ready first:
     # pylint: disable=import-outside-toplevel
     from src.util.translation import ENGLISH, install_translation
     _translators.extend(install_translation(app, ENGLISH))
-    from src.config.application_config import AppConfig
-    from src.config.cache import Cache
-    from src.config.key_config import KeyConfig
+    from src.app_context import installed_context
     from src.util import shared_constants
     assert shared_constants.DATA_DIR == os.environ['INTRAPAINT_DATA_DIR'], \
         'src.util.shared_constants was imported before conftest.py set INTRAPAINT_DATA_DIR'
-    _config_copy_dir = tempfile.mkdtemp(prefix='intrapaint-test-config-')
-    for config_class, file_name in ((AppConfig, 'app_config_test.json'), (KeyConfig, 'key_config_test.json'),
-                                    (Cache, 'cache_test.json')):
-        copy_path = os.path.join(_config_copy_dir, file_name)
-        shutil.copyfile(os.path.join(_CONFIG_FIXTURE_DIR, file_name), copy_path)
-        config = config_class(copy_path)
-        assert config.json_path == copy_path, f'{config_class.__name__} was created before pytest_sessionstart'
-    from test.base_test_case import apply_fixture_appearance
+    assert installed_context() is None, 'A global service was created before pytest_sessionstart'
+    from test.base_test_case import apply_fixture_appearance, install_test_context
+    install_test_context()
     apply_fixture_appearance()
 
 
@@ -118,8 +109,8 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     _modal_guard_patch.undo()
     qt_cycles.stop()
     qt_cycles.write_report()
-    if _config_copy_dir is not None:
-        shutil.rmtree(_config_copy_dir, ignore_errors=True)
+    from test.base_test_case import remove_test_config_copies  # pylint: disable=import-outside-toplevel
+    remove_test_config_copies()
     shutil.rmtree(_user_dir_root, ignore_errors=True)
 
 

@@ -8,6 +8,7 @@ from PySide6.QtGui import QKeyEvent, QKeySequence, QGuiApplication, QWindow
 from PySide6.QtWidgets import (QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox,
                                QAbstractButton, QAbstractSlider, QAbstractItemView)
 
+from src.app_context import QObjectService
 from src.config.key_config import KeyConfig
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
 from src.util.key_code_utils import get_modifier_string, get_key_with_modifiers, key_alternatives
@@ -19,7 +20,7 @@ MODIFIER_TIMER_INTERVAL_MS = 100
 KeybindingAction: TypeAlias = Callable[[], bool] | Callable[[], None] | Callable[[], bool | None]
 
 
-class HotkeyFilter(QObject):
+class HotkeyFilter(QObject, metaclass=QObjectService):
     """Registers and handles window-level hotkeys.
 
     The filter is installed on each window's QWindow when that window first takes focus, so it sees key presses
@@ -27,7 +28,6 @@ class HotkeyFilter(QObject):
     QWindow, so it skips every binding. To reach the bindings, send the key to the window's QWindow.
     """
 
-    shared_instance: Optional['HotkeyFilter'] = None
     modifiers_changed = Signal(Qt.KeyboardModifier)
 
     # Called with each event source that isn't a QObject. Tests set this to fail the running test.
@@ -35,10 +35,8 @@ class HotkeyFilter(QObject):
 
     @staticmethod
     def instance() -> 'HotkeyFilter':
-        """Returns the shared application hotkey manager."""
-        if HotkeyFilter.shared_instance is None:
-            return HotkeyFilter()
-        return HotkeyFilter.shared_instance
+        """Returns the installed `AppContext`'s hotkey manager, the same instance `HotkeyFilter()` returns."""
+        return HotkeyFilter()
 
     @dataclass
     class KeyBinding:
@@ -83,9 +81,6 @@ class HotkeyFilter(QObject):
     def __init__(self) -> None:
         """Registers and handles application-level hotkeys."""
         super().__init__()
-        if HotkeyFilter.shared_instance is not None:
-            raise RuntimeError("HotkeyFilter shouldn't be initialized directly; use HotkeyFilter.instance()")
-        HotkeyFilter.shared_instance = self
         self._bindings: dict[Qt.Key | int, list[HotkeyFilter.KeyBinding]] = {}
         self._held_bindings: list[HotkeyFilter.HeldKeyBinding] = []
         app = QApplication.instance()
@@ -101,16 +96,21 @@ class HotkeyFilter(QObject):
         self.watch_window(QGuiApplication.focusWindow())
         self._stale_source_types: set[str] = set()
 
-    def _reset(self) -> None:
-        """Removes all keybindings, the default focus widget, and all modifiers_changed connections.
+    def close(self) -> None:
+        """Stops filtering every window's events and drops all bindings and connections. `AppContext.close` calls this.
 
-        Tests call this between cases, since bindings and connections from one test would otherwise act on the next.
+        A replaced filter left installed would still run the earlier context's bindings.
         """
+        self._hotkey_timer.stop()
+        app = QApplication.instance()
+        if isinstance(app, QGuiApplication):
+            app.focusWindowChanged.disconnect(self.watch_window)
+            for window in QGuiApplication.allWindows():
+                window.removeEventFilter(self)
         self._bindings.clear()
         self._held_bindings.clear()
         self._config_bindings.clear()
         self._default_focus = None
-        self._last_modifier_state = QApplication.keyboardModifiers()
         if self.receivers(SIGNAL('modifiers_changed(Qt::KeyboardModifier)')) > 0:
             self.modifiers_changed.disconnect()
 

@@ -5,10 +5,10 @@ from typing import Optional
 from PySide6.QtWidgets import QApplication
 from sd_backend_client import A1111Webservice
 
+from src.app_context import AppService
 from src.config.config import Config
 from src.config.generated_keys import A1111ConfigKeys
 from src.util.shared_constants import PROJECT_DIR
-from src.util.singleton import Singleton
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/a1111_setting_definitions.json'
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 WEB_CONFIG_TYPE_ERROR = _tr('key "{key}" had unexpected type {value_type}, value {value}')
 
 
-class A1111Config(A1111ConfigKeys, Config, metaclass=Singleton):
+class A1111Config(A1111ConfigKeys, Config, metaclass=AppService):
     """Provides access to configurable options for the Automatic1111 or Forge Stable Diffusion WebUI."""
 
     def __init__(self) -> None:
