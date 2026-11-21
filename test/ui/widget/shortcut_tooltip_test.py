@@ -2,7 +2,8 @@
 import sys
 
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QApplication, QLabel, QToolButton
+from PySide6.QtWidgets import QApplication, QLabel, QToolButton, QWidget
+from shiboken6 import delete as sip_delete
 
 from src.config.key_config import KeyConfig
 from src.ui.widget.shortcut_tooltip import (set_shortcut_tooltip, set_step_shortcut_tooltip, shortcut_tooltip_text,
@@ -41,6 +42,24 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         self.assertEqual(button.toolTip(), 'Merge down (Ctrl+Alt+K)')
         KeyConfig().set(key, '')
         self.assertEqual(button.toolTip(), 'Merge down')
+
+    def test_config_connections_end_with_parent_deletion(self) -> None:
+        """Deleting the parent of a widget with a shortcut tooltip removes the widget's config registrations."""
+        key = KeyConfig.MERGE_LAYER_DOWN_SHORTCUT
+        step_keys = (KeyConfig.SELECTION_ADD_MODIFIER, KeyConfig.SELECTION_SUBTRACT_MODIFIER)
+        parent = QWidget()
+        button = QToolButton(parent)
+        stepped = QToolButton(parent)
+        set_shortcut_tooltip(button, 'Merge down', key, rich_text=False)
+        set_step_shortcut_tooltip(stepped, 'Step', *step_keys)
+        self.assertIn(button, KeyConfig()._connected[key])  # pylint: disable=protected-access
+        for step_key in step_keys:
+            self.assertIn(stepped, KeyConfig()._connected[step_key])  # pylint: disable=protected-access
+        sip_delete(parent)
+        self.assertNotIn(button, KeyConfig()._connected[key])  # pylint: disable=protected-access
+        for step_key in step_keys:
+            self.assertNotIn(stepped, KeyConfig()._connected[step_key])  # pylint: disable=protected-access
+        KeyConfig().set(key, 'Ctrl+Alt+K')
 
     def test_step_keys_tooltip(self) -> None:
         """A stepped input shows a keycap for each bound step key, drops an unbound one, and follows rebinding."""

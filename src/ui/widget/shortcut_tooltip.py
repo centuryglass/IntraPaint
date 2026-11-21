@@ -114,7 +114,6 @@ def set_shortcut_tooltip(widget: QWidget, text: Union[str, Callable[[], str]], c
     if config_key is None:
         return _refresh
     key_config.connect(widget, config_key, lambda _keys_value: _refresh())
-    widget.destroyed.connect(lambda: KeyConfig().disconnect(widget, config_key))
     return _refresh
 
 
@@ -135,4 +134,3 @@ def set_step_shortcut_tooltip(widget: QWidget, text: str, decrease_config_key: O
     for key in config_keys:
         if key is not None:
             key_config.connect(widget, key, _refresh)
-    widget.destroyed.connect(lambda: [KeyConfig().disconnect(widget, key) for key in config_keys if key is not None])
