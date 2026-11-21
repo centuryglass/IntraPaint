@@ -24,6 +24,7 @@ from src.ui.input_fields.slider_field import SliderField
 from src.ui.modal.color_dialog import ColorDialog
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.util.key_code_utils import key_alternatives
+from src.util.layout import add_layout
 from src.util.visual.image_utils import get_color_icon
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -232,15 +233,15 @@ class KeybindingField(QWidget):
         self._problem_label = QLabel(self)
         self._problem_label.setWordWrap(True)
         self._problem_label.hide()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        add_layout(layout, self._rows_layout)
         footer = QHBoxLayout()
         footer.setContentsMargins(0, 0, 0, 0)
+        add_layout(layout, footer)
         footer.addWidget(self._add_button)
         footer.addWidget(self._badge)
         footer.addStretch(1)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self._rows_layout)
-        layout.addLayout(footer)
         layout.addWidget(self._problem_label)
         self._add_row('')
         self._show_badge()

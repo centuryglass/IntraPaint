@@ -56,7 +56,7 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         bindings[KeyConfig.TEXT_TOOL_KEY] = 'NotAKey'
         self.assertEqual([KeyConfig.TEXT_TOOL_KEY], list(config.binding_problems(bindings)))
         bindings[KeyConfig.TEXT_TOOL_KEY] = ''
-        bindings[KeyConfig.LINE_MODIFIER] = 'Q'
+        bindings[KeyConfig.LINE_MODIFIER] = 'J'
         self.assertEqual([KeyConfig.LINE_MODIFIER], list(config.binding_problems(bindings)))
 
     def test_empty_modifier_never_held(self) -> None:
