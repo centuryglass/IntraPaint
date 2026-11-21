@@ -116,6 +116,90 @@ class StrokeArrangement:
     headers: bool = True
 
 
+@dataclass(frozen=True)
+class StrokeKeys:
+    """The `Cache` keys and label overrides one tool's Size, Opacity and Hardness fields use.
+
+    A tool's control panel and its quick stroke card (`QuickStrokeCard`) both build their fields from one constant of
+    this type, so the two show the same fields. `opacity_label`, `opacity_tooltip` and `size_label` replace the
+    `Cache` labels and description, for tools that name those values differently.
+    """
+    size_key: str
+    opacity_key: Optional[str] = None
+    hardness_key: Optional[str] = None
+    pressure_size_key: Optional[str] = None
+    pressure_opacity_key: Optional[str] = None
+    pressure_hardness_key: Optional[str] = None
+    color_key: Optional[str] = None
+    size_label: Optional[str] = None
+    opacity_label: Optional[str] = None
+    opacity_tooltip: Optional[str] = None
+
+    def block_kwargs(self) -> dict[str, Optional[str]]:
+        """Returns the `StrokeBlock` arguments these keys fill in."""
+        return {'size_key': self.size_key, 'opacity_key': self.opacity_key, 'hardness_key': self.hardness_key,
+                'pressure_size_key': self.pressure_size_key, 'pressure_opacity_key': self.pressure_opacity_key,
+                'pressure_hardness_key': self.pressure_hardness_key, 'color_key': self.color_key,
+                'size_label': self.size_label, 'opacity_label': self.opacity_label,
+                'opacity_tooltip': self.opacity_tooltip}
+
+
+def build_stroke_field(owner: QWidget, key: str, pressure_key: Optional[str], decrease_key: str, increase_key: str,
+                       suffix: str, display_scale: float, label: Optional[str] = None,
+                       tooltip: Optional[str] = None) -> SliderField:
+    """Returns a `SliderField` bound to a numeric `Cache` key, as the Tools panel and the quick stroke card show it.
+
+    The field follows changes to the key from anywhere, and writes the user's changes back. `owner` is the widget the
+    `Cache` connections end with, so it should be the field's parent or an ancestor. `label` and `tooltip` replace the
+    key's own. With a `pressure_key`, the field gets its pen pressure link.
+    """
+    cache = Cache()
+    minimum, maximum, step = cache.get_range(key)
+    label = label or normalize_row_label(cache.get_label(key))
+    if minimum is None or maximum is None or step is None:
+        raise ValueError(f'Cache key {key} needs a numeric range')
+    field = SliderField(label, cache.get(key), minimum, maximum, step=step, suffix=suffix,
+                        display_scale=display_scale, parent=owner)
+    keys = KeyConfig()
+    field.setToolTip(keys_tooltip(tooltip or cache.get_tooltip(key), keys.get(decrease_key), keys.get(increase_key)))
+
+    def _field_changed(value: int | float) -> None:
+        if cache.get(key) != value:
+            cache.set(key, value)
+
+    field.valueChanged.connect(_field_changed)
+    cache.connect(owner, key, lambda value, *_: field.set_value(value))
+    if pressure_key is not None:
+        field.set_pressure_link_tooltip(cache.get_tooltip(pressure_key))
+        field.set_pressure_link_enabled(bool(cache.get(pressure_key)))
+        field.set_pressure_link_available(bool(cache.get(Cache.EXPECT_TABLET_INPUT)))
+
+        def _link_toggled(enabled: bool) -> None:
+            if cache.get(pressure_key) != enabled:
+                cache.set(pressure_key, enabled)
+
+        field.pressureLinkToggled.connect(_link_toggled)
+        cache.connect(owner, pressure_key, lambda enabled, *_: field.set_pressure_link_enabled(bool(enabled)))
+    return field
+
+
+def build_stroke_fields(owner: QWidget, keys: StrokeKeys) -> list[tuple[SliderField, bool]]:
+    """Returns the Size, Opacity and Hardness fields `keys` has, in display order, each with whether it has a pressure
+    link."""
+    fields = []
+    for key, pressure_key, decrease, increase, suffix, scale, label, tooltip in (
+            (keys.size_key, keys.pressure_size_key, KeyConfig.BRUSH_SIZE_DECREASE, KeyConfig.BRUSH_SIZE_INCREASE,
+             PIXEL_SUFFIX, 1.0, keys.size_label, None),
+            (keys.opacity_key, keys.pressure_opacity_key, KeyConfig.BRUSH_OPACITY_DECREASE,
+             KeyConfig.BRUSH_OPACITY_INCREASE, PERCENT_SUFFIX, 100.0, keys.opacity_label, keys.opacity_tooltip),
+            (keys.hardness_key, keys.pressure_hardness_key, KeyConfig.BRUSH_HARDNESS_DECREASE,
+             KeyConfig.BRUSH_HARDNESS_INCREASE, PERCENT_SUFFIX, 100.0, None, None)):
+        if key is not None:
+            fields.append((build_stroke_field(owner, key, pressure_key, decrease, increase, suffix, scale, label,
+                                              tooltip), pressure_key is not None))
+    return fields
+
+
 def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent: QWidget) -> Optional[QWidget]:
     """Returns the color pair and Pattern dropdown as one row, or None if the tool has neither."""
     if color_key is None and pattern_key is None:
@@ -192,11 +276,6 @@ class StrokeBlock(QWidget):
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         cache = Cache()
-        self._label_overrides = {size_key: size_label}
-        self._tooltip_overrides: dict[str, Optional[str]] = {}
-        if opacity_key is not None:
-            self._label_overrides[opacity_key] = opacity_label
-            self._tooltip_overrides[opacity_key] = opacity_tooltip
         self._fields: dict[str, NumberField] = {}
         self._pressure_fields: list[NumberField] = []
         self._arrangement: Optional[StrokeArrangement] = None
@@ -205,17 +284,13 @@ class StrokeBlock(QWidget):
         fields_layout = QVBoxLayout(self._fields_widget)
         fields_layout.setContentsMargins(0, 0, 0, 0)
         fields_layout.setSpacing(4)
-        for key, pressure_key, decrease, increase, suffix, scale in (
-                (size_key, pressure_size_key, KeyConfig.BRUSH_SIZE_DECREASE, KeyConfig.BRUSH_SIZE_INCREASE,
-                 PIXEL_SUFFIX, 1.0),
-                (opacity_key, pressure_opacity_key, KeyConfig.BRUSH_OPACITY_DECREASE,
-                 KeyConfig.BRUSH_OPACITY_INCREASE, PERCENT_SUFFIX, 100.0),
-                (hardness_key, pressure_hardness_key, KeyConfig.BRUSH_HARDNESS_DECREASE,
-                 KeyConfig.BRUSH_HARDNESS_INCREASE, PERCENT_SUFFIX, 100.0)):
-            if key is None:
-                continue
-            field = self._build_field(key, pressure_key, decrease, increase, suffix, scale)
+        field_keys = StrokeKeys(size_key, opacity_key, hardness_key, pressure_size_key, pressure_opacity_key,
+                                pressure_hardness_key, None, size_label, opacity_label, opacity_tooltip)
+        for (field, has_pressure_link), key in zip(build_stroke_fields(self, field_keys),
+                                                   (k for k in (size_key, opacity_key, hardness_key) if k)):
             self._fields[key] = field
+            if has_pressure_link:
+                self._pressure_fields.append(field)
             fields_layout.addWidget(field)
         self._field_keys = list(self._fields)
 
@@ -284,39 +359,6 @@ class StrokeBlock(QWidget):
     def fields(self) -> list[NumberField]:
         """Returns the Size, Opacity and Hardness fields that exist, in display order."""
         return [self._fields[key] for key in self._field_keys]
-
-    def _build_field(self, key: str, pressure_key: Optional[str], decrease_key: str, increase_key: str, suffix: str,
-                     display_scale: float) -> NumberField:
-        cache = Cache()
-        minimum, maximum, step = cache.get_range(key)
-        label = self._label_overrides.get(key) or normalize_row_label(cache.get_label(key))
-        if minimum is None or maximum is None or step is None:
-            raise ValueError(f'Cache key {key} needs a numeric range')
-        field = SliderField(label, cache.get(key), minimum, maximum, step=step, suffix=suffix,
-                            display_scale=display_scale, parent=self)
-        description = self._tooltip_overrides.get(key) or cache.get_tooltip(key)
-        keys = KeyConfig()
-        field.setToolTip(keys_tooltip(description, keys.get(decrease_key), keys.get(increase_key)))
-
-        def _field_changed(value: int | float) -> None:
-            if cache.get(key) != value:
-                cache.set(key, value)
-
-        field.valueChanged.connect(_field_changed)
-        cache.connect(self, key, lambda value, *_: field.set_value(value))
-        if pressure_key is not None:
-            self._pressure_fields.append(field)
-            field.set_pressure_link_tooltip(cache.get_tooltip(pressure_key))
-            field.set_pressure_link_enabled(bool(cache.get(pressure_key)))
-            field.set_pressure_link_available(bool(cache.get(Cache.EXPECT_TABLET_INPUT)))
-
-            def _link_toggled(enabled: bool) -> None:
-                if cache.get(pressure_key) != enabled:
-                    cache.set(pressure_key, enabled)
-
-            field.pressureLinkToggled.connect(_link_toggled)
-            cache.connect(self, pressure_key, lambda enabled, *_: field.set_pressure_link_enabled(bool(enabled)))
-        return field
 
     def show_pressure_links(self) -> None:
         """Reveals the pressure links on the fields that have one, once a tablet has been seen."""

@@ -83,6 +83,19 @@ def _resolved_brush_path(saved_path: Optional[str]) -> Optional[str]:
     return None
 
 
+def active_brush_path(config_key: str) -> Optional[str]:
+    """Returns the absolute path of the brush `config_key` names, or None if `Cache` holds none that exists."""
+    return _resolved_brush_path(Cache().get(config_key))
+
+
+def choose_brush(config_key: str, brush_path: str) -> bool:
+    """Makes a brush the one `config_key` names, in the form `Cache` stores. Returns whether that changed it."""
+    if _resolved_brush_path(Cache().get(config_key)) == os.path.abspath(brush_path):
+        return False
+    Cache().set(config_key, _saved_brush_path(brush_path))
+    return True
+
+
 def _favorite_name(brush_path: str) -> str:
     """Returns the name a brush is saved under in the favorites list: its group directory and brush name."""
     return f'{brush_category(brush_path)}/{brush_name(brush_path)}'
@@ -743,8 +756,7 @@ class MypaintBrushPanel(QWidget):
         self._choose_brush(selected[0].data(BRUSH_PATH_ROLE))
 
     def _choose_brush(self, brush_path: str) -> None:
-        if _resolved_brush_path(Cache().get(self._brush_config_key)) != os.path.abspath(brush_path):
-            Cache().set(self._brush_config_key, _saved_brush_path(brush_path))
+        if choose_brush(self._brush_config_key, brush_path):
             self.brush_picked.emit()
 
     # -----------------------------------------------------------------------------------------------------------------
