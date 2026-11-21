@@ -145,7 +145,6 @@ SD_COMFYUI_GENERATOR_SETUP = SD_COMFYUI_GENERATOR_SETUP_OPTIONS + SD_COMFYUI_GEN
                              + SD_COMFYUI_GENERATOR_SETUP_ALTERNATIVES
 
 
-DEFAULT_COMFYUI_URL = 'http://localhost:8188'
 
 # ComfyUI rejects seeds at or above this, so batch seeds wrap back to 0 past the largest one:
 COMFYUI_SEED_LIMIT = 2 ** 64

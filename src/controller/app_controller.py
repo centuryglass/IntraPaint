@@ -54,15 +54,16 @@ from src.config.key_config import KeyConfig
 from src.controller import color_controller
 from src.controller.autosave_controller import AutosaveController
 from src.controller.generation_area_controller import GenerationAreaController
+from src.controller.image_generation.backend_install.detected_backend import DEFAULT_COMFYUI_URL, DEFAULT_WEBUI_URL
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_adapters.controlnet_adapter import count_enabled_units
-from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
+from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator
 from src.controller.image_generation.sd_generator import MENU_GENERATION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator
-from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
+from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME
 from src.controller.tool_controller import ToolController
