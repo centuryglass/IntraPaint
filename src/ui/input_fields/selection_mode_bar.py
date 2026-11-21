@@ -88,14 +88,6 @@ class SelectionModeBar(SegmentedControl):
             for config_key in _modifier_config_keys():
                 KeyConfig().connect(self, config_key, self._update_tooltips)
             HotkeyFilter.instance().modifiers_changed.connect(self.set_held_modifiers)
-        self.destroyed.connect(lambda: self._disconnect_config(modifiers))
-
-    def _disconnect_config(self, modifiers: SelectionModifiers) -> None:
-        """Removes the config registrations. Runs from `destroyed`, so it also covers deletion with a parent."""
-        Cache().disconnect(self, Cache.SELECTION_MODE)
-        if modifiers != SelectionModifiers.NONE:
-            for config_key in _modifier_config_keys():
-                KeyConfig().disconnect(self, config_key)
 
     @property
     def modifiers(self) -> SelectionModifiers:

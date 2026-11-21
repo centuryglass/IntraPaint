@@ -340,10 +340,7 @@ class SDWebUIGenerator(SDGenerator):
         try:
             # Synchronize local config options with remote WebUI settings:
             for cross_config_key in (Cache.SD_MODEL, Cache.CLIP_SKIP):
-                try:
-                    cache.disconnect(self, cross_config_key)
-                except KeyError:
-                    pass  # No previous connection to remove, which isn't a problem here.
+                cache.disconnect(self, cross_config_key)
 
             webui_config = A1111Config()
             webui_config.load_all(self._webservice)
