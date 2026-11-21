@@ -208,6 +208,22 @@ class BrushToolTest(ToolTestCase):
         self.assertFalse(self.brush_tool.cursor_disabled)
         self.assert_outline_under(QPoint(100, 100))
 
+    def test_disabled_cursor_follows_layer_visibility(self) -> None:
+        """Hiding the active layer, or a group around it, shows the disabled cursor at once, and showing it restores
+        the normal cursor."""
+        layer = self._hover_with_layer(QPoint(100, 100))
+        layer.visible = False
+        self.assertTrue(self.brush_tool.cursor_disabled)
+        layer.visible = True
+        self.assertFalse(self.brush_tool.cursor_disabled)
+        group = self.image_stack.create_layer_group('group')
+        grouped = self.image_stack.create_layer(layer_parent=group)
+        self.image_stack.active_layer = grouped
+        group.visible = False
+        self.assertTrue(self.brush_tool.cursor_disabled)
+        group.visible = True
+        self.assertFalse(self.brush_tool.cursor_disabled)
+
     def test_outline_hides_on_leave_and_deactivate(self) -> None:
         """The outline hides when the cursor leaves the viewer, and when the tool stops being active."""
         self._hover_with_layer(QPoint(100, 100))
