@@ -135,6 +135,10 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   GLID-3-XL stack) are imported lazily or behind `try`/`except ImportError`, and IntraPaint must start without any of
   them installed.
 - Match the surrounding code's style, naming, and structure.
+- **Nest layouts with `src.util.layout.add_layout`, and read them with `layout_contents`.** Qt's `addLayout`,
+  `insertLayout`, `addChildLayout`, `itemAt` and `itemAtPosition` leave PySide wrappers that can corrupt the heap
+  later in a long run. `test/layout_item_calls_test.py` fails on any call to them; `add_layout` explains its
+  empty-child rule.
 - **A bug found during unrelated work gets fixed or filed, never just noticed.**
   - Trivial to fix (a wrong assertion, an off-by-one, a stale comment or pointer): fix it in the same pass. A bug in a
     release gets its own PR (see "A released bug's fix gets its own `fix` PR" under "Working with GitHub").
@@ -204,6 +208,8 @@ comments and docstrings you write or touch, to this file, and to new docs under 
     `build_translations.py`, which `test/scripts/` tests), `.claude/`, `.opencode/`, `.githooks/` and `.github/`.
   - A change under `src/` runs the matching directory under `test/` (`src/tools/` runs `test/tools/`), and every test
     file that names a changed module (`grep -rl <module> test/`).
+  - A change to any Python file also runs `test/layout_item_calls_test.py`, which reads every Python file under `src/`,
+    `test/` and `scripts/`.
   - A change that can alter a panel's look also runs `test/ui/panel_layout_test.py` and
     `test/ui/style_gallery_test.py`, plus the slower `test/ui/panel_sweep_test.py` only for the scenes it reaches
     (`-k <scene>`, with names from `SWEEP_SCENE_NAMES`). A change to `src/ui/layout/` reaches every scene.
