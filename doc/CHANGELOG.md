@@ -1,5 +1,38 @@
 # Changelog and release notes
 
+## [1.6.0](https://github.com/centuryglass/IntraPaint/compare/v1.5.0...v1.6.0) (2026-11-21)
+
+
+### Features
+
+* **layers:** select multiple layers ([#1085](https://github.com/centuryglass/IntraPaint/issues/1085)) ([0a0d5f7](https://github.com/centuryglass/IntraPaint/commit/0a0d5f7b57bd5cec0dbb36f922a4f597d6776460))
+* standalone metadata mode (`--metadata`) and metadata-only saves ([#1076](https://github.com/centuryglass/IntraPaint/issues/1076)) ([3ec8221](https://github.com/centuryglass/IntraPaint/commit/3ec82210557baa38ad7e3175b9d7a7cc1247bcca))
+* **translation:** add the Simplified Chinese pilot batch ([#1040](https://github.com/centuryglass/IntraPaint/issues/1040)) ([b136521](https://github.com/centuryglass/IntraPaint/commit/b136521e789f3e5e5942e733885cc7313aad58cf))
+* turn on "Zoom to changes" by default and hide it when it doesn't apply ([#1046](https://github.com/centuryglass/IntraPaint/issues/1046)) ([98fa3bd](https://github.com/centuryglass/IntraPaint/commit/98fa3bded383778f63e8dd4ab9d01a99341c040a)), closes [#1035](https://github.com/centuryglass/IntraPaint/issues/1035)
+* **ui:** outline popover panels like floating docks ([#1084](https://github.com/centuryglass/IntraPaint/issues/1084)) ([921c5b7](https://github.com/centuryglass/IntraPaint/commit/921c5b76341203b7756266fb45e13b4ff1f1af85))
+
+
+### Bug Fixes
+
+* **brushes:** apply the brush color's alpha to MyPaint brush strokes ([#1063](https://github.com/centuryglass/IntraPaint/issues/1063)) ([39eea0f](https://github.com/centuryglass/IntraPaint/commit/39eea0fd55b4b3a39367e6410b52fdbbe7c53de5)), closes [#82](https://github.com/centuryglass/IntraPaint/issues/82)
+* correct the Edit mode description and the WebUI setup guide's first sentence ([#1042](https://github.com/centuryglass/IntraPaint/issues/1042)) ([8d483de](https://github.com/centuryglass/IntraPaint/commit/8d483de1721b8b17d68cbfcad5b4645b2e9dbc4e))
+* **generation:** load the GLID web generator when --mode auto finds the web service ([#1080](https://github.com/centuryglass/IntraPaint/issues/1080)) ([feef69b](https://github.com/centuryglass/IntraPaint/commit/feef69bd43620456040045499375040c59e57e77))
+* **generation:** stop --mode auto probing after a default --server_url match ([#1082](https://github.com/centuryglass/IntraPaint/issues/1082)) ([207d9b4](https://github.com/centuryglass/IntraPaint/commit/207d9b45dbdebbe1579680e32a4d3c477e72afa3))
+* handle empty key bindings in hints and tooltips ([#1043](https://github.com/centuryglass/IntraPaint/issues/1043)) ([0c1c6e8](https://github.com/centuryglass/IntraPaint/commit/0c1c6e881819b74ab61b9203be9ce9677bff8d4f))
+* keep a loaded TIFF's metadata copyable, so saving after opening a TIFF works ([#1068](https://github.com/centuryglass/IntraPaint/issues/1068)) ([b916a76](https://github.com/centuryglass/IntraPaint/commit/b916a76f11f9488f49e0049c0029dc059372a59c))
+* log every uncaught exception and show worker-thread errors in the error dialog ([#1041](https://github.com/centuryglass/IntraPaint/issues/1041)) ([32d8cbf](https://github.com/centuryglass/IntraPaint/commit/32d8cbf3c6d4cbe1a60119def5bdcd242134f380)), closes [#912](https://github.com/centuryglass/IntraPaint/issues/912)
+* **test:** free AsyncTask closures and test lambdas that kept ImageStacks alive ([#1083](https://github.com/centuryglass/IntraPaint/issues/1083)) ([b15fa9f](https://github.com/centuryglass/IntraPaint/commit/b15fa9f47f86f67ebef33e5581013b51662a9373))
+* **test:** name settings window captures after the untranslated category ([#1079](https://github.com/centuryglass/IntraPaint/issues/1079)) ([57359c5](https://github.com/centuryglass/IntraPaint/commit/57359c5ad0a40ee27acb2d0211d37729c14fb343))
+* **ui:** keep Reset view accurate after image size changes, and track the view position in one place ([#1097](https://github.com/centuryglass/IntraPaint/issues/1097)) ([6d6808b](https://github.com/centuryglass/IntraPaint/commit/6d6808b2a8d68a2dbac8a660cdc3d18e9a383702)), closes [#1075](https://github.com/centuryglass/IntraPaint/issues/1075)
+* **ui:** keep the point under the cursor fixed when zooming, and don't divide by zero before content_size is set ([#1062](https://github.com/centuryglass/IntraPaint/issues/1062)) ([fe7e356](https://github.com/centuryglass/IntraPaint/commit/fe7e356d78781341be3f528f4179f33b633b5265))
+* **ui:** list the edges in Window &gt; Move all panels to edge ([#1069](https://github.com/centuryglass/IntraPaint/issues/1069)) ([34e2fba](https://github.com/centuryglass/IntraPaint/commit/34e2fba58cc844388fe0d1037e76b61bd9a40284))
+* **ui:** use Qt plural forms for counted display text ([#1061](https://github.com/centuryglass/IntraPaint/issues/1061)) ([45c1456](https://github.com/centuryglass/IntraPaint/commit/45c14560ad9ce7cce09988c712942e74e8b356b4))
+
+
+### Performance Improvements
+
+* **layers:** skip raster redraws on property changes and free rasters of hidden or removed layers ([#1066](https://github.com/centuryglass/IntraPaint/issues/1066)) ([bc69106](https://github.com/centuryglass/IntraPaint/commit/bc6910696417dfd9e39849a675e667c26bd31ead))
+
 ## [1.5.0](https://github.com/centuryglass/IntraPaint/compare/v1.4.0...v1.5.0) (2026-11-17)
 
 1.5.0 is a large release. Most of the interface has been redesigned, there are new file formats and generation options, and many long-standing bugs are fixed. The highlights are below, and the complete list of changes follows them.
