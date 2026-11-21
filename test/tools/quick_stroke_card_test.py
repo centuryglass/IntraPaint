@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
-from src.tools.brush_tool import BrushTool
+from src.tools.brush_tool import QUICK_CARD_CLICK_SLOP, BrushTool
 from src.tools.clone_stamp_tool import CloneStampTool
 from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
@@ -63,9 +63,16 @@ class _QuickStrokeCardTestBase(ToolTestCase):
         self.assertEqual(self.layer.image, initial_image)
         self.assertEqual(UndoStack().undo_count(), 0)
 
+    def test_right_click_with_small_movement_opens_card(self) -> None:
+        """A right press and release within the click slop still opens the card."""
+        self.mouse_drag([CENTER, QPoint(CENTER.x() + QUICK_CARD_CLICK_SLOP - 1, CENTER.y())], RIGHT)
+        self.assertIsNotNone(self.tool.quick_card)
+        assert self.tool.quick_card is not None
+        self.assertTrue(self.tool.quick_card.isVisible())
+
     def test_right_drag_does_not_open_card(self) -> None:
-        """A right drag past the drag threshold doesn't open the card."""
-        distance = QApplication.startDragDistance() + 10
+        """A right drag past the click slop doesn't open the card."""
+        distance = QUICK_CARD_CLICK_SLOP + 1
         self.mouse_drag([CENTER, QPoint(CENTER.x() + distance, CENTER.y())], RIGHT)
         self.assertIsNone(self.tool.quick_card)
 

@@ -46,6 +46,9 @@ QUICK_OPTIONS_HINT = _tr('{right_mouse_icon}: quick options')
 # The brush outline hides at or below this on-screen diameter, where the crosshair alone marks the brush:
 MIN_OUTLINE_DIAMETER = CROSSHAIR_GRID_SIZE
 MIN_LINE_PRESSURE = 0.5
+# A right press and release this many viewer pixels apart or less still count as a click that opens the quick stroke
+# card, so an unsteady hand or pen button press doesn't miss it:
+QUICK_CARD_CLICK_SLOP = 20
 
 # Undo gesture that holds one stroke, from press to release. Every change a stroke makes, including the ones
 # `BrushTool._before_stroke_start` and `BrushTool._after_stroke_end` make, joins it as one undo step:
@@ -241,7 +244,7 @@ class BrushTool(BaseTool):
         if press_pos is None or keys is None:
             return False
         release_pos = event.position().toPoint()
-        if (release_pos - press_pos).manhattanLength() > QApplication.startDragDistance() \
+        if (release_pos - press_pos).manhattanLength() > QUICK_CARD_CLICK_SLOP \
                 or event.modifiers() != Qt.KeyboardModifier.NoModifier or self.cursor_disabled \
                 or not self._image_stack.has_image:
             return True
@@ -488,7 +491,7 @@ class BrushTool(BaseTool):
             return True
         if self._right_press_pos is not None and event is not None:
             drag = event.position().toPoint() - self._right_press_pos
-            if drag.manhattanLength() > QApplication.startDragDistance():
+            if drag.manhattanLength() > QUICK_CARD_CLICK_SLOP:
                 self._right_press_pos = None
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
