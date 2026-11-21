@@ -121,6 +121,13 @@ class CanvasBarTest(IntraPaintTestCase):
         for button in self.bar.reset_buttons:
             self.assertTrue(button.isEnabled())
 
+    def test_reset_view_disabled_after_image_size_change_recenters(self) -> None:
+        """Changing the image size recenters the view, so Reset view is disabled even after a pan."""
+        self.viewer.offset = QPointF(30.0, 0.0)
+        self.image_stack.size = QSize(IMAGE_SIZE.width() * 2, IMAGE_SIZE.height())
+        for button in self.bar.reset_buttons:
+            self.assertFalse(button.isEnabled())
+
     def test_zoom_field_shows_percent_and_sets_scale(self) -> None:
         """The zoom field shows the view scale as a percentage, and setting it zooms the view."""
         self.viewer.scene_scale = 1.5
