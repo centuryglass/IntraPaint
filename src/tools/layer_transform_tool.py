@@ -105,11 +105,6 @@ class LayerTransformTool(BaseTool):
                                                        right_mouse_icon=right_button_hint_text())
         return f'{transform_hint}<br/>{super().get_input_hint()}'
 
-    def restore_aspect_ratio(self) -> None:
-        """Ensure that the aspect ratio is constant."""
-        max_scale = max(self._transform_outline.transform_scale)
-        self._transform_outline.transform_scale = (max_scale, max_scale)
-
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Left-click activates the top unlocked TransformLayer under the cursor, right-click lists all of them."""
         assert event is not None
@@ -149,18 +144,6 @@ class LayerTransformTool(BaseTool):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return self._control_panel
-
-    def set_x_offset(self, x_offset: float) -> None:
-        """Sets the x-offset component of the layer transformation."""
-        offset = self._transform_outline.offset
-        offset.setX(x_offset)
-        self._transform_outline.offset = offset
-
-    def set_y_offset(self, y_offset: float) -> None:
-        """Sets the y-offset component of the layer transformation."""
-        offset = self._transform_outline.offset
-        offset.setY(y_offset)
-        self._transform_outline.offset = offset
 
     def set_x(self, x_pos: float | int) -> None:
         """Sets the horizontal scene position of the transformation origin, moving the layer."""

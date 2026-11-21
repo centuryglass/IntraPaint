@@ -66,13 +66,6 @@ class ShapeModeComboBox(QComboBox):
         Cache().connect(self, cache_key, _update_from_config)
         _update_from_config(Cache().get(cache_key))
 
-    def update_icon_style(self, line_pen: QPen, fill_brush: QBrush, vertex_count=3, inner_radius_fraction=0.5) -> None:
-        """Updates all icons with new outline and fill styles."""
-        for mode in ShapeMode:
-            icon = ShapeModeComboBox.draw_icon(mode, line_pen, fill_brush, vertex_count, inner_radius_fraction)
-            index = self.findText(mode.display_text())
-            self.setItemIcon(index, icon)
-
     def value(self) -> ShapeMode:
         """Returns the selected shape mode."""
         selected_mode = self.currentData()

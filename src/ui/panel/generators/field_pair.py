@@ -24,10 +24,6 @@ class FieldPair(QWidget):
         """Stacks the fields, or puts them side by side."""
         self._layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight)
 
-    def is_stacked(self) -> bool:
-        """Returns whether the fields are stacked."""
-        return self._layout.direction() == QBoxLayout.Direction.TopToBottom
-
     def fits_side_by_side(self, width: int) -> bool:
         """Returns whether both fields fit side by side in `width` without eliding their labels or values."""
         widths = [field.unelided_width() if isinstance(field, NumberField) else field.sizeHint().width()

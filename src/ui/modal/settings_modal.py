@@ -427,12 +427,6 @@ class SettingsModal(QDialog):
         """Shows the page for `category` if it exists and has rows matching the search."""
         self._select_category(category)
 
-    def set_tooltip(self, setting_name: str, tooltip: str) -> None:
-        """Sets tooltip text for a setting, shown when the mouse hovers over its control."""
-        if setting_name not in self._inputs:
-            raise ValueError(f'{setting_name} not defined')
-        self._inputs[setting_name].setToolTip(tooltip)
-
     def update_settings(self, settings: dict) -> None:
         """Sets all setting control widgets to match current settings values, and forgets their pending changes."""
         for key, new_value in settings.items():

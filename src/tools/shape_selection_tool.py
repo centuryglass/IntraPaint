@@ -89,15 +89,6 @@ class ShapeSelectionTool(ShapeDragTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return self._control_panel
 
-    def set_shape_mode(self, mode: str) -> None:
-        """Switches between rectangle and ellipse selection."""
-        shape_mode = ShapeMode.from_text(mode)
-        if self._selection_handler.mode == shape_mode:
-            return
-        if shape_mode not in (ShapeMode.RECTANGLE, ShapeMode.ELLIPSE):
-            raise ValueError(f'Unexpected selection mode {mode}')
-        self._selection_handler.mode = shape_mode
-
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts a selection drag on left-click, or a context pin drag on right-click."""
         if event is not None and event.buttons() == Qt.MouseButton.RightButton:

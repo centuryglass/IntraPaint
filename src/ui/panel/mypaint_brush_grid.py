@@ -209,13 +209,6 @@ class BrushList(QListWidget):
         self._update_cell_size()
         return item
 
-    def remove_brush(self, brush_path: str) -> None:
-        """Removes a brush file's tile, if the list holds it."""
-        item = self.find_brush(os.path.abspath(brush_path))
-        if item is not None:
-            self.takeItem(self.row(item))
-            self._update_cell_size()
-
     def set_favorites(self, favorite_paths: set[str]) -> None:
         """Changes which tiles show a filled star."""
         self._favorites = {os.path.abspath(path) for path in favorite_paths}

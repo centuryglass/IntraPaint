@@ -147,35 +147,11 @@ class MyPaintSceneTile(QGraphicsItem):
         painter.drawImage(bounds, tile_image)
         painter.restore()
 
-    def get_bits(self, read_only: bool) -> TilePixelBuffer:  # type: ignore
-        """Access the image data array."""
-        self._assert_is_valid()
-        assert self._pixels is not None
-        if read_only:
-            self._tile_cache_image_valid = False
-        return self._pixels
-
-    def draw_point(self, x: int, y: int, r: int, g: int, b: int, a: int) -> None:
-        """Draw a single point into the image data."""
-        self._assert_is_valid()
-        assert self._pixels is not None
-        self._tile_cache_image_valid = False
-        self._pixels[y][x][RED] = r
-        self._pixels[y][x][GREEN] = g
-        self._pixels[y][x][BLUE] = b
-        self._pixels[y][x][ALPHA] = a
-
     def update_tile_image_cache(self) -> None:
         """Copy data into the QImage cache."""
         self._assert_is_valid()
         assert self._tile_cache_image is not None
         self.copy_tile_into_image(self._tile_cache_image, skip_if_transparent=False)
-        self._tile_cache_image_valid = True
-
-    def set_cache(self, cache_image: QImage) -> None:
-        """Directly update the cache with image data. This does not alter the pixel buffer."""
-        self._assert_is_valid()
-        self._tile_cache_image = cache_image
         self._tile_cache_image_valid = True
 
     def copy_tile_into_image(self, image: QImage, source: Optional[QRect] = None, destination: Optional[QRect] = None,
@@ -269,17 +245,6 @@ class MyPaintSceneTile(QGraphicsItem):
         np_image = numpy_8bit_to_16bit(np_image)
         np.copyto(np_pixels, np_image)
         return True
-
-    def copy_image_into_tile(self, image: QImage, x: int, y: int, skip_if_transparent: bool = True) -> bool:
-        """Copy tile data from a QImage at arbitrary (x, y) image coordinates."""
-        self._assert_is_valid()
-        return MyPaintSceneTile.copy_image_into_pixel_buffer(self._pixels, image, x, y, skip_if_transparent)
-
-    def is_fully_transparent(self):
-        """Checks if this tile is completely transparent."""
-        self._assert_is_valid()
-        np_pixels = pixel_data_as_numpy_16bit(self._pixels)
-        return image_is_fully_transparent(np_pixels)
 
     def clear(self) -> None:
         """Clear all image data."""
