@@ -285,14 +285,6 @@ class PanelHeader(QWidget):
             self._refresh_icon()
         self._fit_lines()
 
-    def set_title_shown(self, shown: bool) -> None:
-        """Shows or hides the icon and name, for a host whose title bar shows them. The key, description and buttons
-        stay."""
-        self._icon_label.setVisible(shown and not self._icon.isNull())
-        self._name_label.setVisible(shown)
-        self._title_shown = shown
-        self._fit_lines()
-
     def set_icon_width(self, width: int) -> None:
         """Centers the icon in a column `width` pixels wide, to line it up with a column of buttons below or above."""
         self._icon_label.setFixedWidth(max(width, ICON_SIZE))

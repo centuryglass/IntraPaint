@@ -18,7 +18,7 @@ from threading import Lock
 from typing import Optional, Any, Callable
 
 from PySide6.QtCore import QObject, QSize, QTimer, Qt, Signal, Slot
-from PySide6.QtGui import QKeySequence, QColor
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
 from shiboken6 import isValid
 
@@ -395,16 +395,6 @@ class Config:
         with self._lock:
             return self._entries[key]
 
-    def get_keycodes(self, key: str) -> QKeySequence:
-        """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""
-        code_string = self.get(key)
-        if not isinstance(code_string, str):
-            raise RuntimeError(INVALID_KEYCODE_ERROR.format(key=key, code_string=code_string))
-        sequence = QKeySequence(code_string)
-        if Qt.Key.Key_unknown in sequence:
-            raise RuntimeError(INVALID_KEYCODE_ERROR.format(key=key, code_string=code_string))
-        return sequence
-
     def get_label(self, key: str) -> str:
         """Gets the label text assigned to a config value."""
         if key not in self._entries:
@@ -658,21 +648,6 @@ class Config:
         options = self._entries[key].options
         if options is None:
             raise RuntimeError(f'{key} has no options list.')
-        return options
-
-    def get_default_options(self, key: str) -> ParamTypeList:
-        """Returns the default set of valid options accepted for a given key.
-
-        Raises
-        ------
-        RuntimeError
-            If the value associated with the key does not have a predefined list of options.
-        """
-        if key not in self._entries:
-            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        options = self._entries[key].default_options()
-        if options is None:
-            raise RuntimeError(f'{key} has no default options list.')
         return options
 
     def update_options(self, key: str, options_list: ParamTypeList) -> None:

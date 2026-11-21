@@ -9,9 +9,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QTextEdit, QLineEdit, QPla
                                QAbstractButton, QAbstractSlider, QAbstractItemView)
 
 from src.config.key_config import KeyConfig
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
-from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.key_code_utils import get_modifier_string, get_key_with_modifiers, key_alternatives
 
 logger = logging.getLogger(__name__)
@@ -303,24 +301,6 @@ class HotkeyFilter(QObject):
         return (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox,
                                             GradientSlider, QAbstractButton, QAbstractSlider, QAbstractItemView))
                 and focused_widget.isVisible())
-
-    def bind_slider_controls(self, slider: IntSliderSpinbox | FloatSliderSpinbox, down_key: str, up_key: str,
-                             predicate: KeybindingAction) -> None:
-        """Applies keybindings that step a SliderSpinbox, and sets its control hints."""
-        for key, sign in ((down_key, -1), (up_key, 1)):
-            def _binding(n=sign, widget=slider) -> bool:
-                if not predicate():
-                    return False
-                widget.stepBy(n)
-                return True
-
-            binding_id = f'_SliderSpinBox_{id(slider)}_{key}'
-            self.register_config_keybinding(binding_id, _binding, key)
-        down_hint = KeyHintLabel(None, down_key, slider)
-        up_hint = KeyHintLabel(None, up_key, slider)
-        up_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        down_hint.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        slider.insert_key_hint_labels(down_hint, up_hint)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""

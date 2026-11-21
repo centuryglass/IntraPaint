@@ -89,10 +89,6 @@ class LoginModal(QDialog):
         self._footer.rejected.connect(on_cancel)
         self.setLayout(self._layout)
 
-    def clear_password(self) -> None:
-        """Clears the password field."""
-        self._password_input.setText('')
-
     def set_status(self, status: str) -> None:
         """Sets status text shown to the user."""
         self._status.setText(status)
@@ -104,7 +100,3 @@ class LoginModal(QDialog):
         if self._res is not None and self._res.status_code == 200:
             return self.user, self.pw
         return None, None
-
-    def get_login_response(self) -> Optional[requests.Response]:
-        """Gets any saved network response from the login attempt."""
-        return self._res

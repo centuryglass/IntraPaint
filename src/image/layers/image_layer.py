@@ -418,11 +418,6 @@ class ImageLayer(TransformLayer):
 
     # INTERNAL:
 
-    def _validate_bounds(self, bounds_rect: QRect):
-        assert isinstance(bounds_rect, QRect)
-        if not self.bounds.contains(bounds_rect):
-            raise ValueError(f'{bounds_rect} not within {self.bounds}')
-
 
 class ImageLayerState:
     """Preserves a copy of an image layer's state."""

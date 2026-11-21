@@ -109,11 +109,6 @@ class SizeField(QWidget):
         base_hint.setWidth(base_hint.width() // 2)
         return base_hint
 
-    def set_labels_visible(self, should_show: bool) -> None:
-        """Show or hide width/height labels."""
-        self._width_label.setVisible(should_show)
-        self._height_label.setVisible(should_show)
-
     @property
     def orientation(self) -> Qt.Orientation:
         """Return whether boxes are stacked vertically or laid out horizontally."""
