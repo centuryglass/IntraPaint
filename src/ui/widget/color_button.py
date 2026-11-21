@@ -44,13 +44,6 @@ class ColorButton(QPushButton):
             self.setToolTip(COLOR_BUTTON_TOOLTIP)
         self.clicked.connect(self.select_color)
 
-    def disconnect_config(self) -> None:
-        """Disconnects this color button from its config value."""
-        if self._config_key is not None:
-            config = get_config_from_key(self._config_key)
-            config.disconnect(self, self._config_key)
-            self._config_key = None
-
     def _update_color(self, color: str | QColor) -> None:
         if isinstance(color, str):
             color = QColor(color) if QColor(color).isValid() else self._color

@@ -9,7 +9,6 @@ from src.config.config import Config
 from src.config.generated_keys import CacheKeys
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
-from src.util.visual.display_size import get_screen_bounds
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.json'
 DEFAULT_FILE_PATH = f'{DATA_DIR}/.cache.json'
@@ -51,34 +50,6 @@ class Cache(CacheKeys, Config, metaclass=Singleton):
         for arg_value, key in expected.items():
             if arg_value:
                 self.set(key, arg_value)
-
-    def save_bounds(self, key: str, widget: QWidget) -> None:
-        """Save a widget's geometry to the cache.  If waiting to load bounds for the same widget the new bounds will
-           not be saved, since they are about to be replaced anyway."""
-        if widget not in self._last_bounds:  # Don't update if waiting to apply previous bounds
-            bounds = widget.geometry()
-            cache_str = f'{bounds.x()},{bounds.y()},{bounds.width()},{bounds.height()}'
-            self.set(key, cache_str)
-
-    def load_bounds(self, key: str, widget: QWidget) -> bool:
-        """Load widget bounds from the cache, returning whether loading succeeded.  Widget bounds will be applied once
-           widget geometry has remained stable for 100ms, to avoid cases where bounds are immediately overridden by
-           initial placement. """
-        try:
-            x, y, w, h = (int(param) for param in self.get(key).split(','))
-            bounds = QRect(x, y, w, h)
-            screen_bounds = get_screen_bounds(default_to_primary=False, alt_test_bounds=bounds)
-            if not screen_bounds.isNull():
-                bounds = bounds.intersected(screen_bounds)
-            if bounds == screen_bounds:
-                widget.showMaximized()
-            self._final_bounds[widget] = bounds
-            self._last_bounds[widget] = QRect(widget.geometry())
-            if not self._geometry_timer.isActive():
-                self._geometry_timer.start()
-            return True
-        except (ValueError, TypeError):
-            return False
 
     def tiling_in_effect(self) -> bool:
         """Returns whether generated images tile: the WebUI generator is connected and its tiling option is on."""

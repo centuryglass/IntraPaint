@@ -43,14 +43,6 @@ class KeyHintLabel(QLabel):
             updated_font.setPointSize(size)
             self.setFont(updated_font)
         AppConfig().connect(self, AppConfig.KEY_HINT_FONT_SIZE, _update_size)
-        # A bound method of this widget is dropped when it is destroyed, before it would run.
-        self.destroyed.connect(lambda: self._disconnect_config())  # pylint: disable=unnecessary-lambda
-
-    def _disconnect_config(self) -> None:
-        """Removes the config registrations. Runs from `destroyed`, so it also covers deletion with a parent."""
-        AppConfig().disconnect(self, AppConfig.KEY_HINT_FONT_SIZE)
-        if self._config_key is not None:
-            KeyConfig().disconnect(self, self._config_key)
 
     def _key_font(self) -> QFont:
         """Returns the bold font the key text is drawn in."""

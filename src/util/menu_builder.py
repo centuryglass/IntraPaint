@@ -207,12 +207,6 @@ class MenuBuilder:
         menu.insertActions(existing[0], actions)
         menu.insertSeparator(existing[0])
 
-    def set_action_enabled(self, menu_name: str, action_name: str, enabled: bool) -> None:
-        """Enables or disables a menu action."""
-        action = self._find_action(menu_name, action_name)
-        if action is not None:
-            action.setEnabled(enabled)
-
     @property
     def menu_names(self) -> list[str]:
         """Access the list of created menu names."""

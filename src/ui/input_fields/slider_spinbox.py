@@ -89,13 +89,6 @@ class _SliderSpinbox(QWidget):
         self._layout.insertWidget(slider_index + (1 if self._slider.isVisible() else 2), self._up_hint)
         self._layout.insertWidget(slider_index, self._down_hint)
 
-    def set_key_hints_visible(self, visible: bool) -> None:
-        """Show or hide key hint labels, if present."""
-        if self._down_hint is not None:
-            self._down_hint.setVisible(visible)
-        if self._up_hint is not None:
-            self._up_hint.setVisible(visible)
-
     def value(self) -> int | float:
         """Returns the input field's current value."""
         return self._spinbox.value()
@@ -177,10 +170,6 @@ class _SliderSpinbox(QWidget):
             self._layout.removeWidget(self._up_hint)
             index = self._layout.indexOf(self._slider) + (1 if included else 2)
             self._layout.insertWidget(index, self._up_hint)
-
-    def slider_included(self) -> bool:
-        """Return whether the slider is currently included."""
-        return self._slider.isEnabled()
 
     def send_change_signal(self) -> None:
         """Send the type-specific value change signal."""

@@ -568,14 +568,6 @@ class LayerList(QScrollArea):
         return _DropSpot(parent, index + 1, row.geometry().bottom() + 1, row.depth,
                          DropKind.BELOW, layer.name)
 
-    def drop_target(self, y: int) -> Optional[tuple[LayerGroup, int, int, int]]:
-        """Returns where a layer dropped at a y position in the list's content would land: its new parent and index,
-        and the marker's y and nesting depth. Returns None where the target group is locked."""
-        spot = self._drop_spot(y)
-        if spot.parent.locked or spot.parent.parent_locked:
-            return None
-        return spot.parent, spot.index, spot.marker_y, spot.depth
-
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
         """Handles layer rows dragged over and dropped on the list's content."""
         if watched is self._content:

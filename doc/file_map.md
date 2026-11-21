@@ -536,7 +536,6 @@ Widgets shared across panels and windows: panel parts, color controls, labels, r
   value.
 - `src/ui/widget/keycap_badge.py`: A small row of raised keycaps showing a fixed key binding, for panel section headers
   and panel headers.
-- `src/ui/widget/label.py`: An extended QLabel implementation that supports vertical text.
 - `src/ui/widget/loading_widget.py`: Animated widget used to indicate a loading state.
 - `src/ui/widget/option_filmstrip.py`: A row of thumbnails of a batch's generated options, each labeled with the number
   key that opens it.
