@@ -1,6 +1,6 @@
 #!/bin/bash
 # Starts every Claude Code session by refreshing the GitHub issue cache and printing its index as session context (see
-# AGENTS.md, "Tracking open work").
+# AGENTS.md, "Tracking open work"), and enabling the repository's git hooks.
 #
 # A Claude Code on the web session also gets the rest of the git history (the clone starts shallow) and is prepared to
 # run the test suite and the lint check: the system libraries headless Qt needs, a Python 3.13 virtual environment with
@@ -19,6 +19,9 @@ else
   issue_source=--fetch-api
 fi
 python3 scripts/issues.py "$issue_source" && cat .claude/cache/issues/index.md || true
+
+# Commits regenerate and stage doc/file_map.md through .githooks/pre-commit.
+git config core.hooksPath .githooks || true
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0

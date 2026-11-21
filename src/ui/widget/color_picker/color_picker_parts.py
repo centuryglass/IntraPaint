@@ -1,5 +1,4 @@
-"""The color picker's parts, kept on one color: a header, an OKHSV ring + square, gradient sliders with alpha, and
-saved and recent colors.
+"""The color picker's parts, kept on one color: header, OKHSV ring and square, sliders, saved and recent colors.
 
 `ColorPickerParts` owns no layout. Its owner places the parts: `src.ui.panel.color_panel.ColorControlPanel` plans them
 by fit, and `src.ui.modal.color_dialog.ColorDialog` gives them one arrangement. `color_selected` fires on every change,

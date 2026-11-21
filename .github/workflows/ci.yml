@@ -1,9 +1,9 @@
 name: ci
 
-# Runs the test suite, the lint and translation catalog checks, the markdown check and the packaged-build launch test
-# on every push and pull request, so every commit's state is known before it's merged anywhere. The `changes` job skips
-# the test, lint and bundle jobs for markdown/doc-image-only changes; the markdown check always runs. workflow_dispatch
-# also allows running it by hand from the Actions tab.
+# Runs the test suite, the lint and translation catalog checks, the markdown and file map checks and the packaged-build
+# launch test on every push and pull request, so every commit's state is known before it's merged anywhere. The
+# `changes` job skips the test, lint and bundle jobs for markdown/doc-image-only changes; the markdown job always runs.
+# workflow_dispatch also allows running it by hand from the Actions tab.
 on:
   push:
   pull_request:
@@ -274,6 +274,10 @@ jobs:
 
       - name: PyMarkdown
         run: python scripts/markdown_lint.py
+
+      # .githooks/pre-commit keeps the map current; this catches commits made without it.
+      - name: File map
+        run: python scripts/file_map.py --check
 
   # Builds the release bundles with PyInstaller and launch-tests them, since a bundle can break where a source run
   # works (see scripts/smoke_test_bundle.py). The uploaded artifacts are the release candidates.
