@@ -45,6 +45,20 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         self.assertEqual(1, len(errors))
         self.assertIn(KeyConfig().get_label(KeyConfig.DRAW_TOOL_KEY), errors[0])
 
+    def test_binding_problems_checks_unsaved_values(self) -> None:
+        """`binding_problems` checks values that aren't saved, and lists a clash under every key it involves."""
+        config = KeyConfig()
+        bindings = config.current_bindings()
+        self.assertEqual({}, config.binding_problems(bindings))
+        bindings[KeyConfig.TEXT_TOOL_KEY] = bindings[KeyConfig.DRAW_TOOL_KEY]
+        problems = config.binding_problems(bindings)
+        self.assertEqual({KeyConfig.TEXT_TOOL_KEY, KeyConfig.DRAW_TOOL_KEY}, set(problems))
+        bindings[KeyConfig.TEXT_TOOL_KEY] = 'NotAKey'
+        self.assertEqual([KeyConfig.TEXT_TOOL_KEY], list(config.binding_problems(bindings)))
+        bindings[KeyConfig.TEXT_TOOL_KEY] = ''
+        bindings[KeyConfig.LINE_MODIFIER] = 'J'
+        self.assertEqual([KeyConfig.LINE_MODIFIER], list(config.binding_problems(bindings)))
+
     def test_empty_modifier_never_held(self) -> None:
         """An empty modifier binding reads as not held, whatever modifiers are down."""
         KeyConfig().set(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, '')

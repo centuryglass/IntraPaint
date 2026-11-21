@@ -6762,6 +6762,36 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Unbound</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Click, then press the key or key combination to bind</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Key binding</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Remove</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Remove this key binding</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Add key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Bind an additional key to this action</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.input_fields.size_field</name>

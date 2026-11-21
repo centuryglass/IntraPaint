@@ -4,8 +4,8 @@ Each has the `value`/`setValue`/`valueChanged` interface the window's other cont
 
 - `ColorSettingField`: a swatch button for a color string, optionally with a "theme default" state for the empty string.
 - `DirectorySettingField`: a path field with a Browse button.
-- `KeybindingField`: a key binding in a text field, beside its keycaps. Recording keys by
-  pressing them would replace the text field and keep this class's interface.
+- `KeybindingField`: a key binding recorded by pressing keys, one recorder per alternative, with problems shown inline.
+- `ModifierSettingField`: a modifier key binding chosen from a list of modifier combinations.
 - `SizeSettingField`: a width and height pair.
 - `NumberSettingField`, `SliderSettingField`, `OptionSegmentsField`: the kit's number, slider and segmented controls
   with the shared interface.
@@ -13,8 +13,9 @@ Each has the `value`/`setValue`/`valueChanged` interface the window's other cont
 from typing import Optional
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QColor, QIcon
-from PySide6.QtWidgets import QApplication, QFileDialog, QHBoxLayout, QPushButton, QSizePolicy, QWidget
+from PySide6.QtGui import QColor, QIcon, QKeySequence
+from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QHBoxLayout, QKeySequenceEdit, QLabel, \
+    QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.number_field import NumberField
@@ -22,6 +23,8 @@ from src.ui.input_fields.segmented_control import DisplayMode, Segment, Segmente
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.modal.color_dialog import ColorDialog
 from src.ui.widget.keycap_badge import KeycapBadge
+from src.util.key_code_utils import key_alternatives
+from src.util.layout import add_layout
 from src.util.visual.image_utils import get_color_icon
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -41,11 +44,19 @@ BROWSE_TOOLTIP = _tr('Choose a directory')
 WIDTH_LABEL = _tr('Width')
 HEIGHT_LABEL = _tr('Height')
 NO_KEY_TEXT = _tr('Unbound')
+RECORD_KEY_TOOLTIP = _tr('Click, then press the key or key combination to bind')
+RECORD_KEY_NAME = _tr('Key binding')
+REMOVE_KEY_LABEL = _tr('Remove')
+REMOVE_KEY_TOOLTIP = _tr('Remove this key binding')
+ADD_KEY_LABEL = _tr('Add key')
+ADD_KEY_TOOLTIP = _tr('Bind an additional key to this action')
 
 SWATCH_ICON_SIZE = 16
 SIZE_FIELD_MAX_WIDTH = 140
 KEY_TEXT_MAX_WIDTH = 160
 KEY_TEXT_MIN_WIDTH = 80
+PROBLEM_STYLE = 'color: #c0392b;'
+MODIFIER_PROBLEM_STYLE = 'QComboBox { border: 1px solid #c0392b; }'
 DIRECTORY_FIELD_MAX_WIDTH = 420
 
 
@@ -153,45 +164,193 @@ class DirectorySettingField(QWidget):
             self._edit.setValue(selection)
 
 
+class _KeyRecorderRow(QWidget):
+    """One recorded binding: a key recorder and a button that removes it."""
+
+    changed = Signal()
+    removed = Signal(object)
+
+    def __init__(self, text: str, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._text = text
+        self._loading = False
+        self.recorder = QKeySequenceEdit(self)
+        self.recorder.setMaximumSequenceLength(1)
+        self.recorder.setClearButtonEnabled(True)
+        self.recorder.setMinimumWidth(KEY_TEXT_MIN_WIDTH)
+        self.recorder.setMaximumWidth(KEY_TEXT_MAX_WIDTH)
+        self.recorder.setToolTip(RECORD_KEY_TOOLTIP)
+        self.recorder.setAccessibleName(RECORD_KEY_NAME)
+        self._show(text)
+        self.recorder.keySequenceChanged.connect(self._recorded)
+        self.remove_button = QPushButton(REMOVE_KEY_LABEL, self)
+        self.remove_button.setToolTip(REMOVE_KEY_TOOLTIP)
+        self.remove_button.setAccessibleName(REMOVE_KEY_TOOLTIP)
+        self.remove_button.clicked.connect(lambda _checked=False: self.removed.emit(self))
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.recorder)
+        layout.addWidget(self.remove_button)
+        layout.addStretch(1)
+
+    @property
+    def text(self) -> str:
+        """Returns the binding as text, or an empty string if none is recorded."""
+        return self._text
+
+    def _show(self, text: str) -> None:
+        self._loading = True
+        try:
+            self.recorder.setKeySequence(QKeySequence(text))
+        finally:
+            self._loading = False
+
+    def _recorded(self, sequence: QKeySequence) -> None:
+        if self._loading:
+            return
+        self._text = sequence.toString()
+        self.changed.emit()
+
+
 class KeybindingField(QWidget):
-    """A key binding setting: a text field that edits the binding, beside a keycap for each alternative binding."""
+    """A key binding setting recorded by pressing keys, with one recorder per alternative binding.
+
+    The value is the comma-separated text `KeyConfig` stores. Text that wasn't recorded here keeps its spelling until
+    the user records over it. `set_problems` shows the messages that `KeyConfig.binding_problems` reports.
+    """
 
     valueChanged = Signal(str)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._edit = LineEdit(self)
-        self._edit.setMaximumWidth(KEY_TEXT_MAX_WIDTH)
-        self._edit.valueChanged.connect(self._text_changed)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self._edit.setMinimumWidth(KEY_TEXT_MIN_WIDTH)
-        layout.addWidget(self._edit, stretch=1)
+        self._rows: list[_KeyRecorderRow] = []
         self._badge = KeycapBadge(NO_KEY_TEXT, self)
-        layout.addWidget(self._badge)
-        layout.addStretch(1)
-        self.setFocusProxy(self._edit)
-        self._show_badge('')
+        self._rows_layout = QVBoxLayout()
+        self._rows_layout.setContentsMargins(0, 0, 0, 0)
+        self._add_button = QPushButton(ADD_KEY_LABEL, self)
+        self._add_button.setToolTip(ADD_KEY_TOOLTIP)
+        self._add_button.clicked.connect(lambda _checked=False: self._add_row(''))
+        self._problem_label = QLabel(self)
+        self._problem_label.setWordWrap(True)
+        self._problem_label.hide()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        add_layout(layout, self._rows_layout)
+        footer = QHBoxLayout()
+        footer.setContentsMargins(0, 0, 0, 0)
+        add_layout(layout, footer)
+        footer.addWidget(self._add_button)
+        footer.addWidget(self._badge)
+        footer.addStretch(1)
+        layout.addWidget(self._problem_label)
+        self._add_row('')
+        self._show_badge()
 
     def value(self) -> str:
-        """Returns the key sequence text."""
-        return self._edit.value()
+        """Returns the bindings as comma-separated key sequence text."""
+        return ','.join(key_alternatives(','.join(row.text for row in self._rows)))
 
     def setValue(self, new_value: str) -> None:  # pylint: disable=invalid-name
-        """Sets the key sequence text."""
-        self._edit.setValue(new_value)
+        """Sets the bindings from comma-separated key sequence text."""
+        if new_value == self.value():
+            return
+        for row in self._rows:
+            row.hide()
+            row.deleteLater()
+        self._rows = []
+        for text in key_alternatives(new_value) or ['']:
+            self._add_row(text)
+        self._show_badge()
+        self.valueChanged.emit(self.value())
 
     def badge_labels(self) -> list[str]:
         """Returns the label of each keycap shown."""
         return self._badge.labels
 
-    def _text_changed(self, text: str) -> None:
-        self._show_badge(text)
-        self.valueChanged.emit(text)
+    def recorders(self) -> list[QKeySequenceEdit]:
+        """Returns the key recorders, one per alternative binding plus any empty ones."""
+        return [row.recorder for row in self._rows]
 
-    def _show_badge(self, key_text: str) -> None:
-        self._badge.set_text(key_text if key_text.strip(', ') != '' else NO_KEY_TEXT)
-        self._badge.setEnabled(key_text.strip(', ') != '')
+    def problem_text(self) -> str:
+        """Returns the problem text shown under the recorders, or an empty string if there is none."""
+        return self._problem_label.text() if not self._problem_label.isHidden() else ''
+
+    def set_problems(self, problems: list[str]) -> None:
+        """Shows a list of problem messages inline, or hides the problem text if the list is empty."""
+        self._problem_label.setText('\n'.join(problems))
+        self._problem_label.setVisible(len(problems) > 0)
+        self._problem_label.setStyleSheet(PROBLEM_STYLE if problems else '')
+
+    def _add_row(self, text: str) -> None:
+        row = _KeyRecorderRow(text, self)
+        row.changed.connect(self._row_changed)
+        row.removed.connect(self._remove_row)
+        self._rows.append(row)
+        self._rows_layout.addWidget(row)
+
+    def _remove_row(self, row: _KeyRecorderRow) -> None:
+        if row not in self._rows:
+            return
+        self._rows.remove(row)
+        row.hide()
+        row.deleteLater()
+        if len(self._rows) == 0:
+            self._add_row('')
+        self._row_changed()
+
+    def _row_changed(self) -> None:
+        self._show_badge()
+        self.valueChanged.emit(self.value())
+
+    def _show_badge(self) -> None:
+        key_text = self.value()
+        self._badge.set_text(key_text if key_text != '' else NO_KEY_TEXT)
+        self._badge.setEnabled(key_text != '')
+
+
+class ModifierSettingField(QComboBox):
+    """A modifier key binding: a combo box of the modifier combinations, with an unbound choice.
+
+    A saved value that isn't one of the choices is added to the list so that it round-trips.
+    """
+
+    valueChanged = Signal(str)
+
+    CHOICES = ('', 'Ctrl', 'Alt', 'Shift', 'Ctrl+Alt', 'Ctrl+Shift', 'Alt+Shift', 'Ctrl+Alt+Shift')
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._base_tooltip: Optional[str] = None
+        for choice in self.CHOICES:
+            self.addItem(choice if choice != '' else NO_KEY_TEXT, choice)
+        self.currentIndexChanged.connect(lambda _index: self.valueChanged.emit(self.value()))
+
+    def value(self) -> str:
+        """Returns the modifier text, empty if unbound."""
+        return str(self.currentData())
+
+    def setValue(self, new_value: str) -> None:  # pylint: disable=invalid-name
+        """Selects a modifier combination, adding it to the choices if it isn't listed."""
+        index = self.findData(new_value)
+        if index < 0:
+            self.addItem(new_value, new_value)
+            index = self.count() - 1
+        self.setCurrentIndex(index)
+
+    def choices(self) -> list[str]:
+        """Returns the modifier text of each choice offered."""
+        return [str(self.itemData(i)) for i in range(self.count())]
+
+    def set_problems(self, problems: list[str]) -> None:
+        """Shows problem messages as the tooltip, with a warning border; restores the tooltip when there are none."""
+        if self._base_tooltip is None:
+            self._base_tooltip = self.toolTip()
+        self.setStyleSheet(MODIFIER_PROBLEM_STYLE if problems else '')
+        if problems:
+            self.setToolTip('\n'.join(problems))
+        else:
+            self.setToolTip(self._base_tooltip)
+            self._base_tooltip = None
 
 
 class SizeSettingField(QWidget):
