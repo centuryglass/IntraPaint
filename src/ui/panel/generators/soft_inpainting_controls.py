@@ -9,6 +9,7 @@ from functools import partial
 from typing import Any
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from src.config.application_config import AppConfig
@@ -61,7 +62,12 @@ class SoftInpaintingControls(QWidget):
         self.checkbox.setText(cache.get_label(Cache.SOFT_INPAINTING))
         self.hint = QLabel(HINT_NARROW_BLUR.format(blur=SOFT_INPAINTING_MIN_USEFUL_MASK_BLUR))
         self.hint.setWordWrap(True)
-        self.hint.setStyleSheet(f'color: {caution_color().name()};')
+        # caution_color() is None outside InkStyle, where the hint keeps its inherited color:
+        caution = caution_color()
+        if caution is not None:
+            hint_palette = QPalette()
+            hint_palette.setColor(QPalette.ColorRole.WindowText, caution)
+            self.hint.setPalette(hint_palette)
         self._parameter_body = QWidget()
         self._parameter_layout = QVBoxLayout(self._parameter_body)
         self._parameter_layout.setContentsMargins(0, 0, 0, 0)
