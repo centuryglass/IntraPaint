@@ -11,7 +11,8 @@ from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
+from src.ui.panel.tool_control_panels.eraser_tool_panel import ERASER_STROKE_KEYS, EraserToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
@@ -47,6 +48,10 @@ class EraserTool(QtPaintBrushTool):
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
 
+    def quick_stroke_keys(self) -> Optional[StrokeKeys]:
+        """Returns the fields the right-click card shows."""
+        return ERASER_STROKE_KEYS
+
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
         if self._control_panel is None:
@@ -57,5 +62,6 @@ class EraserTool(QtPaintBrushTool):
         """Return text describing different input functionality."""
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
-        return BrushTool.join_hints(control_hint_draw_tool, BrushTool.brush_control_hints(),
+        return BrushTool.join_hints(control_hint_draw_tool, BrushTool.quick_options_hint(),
+                                    BrushTool.brush_control_hints(),
                                    BrushTool.get_input_hint(self), separator='<br/>')

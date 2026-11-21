@@ -13,7 +13,8 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
+from src.ui.panel.tool_control_panels.smudge_tool_panel import SMUDGE_STROKE_KEYS
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys, StrokeToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
@@ -118,11 +119,15 @@ class SmudgeTool(BrushTool):  # type: ignore
             assert isinstance(control_panel, StrokeToolPanel)
             control_panel.show_pressure_checkboxes()
 
+    def quick_stroke_keys(self) -> Optional[StrokeKeys]:
+        """Returns the fields the right-click card shows."""
+        return SMUDGE_STROKE_KEYS
+
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         brush_hint = SMUDGE_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
-        return BrushTool.join_hints(brush_hint, BrushTool.brush_control_hints(), BrushTool.get_input_hint(self),
-                                   separator='<br/>')
+        return BrushTool.join_hints(brush_hint, BrushTool.quick_options_hint(), BrushTool.brush_control_hints(),
+                                    BrushTool.get_input_hint(self), separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the blur tool control panel."""

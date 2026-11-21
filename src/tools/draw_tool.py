@@ -12,7 +12,8 @@ from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
+from src.ui.panel.tool_control_panels.draw_tool_panel import DRAW_STROKE_KEYS, DrawToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys
 from src.util.shared_constants import PROJECT_DIR
 from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text
@@ -46,13 +47,18 @@ class DrawTool(QtPaintBrushTool):
                          antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
         self.crosshair_variant = CrosshairVariant.DRAW
 
+    def quick_stroke_keys(self) -> Optional[StrokeKeys]:
+        """Returns the fields the right-click card shows."""
+        return DRAW_STROKE_KEYS
+
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
         return BaseTool.join_hints(BaseTool.join_hints(control_hint_draw_tool, eyedropper_hint),
-                                   BrushTool.brush_control_hints(), super().get_input_hint(), separator='<br/>')
+                                   BrushTool.quick_options_hint(), BrushTool.brush_control_hints(),
+                                   super().get_input_hint(), separator='<br/>')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
