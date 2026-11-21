@@ -555,6 +555,14 @@ class BackendDetectorTest(IntraPaintTestCase):
         self.assertEqual(servers, {'custom_port': 'http://localhost:7861', 'default_port': DEFAULT_WEBUI_URL})
         self.assertEqual(result.servers, [])
 
+    def test_webui_server_unknown_args_ambiguous(self) -> None:
+        """An install with unknown launch arguments could use any port, so a server it could be running isn't linked."""
+        _make_webui(self.root / 'custom_port', args='--api --port 7861')
+        _make_webui(self.root / 'unknown_args', args=None)
+        result = self._detect(connect=_servers({'http://localhost:7861': mock.MagicMock(spec=A1111Webservice)}))
+        self.assertEqual([install.server for install in result.installs], [None, None])
+        self.assertEqual([server.url for server in result.servers], ['http://localhost:7861'])
+
     def test_webui_server_ambiguous(self) -> None:
         """A WebUI server matching two installs' ports isn't linked."""
         _make_webui(self.root / 'one')

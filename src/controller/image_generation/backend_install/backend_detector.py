@@ -821,7 +821,7 @@ def link_servers(installs: list[DetectedInstall], servers: list[DetectedServer])
     A ComfyUI server links to the install holding the `main.py` in its `argv`. A relative path, such as `main.py`
     when ComfyUI was started from its own folder, matches every install whose entry point ends with it; if several
     match, it links to the one whose version is the server's, if exactly one is. A local WebUI server links when
-    exactly one WebUI install uses its port.
+    exactly one WebUI install can be using its port. An install whose launch arguments are unknown could use any port.
     """
     result = DetectionResult(installs=installs)
     for server in servers:
@@ -862,7 +862,7 @@ def _webui_candidates(installs: Sequence[DetectedInstall], url: str) -> list[Det
         return []
     port = parts.port or (443 if parts.scheme == 'https' else 80)
     return [install for install in installs if install.kind == BackendKind.WEBUI
-            and (_install_port(install) or DEFAULT_WEBUI_PORT) == port]
+            and (install.launch_args is None or (_install_port(install) or DEFAULT_WEBUI_PORT) == port)]
 
 
 # Helpers:
