@@ -27,6 +27,7 @@ from src.ui.panel.mypaint_brush_grid import brush_name
 from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys, build_stroke_fields
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.color_picker.color_swatch_grid import SWATCH_SIZE, ColorSwatchGrid
+from src.util.layout import add_layout
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.quick_stroke_card'
@@ -80,6 +81,7 @@ class QuickStrokeCard(QFrame):
 
         header = QHBoxLayout()
         header.setSpacing(CARD_SPACING)
+        add_layout(layout, header)
         icon_label = QLabel(self)
         icon_label.setPixmap(icon.pixmap(QSize(HEADER_ICON_SIZE, HEADER_ICON_SIZE)))
         icon_label.setEnabled(False)
@@ -87,7 +89,6 @@ class QuickStrokeCard(QFrame):
         title_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
         header.addWidget(icon_label)
         header.addWidget(title_label, stretch=1)
-        layout.addLayout(header)
 
         self._fields = build_stroke_fields(self, keys)
         for field, _ in self._fields:
@@ -111,6 +112,7 @@ class QuickStrokeCard(QFrame):
         if keys.color_key is not None:
             color_row = QHBoxLayout()
             color_row.setSpacing(CARD_SPACING)
+            add_layout(layout, color_row)
             self._color_pair = _CardColorPair(self)
             self._color_pair.dialog_requested.connect(self.close_card)
             self._swatches = ColorSwatchGrid(self)
@@ -121,7 +123,6 @@ class QuickStrokeCard(QFrame):
             self._swatches.setFixedWidth(swatch_width)
             color_row.addWidget(self._color_pair)
             color_row.addWidget(self._swatches, stretch=1, alignment=Qt.AlignmentFlag.AlignVCenter)
-            layout.addLayout(color_row)
             Cache().connect(self, Cache.RECENT_COLORS, lambda _: self._update_swatches())
             self._update_swatches()
 
