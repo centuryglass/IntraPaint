@@ -113,10 +113,12 @@ class BackendDetectorTest(IntraPaintTestCase):
 
     def _detect(self, roots: Optional[list[Path]] = None, platform: str = POSIX, connect=_no_servers,
                 sm_app_data: Optional[Path] = None, krita_settings: Optional[Path] = None,
-                **kwargs) -> DetectionResult:
+                desktop_settings: Optional[Path] = None, **kwargs) -> DetectionResult:
         locations = SearchLocations(candidate_roots=[self.root] if roots is None else roots,
                                     stability_matrix_app_data=[] if sm_app_data is None else [sm_app_data],
-                                    krita_settings_files=[] if krita_settings is None else [krita_settings])
+                                    krita_settings_files=[] if krita_settings is None else [krita_settings],
+                                    comfy_desktop_settings_files=[] if desktop_settings is None
+                                    else [desktop_settings])
         return detect(locations, connect=connect, platform=platform, **kwargs)
 
     def _only_install(self, result: DetectionResult) -> DetectedInstall:
@@ -241,6 +243,30 @@ class BackendDetectorTest(IntraPaintTestCase):
     def test_krita_external_mode(self) -> None:
         """In external mode Krita's server folder isn't reported."""
         self.assertEqual(self._detect(roots=[], krita_settings=self._make_krita(server_mode='external')).installs, [])
+
+    # ComfyUI Desktop:
+
+    def test_comfy_desktop(self) -> None:
+        """Desktop's instances are owned installs, with models from its shared `modelsDirs`."""
+        install_dir = self.root / 'ComfyUI-Installs'
+        comfyui = _make_comfyui(install_dir / 'ComfyUI' / 'ComfyUI', models=False)
+        _make_environment(comfyui / '.venv', 'posix', python='3.12')
+        _write(self.root / 'ComfyUI-Shared' / 'models' / 'diffusion_models' / 'flux.safetensors')
+        settings = _write(self.root / 'config' / 'comfyui-desktop-2' / 'settings.json', json.dumps({
+            'modelsDirs': [str(self.root / 'ComfyUI-Shared' / 'models')], 'installDir': str(install_dir)}))
+        result = self._detect(desktop_settings=settings)
+        install = self._only_install(result)
+        self.assertEqual((install.owner, install.path), (InstallOwner.COMFY_DESKTOP, comfyui))
+        self.assertIsNone(install.launch_command)
+        self.assertEqual(install.findings, [])
+
+    def test_comfy_desktop_without_models(self) -> None:
+        """A Desktop instance with no models in its own folder or the shared ones gets `NO_MODELS`."""
+        install_dir = self.root / 'installs'
+        _make_environment(_make_comfyui(install_dir / 'one' / 'ComfyUI', models=False) / '.venv', 'posix')
+        settings = _write(self.root / 'settings.json', json.dumps({'installDir': str(install_dir)}))
+        install = self._only_install(self._detect(roots=[], desktop_settings=settings))
+        self.assertEqual(self._codes(install), {FindingCode.NO_MODELS})
 
     # Plain installs:
 
@@ -475,6 +501,7 @@ class BackendDetectorTest(IntraPaintTestCase):
                                                  Path('/opt')])
         self.assertEqual(linux.stability_matrix_app_data, [home / '.config' / 'StabilityMatrix'])
         self.assertEqual(linux.krita_settings_files[0], home / '.local/share/krita/ai_diffusion/settings.json')
+        self.assertEqual(linux.comfy_desktop_settings_files, [home / '.config/comfyui-desktop-2/settings.json'])
         windows = default_search_locations(home, 'win32', {'APPDATA': '/roaming', 'LOCALAPPDATA': '/local'})
         self.assertEqual(windows.stability_matrix_app_data, [Path('/roaming/StabilityMatrix')])
         self.assertEqual(windows.krita_settings_files, [Path('/roaming/krita/ai_diffusion/settings.json'),

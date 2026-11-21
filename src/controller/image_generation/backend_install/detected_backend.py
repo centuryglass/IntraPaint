@@ -28,6 +28,7 @@ class InstallOwner(Enum):
     NONE = 'none'
     STABILITY_MATRIX = 'stability_matrix'
     KRITA_AI_DIFFUSION = 'krita_ai_diffusion'
+    COMFY_DESKTOP = 'comfy_desktop'
     INTRAPAINT = 'intrapaint'
 
 

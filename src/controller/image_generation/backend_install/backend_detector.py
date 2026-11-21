@@ -47,6 +47,7 @@ WEBUI_VARIANT_A1111 = 'a1111'
 
 STABILITY_MATRIX_PORTABLE_MARKER = '.sm-portable'
 KRITA_INCOMPLETE_VERSION = 'incomplete'
+COMFY_DESKTOP_APP_FOLDER = 'comfyui-desktop-2'
 KRITA_MANAGED_MODES = ('managed', 'undefined', '')
 
 COMFYUI_MODEL_FOLDERS = ('models/checkpoints', 'models/diffusion_models', 'models/unet')
@@ -81,11 +82,13 @@ def is_windows(platform: str) -> bool:
 class SearchLocations:
     """Where `detect` looks for installs: candidate roots to walk, and other apps' data files.
 
-    `krita_settings_files` is in priority order: the first one that exists is read.
+    `krita_settings_files` is in priority order: the first one that exists is read. Every
+    `comfy_desktop_settings_files` entry that exists is read.
     """
     candidate_roots: list[Path] = field(default_factory=list)
     stability_matrix_app_data: list[Path] = field(default_factory=list)
     krita_settings_files: list[Path] = field(default_factory=list)
+    comfy_desktop_settings_files: list[Path] = field(default_factory=list)
 
 
 def default_search_locations(home: Optional[Path] = None, platform: str = sys.platform,
@@ -100,22 +103,27 @@ def default_search_locations(home: Optional[Path] = None, platform: str = sys.pl
         generic_data = Path(env.get('LOCALAPPDATA', home / 'AppData' / 'Local'))
         sm_app_data = app_data / 'StabilityMatrix'
         krita_data = app_data / 'krita'
+        electron_data = app_data
     elif platform == 'darwin':
         app_data = home / 'Library' / 'Application Support'
         generic_data = app_data
         sm_app_data = app_data / 'StabilityMatrix'
         krita_data = app_data / 'krita'
+        electron_data = app_data
     else:
         config_home = Path(env.get('XDG_CONFIG_HOME') or home / '.config')
         generic_data = Path(env.get('XDG_DATA_HOME') or home / '.local' / 'share')
         sm_app_data = config_home / 'StabilityMatrix'
         krita_data = generic_data / 'krita'
+        electron_data = config_home
         roots.append(Path('/opt'))  # Distribution packages, such as Stability Matrix's AUR package, install here.
     return SearchLocations(
         candidate_roots=roots,
         stability_matrix_app_data=[sm_app_data],
         krita_settings_files=[krita_data / 'ai_diffusion' / 'settings.json',
-                              generic_data / 'krita-ai-diffusion' / 'settings.json'])
+                              generic_data / 'krita-ai-diffusion' / 'settings.json'],
+        # Electron's per-app data folder. Only the Linux location has been seen on a real install.
+        comfy_desktop_settings_files=[electron_data / COMFY_DESKTOP_APP_FOLDER / 'settings.json'])
 
 
 def _fixed_drive_roots() -> list[Path]:
@@ -168,6 +176,9 @@ def detect(locations: Optional[SearchLocations] = None,
         installs.extend(krita_installs)
         if krita_url is not None:
             urls.append(krita_url)
+    for desktop_settings in locations.comfy_desktop_settings_files:
+        if desktop_settings.is_file():
+            installs.extend(scan_comfy_desktop(desktop_settings, platform))
     installs.extend(walked_installs)
     installs = _deduplicate(installs)
 
@@ -391,16 +402,48 @@ def scan_krita(settings_path: Path, platform: str) -> tuple[list[DetectedInstall
     return [install], server_url
 
 
+# ComfyUI Desktop:
+
+
+def scan_comfy_desktop(settings_path: Path, platform: str) -> list[DetectedInstall]:
+    """Return the ComfyUI instances that ComfyUI Desktop 2's `settings.json` places under its `installDir`.
+
+    Each instance is a folder in `installDir`, holding its ComfyUI checkout in `ComfyUI/`. Desktop passes `modelsDirs`
+    to every instance as extra model folders, laid out like ComfyUI's own `models/`.
+    """
+    settings = _read_json(settings_path)
+    if not isinstance(settings, dict) or not isinstance(settings.get('installDir'), str):
+        return []
+    models_dirs = settings.get('modelsDirs')
+    shared_models = [Path(folder) for folder in models_dirs if isinstance(folder, str)] \
+        if isinstance(models_dirs, list) else []
+    extra_model_folders = [models_dir / Path(folder).name for models_dir in shared_models
+                           for folder in COMFYUI_MODEL_FOLDERS]
+    try:
+        instances = sorted(path for path in Path(settings['installDir']).iterdir() if path.is_dir())
+    except OSError:
+        return []
+    installs = []
+    for instance in instances:
+        recognized = _recognize(instance / 'ComfyUI') or _recognize(instance)
+        if recognized is not None and recognized.kind == BackendKind.COMFYUI:
+            installs.append(_inspect(recognized, InstallOwner.COMFY_DESKTOP, platform,
+                                     extra_model_folders=extra_model_folders))
+    return installs
+
+
 # Inspecting an install:
 
 
 def _inspect(recognized: _Recognized, owner: InstallOwner, platform: str,
              launch_args: Optional[list[str]] = None,
-             owner_environments: Sequence[Path] = ()) -> DetectedInstall:
+             owner_environments: Sequence[Path] = (),
+             extra_model_folders: Sequence[Path] = ()) -> DetectedInstall:
     """Build a `DetectedInstall` from a recognized folder, with findings from its environment, models and settings.
 
     `launch_args` are the owner's recorded WebUI arguments; `None` reads them from `webui-user`. `owner_environments`
-    are checked for an interpreter after the install's own.
+    are checked for an interpreter after the install's own. `extra_model_folders` are ComfyUI checkpoint folders its
+    owner passes it.
     """
     backend_dir = recognized.entry_point.parent
     install = DetectedInstall(kind=recognized.kind, owner=owner, path=recognized.path,
@@ -414,6 +457,8 @@ def _inspect(recognized: _Recognized, owner: InstallOwner, platform: str,
         install.version = _read_comfyui_version(backend_dir)
         install.last_used = _last_used(backend_dir, COMFYUI_LAST_USED_PATHS)
         model_folders = _comfyui_model_folders(backend_dir)
+        if model_folders is not None:
+            model_folders.extend(extra_model_folders)
         if owner == InstallOwner.NONE and install.interpreter is not None:
             install.launch_command = [str(install.interpreter), str(install.entry_point)]
             if recognized.portable:
