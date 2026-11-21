@@ -23,7 +23,8 @@ from src.ui.brush_crosshair import CROSSHAIR_GRID_SIZE, CrosshairVariant, crossh
 from src.ui.graphics_items.brush_outline import BrushOutline
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
+from src.ui.widget.quick_stroke_card import QuickStrokeCard
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys, StrokeToolPanel
 from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -40,10 +41,14 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}: draw line')
 FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 SIZE_DRAG_HINT = _tr('{modifier_or_modifiers}+{right_mouse_icon} drag: brush size')
+QUICK_OPTIONS_HINT = _tr('{right_mouse_icon}: quick options')
 
 # The brush outline hides at or below this on-screen diameter, where the crosshair alone marks the brush:
 MIN_OUTLINE_DIAMETER = CROSSHAIR_GRID_SIZE
 MIN_LINE_PRESSURE = 0.5
+# A right press and release this many viewer pixels apart or less still count as a click that opens the quick stroke
+# card, so an unsteady hand or pen button press doesn't miss it:
+QUICK_CARD_CLICK_SLOP = 20
 
 # Undo gesture that holds one stroke, from press to release. Every change a stroke makes, including the ones
 # `BrushTool._before_stroke_start` and `BrushTool._after_stroke_end` make, joins it as one undo step:
@@ -108,6 +113,9 @@ class BrushTool(BaseTool):
         self._crosshair_variant = CrosshairVariant.PLAIN
         self._outline = BrushOutline(scene)
         self._size_dragger = BrushSizeDragger(image_viewer)
+        self._quick_card: Optional[QuickStrokeCard] = None
+        # Set between a right press and its release, to the press position in viewer coordinates:
+        self._right_press_pos: Optional[QPoint] = None
 
         def _update_crosshair_variants(_: bool) -> None:
             self._apply_crosshair()
@@ -159,6 +167,11 @@ class BrushTool(BaseTool):
         HotkeyFilter.instance().modifiers_changed.connect(self._modifier_change_slot)
 
     @staticmethod
+    def quick_options_hint() -> str:
+        """Returns the hint for the right-click that opens the quick stroke card."""
+        return QUICK_OPTIONS_HINT.format(right_mouse_icon=right_button_hint_text())
+
+    @staticmethod
     def brush_control_hints() -> str:
         """Get control hints for line mode, fixed angle mode and size drags, if their modifiers are bound."""
         line_hint = LINE_HINT.format(left_mouse_icon=left_button_hint_text(),
@@ -191,6 +204,58 @@ class BrushTool(BaseTool):
                 self.set_brush_size(drag_size)
             self.update_brush_cursor()
         return handled
+
+    def quick_stroke_keys(self) -> Optional[StrokeKeys]:
+        """Returns the settings the tool's quick stroke card shows, or None if a right-click does nothing here.
+
+        Subclasses that offer the card return the same `StrokeKeys` their control panel is built from.
+        """
+        return None
+
+    def _create_quick_card(self, keys: StrokeKeys) -> QuickStrokeCard:
+        """Returns the quick stroke card for `keys`. Subclasses that add rows to the card override this."""
+        return QuickStrokeCard(self._image_viewer, keys, self.get_icon(), self.label)
+
+    @property
+    def quick_card(self) -> Optional[QuickStrokeCard]:
+        """Returns the quick stroke card if it has been opened before, shown or not."""
+        return self._quick_card
+
+    def close_quick_card(self) -> None:
+        """Hides the quick stroke card and forgets any right press in progress."""
+        self._right_press_pos = None
+        if self._quick_card is not None:
+            self._quick_card.close_card()
+
+    def _quick_card_right_press(self, event: QMouseEvent) -> bool:
+        """Records a right press that may become a click opening the card. Returns whether the press is claimed."""
+        if event.button() != Qt.MouseButton.RightButton or event.buttons() != Qt.MouseButton.RightButton \
+                or event.modifiers() != Qt.KeyboardModifier.NoModifier or self.quick_stroke_keys() is None \
+                or self.cursor_disabled or not self._image_stack.has_image:
+            return False
+        self._right_press_pos = event.position().toPoint()
+        return True
+
+    def _quick_card_right_release(self, event: QMouseEvent) -> bool:
+        """Opens the card for a right release near its press. Returns whether the release belongs to the card."""
+        press_pos = self._right_press_pos
+        self._right_press_pos = None
+        keys = self.quick_stroke_keys()  # pylint: disable=assignment-from-none  # Subclasses override it.
+        if press_pos is None or keys is None:
+            return False
+        release_pos = event.position().toPoint()
+        if (release_pos - press_pos).manhattanLength() > QUICK_CARD_CLICK_SLOP \
+                or event.modifiers() != Qt.KeyboardModifier.NoModifier or self.cursor_disabled \
+                or not self._image_stack.has_image:
+            return True
+        if self._quick_card is None:
+            self._quick_card = self._create_quick_card(keys)
+            self._image_viewer.view_changed.connect(self._quick_card.close_card)
+            self._image_stack.size_changed.connect(self._quick_card.close_card)
+        viewport = self._image_viewer.viewport()
+        assert viewport is not None
+        self._quick_card.open_at(viewport.mapToParent(release_pos))
+        return True
 
     def cancel_size_drag(self) -> bool:
         """Ends a size drag and restores the size from before it. Returns whether a size drag was in progress."""
@@ -344,6 +409,7 @@ class BrushTool(BaseTool):
     def _on_deactivate(self) -> None:
         """Disconnect from the image when the tool is inactive, ending a size drag without keeping its size."""
         self.cancel_size_drag()
+        self.close_quick_card()
         if self._drawing:
             self._drawing = False
             self._brush.end_stroke()
@@ -408,6 +474,8 @@ class BrushTool(BaseTool):
         """Starts drawing when the mouse is clicked in the scene."""
         if self._size_drag_event(event):
             return True
+        if event is not None and self._quick_card_right_press(event):
+            return True
         if event is None or event.buttons() != Qt.MouseButton.LeftButton or not self._image_stack.has_image \
                 or not self.validate_layer(self._layer, image_stack=self._image_stack):
             return False
@@ -430,6 +498,10 @@ class BrushTool(BaseTool):
         """Receives a mouse move event, returning whether the tool consumed the event."""
         if self._size_drag_event(event):
             return True
+        if self._right_press_pos is not None and event is not None:
+            drag = event.position().toPoint() - self._right_press_pos
+            if drag.manhattanLength() > QUICK_CARD_CLICK_SLOP:
+                self._right_press_pos = None
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
 
@@ -451,6 +523,9 @@ class BrushTool(BaseTool):
         """Receives a mouse release event, returning whether the tool consumed the event."""
         if self._size_drag_event(event):
             return True
+        if event is not None and event.button() == Qt.MouseButton.RightButton:
+            # A right release never ends a stroke, which only the left button draws:
+            return self._quick_card_right_release(event)
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
         if self._drawing:

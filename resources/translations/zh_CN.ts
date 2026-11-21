@@ -5768,6 +5768,11 @@ Please remember to include the traceback from the Details expander.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../../src/tools/brush_tool.py"/>
+        <source>{right_mouse_icon}: quick options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../../src/tools/mypaint_brush_tool.py"/>
         <source>Brush</source>
         <translation type="unfinished"></translation>
@@ -9881,6 +9886,14 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/widget/panel_header.py"/>
         <source>More</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.widget.quick_stroke_card</name>
+    <message>
+        <location filename="../../src/ui/widget/quick_stroke_card.py"/>
+        <source>Recent colors: click to set the foreground color</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

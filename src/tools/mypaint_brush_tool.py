@@ -16,7 +16,9 @@ from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MyPaintBrushToolPanel
+from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MYPAINT_STROKE_KEYS, MyPaintBrushToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys
+from src.ui.widget.quick_stroke_card import QuickStrokeCard
 from src.util.shared_constants import PROJECT_DIR
 from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text
@@ -81,8 +83,19 @@ class MyPaintBrushTool(BrushTool):
         """Return text describing different input functionality."""
         brush_hint = BRUSH_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
-        return BaseTool.join_hints(BaseTool.join_hints(brush_hint, eyedropper_hint),
+        return BaseTool.join_hints(BaseTool.join_hints(brush_hint, eyedropper_hint), BrushTool.quick_options_hint(),
                                    BrushTool.brush_control_hints(), super().get_input_hint(), separator='<br/>')
+
+    def quick_stroke_keys(self) -> Optional[StrokeKeys]:
+        """Returns the fields the right-click card shows."""
+        return MYPAINT_STROKE_KEYS
+
+    def _create_quick_card(self, keys: StrokeKeys) -> QuickStrokeCard:
+        """Adds the favorite brushes, read through the control panel's brush library so the brush folders are scanned
+           once."""
+        panel = self.get_control_panel()
+        assert isinstance(panel, MyPaintBrushToolPanel)
+        return QuickStrokeCard(self._image_viewer, keys, self.get_icon(), self.label, panel.brush_panel.library)
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

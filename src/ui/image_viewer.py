@@ -76,6 +76,13 @@ class ImageViewer(ImageGraphicsView):
             hotkey_filter.set_default_focus(self)
         config = AppConfig()
 
+        # The canvas has no context menu. Prevent, unlike the default, doesn't hand the event to `MainWindow`, whose
+        # dock menu would open over the quick stroke card (`QuickStrokeCard`), and the right button reaches the tools:
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
+        viewport = self.viewport()
+        if viewport is not None:
+            viewport.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
+
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
         self._layer_items: dict[int, 'LayerGraphicsItem'] = {}

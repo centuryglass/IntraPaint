@@ -556,6 +556,8 @@ Widgets shared across panels and windows: panel parts, color controls, labels, r
 - `src/ui/widget/panel_section.py`: A panel section: a short header over a body, collapsible to one line that still
   summarizes its values.
 - `src/ui/widget/parameter_def_widget.py`: Creates input widgets for the library's ControlNet `ParameterDef` values.
+- `src/ui/widget/quick_stroke_card.py`: A small card of a brush tool's stroke settings that opens at the cursor on a
+  right-click.
 - `src/ui/widget/ruler.py`: Rulers that label an ImageGraphicsView's image coordinates along one edge.
 - `src/ui/widget/section_popover.py`: A popover that shows a collapsed `PanelSection`'s body under its header, for
   panels with no room to expand it.

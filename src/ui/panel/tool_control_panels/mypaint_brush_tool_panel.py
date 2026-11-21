@@ -23,7 +23,8 @@ from src.ui.layout.panel_fit import REQUIRED, strip_section_min_width, FitItem, 
 from src.ui.panel.mypaint_brush_dynamics import BrushDynamicsWidget
 from src.ui.panel.mypaint_brush_grid import MAX_CELL_SIZE, MIN_COLUMNS, MIN_ROWS, brush_name
 from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
-from src.ui.panel.tool_control_panels.stroke_block import FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import (FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeKeys,
+                                                                       StrokeToolPanel)
 from src.ui.widget.panel_section import PanelSection
 from src.util.shared_constants import MAX_WIDGET_SIZE
 
@@ -59,12 +60,16 @@ DYNAMICS_PRIORITY = 2
 CATEGORY_LIST_PRIORITY = 3
 
 
+# The fields the panel and the tool's quick stroke card share:
+MYPAINT_STROKE_KEYS = StrokeKeys(size_key=Cache.PAINT_TOOL_BRUSH_SIZE, size_label=SIZE_LABEL,
+                                 color_key=Cache.LAST_BRUSH_COLOR)
+
+
 class MyPaintBrushToolPanel(StrokeToolPanel):
     """Control panel widget for the MyPaint Brush tool."""
 
     def __init__(self, brush: MyPaintBrush) -> None:
-        super().__init__(StrokeBlock(size_key=Cache.PAINT_TOOL_BRUSH_SIZE, size_label=SIZE_LABEL,
-                                     color_key=Cache.LAST_BRUSH_COLOR))
+        super().__init__(StrokeBlock(**MYPAINT_STROKE_KEYS.block_kwargs()))
         self._brush_picker = MypaintBrushPanel()
         self._brush_section = PanelSection(BRUSH_SECTION_TITLE, self._brush_picker)
         self._brush_section.setToolTip(FILE_DEFINED_HINT)

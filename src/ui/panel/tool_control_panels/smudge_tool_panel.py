@@ -4,7 +4,7 @@ from typing import Optional
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeKeys, StrokeToolPanel
 from src.ui.panel.tool_control_panels.stroke_preview import SmudgeStrokePreview
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -20,19 +20,23 @@ STRENGTH_LABEL = _tr('Strength')
 STRENGTH_TOOLTIP = _tr('How far the smudge carries color')
 
 
+# The fields the panel and the tool's quick stroke card share:
+SMUDGE_STROKE_KEYS = StrokeKeys(size_key=Cache.SMUDGE_TOOL_BRUSH_SIZE,
+                                pressure_size_key=Cache.SMUDGE_TOOL_PRESSURE_SIZE,
+                                opacity_key=Cache.SMUDGE_TOOL_OPACITY,
+                                opacity_label=STRENGTH_LABEL,
+                                opacity_tooltip=STRENGTH_TOOLTIP,
+                                pressure_opacity_key=Cache.SMUDGE_TOOL_PRESSURE_OPACITY,
+                                hardness_key=Cache.SMUDGE_TOOL_HARDNESS,
+                                pressure_hardness_key=Cache.SMUDGE_TOOL_PRESSURE_HARDNESS)
+
+
 class SmudgeToolPanel(StrokeToolPanel):
     """Control panel widget for the smudge tool: the stroke block without a color row, with Opacity read as
     Strength, and a preview of smudging."""
 
     def __init__(self):
-        super().__init__(StrokeBlock(size_key=Cache.SMUDGE_TOOL_BRUSH_SIZE,
-                                     pressure_size_key=Cache.SMUDGE_TOOL_PRESSURE_SIZE,
-                                     opacity_key=Cache.SMUDGE_TOOL_OPACITY,
-                                     opacity_label=STRENGTH_LABEL,
-                                     opacity_tooltip=STRENGTH_TOOLTIP,
-                                     pressure_opacity_key=Cache.SMUDGE_TOOL_PRESSURE_OPACITY,
-                                     hardness_key=Cache.SMUDGE_TOOL_HARDNESS,
-                                     pressure_hardness_key=Cache.SMUDGE_TOOL_PRESSURE_HARDNESS,
+        super().__init__(StrokeBlock(**SMUDGE_STROKE_KEYS.block_kwargs(),
                                      antialias_key=Cache.SMUDGE_TOOL_ANTIALIAS,
                                      preview=SmudgeStrokePreview(Cache.SMUDGE_TOOL_BRUSH_SIZE,
                                                                  Cache.SMUDGE_TOOL_OPACITY,
