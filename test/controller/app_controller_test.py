@@ -24,7 +24,7 @@ from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.display_size import get_screen_size
-from test.base_test_case import IntraPaintTestCase, delete_widgets_created_since, reset_singletons
+from test.base_test_case import IntraPaintTestCase, delete_widgets_created_since, install_test_context
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -198,7 +198,7 @@ class TestAppController(IntraPaintTestCase):
     @patch('src.ui.theme.qdarktheme')
     @patch('src.ui.theme.qt_material')
     def test_fix_styles_qdarktheme(self, MockQtMaterial, MockQDarkTheme):
-        AppConfig()._reset()
+        install_test_context()  # Drops setUp's controller's connections, so the config changes below don't reach it.
         initial_theme = AppConfig().get('theme')
         initial_font_size = AppConfig().get('font_point_size')
         AppConfig().add_option('theme', 'qdarktheme_dark')
@@ -218,7 +218,7 @@ class TestAppController(IntraPaintTestCase):
     @patch('src.ui.theme.qdarktheme')
     @patch('src.ui.theme.qt_material')
     def test_fix_styles_qt_material(self, MockQtMaterial, MockQDarkTheme):
-        AppConfig()._reset()
+        install_test_context()  # Drops setUp's controller's connections, so the config changes below don't reach it.
         initial_theme = AppConfig().get('theme')
         initial_font_size = AppConfig().get('font_point_size')
         AppConfig().add_option('theme', 'qt_material_dark')
@@ -503,7 +503,7 @@ class TestAppControllerLifetime(IntraPaintTestCase):
         controller_ref = weakref.ref(controller)
         image_stack_ref = weakref.ref(image_stack)
         del controller, image_stack, layer
-        reset_singletons()
+        install_test_context()
         delete_widgets_created_since(self._existing_widgets)
         self.assertIsNone(controller_ref())
         self.assertIsNone(image_stack_ref())

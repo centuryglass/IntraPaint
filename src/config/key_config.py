@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import QApplication
 
+from src.app_context import AppService
 from src.config.application_config import AppConfig
 from src.config.config import Config
 from src.config.generated_keys import KeyConfigKeys
@@ -13,7 +14,6 @@ from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.key_code_utils import get_modifiers, get_key_with_modifiers, key_alternatives
 from src.util.rich_text import escape_rich_text, rich_text_list
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
-from src.util.singleton import Singleton
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names},
 BRUSH_OPACITY_PRESETS = {f'brush_opacity_{percent}': percent / 100 for percent in range(10, 101, 10)}
 
 
-class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
+class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
     """Provides access to the user-editable application keybinding config."""
 
     # Defaults from released versions, so installs that never changed them follow the current default:

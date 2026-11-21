@@ -9,7 +9,7 @@ from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget
 
-from src.util.singleton import Singleton
+from src.app_context import AppService
 
 # Valid tracked application states:
 
@@ -33,8 +33,8 @@ APP_STATE_NOT_LOADING = [APP_STATE_INIT, APP_STATE_NO_IMAGE, APP_STATE_EDITING, 
 
 logger = logging.getLogger(__name__)
 
-class AppStateTracker(metaclass=Singleton):
-    """Singleton QObject that tracks the current application state and sends signals on state change."""
+class AppStateTracker(metaclass=AppService):
+    """Global service that tracks the current application state and sends signals on state change."""
 
     def __init__(self) -> None:
 
@@ -95,13 +95,11 @@ class AppStateTracker(metaclass=Singleton):
             self._app_state = new_state
             self._state_changed.emit(new_state)
 
-    def _reset(self) -> None:
-        """Restores the initial state and disconnects every widget, action and slot connected to state changes.
+    def close(self) -> None:
+        """Disconnects every widget, action and slot connected to state changes. `AppContext.close` calls this.
 
-        Tests call this between cases. Connections keep their widgets alive, and a later state change would act on
-        widgets from earlier tests.
+        Connections keep their widgets alive for as long as anything still holds this tracker.
         """
         self._connections.clear()
         if self._signal_object.receivers(SIGNAL('state_changed(QString)')) > 0:
             self._state_changed.disconnect()
-        self._app_state = APP_STATE_INIT

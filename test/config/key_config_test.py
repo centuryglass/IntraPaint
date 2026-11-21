@@ -57,7 +57,7 @@ class KeyConfigValidationTest(IntraPaintTestCase):
 
 
 class _ScratchKeyConfig(Config):
-    """A key config that isn't the shared singleton, with `KeyConfig`'s definitions and previous defaults."""
+    """A key config that no AppContext owns, with `KeyConfig`'s definitions and previous defaults."""
     PREVIOUS_DEFAULTS = KeyConfig.PREVIOUS_DEFAULTS
 
     def __init__(self, json_path: str) -> None:

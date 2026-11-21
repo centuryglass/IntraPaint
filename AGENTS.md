@@ -82,6 +82,10 @@ pip install -r requirements-dev.txt   # for development: adds the test, lint and
   bindings), `filter/`, `brush/`.
 - **`src/tools/`:** the editing tools (brush, selection, text, shapes, fill, etc.).
 - **`src/ui/`:** Qt UI: `window/`, `panel/`, `modal/`, `widget/`, `input_fields/`, `layout/`, `graphics_items/`.
+- **Global services belong to the installed `AppContext`** (`src/app_context.py`): the config classes, `UndoStack`,
+  `AppStateTracker` and `HotkeyFilter`. `AppConfig()` and the other accessors return the installed context's
+  instance and take no arguments; constructor arguments go through `AppContext`. Every test installs a new context,
+  so a module-level or class-level attribute must not hold a service, and `test/base_test_case_test.py` fails on one.
 - **On-canvas markers register with `ImageViewer.canvas_extras`** (`src/ui/canvas_extras.py`), which groups them by
   category so each category can be hidden. A tool that adds a marker to the viewer's scene registers it there.
 - **`src/util/`:** helpers, including `visual/image_fill` (Cython-compiled).
@@ -98,11 +102,8 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   - `cache_value_definitions.json` → `Cache` (persisted state/values)
   - `key_config_definitions.json` → `KeyConfig` (keybindings)
   - `a1111_setting_definitions.json` → `A1111Config`
-- `src/config/config_from_key.py` maps a key to its owning config singleton. Each config class is a singleton
-  accessed like `AppConfig().get(key)`. A missing key raises `KeyError` at runtime.
-- Singletons (the config classes, `UndoStack`) bind to the arguments of their first construction and ignore them
-  afterwards, so `AppConfig('other.json')` returns the existing instance. `conftest.py` relies on this to back every
-  test's config with temporary copies.
+- `src/config/config_from_key.py` maps a key to the config that owns it. Each config class is a global service
+  ("Architecture"), accessed like `AppConfig().get(key)`. A missing key raises `KeyError` at runtime.
 - **Saved files are sparse and versioned.** A config file holds only entries that differ from their definition's
   default, plus an integer `config_version`. A changed default reaches every install that never customized the key.
   - `"pinned": true` in a definition keeps its saved entry even when it equals the default (`DefinitionKey.PINNED`).
@@ -195,8 +196,8 @@ comments and docstrings you write or touch, to this file, and to new docs under 
   `conftest.py`:
   - forces Qt's offscreen platform before PySide6 loads, so no display is required. Override with
     `QT_QPA_PLATFORM=xcb pytest ...` to watch a test render.
-  - creates the config singletons from temporary copies of `test/resources/*_test.json` before collection, so tests
-    can't rewrite the committed fixtures.
+  - installs an `AppContext` whose configs load temporary copies of `test/resources/*_test.json` before collection,
+    so tests can't rewrite the committed fixtures.
   - applies the fixture's style, theme and font size (`src/ui/theme.py`), and on Linux hides the system's fonts from Qt,
     so text metrics and palette colors are the same on every machine. A test that switches theme restores `THEME_INK`
     afterwards.
@@ -217,9 +218,10 @@ comments and docstrings you write or touch, to this file, and to new docs under 
     `src/ui/theme.py`, `resources/`, `conftest.py`, `test/base_test_case.py`, `requirements*.txt`), when changing
     the cycle check (`test/qt_cycles.py`), and when the scope is unclear.
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
-  `setUp` and `tearDown` reset the singletons listed in `reset_singletons`, and `setUp` changes to the project root.
-  Tests share one process, so a test that changes any other singleton resets it too. `tearDown` deletes every
-  parentless widget the test created, so a widget shared between tests is created in `setUpClass`.
+  `setUp` and `tearDown` install a fresh `AppContext` (`install_test_context`), so every test gets new global
+  services, and `setUp` changes to the project root. Tests share one process, so a test that changes other global
+  state restores it. `tearDown` deletes every parentless widget the test created, so a widget shared between tests is
+  created in `setUpClass`.
 - **A test fails when it leaves Qt objects in reference cycles** (checked on Python 3.13 only), so a change in
   `src/` that adds a cycle fails the tests that reach it. `test/qt_cycles.py` describes the check and its report of the
   code in each cycle.

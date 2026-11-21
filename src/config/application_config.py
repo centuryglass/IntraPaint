@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from PySide6.QtWidgets import QStyleFactory
 
+from src.app_context import AppService
 from src.config.config import Config
 from src.config.generated_keys import AppConfigKeys
 from src.ui.theme import THEME_INK, THEME_SYSTEM
@@ -11,7 +12,6 @@ from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR, APP_CONFIG_PATH
 from src.util.shared_text import PIL_SCALING_MODES
 from src.util.translation import SYSTEM_LANGUAGE, available_languages, language_name
-from src.util.singleton import Singleton
 
 # Optional theme modules:
 qdarktheme = optional_import('qdarktheme')
@@ -26,7 +26,7 @@ DEFAULT_THEME_OPTIONS = [THEME_INK, THEME_SYSTEM]
 DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
-class AppConfig(AppConfigKeys, Config, metaclass=Singleton):
+class AppConfig(AppConfigKeys, Config, metaclass=AppService):
     """Provides access to the user-editable application config."""
 
     # Defaults from released versions, so installs that never changed them follow the current default:

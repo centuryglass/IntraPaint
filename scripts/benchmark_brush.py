@@ -31,6 +31,7 @@ from PySide6.QtCore import QPoint, QSize, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
 
+from src.app_context import AppContext, install_context
 from src.config.application_config import AppConfig
 from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.brush.layer_brush import LayerBrush
@@ -236,7 +237,7 @@ def main() -> None:
     try:
         config_path = os.path.join(config_dir, 'app_config.json')
         shutil.copyfile(os.path.join(PROJECT_ROOT, 'test', 'resources', 'app_config_test.json'), config_path)
-        AppConfig(config_path)
+        install_context(AppContext({AppConfig: (config_path,)}))
         brush_names = list(BENCHMARKS) if args.brush == 'all' else [args.brush]
         print(f"{'case':<44}{'draw ms':>10}{'per unit us':>13}{'worst call ms':>15}")
         for brush_name in brush_names:
