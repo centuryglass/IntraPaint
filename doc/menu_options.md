@@ -55,6 +55,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Stack](#stack)
      - [Select previous layer (Alt+])](#select-previous-layer-alt)
      - [Select next layer (Alt+[)](#select-next-layer-alt)
+     - [Extend layer selection up (Shift+Alt+])](#extend-layer-selection-up-shiftalt)
+     - [Extend layer selection down (Shift+Alt+[)](#extend-layer-selection-down-shiftalt)
      - [Move layer up (Ctrl+])](#move-layer-up-ctrl)
      - [Move layer down (Ctrl+[)](#move-layer-down-ctrl)
      - [Move layer to top (Ctrl+Shift+])](#move-layer-to-top-ctrlshift)
@@ -75,6 +77,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Deselect all (Ctrl+D)](#deselect-all-ctrld)
    - [Invert selection (Ctrl+Shift+I)](#invert-selection-ctrlshifti)
    - [Select layer content (Ctrl+Shift+A)](#select-layer-content-ctrlshifta)
+   - [Select all layers (Ctrl+Alt+A)](#select-all-layers-ctrlalta)
    - [Grow selection (Ctrl+Alt+=)](#grow-selection-ctrlalt)
    - [Shrink selection (Ctrl+Alt+-)](#shrink-selection-ctrlalt-)
    - [Clear context pins (Ctrl+Alt+P)](#clear-context-pins-ctrlaltp)
@@ -405,11 +408,11 @@ Creates a new layer group.  If the active layer is an unlocked layer group, the 
 
 ### Duplicate layer (Ctrl+J)
 
-Creates a new copy of the current active layer, placing it above the active layer.
+Creates a new copy of the current active layer, placing it above the active layer. With several layers selected in the [layer panel](#layers-panel-controls), this copies each selected layer just above itself, and the copies become the selection.
 
 ### Delete layer (Shift+Delete)
 
-Deletes the active layer, selecting the next layer below it as the new active layer.
+Deletes the active layer, selecting the next layer below it as the new active layer. With several layers selected in the layer panel, this deletes all of them, and the layer below the lowest one becomes active. If any selected layer is locked, nothing is deleted.
 
 ### Rename layer (F2)
 
@@ -432,6 +435,14 @@ Selects the layer directly below the current active layer as the new active laye
 
 - If the current active layer is a layer group, this will select the topmost layer within that group.
 - If the current active layer is the last one in a layer group, this will select the first layer below the group.
+
+#### Extend layer selection up (Shift+Alt+])
+
+Adds the layer directly above the active layer to the selected layers in the layer panel, and makes it the active layer. Duplicate layer and Delete layer act on every selected layer.
+
+#### Extend layer selection down (Shift+Alt+[)
+
+Adds the layer directly below the active layer to the selected layers in the layer panel, and makes it the active layer.
 
 #### Move layer up (Ctrl+])
 
@@ -530,6 +541,10 @@ Swaps selected and deselected areas.  Every spot that wasn't selected will be se
 ### Select layer content (Ctrl+Shift+A)
 
 Removes any previous selections, and selects all pixels in the current active layer or layer group that aren't completely transparent.
+
+### Select all layers (Ctrl+Alt+A)
+
+Selects every layer in the layer panel, keeping the active layer active. Unlike the other options in this menu, this selects layers rather than image content: Duplicate layer and Delete layer then act on every layer.
 
 ### Grow selection (Ctrl+Alt+=)
 
@@ -689,7 +704,9 @@ Shows the panel you can use to manage image layers, or hides it if it is already
 
 <img src="./labeled_screenshots/layers.jpg" alt="Screenshot of the layers panel, with specific elements numbered."/>
 
-Click and drag any layer to move it within the list.  Right-click a layer to select it and show more options for editing it, grouped by purpose, with each command's key binding beside it.  Dragging a layer shows where it will land: the label at the marker's right end names the spot, a group it will enter is outlined, and a locked group is outlined in red and refuses the drop.  Press [F2](#rename-layer-f2) to rename the active layer.
+Click a layer to select it. Ctrl+click (Cmd+click on macOS) adds a layer to the selection or removes it, and Shift+click selects every shown row from the last layer clicked to this one. Duplicate and Delete act on every selected layer, and the panel header counts them. Other commands, and all tools, act on the active layer only.
+
+Click and drag any layer to move it within the list. Dragging a selected layer moves every selected layer, keeping their order.  Right-click a layer to select it and show more options for editing it (right-clicking a layer that is already selected keeps the selection, and shows duplicate, select contents and delete for every selected layer), grouped by purpose, with each command's key binding beside it.  Dragging a layer shows where it will land: the label at the marker's right end names the spot, a group it will enter is outlined, and a locked group is outlined in red and refuses the drop.  Press [F2](#rename-layer-f2) to rename the active layer.
 
 1. **Selected layer header**: Shows the active layer's thumbnail and name, with the controls that edit it. While the layer or a group containing it is locked, a banner names the locked layer and offers to unlock it, and the controls that would change the layer are disabled.
    - 1a. **Layer mode**: Sets the blending/compositing mode of the active layer, controlling how its content is rendered into the image. While the list is open, the highlighted mode previews on the layer. See the [W3 Compositing and Blending Standard](https://www.w3.org/TR/compositing-1/) for in-depth descriptions and example images of the available modes.
@@ -697,7 +714,7 @@ Click and drag any layer to move it within the list.  Right-click a layer to sel
    - 1c. **Layer flag toggles**: Toggles for the flags the active layer can have. When locked, layers cannot be moved or edited in any way, and when a layer group is locked, the same restriction applies to all layers within it. Image layers also have an **Alpha lock** toggle, and layer groups an **Isolate** toggle (see 9 and 8). The whole image has none of these.
 2. **Whole image**: The group that contains all layers in the image, with the image's name and size. Click it to make the whole image the active layer. Unlike other layer groups, it cannot be locked, deleted, or moved.
 3. **Open layer group**: A layer group containing several inner layers. Clicking the arrow beside its thumbnail shows and hides the inner layers.
-4. **Active layer**: The active layer, a text layer, marked "Aa" on its thumbnail. Active layer status is indicated by the highlighting and the stripe at the row's left edge. Only one layer can be active at a time, and most tools and Layer menu options are applied to the active layer only.
+4. **Active layer**: The active layer, a text layer, marked "Aa" on its thumbnail. Every selected layer is highlighted, and the active layer also has the stripe at the row's left edge. Only one layer can be active at a time, and most tools and Layer menu options are applied to the active layer only.
 5. **Image layers**: Several image layers, shown in the order that they're stacked within the image. All drawing and painting tools work by editing an active image layer. Hold the mouse over a thumbnail to see the layer's size and position.
 6. **Closed layer group**: Another layer group below all other image content, hidden so that its contents are preserved but not seen.
 7. **Layer name**: Each layer has a name, used for organizational purposes only. Double-click a layer's name to edit it. Below the name, a line can show more about the layer, such as how many layers a group holds.
@@ -709,11 +726,11 @@ Click and drag any layer to move it within the list.  Right-click a layer to sel
 11. **Visibility button**: Click to hide the layer within the image, or to reveal it if it was previously hidden. This changes only that layer: a layer inside a hidden group stays out of the image until the group is shown, and its button shows a crossed-out eye while it is marked visible. Most changes to hidden layer content will also be prevented, including layers inside a hidden group.
 12. **New layer button**: Click to create a new layer. If an unlocked layer group is the active layer the new layer will be created at the top of that group, otherwise it will be created above the active layer.
 13. **New layer group button**: Click to create a new layer group. New layer groups are always empty, but existing layers can be dragged into them.
-14. **Duplicate layer button**: Click to create a copy of the active layer above it.
+14. **Duplicate layer button**: Click to create a copy of each selected layer above it.
 15. **Move up button**: Click to move the active layer up within the layer stack. This can move layers into and out of unlocked groups.
 16. **Move down button**: Click to move the active layer down within the layer stack.
 17. **Merge down button**: Click to merge the active layer with the one beneath it. This will only work when both layers are visible and unlocked.
-18. **Delete layer button**: Click to delete the active layer.
+18. **Delete layer button**: Click to delete every selected layer.
 19. **More button**: Holds the thumbnail size (Auto, Small, Medium or Large), and the commands that select the previous or next layer.
 
 ### Navigation panel (Ctrl+Alt+W)

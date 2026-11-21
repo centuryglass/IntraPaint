@@ -84,6 +84,8 @@
         "Stack": [
           "Select previous layer",
           "Select next layer",
+          "Extend layer selection up",
+          "Extend layer selection down",
           "----",
           "Move layer up",
           "Move layer down",
@@ -114,6 +116,7 @@
       "Invert selection",
       "----",
       "Select layer content",
+      "Select all layers",
       "----",
       "Grow selection",
       "Shrink selection",

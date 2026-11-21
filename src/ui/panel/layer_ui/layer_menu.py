@@ -1,6 +1,7 @@
 """Context menus for layer list rows and the image strip.
 
-They act on the layer they were built for, which isn't always the active layer.
+`build_layer_menu` acts on the layer it was built for, which isn't always the active layer. `build_selection_menu`
+acts on every selected layer, for a right-click on a row in a multi-selection.
 """
 from typing import Callable, Optional, cast
 
@@ -15,6 +16,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import crop_layer_to_selection
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.layer_selection_ops import delete_selected_layers, duplicate_selected_layers
 from src.image.layers.transform_layer import TransformLayer
 from src.util.key_code_utils import key_alternatives
 from src.util.shared_constants import PROJECT_DIR
@@ -49,6 +51,7 @@ MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
 MENU_OPTION_ROTATE_CW = _tr('Rotate 90° clockwise')
 MENU_OPTION_ROTATE_CCW = _tr('Rotate 90° counter-clockwise')
 MENU_OPTION_SELECT_CONTENT = _tr('Select layer contents')
+MENU_OPTION_SELECT_CONTENT_MULTIPLE = _tr('Select contents of selected layers')
 SUBMENU_CROP_AND_RESIZE = _tr('Crop and resize')
 SUBMENU_MIRROR_AND_ROTATE = _tr('Mirror and rotate')
 COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
@@ -73,6 +76,47 @@ def _add_key_hint(action: QAction, config_key: Optional[str]) -> None:
     if isinstance(keys, str) and keys != '':
         action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
         action.setShortcuts([QKeySequence(alternative) for alternative in key_alternatives(keys)])
+
+
+def duplicate_layers_text(count: int) -> str:
+    """Returns the text of an action that duplicates `count` selected layers, for `count` above one."""
+    return _tr('Duplicate %n layer(s)', None, count)
+
+
+def delete_layers_text(count: int) -> str:
+    """Returns the text of an action that deletes `count` selected layers, for `count` above one."""
+    return _tr('Delete %n layer(s)', None, count)
+
+
+def build_selection_menu(image_stack: ImageStack) -> QMenu:
+    """Returns the context menu for a multi-selection: duplicate, select contents and delete, each acting on every
+    selected layer."""
+    menu = QMenu()
+    count = image_stack.selected_layer_count
+    menu.setTitle(_tr('%n layer(s)', None, count))
+    layers = image_stack.effective_selected_layers()
+    editable = all(not layer.locked and not layer.parent_locked for layer in layers)
+
+    duplicate = menu.addAction(duplicate_layers_text(count))
+    assert duplicate is not None
+    duplicate.triggered.connect(lambda: duplicate_selected_layers(image_stack))
+    _add_key_hint(duplicate, 'copy_layer_shortcut')
+    duplicate.setIcon(palette_icon(ICON_PATH_DUPLICATE))
+
+    menu.addSeparator()
+    select_content = menu.addAction(MENU_OPTION_SELECT_CONTENT_MULTIPLE)
+    assert select_content is not None
+    select_content.triggered.connect(lambda: image_stack.select_layers_content(image_stack.effective_selected_layers()))
+    _add_key_hint(select_content, 'select_layer_content_shortcut')
+
+    menu.addSeparator()
+    delete = menu.addAction(delete_layers_text(count))
+    assert delete is not None
+    delete.triggered.connect(lambda: delete_selected_layers(image_stack))
+    delete.setEnabled(editable)
+    _add_key_hint(delete, 'delete_layer_shortcut')
+    delete.setIcon(palette_icon(ICON_PATH_DELETE))
+    return menu
 
 
 def build_layer_menu(layer: Layer, image_stack: ImageStack, rename: Callable[[], None]) -> QMenu:

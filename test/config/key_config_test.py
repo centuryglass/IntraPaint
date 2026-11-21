@@ -132,6 +132,27 @@ class KeyConfigDefaultsTest(IntraPaintTestCase):
                 parsed = [get_key_with_modifiers(binding) for binding in key_alternatives(KeyConfig().get(config_key))]
                 self.assertEqual(expected, parsed)
 
+    def test_layer_selection_shortcuts(self) -> None:
+        """Layer selection follows the editor conventions: Ctrl+J duplicates, Alt+[ and Alt+] step through layers,
+        Shift+Alt+[ and Shift+Alt+] extend the selection, and Ctrl+Alt+A selects every layer."""
+        expectations = {
+            KeyConfig.COPY_LAYER_SHORTCUT: [(Qt.Key.Key_J, Qt.KeyboardModifier.ControlModifier)],
+            KeyConfig.SELECT_NEXT_LAYER_SHORTCUT: [(Qt.Key.Key_BracketLeft, Qt.KeyboardModifier.AltModifier),
+                                                   (Qt.Key.Key_PageDown, Qt.KeyboardModifier.ControlModifier)],
+            KeyConfig.SELECT_PREVIOUS_LAYER_SHORTCUT: [(Qt.Key.Key_BracketRight, Qt.KeyboardModifier.AltModifier),
+                                                       (Qt.Key.Key_PageUp, Qt.KeyboardModifier.ControlModifier)],
+            KeyConfig.EXTEND_LAYER_SELECTION_DOWN_SHORTCUT: [(Qt.Key.Key_BracketLeft, Qt.KeyboardModifier.ShiftModifier
+                                                              | Qt.KeyboardModifier.AltModifier)],
+            KeyConfig.EXTEND_LAYER_SELECTION_UP_SHORTCUT: [(Qt.Key.Key_BracketRight, Qt.KeyboardModifier.ShiftModifier
+                                                            | Qt.KeyboardModifier.AltModifier)],
+            KeyConfig.SELECT_ALL_LAYERS_SHORTCUT: [(Qt.Key.Key_A, Qt.KeyboardModifier.ControlModifier
+                                                    | Qt.KeyboardModifier.AltModifier)],
+        }
+        for config_key, expected in expectations.items():
+            with self.subTest(config_key=config_key):
+                parsed = [get_key_with_modifiers(binding) for binding in key_alternatives(KeyConfig().get(config_key))]
+                self.assertEqual(expected, parsed)
+
     def test_grow_and_shrink_selection_leave_the_zoom_keys(self) -> None:
         """Ctrl+= and Ctrl+- zoom, so selection resizing uses Ctrl+Alt."""
         self.assertEqual('Ctrl+Alt+=', KeyConfig().get(KeyConfig.GROW_SELECTION_SHORTCUT))

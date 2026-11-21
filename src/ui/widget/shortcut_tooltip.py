@@ -64,7 +64,7 @@ class _PaletteWatcher(QObject):
         return False
 
 
-def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str],
+def set_shortcut_tooltip(widget: QWidget, text: Union[str, Callable[[], str]], config_key: Optional[str],
                          description: Union[str, Callable[[], str]] = '', rich_text: bool = True) -> Callable[[], None]:
     """Sets a widget's tooltip to `text` plus the key binding stored at `config_key`, updating it if the binding
        or the application palette changes.
@@ -73,8 +73,8 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str],
     ----------
     widget: QWidget
         The widget to set the tooltip on.
-    text: str
-        The tooltip title.
+    text: str or function returning str
+        The tooltip title. A function is called on each refresh, so the title can change.
     config_key: Optional[str]
         The `KeyConfig` key holding the binding to show, or None to show none.
     description: str or function returning str, default=''
@@ -86,7 +86,7 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str],
     Returns
     -------
     function
-        Rebuilds the tooltip, for callers whose `description` function now returns something else.
+        Rebuilds the tooltip, for callers whose `text` or `description` function now returns something else.
     """
     key_config = KeyConfig()
 
@@ -100,12 +100,13 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str],
         target = widget_ref()
         if target is None:
             return
+        title = text if isinstance(text, str) else text()
         if rich_text:
-            target.setToolTip(rich_shortcut_tooltip_text(text, _keys(),
+            target.setToolTip(rich_shortcut_tooltip_text(title, _keys(),
                                                          description if isinstance(description, str)
                                                          else description()))
         else:
-            target.setToolTip(shortcut_tooltip_text(text, _keys()))
+            target.setToolTip(shortcut_tooltip_text(title, _keys()))
 
     _refresh()
     if rich_text:

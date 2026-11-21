@@ -1034,6 +1034,152 @@ class LayerPanelTest(IntraPaintTestCase):
         self.assertEqual(outlined, {'nested': refused_drop_color()})
         self.assertEqual(layer_list.insert_marker_text, '')
 
+    # Multi-selection:
+
+    def _click(self, layer: Layer, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier,
+               button: Qt.MouseButton = Qt.MouseButton.LeftButton) -> None:
+        """Clicks a layer's row on its thumbnail, then releases the modifiers, which QTest leaves held."""
+        row = self.row(layer)
+        QtTest.QTest.mouseClick(row, button, modifiers, row.thumbnail.geometry().center())
+        QtTest.QTest.keyRelease(row, Qt.Key.Key_unknown, Qt.KeyboardModifier.NoModifier)
+
+    def selected_names(self) -> list[str]:
+        """Returns the selected layers' names in stack order."""
+        return [layer.name for layer in self.image_stack.selected_layers_in_order()]
+
+    def test_ctrl_click_adds_and_removes_layers(self) -> None:
+        """Ctrl+click adds a layer and makes it active. Removing the active layer makes the topmost layer still selected
+        active, and removing the only selected layer does nothing."""
+        ctrl = Qt.KeyboardModifier.ControlModifier
+        self._click(self.inner_top, ctrl)
+        self.assertEqual(['inner_top', 'bottom'], self.selected_names())
+        self.assertIs(self.image_stack.active_layer, self.inner_top)
+        self._click(self.nested_child, ctrl)
+        self._click(self.nested_child, ctrl)
+        self.assertEqual(['inner_top', 'bottom'], self.selected_names())
+        self.assertIs(self.image_stack.active_layer, self.inner_top)
+        self._click(self.inner_top, ctrl)
+        self.assertEqual(['bottom'], self.selected_names())
+        self._click(self.bottom, ctrl)
+        self.assertEqual(['bottom'], self.selected_names())
+
+    def test_shift_click_selects_a_range_of_shown_rows(self) -> None:
+        """Shift+click selects the shown rows from the anchor to the clicked row, skipping layers in collapsed groups,
+        and makes the clicked row active."""
+        self._click(self.inner_top)
+        self.panel.layer_list.set_expanded(self.nested, False)
+        self._click(self.bottom, Qt.KeyboardModifier.ShiftModifier)
+        self.assertEqual(['inner_top', 'nested', 'inner_bottom', 'bottom'], self.selected_names())
+        self.assertIs(self.image_stack.active_layer, self.bottom)
+        self._click(self.group, Qt.KeyboardModifier.ShiftModifier)
+        self.assertEqual(['group', 'inner_top'], self.selected_names())
+
+    def test_ctrl_click_moves_the_range_anchor(self) -> None:
+        """A Ctrl+click sets the anchor that the next Shift+click ranges from."""
+        self._click(self.bottom, Qt.KeyboardModifier.ControlModifier)
+        self._click(self.inner_bottom, Qt.KeyboardModifier.ControlModifier)
+        self._click(self.nested, Qt.KeyboardModifier.ShiftModifier)
+        self.assertEqual(['nested', 'nested_child', 'inner_bottom'], self.selected_names())
+
+    def test_plain_click_collapses_a_multi_selection(self) -> None:
+        """A click on a row in a multi-selection selects that row alone once released."""
+        self.image_stack.select_layers([self.inner_top, self.bottom], self.bottom)
+        row = self.row(self.inner_top)
+        QtTest.QTest.mousePress(row, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier,
+                                row.thumbnail.geometry().center())
+        self.assertEqual(['inner_top', 'bottom'], self.selected_names())
+        QtTest.QTest.mouseRelease(row, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier,
+                                  row.thumbnail.geometry().center())
+        self.assertEqual(['inner_top'], self.selected_names())
+        self.assertIs(self.image_stack.active_layer, self.inner_top)
+
+    def test_right_click_keeps_a_selection_holding_the_row(self) -> None:
+        """Right-clicking a selected row keeps the selection and gives the multi-layer menu. Right-clicking another
+        row selects it alone."""
+        self.image_stack.select_layers([self.inner_top, self.bottom], self.bottom)
+        self._click(self.inner_top, button=Qt.MouseButton.RightButton)
+        self.assertEqual(['inner_top', 'bottom'], self.selected_names())
+        menu = self.row(self.inner_top).build_menu()
+        self.assertEqual(['Duplicate 2 layers', 'Select contents of selected layers', 'Delete 2 layers'],
+                         [action.text() for action in menu.actions() if not action.isSeparator()])
+        self._click(self.nested, button=Qt.MouseButton.RightButton)
+        self.assertEqual(['nested'], self.selected_names())
+
+    def test_image_strip_modifier_clicks_do_nothing(self) -> None:
+        """The root can't join a multi-selection, so Ctrl+click and Shift+click on the image strip change nothing."""
+        self.image_stack.select_layers([self.inner_top, self.bottom], self.bottom)
+        strip = self.panel.layer_list.image_strip
+        for modifier in (Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.ShiftModifier):
+            QtTest.QTest.mouseClick(strip, Qt.MouseButton.LeftButton, modifier, QPoint(60, 5))
+            QtTest.QTest.keyRelease(strip, Qt.Key.Key_unknown, Qt.KeyboardModifier.NoModifier)
+        self.assertEqual(['inner_top', 'bottom'], self.selected_names())
+
+    def test_selected_rows_get_the_fill_and_only_the_active_row_the_stripe(self) -> None:
+        """Every selected row is marked selected, and only the active one is marked active."""
+        self.image_stack.select_layers([self.inner_top, self.nested_child, self.bottom], self.nested_child)
+        for row in self.panel.layer_list.rows:
+            self.assertEqual(row.selected, row.layer in (self.inner_top, self.nested_child, self.bottom),
+                             row.layer.name)
+            self.assertEqual(row.active, row.layer is self.nested_child, row.layer.name)
+        self.image_stack.active_layer = self.group
+        self.assertEqual([row.layer for row in self.panel.layer_list.rows if row.selected], [self.group])
+
+    def test_header_and_buttons_follow_the_selection(self) -> None:
+        """The header counts the selected layers, and the duplicate and delete buttons name the count and act on every
+        selected layer."""
+        self.image_stack.select_layers([self.inner_top, self.bottom], self.bottom)
+        self.assertEqual(self.panel.header.description(), '2 layers selected')
+        self.assertEqual(self.panel._duplicate_button.accessibleName(), 'Duplicate 2 layers')
+        self.assertIn('Delete 2 layers', self.panel._delete_button.toolTip())
+        self.panel._duplicate_button.click()
+        self.assertEqual(self.group.count, 4)
+        self.assertEqual(self.image_stack.layer_stack.count, 3)
+        self.assertEqual(['inner_top copy', 'bottom copy'], self.selected_names())
+        self.panel._delete_button.click()
+        self.assertEqual(self.group.count, 3)
+        self.assertEqual(self.image_stack.layer_stack.count, 2)
+        self.assertEqual(self.panel.header.description(), '6 layers')
+        self.assertEqual(self.panel._duplicate_button.accessibleName(), DUPLICATE_BUTTON_TITLE)
+        self.assert_panel_matches_stack()
+
+    def test_delete_button_disabled_with_a_locked_layer_selected(self) -> None:
+        """Delete refuses a selection holding a locked layer, so its button is disabled."""
+        self.inner_top.locked = True
+        self.image_stack.select_layers([self.inner_top, self.bottom], self.bottom)
+        self.assertFalse(self.panel._delete_button.isEnabled())
+        self.image_stack.select_layers([self.bottom], self.bottom)
+        self.assertTrue(self.panel._delete_button.isEnabled())
+
+    def test_drag_moves_every_selected_layer(self) -> None:
+        """Dragging a selected row moves the selection to the drop spot, in order, and the label gives the count."""
+        self.image_stack.select_layers([self.inner_top, self.inner_bottom], self.inner_top)
+        layer_list = self.panel.layer_list
+        flush_layouts()
+        target = self.row(self.bottom)
+        event = _DragEvent(self.row(self.inner_top), QPointF(target.width() / 2, target.y() + target.height() * 3 // 4))
+        layer_list.drag_move(event)
+        self.assertEqual(layer_list.insert_marker_text, '2 layers below bottom')
+        layer_list.drop(event)
+        self.assertEqual(['group', 'bottom', 'inner_top', 'inner_bottom'],
+                         [layer.name for layer in self.image_stack.layer_stack.child_layers])
+        self.assertEqual(['inner_top', 'inner_bottom'], self.selected_names())
+        self.assert_panel_matches_stack()
+        UndoStack().undo()
+        self.assertEqual(['inner_top', 'inner_bottom'], self.selected_names())
+        self.assertEqual(self.group.child_layers, [self.inner_top, self.nested, self.inner_bottom])
+
+    def test_drag_refuses_a_drop_into_a_dragged_group(self) -> None:
+        """A selection holding a group can't drop into that group or a group inside it."""
+        self.image_stack.select_layers([self.group, self.bottom], self.bottom)
+        layer_list = self.panel.layer_list
+        flush_layouts()
+        target = self.row(self.nested_child)
+        event = _DragEvent(self.row(self.bottom), QPointF(target.width() / 2, target.y() + target.height() // 4))
+        layer_list.drag_move(event)
+        self.assertEqual(layer_list.insert_marker_text, '')
+        layer_list.drop(event)
+        self.assertEqual([self.group, self.bottom], self.image_stack.layer_stack.child_layers)
+
     # Right-click, menu groups and rename:
 
     def test_right_click_selects_the_row(self) -> None:

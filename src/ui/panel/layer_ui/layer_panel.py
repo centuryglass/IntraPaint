@@ -15,13 +15,15 @@ It is a `DockPanel`, so it shows as much as fits the space its dock reports:
 - A strip needs room to read the start of a layer name beside the header (`LayerList.set_readable_names`), and its
   columns stay at the left edge. A strip that would scroll more than a sliver sideways gives way to a side panel
   (`STRIP_SCROLL_LIMIT`).
-- The panel header counts the layers under the root. While the panel floats, its title bar shows the name and the
+- The panel header counts the layers under the root, or the selected layers while there are several. Duplicate and
+  Delete act on every selected layer (`layer_selection_ops`), and the other buttons on the active layer. While the
+  panel floats, its title bar shows the name and the
   count (the title note), so the header hides (`apply_header_form`).
 
 All layer changes go through `ImageStack`.
 """
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
@@ -32,9 +34,11 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.image.layers.layer_selection_ops import delete_selected_layers, duplicate_selected_layers
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
 from src.ui.layout.panel_fit import REQUIRED, strip_section_max_width, FitItem, Orientation, fresh_minimum_size
 from src.ui.panel.layer_ui.layer_list import LayerList
+from src.ui.panel.layer_ui.layer_menu import delete_layers_text, duplicate_layers_text
 from src.ui.panel.layer_ui.layer_properties import LayerProperties
 from src.ui.panel.layer_ui.layer_row import LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNAIL_SIZE, SMALL_THUMBNAIL_SIZE
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
@@ -60,8 +64,10 @@ ADD_GROUP_BUTTON_TITLE = _tr('Add layer group')
 ADD_GROUP_BUTTON_TOOLTIP = _tr('Create a new layer group above the current active layer.')
 DUPLICATE_BUTTON_TITLE = _tr('Duplicate layer')
 DUPLICATE_BUTTON_TOOLTIP = _tr('Create a duplicate of the active layer above it.')
+DUPLICATE_BUTTON_TOOLTIP_MULTIPLE = _tr('Create a duplicate of each selected layer above it.')
 DELETE_BUTTON_TITLE = _tr('Delete layer')
 DELETE_BUTTON_TOOLTIP = _tr('Delete the active layer.')
+DELETE_BUTTON_TOOLTIP_MULTIPLE = _tr('Delete every selected layer.')
 LAYER_UP_BUTTON_TITLE = _tr('Move layer up')
 LAYER_UP_BUTTON_TOOLTIP = _tr('Move the active layer up.')
 LAYER_DOWN_BUTTON_TITLE = _tr('Move layer down')
@@ -103,6 +109,16 @@ CONTROLS_ONE_ROW = 0
 CONTROLS_STACKED = 1
 
 
+def duplicate_button_title(selected_count: int) -> str:
+    """Returns the Duplicate button's title for a number of selected layers."""
+    return DUPLICATE_BUTTON_TITLE if selected_count <= 1 else duplicate_layers_text(selected_count)
+
+
+def delete_button_title(selected_count: int) -> str:
+    """Returns the Delete button's title for a number of selected layers."""
+    return DELETE_BUTTON_TITLE if selected_count <= 1 else delete_layers_text(selected_count)
+
+
 @dataclass(frozen=True)
 class BarForm:
     """How the action bar's buttons look: their icon size, and whether they show text beside the icon."""
@@ -128,6 +144,8 @@ class LayerPanel(DockPanel):
         self._bar_form = len(BAR_FORMS) - 1
         # The action bar's minimum width in its narrowest form, as of the latest time that form applied:
         self._narrow_bar_width = 0
+        # The buttons whose title follows the selection, with their title function and tooltip refresher:
+        self._tooltip_refreshers: list[tuple[QToolButton, Callable[[], str], Callable[[], None]]] = []
         super().__init__(PANEL_TITLE, QIcon(ICON_PATH_PANEL), parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -151,9 +169,12 @@ class LayerPanel(DockPanel):
                                                      ADD_GROUP_BUTTON_LABEL, ADD_GROUP_BUTTON_TOOLTIP,
                                                      image_stack.create_layer_group,
                                                      KeyConfig.NEW_LAYER_GROUP_SHORTCUT)
-        self._duplicate_button = self._create_button(ICON_PATH_DUPLICATE_BUTTON, DUPLICATE_BUTTON_TITLE,
-                                                     DUPLICATE_BUTTON_LABEL, DUPLICATE_BUTTON_TOOLTIP,
-                                                     image_stack.copy_layer, KeyConfig.COPY_LAYER_SHORTCUT)
+        self._duplicate_button = self._create_button(
+            ICON_PATH_DUPLICATE_BUTTON, lambda: duplicate_button_title(image_stack.selected_layer_count),
+            DUPLICATE_BUTTON_LABEL,
+            lambda: (DUPLICATE_BUTTON_TOOLTIP if image_stack.selected_layer_count <= 1
+                     else DUPLICATE_BUTTON_TOOLTIP_MULTIPLE),
+            lambda: duplicate_selected_layers(image_stack), KeyConfig.COPY_LAYER_SHORTCUT)
         self._button_bar_layout.addStretch(1)
         self._move_up_button = self._create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TITLE,
                                                    LAYER_UP_BUTTON_LABEL, LAYER_UP_BUTTON_TOOLTIP, self._move_up,
@@ -166,9 +187,10 @@ class LayerPanel(DockPanel):
                                                       image_stack.merge_layer_down,
                                                       KeyConfig.MERGE_LAYER_DOWN_SHORTCUT)
         self._button_bar_layout.addStretch(1)
-        self._delete_button = self._create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TITLE, DELETE_BUTTON_LABEL,
-                                                  DELETE_BUTTON_TOOLTIP, image_stack.remove_layer,
-                                                  KeyConfig.DELETE_LAYER_SHORTCUT, signal=True)
+        self._delete_button = self._create_button(
+            ICON_PATH_DELETE_BUTTON, lambda: delete_button_title(image_stack.selected_layer_count), DELETE_BUTTON_LABEL,
+            lambda: DELETE_BUTTON_TOOLTIP if image_stack.selected_layer_count <= 1 else DELETE_BUTTON_TOOLTIP_MULTIPLE,
+            lambda: delete_selected_layers(image_stack), KeyConfig.DELETE_LAYER_SHORTCUT, signal=True)
         self._bar_buttons = [self._add_button, self._add_group_button, self._duplicate_button, self._move_up_button,
                              self._move_down_button, self._merge_down_button, self._delete_button]
         # Planning picks a larger form where there is room, so the panel starts with the one that needs the least:
@@ -188,18 +210,22 @@ class LayerPanel(DockPanel):
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         image_stack.layer_added.connect(self._layer_count_change_slot)
         image_stack.layer_removed.connect(self._layer_count_change_slot)
+        image_stack.selected_layers_changed.connect(self._selection_change_slot)
         self._active_layer_change_slot(image_stack.active_layer)
         self._layer_count_change_slot()
         self.arrange(Orientation.SIDE)
 
-    def _create_button(self, icon_path: str, title: str, label: str, tooltip: str, action: Callable[..., Any],
-                       shortcut_key: str, signal: bool = False) -> QToolButton:
+    def _create_button(self, icon_path: str, title: Union[str, Callable[[], str]], label: str,
+                       tooltip: Union[str, Callable[[], str]], action: Callable[..., Any], shortcut_key: str,
+                       signal: bool = False) -> QToolButton:
         button = QToolButton()
-        set_shortcut_tooltip(button, title, shortcut_key, description=tooltip)
+        refresh_tooltip = set_shortcut_tooltip(button, title, shortcut_key, description=tooltip)
+        if not isinstance(title, str):
+            self._tooltip_refreshers.append((button, title, refresh_tooltip))
         button.setContentsMargins(2, 2, 2, 2)
         button.setIcon(palette_icon(icon_path, signal=signal))
         button.setText(label)
-        button.setAccessibleName(title)
+        button.setAccessibleName(title if isinstance(title, str) else title())
         button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         # The lambda drops the checked argument that `clicked` passes:
@@ -382,8 +408,11 @@ class LayerPanel(DockPanel):
     # Layer state:
 
     def _layer_count_change_slot(self, *_args) -> None:
-        count = len(self._image_stack.layer_stack.recursive_child_layers)
-        description = _tr('%n layer(s)', None, count)
+        selected_count = self._image_stack.selected_layer_count
+        if selected_count > 1:
+            description = _tr('%n layer(s) selected', None, selected_count)
+        else:
+            description = _tr('%n layer(s)', None, len(self._image_stack.layer_stack.recursive_child_layers))
         self.header.set_description(description)
         self.set_title_note(description)
         self._update_select_buttons()
@@ -401,9 +430,19 @@ class LayerPanel(DockPanel):
         self._lock_change_slot()
         self._update_select_buttons()
 
+    def _selection_change_slot(self) -> None:
+        for button, title, refresh_tooltip in self._tooltip_refreshers:
+            refresh_tooltip()
+            button.setAccessibleName(title())
+        self._lock_change_slot()
+        self._layer_count_change_slot()
+
     def _lock_change_slot(self, *_args) -> None:
         # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
         active_layer = self._image_stack.active_layer
         editable = not active_layer.locked and not active_layer.parent_locked
-        for widget in (self._merge_down_button, self._delete_button):
-            widget.setEnabled(editable and active_layer != self._image_stack.layer_stack)
+        self._merge_down_button.setEnabled(editable and active_layer != self._image_stack.layer_stack)
+        # Delete refuses a selection with any locked layer, so it is enabled only while every one is editable:
+        selected = self._image_stack.effective_selected_layers()
+        self._delete_button.setEnabled(all(not layer.locked and not layer.parent_locked for layer in selected)
+                                       and active_layer != self._image_stack.layer_stack)

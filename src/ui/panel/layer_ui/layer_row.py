@@ -9,8 +9,9 @@ Every row has the same anatomy, left to right, so columns line up down the list 
 - the name, ellipsized with the full name as its tooltip, over an optional meta line;
 - the state icons (`LayerStateIcon`), drawn only while on, or as faint slots while the row is hovered.
 
-The active row has the selection fill and a stripe on its left edge, in the selected-layer header's stripe color. A row
-never changes size when it becomes active, so the list doesn't shift.
+Every selected row has the selection fill. The active row also has a stripe on its left edge, in the selected-layer
+header's stripe color, so it stays clear which layer tools act on. A row never changes size when it becomes selected or
+active, so the list doesn't shift.
 """
 from typing import Optional
 
@@ -28,7 +29,7 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.ink_style import ROW_HOVER, ink_colors, signal_color
 from src.ui.panel.layer_ui.layer_flags import LAYER_FLAGS, LayerStateIcon
-from src.ui.panel.layer_ui.layer_menu import build_layer_menu
+from src.ui.panel.layer_ui.layer_menu import build_layer_menu, build_selection_menu
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.ui.widget.elided_label import ElidedLabel
 from src.util.visual.geometry_utils import get_scaled_placement
@@ -105,7 +106,7 @@ def refused_drop_color() -> QColor:
 
 
 def selection_fill_color(widget: QWidget) -> QColor:
-    """Returns the fill behind the active row: the Ink theme's accent wash, or a faint highlight in other styles."""
+    """Returns the fill behind selected rows: the Ink theme's accent wash, or a faint highlight in other styles."""
     colors = ink_colors()
     if colors is not None:
         return colors.accent_wash
@@ -365,6 +366,11 @@ class LayerRow(QWidget):
 
     # Emitted when the disclosure triangle opens or closes a group's row:
     expanded_changed = Signal(bool)
+    # Emitted on a left or right press, with the row's layer, the button and the held modifiers. `LayerList` changes
+    # the selection:
+    pressed = Signal(Layer, Qt.MouseButton, Qt.KeyboardModifier)
+    # Emitted with the row's layer on a left release that ended a click without a drag:
+    clicked = Signal(Layer)
     drag_started = Signal()
     drag_ended = Signal()
 
@@ -375,6 +381,7 @@ class LayerRow(QWidget):
         self._image_stack = image_stack
         self._depth = depth
         self._active = False
+        self._selected = False
         self._hovered = False
         self._expanded = True
         self._dragging = False
@@ -484,9 +491,20 @@ class LayerRow(QWidget):
         return self._active
 
     def set_active(self, active: bool) -> None:
-        """Shows or hides the selection fill and stripe."""
+        """Shows or hides the selection stripe."""
         if active != self._active:
             self._active = active
+            self.update()
+
+    @property
+    def selected(self) -> bool:
+        """Whether the row's layer is in the image stack's selected layers."""
+        return self._selected
+
+    def set_selected(self, selected: bool) -> None:
+        """Shows or hides the selection fill."""
+        if selected != self._selected:
+            self._selected = selected
             self.update()
 
     def set_depth(self, depth: int) -> None:
@@ -549,7 +567,10 @@ class LayerRow(QWidget):
         self._meta.set_full_text(layer_meta_text(self._layer))
 
     def build_menu(self) -> QMenu:
-        """Returns the row's context menu."""
+        """Returns the row's context menu: the multi-layer menu while the row is in a multi-selection, and otherwise the
+        menu for its layer."""
+        if self._image_stack.is_layer_selected(self._layer) and self._image_stack.selected_layer_count > 1:
+            return build_selection_menu(self._image_stack)
         return build_layer_menu(self._layer, self._image_stack, self._name.activate_input_mode)
 
     def _menu_slot(self, pos: QPoint) -> None:
@@ -575,10 +596,11 @@ class LayerRow(QWidget):
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws the selection or hover fill, the selection stripe and the guide lines."""
         painter = QPainter(self)
-        if self._active:
+        if self._selected or self._active:
             painter.fillRect(self.rect(), selection_fill_color(self))
+        if self._active:
             painter.fillRect(QRect(0, 0, SELECTION_STRIPE_WIDTH, self.height()), selection_stripe_color(self))
-        elif self._hovered:
+        elif not self._selected and self._hovered:
             painter.fillRect(self.rect(), ROW_HOVER)
         if self._dragging:
             painter.fillRect(self.rect(), HIDDEN_LAYER_SHADE)
@@ -591,14 +613,12 @@ class LayerRow(QWidget):
         painter.end()
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
-        """Makes the row's layer active on a left or right click, so the context menu, the selected-layer header and
-        the action bar all act on one layer."""
+        """Emits `pressed` on a left or right press, which `LayerList` turns into a selection change."""
         assert event is not None
         if event.button() in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
             if event.button() == Qt.MouseButton.LeftButton:
                 self._press_pos = event.position().toPoint()
-            if self._image_stack.active_layer is not self._layer:
-                self._image_stack.active_layer = self._layer
+            self.pressed.emit(self._layer, event.button(), event.modifiers())
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
         """Drags the row's layer once the pointer moves far enough with the left button down."""
@@ -608,6 +628,8 @@ class LayerRow(QWidget):
         if (self._press_pos - event.position().toPoint()).manhattanLength() <= QApplication.startDragDistance():
             return
         self._press_pos = None
+        if not self._image_stack.is_layer_selected(self._layer):
+            self._image_stack.select_layers([self._layer], self._layer)
         self._dragging = True
         self.update()
         self.drag_started.emit()
@@ -619,6 +641,10 @@ class LayerRow(QWidget):
         self.update()
         self.drag_ended.emit()
 
-    def mouseReleaseEvent(self, _event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
-        """Ends a click."""
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
+        """Ends a click, emitting `clicked` if no drag started."""
+        assert event is not None
+        was_pressed = self._press_pos is not None
         self._press_pos = None
+        if was_pressed and event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self._layer)

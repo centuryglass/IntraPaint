@@ -1052,6 +1052,15 @@
         "default": "Ctrl+Shift+A",
         "saved": true
     },
+    "select_all_layers_shortcut": {
+        "label": "Select all layers",
+        "category": "Menu Shortcuts",
+        "subcategory": "Select Menu",
+        "description": "Select every layer in the layer panel",
+        "type": "string",
+        "default": "Ctrl+Alt+A",
+        "saved": true
+    },
     "grow_selection_shortcut": {
         "label": "Grow selection",
         "category": "Menu Shortcuts",
@@ -1101,7 +1110,7 @@
         "label": "Duplicate layer",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
-        "description": "Create a duplicate of the active layer.",
+        "description": "Create a duplicate of each selected layer.",
         "type": "string",
         "default": "Ctrl+J",
         "saved": true
@@ -1119,7 +1128,7 @@
         "label": "Delete layer",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
-        "description": "Delete the active layer.",
+        "description": "Delete the selected layers.",
         "type": "string",
         "default": "Shift+Delete",
         "saved": true
@@ -1140,6 +1149,24 @@
         "description": "Switch to the next layer down.",
         "type": "string",
         "default": "Alt+[,Ctrl+PgDown",
+        "saved": true
+    },
+    "extend_layer_selection_up_shortcut": {
+        "label": "Extend layer selection up",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Add the layer above the active layer to the selected layers.",
+        "type": "string",
+        "default": "Shift+Alt+]",
+        "saved": true
+    },
+    "extend_layer_selection_down_shortcut": {
+        "label": "Extend layer selection down",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Add the layer below the active layer to the selected layers.",
+        "type": "string",
+        "default": "Shift+Alt+[",
         "saved": true
     },
     "move_layer_up_shortcut": {
