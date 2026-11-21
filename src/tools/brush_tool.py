@@ -246,11 +246,13 @@ class BrushTool(BaseTool):
         """Sets or clears the connected image layer."""
         if self._layer is not None:
             self._layer.lock_changed.disconnect(self._layer_lock_slot)
+            self._layer.visibility_changed.disconnect(self._layer_visibility_slot)
         if not isinstance(layer, ImageLayer):
             layer = None
         self._layer = layer
         if layer is not None:
             layer.lock_changed.connect(self._layer_lock_slot)
+            layer.visibility_changed.connect(self._layer_visibility_slot)
             self._layer_lock_slot(layer, layer.locked or layer.parent_locked)
             if layer != self._image_stack.selection_layer and Cache().get(Cache.PAINT_SELECTION_ONLY):
                 mask = self._image_stack.get_layer_selection_mask(layer)
@@ -263,27 +265,34 @@ class BrushTool(BaseTool):
             self._brush.connect_to_layer(None)
         else:
             self._brush.connect_to_layer(layer)
-        control_panel = self.get_control_panel()
-        should_enable = (layer is not None and isinstance(layer, ImageLayer) and not layer.locked
-                         and not layer.parent_locked and layer.shown)
-        if control_panel is not None:
-            control_panel.setEnabled(should_enable)
-        self.set_disabled_cursor(not should_enable)
+        self._update_input_enabled()
 
     @property
     def brush(self) -> LayerBrush:
         """Access the tool's edited brush."""
         return self._brush
 
-    def _layer_lock_slot(self, layer: ImageLayer, locked: bool) -> None:
-        if not self.is_active:
-            return
+    def _layer_lock_slot(self, layer: ImageLayer, _locked: bool) -> None:
         assert self._layer is not None
         assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
+        self._update_input_enabled()
+
+    def _layer_visibility_slot(self, layer: ImageLayer, _visible: bool) -> None:
+        assert self._layer is not None
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
+        self._update_input_enabled()
+
+    def _update_input_enabled(self) -> None:
+        """Enables the control panel and the normal cursor only while the active layer is unlocked and shown. A
+           locked or hidden layer, or a locked or hidden group around it, disables both."""
+        if not self.is_active:
+            return
+        layer = self._layer
+        should_enable = (layer is not None and not layer.locked and not layer.parent_locked and layer.shown)
         control_panel = self.get_control_panel()
         if control_panel is not None:
-            control_panel.setEnabled(not locked)
-        self.set_disabled_cursor(locked)
+            control_panel.setEnabled(should_enable)
+        self.set_disabled_cursor(not should_enable)
 
     @property
     def brush_size(self) -> int:
