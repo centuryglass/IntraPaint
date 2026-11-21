@@ -13,7 +13,7 @@ from src.config.config_entry import ControlHint
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
-    NumberSettingField, OptionSegmentsField, SizeSettingField, SliderSettingField
+    ModifierSettingField, NumberSettingField, OptionSegmentsField, SizeSettingField, SliderSettingField
 from src.util.parameter import TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_QSIZE, TYPE_STR
 from src.ui.input_fields.field_factory import create_control_widget
 
@@ -85,7 +85,7 @@ def create_setting_control(config: Config, key: str) -> QWidget:
         elif hint == ControlHint.DIRECTORY:
             control = DirectorySettingField()
         elif is_keybinding(config, key):
-            control = KeybindingField()
+            control = ModifierSettingField() if key.endswith('_modifier') else KeybindingField()
         else:
             control = LineEdit()
     elif data_type in (TYPE_INT, TYPE_FLOAT):

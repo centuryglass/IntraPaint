@@ -21,10 +21,11 @@ from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QLineE
     QScrollArea, QStackedWidget, QVBoxLayout, QWidget
 
 from src.config.config import Config
+from src.config.key_config import KeyConfig
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
-    SizeSettingField
+    ModifierSettingField, SizeSettingField
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
 from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.settings_controls import OPTION_LABELS, create_setting_control
@@ -255,6 +256,7 @@ class SettingsModal(QDialog):
         if config_path is not None and config_path not in self._config_paths:
             self._config_paths.append(config_path)
             self._add_file_row(config_path)
+        self._refresh_binding_problems()
 
     def add_custom_control(self, control_widget: DynamicFieldWidget, config: Config, key: str) -> None:
         """Adds a non-standard control to the window, replacing any control already shown for the key."""
@@ -319,8 +321,22 @@ class SettingsModal(QDialog):
         def _add_change(new_value: Any, name=key) -> None:
             self._changes[name] = new_value
             self._refresh_key(name)
+            if isinstance(control, (KeybindingField, ModifierSettingField)):
+                self._refresh_binding_problems()
 
         control.valueChanged.connect(_add_change)  # type: ignore[attr-defined]
+
+    def _refresh_binding_problems(self) -> None:
+        """Shows each key binding control's problems, found by checking the values currently entered in the window."""
+        controls = {key: control for key, control in self._inputs.items()
+                    if isinstance(control, (KeybindingField, ModifierSettingField))}
+        if len(controls) == 0:
+            return
+        config = KeyConfig()
+        bindings = {key: control.value() for key, control in controls.items() if key in config.get_keys()}
+        problems = config.binding_problems(bindings)
+        for key, control in controls.items():
+            control.set_problems(problems.get(key, []))
 
     def _page(self, category: str) -> _Page:
         if category not in self._pages:
@@ -445,6 +461,7 @@ class SettingsModal(QDialog):
                 logger.error(f'Failed to initialize "{key}"="{new_value}: {err}')
             self._changes.pop(key, None)
             self._refresh_key(key)
+        self._refresh_binding_problems()
 
     def _refresh_key(self, key: str) -> None:
         """Updates the modified marks of the row for a setting, and its section's Restore defaults button."""

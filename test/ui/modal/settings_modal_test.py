@@ -1,11 +1,12 @@
 """Tests SettingsModal and the controls it chooses for config values."""
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QWidget
+from PySide6.QtGui import QKeySequence
+from PySide6.QtWidgets import QPushButton, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
-    OptionSegmentsField, SizeSettingField, NO_KEY_TEXT
+    ModifierSettingField, OptionSegmentsField, SizeSettingField, ADD_KEY_TOOLTIP, NO_KEY_TEXT, REMOVE_KEY_TOOLTIP
 from src.ui.modal.settings_modal import SettingsModal, _Row
 from test.base_test_case import IntraPaintTestCase
 
@@ -109,7 +110,7 @@ class SettingsModalTest(IntraPaintTestCase):
     def test_keybindings_show_keycaps(self) -> None:
         """Key binding settings show a keycap per alternative binding, or a disabled placeholder when unbound."""
         self.modal.load_from_config(KeyConfig())
-        key = KeyConfig().get_keys()[0]
+        key = KeyConfig.DRAW_TOOL_KEY
         control = self.modal._inputs[key]  # pylint: disable=protected-access
         assert isinstance(control, KeybindingField)
         control.setValue('Ctrl+Shift+Z')
@@ -118,6 +119,63 @@ class SettingsModalTest(IntraPaintTestCase):
         self.assertEqual(control.badge_labels(), ['Shift+S', 'K'])
         control.setValue('')
         self.assertEqual(control.badge_labels(), [NO_KEY_TEXT])
+
+    def test_keybinding_field_round_trips_comma_separated_value(self) -> None:
+        """The key recorder field keeps the stored text, one recorder per alternative, until a key is recorded."""
+        field = KeybindingField()
+        for text in ('', 'PgDown', 'Shift+S,K', 'Ctrl+J,Ctrl+Shift+C', 'q'):
+            with self.subTest(text=text):
+                field.setValue(text)
+                self.assertEqual(text, field.value())
+        field.setValue('Shift+S,K')
+        self.assertEqual(2, len(field.recorders()))
+        field.recorders()[1].setKeySequence(QKeySequence('Ctrl+P'))
+        self.assertEqual('Shift+S,Ctrl+P', field.value())
+
+    def test_keybinding_field_add_and_remove(self) -> None:
+        """Add and remove buttons change the number of alternatives, and an empty recorder adds no binding."""
+        field = KeybindingField()
+        field.setValue('A')
+        changes: list[str] = []
+        field.valueChanged.connect(changes.append)
+        [b for b in field.findChildren(QPushButton) if b.toolTip() == ADD_KEY_TOOLTIP][0].click()
+        self.assertEqual(2, len(field.recorders()))
+        self.assertEqual('A', field.value())
+        field.recorders()[1].setKeySequence(QKeySequence('B'))
+        self.assertEqual('A,B', field.value())
+        remove_buttons = [b for b in field.findChildren(QPushButton) if b.toolTip() == REMOVE_KEY_TOOLTIP and b.isVisibleTo(field)]
+        remove_buttons[0].click()
+        self.assertEqual('B', field.value())
+        self.assertEqual('B', changes[-1])
+
+    def test_modifier_bindings_offer_only_modifiers(self) -> None:
+        """Modifier key settings use a combo box that only offers modifier combinations, or unbound."""
+        self.modal.load_from_config(KeyConfig())
+        for key in KeyConfig().get_keys():
+            if not key.endswith('_modifier'):
+                continue
+            with self.subTest(key=key):
+                control = self.modal._inputs[key]  # pylint: disable=protected-access
+                assert isinstance(control, ModifierSettingField)
+                for choice in control.choices():
+                    self.assertTrue(all(part in ('Ctrl', 'Alt', 'Shift') for part in choice.split('+')) or choice == '')
+                control.setValue(KeyConfig().get(key))
+                self.assertEqual(KeyConfig().get(key), control.value())
+
+    def test_entered_conflict_is_reported_inline(self) -> None:
+        """Entering a key bound elsewhere shows the clash on both controls, without opening a dialog."""
+        self.modal.load_from_config(KeyConfig())
+        first, second = KeyConfig.DRAW_TOOL_KEY, KeyConfig.TEXT_TOOL_KEY
+        first_control = self.modal._inputs[first]  # pylint: disable=protected-access
+        second_control = self.modal._inputs[second]  # pylint: disable=protected-access
+        assert isinstance(first_control, KeybindingField) and isinstance(second_control, KeybindingField)
+        self.assertEqual('', first_control.problem_text())
+        second_control.setValue(first_control.value())
+        self.assertIn(KeyConfig().get_label(first), second_control.problem_text())
+        self.assertIn(KeyConfig().get_label(second), first_control.problem_text())
+        second_control.setValue('')
+        self.assertEqual('', first_control.problem_text())
+        self.assertEqual('', second_control.problem_text())
 
     def test_size_field_round_trip(self) -> None:
         """A size setting reports the QSize it was given."""
