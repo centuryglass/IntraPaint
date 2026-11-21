@@ -38,6 +38,8 @@ Developer tools: builds, CI checks, code generation and UI captures. None of the
   version's brush settings.
 - `scripts/clean.sh`: Remove all build files.
 - `scripts/crosshair_builder.py`: Interactive builder for `src/ui/brush_crosshair.py` crosshair patterns.
+- `scripts/detect_backends.py`: Prints the Stable Diffusion backends `detect` finds on this machine, for checking
+  detection by hand.
 - `scripts/dynamic_import_typing.py`: Instantiate an object, read its dynamic attributes, and add appropriate type hints
   in the class definition.
 - `scripts/file_map.py`: Generates `doc/file_map.md`, a one-line description of every source file, from module and
@@ -124,6 +126,15 @@ Image generator backends behind `ImageGenerator`, and the session that applies t
 - `src/controller/image_generation/sd_webui_generator.py`: Generates images through the Stable Diffusion WebUI (A1111 or
   Forge).
 - `src/controller/image_generation/test_generator.py`: Mock generator for testing and development.
+
+## `src/controller/image_generation/backend_install`
+
+Finding, and later installing, the Stable Diffusion backends IntraPaint can generate with.
+
+- `src/controller/image_generation/backend_install/backend_detector.py`: Finds the Stable Diffusion backends installed
+  or running on this machine, by reading files and probing URLs.
+- `src/controller/image_generation/backend_install/detected_backend.py`: The result model of backend detection: installs
+  found on disk, running servers, and findings about each.
 
 ## `src/controller/image_generation/sd_adapters`
 
