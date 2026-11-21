@@ -56,10 +56,14 @@ def _make_comfyui(folder: Path, models: bool = True, version: str = '0.3.10') ->
     return folder
 
 
-def _make_webui(folder: Path, forge: bool = False, models: bool = True, args: Optional[str] = '--api') -> Path:
+def _make_webui(folder: Path, forge: bool = False, models: bool = True, args: Optional[str] = '--api',
+                tested_python: Optional[str] = '3.10.6') -> Path:
     _write(folder / 'launch.py')
     _write(folder / 'webui.py')
     (folder / 'modules').mkdir()
+    if tested_python is not None:
+        _write(folder / 'modules' / 'launch_utils.py',
+               f'print(f"This program is tested with {tested_python} Python, but you have {{major}}.{{minor}}.")\n')
     if forge:
         (folder / 'modules_forge').mkdir()
     if models:
@@ -133,9 +137,10 @@ class BackendDetectorTest(IntraPaintTestCase):
             _write(library / 'settings.json', json.dumps({'InstalledPackages': [
                 {'PackageName': 'ComfyUI', 'LibraryPath': 'Packages\\ComfyUI', 'LaunchArgs': []},
                 {'PackageName': 'stable-diffusion-webui-forge', 'LibraryPath': 'Packages\\stable-diffusion-webui-forge',
-                 'LaunchArgs': [{'Name': '--api', 'Type': 'Bool', 'OptionValue': True},
-                                {'Name': '--port', 'Type': 'String', 'OptionValue': '7861'},
-                                {'Name': '--xformers', 'Type': 'Bool', 'OptionValue': False}]}]}))
+                 'LaunchArgs': [{'Name': '--port', 'Type': 'String', 'OptionValue': '7861'},
+                                {'Name': '--xformers', 'Type': 'Bool', 'OptionValue': False},
+                                {'Name': '', 'Type': 'String',
+                                 'OptionValue': "--api --api-auth user:secret --ckpt-dir '/my models'"}]}]}))
 
     def test_stability_matrix_library_json(self) -> None:
         """`library.json` in the app data folder points at a library elsewhere, whose packages are reported."""
@@ -152,7 +157,8 @@ class BackendDetectorTest(IntraPaintTestCase):
         self.assertEqual(comfyui.version, '0.3.10')
         self.assertEqual(comfyui.findings, [])
         self.assertEqual((forge.kind, forge.webui_variant), (BackendKind.WEBUI, 'forge'))
-        self.assertEqual(forge.launch_args, ['--api', '--port', '7861'])
+        self.assertEqual(forge.launch_args, ['--port', '7861', '--api', '--api-auth', '<redacted>', '--ckpt-dir',
+                                             '/my models'])
         self.assertEqual(forge.findings, [])
 
     def test_stability_matrix_portable(self) -> None:
@@ -327,20 +333,39 @@ class BackendDetectorTest(IntraPaintTestCase):
         self.assertIsNone(install.launch_command)
 
     def test_webui_python_version(self) -> None:
-        """A WebUI environment on Python 3.11 is a warning."""
+        """A WebUI environment on another Python than the one its version warning names is a warning."""
         webui = _make_webui(self.root / 'webui')
         _make_environment(webui / 'venv', 'posix', python='3.11')
         install = self._only_install(self._detect())
         self.assertEqual(self._codes(install), {FindingCode.PYTHON_VERSION_MISMATCH})
         self.assertEqual(install.findings[0].details, {'version': '3.11', 'expected': '3.10'})
 
+    def test_webui_python_version_unknown(self) -> None:
+        """A WebUI with no tested version in `launch_utils.py` gets no Python version finding."""
+        webui = _make_webui(self.root / 'webui', tested_python=None)
+        _make_environment(webui / 'venv', 'posix', python='3.12')
+        self.assertEqual(self._codes(self._only_install(self._detect())), set())
+
+    def test_webui_upgraded_environment(self) -> None:
+        """A venv upgraded to a new Python is checked in that version's `site-packages`, not a stale one's.
+
+        Forge Neo is tested with Python 3.13, and its venvs can keep an empty `lib/python3.10/`.
+        """
+        webui = _make_webui(self.root / 'forge_neo', forge=True, tested_python='3.13.15')
+        _make_environment(webui / 'venv', 'posix', python='3.13')
+        (webui / 'venv' / 'lib' / 'python3.10' / 'site-packages').mkdir(parents=True)
+        self.assertEqual(self._codes(self._only_install(self._detect())), set())
+
     def test_webui_api_flag(self) -> None:
         """`webui-user.sh` without `--api` is a blocker; with it, nothing is reported."""
         webui = _make_webui(self.root / 'webui', args='--xformers --port 7861')
         _make_environment(webui / 'venv', 'posix')
         self.assertEqual(self._codes(self._only_install(self._detect())), {FindingCode.API_DISABLED})
-        _write(webui / 'webui-user.sh', 'export COMMANDLINE_ARGS="--xformers --api"  # comment\n')
-        self.assertEqual(self._codes(self._only_install(self._detect())), set())
+        _write(webui / 'webui-user.sh',
+               'export COMMANDLINE_ARGS="--xformers --api --gradio-auth=user:secret"  # comment\n')
+        install = self._only_install(self._detect())
+        self.assertEqual(self._codes(install), set())
+        self.assertEqual(install.launch_args, ['--xformers', '--api', '--gradio-auth=<redacted>'])
 
     def test_webui_ckpt_dir(self) -> None:
         """Models in `--ckpt-dir` count, and with none anywhere `NO_MODELS` is a warning."""
@@ -356,7 +381,7 @@ class BackendDetectorTest(IntraPaintTestCase):
         """A ComfyUI install with no checkpoint is a warning; models deeper than the search depth don't count."""
         comfyui = _make_comfyui(self.root / 'ComfyUI', models=False)
         _make_environment(comfyui / 'venv', 'posix')
-        _write(comfyui / 'models' / 'checkpoints' / 'a' / 'b' / 'model.safetensors')
+        _write(comfyui / 'models' / 'checkpoints' / 'a' / 'b' / 'c' / 'model.safetensors')
         self.assertEqual(self._codes(self._only_install(self._detect())), {FindingCode.NO_MODELS})
 
     def test_models_through_symlinked_folder(self) -> None:
@@ -367,6 +392,17 @@ class BackendDetectorTest(IntraPaintTestCase):
         (comfyui / 'models').mkdir()
         os.symlink(self.root / 'shared', comfyui / 'models' / 'unet', target_is_directory=True)
         self.assertEqual(self._codes(self._only_install(self._detect(roots=[comfyui]))), set())
+
+    def test_models_through_linked_subfolder(self) -> None:
+        """Links inside a models folder are followed, as Stability Matrix links its shared models into each install."""
+        webui = _make_webui(self.root / 'webui', models=False)
+        _make_environment(webui / 'venv', 'posix')
+        _write(self.root / 'shared' / 'StableDiffusion' / 'SDXL' / 'model.safetensors')
+        (webui / 'models' / 'Stable-diffusion').mkdir(parents=True)
+        os.symlink(self.root / 'shared' / 'StableDiffusion', webui / 'models' / 'Stable-diffusion' / 'sd',
+                   target_is_directory=True)
+        os.symlink(webui / 'models', webui / 'models' / 'Stable-diffusion' / 'loop', target_is_directory=True)
+        self.assertEqual(self._codes(self._only_install(self._detect(roots=[webui]))), set())
 
     def test_models_through_extra_model_paths(self) -> None:
         """Checkpoints named only by `extra_model_paths.yaml` count."""
@@ -435,7 +471,8 @@ class BackendDetectorTest(IntraPaintTestCase):
         """Each platform's app data folders follow its conventions."""
         home = Path('/home/user')
         linux = default_search_locations(home, 'linux', {})
-        self.assertEqual(linux.candidate_roots, [home, home / 'Desktop', home / 'Documents', home / 'Downloads'])
+        self.assertEqual(linux.candidate_roots, [home, home / 'Desktop', home / 'Documents', home / 'Downloads',
+                                                 Path('/opt')])
         self.assertEqual(linux.stability_matrix_app_data, [home / '.config' / 'StabilityMatrix'])
         self.assertEqual(linux.krita_settings_files[0], home / '.local/share/krita/ai_diffusion/settings.json')
         windows = default_search_locations(home, 'win32', {'APPDATA': '/roaming', 'LOCALAPPDATA': '/local'})
@@ -464,6 +501,14 @@ class BackendDetectorTest(IntraPaintTestCase):
         result = self._detect(platform=WINDOWS, connect=_servers({DEFAULT_COMFYUI_URL: _comfyui_backend(
             ['ComfyUI/main.py', '--windows-standalone-build'])}))
         self.assertIsNotNone(self._only_install(result).server)
+
+    def test_server_linked_by_version(self) -> None:
+        """A relative `argv` matching several installs links to the one whose version is the server's."""
+        _make_comfyui(self.root / 'old', version='0.3.26')
+        _make_comfyui(self.root / 'current', version='0.39.0')
+        result = self._detect(connect=_servers({DEFAULT_COMFYUI_URL: _comfyui_backend(['main.py'], version='0.39.0')}))
+        self.assertEqual([install.server is not None for install in result.installs], [True, False])
+        self.assertEqual(result.servers, [])
 
     def test_comfyui_server_unlinked(self) -> None:
         """A ComfyUI server running from somewhere else stays in `servers`."""

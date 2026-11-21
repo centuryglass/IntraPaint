@@ -26,8 +26,9 @@ from src.controller.image_generation.backend_install.detected_backend import DEF
 
 # Folders below each candidate root that are checked for installs. An install deeper than this isn't found.
 MAX_SCAN_DEPTH = 3
-# Levels of a models folder searched for model files: 1 is the folder itself, 2 adds its subfolders.
-MODEL_SEARCH_DEPTH = 2
+# Levels of a models folder searched for model files: 1 is the folder itself, 2 adds its subfolders. Stability Matrix
+# links its shared models one level down (`models/Stable-diffusion/sd`), so 3 leaves room for one more level there.
+MODEL_SEARCH_DEPTH = 3
 PROBE_TIMEOUT_SECONDS = 5.0
 
 MODEL_EXTENSIONS = ('.safetensors', '.ckpt', '.gguf', '.sft')
@@ -35,7 +36,6 @@ SKIPPED_FOLDER_NAMES = frozenset(('node_modules', 'site-packages', 'venv', '.ven
                                   'System Volume Information'))
 LOCAL_HOSTS = frozenset(('localhost', '127.0.0.1', '::1', '0.0.0.0'))
 
-WEBUI_PYTHON_VERSION = (3, 10)
 MIN_COMFYUI_PYTHON_VERSION = (3, 9)
 
 PORTABLE_ENVIRONMENT = 'python_embeded'
@@ -54,10 +54,15 @@ COMFYUI_MODEL_FOLDERS = ('models/checkpoints', 'models/diffusion_models', 'model
 COMFYUI_EXTRA_MODEL_KEYS = ('checkpoints', 'diffusion_models', 'unet')
 WEBUI_MODEL_FOLDER = 'models/Stable-diffusion'
 
+# WebUI arguments whose values are credentials. `DetectedInstall.launch_args` holds `REDACTED_VALUE` in their place.
+SECRET_ARGS = ('--gradio-auth', '--api-auth')
+REDACTED_VALUE = '<redacted>'
+
 COMFYUI_LAST_USED_PATHS = ('user', 'output', 'temp')
 WEBUI_LAST_USED_PATHS = ('config.json', 'ui-config.json', 'params.txt', 'outputs')
 
 _WINDOWS_DRIVE_FIXED = 3
+_TESTED_PYTHON_PATTERN = re.compile(r'tested with (\d+)\.(\d+)')
 _VERSION_PATTERN = re.compile(r'^__version__\s*=\s*[\'"]([^\'"]+)[\'"]', re.MULTILINE)
 _DLL_VERSION_PATTERN = re.compile(r'^python3(\d+)\.(dll|_pth|zip)$', re.IGNORECASE)
 _LIB_VERSION_PATTERN = re.compile(r'^python3\.(\d+)$')
@@ -105,6 +110,7 @@ def default_search_locations(home: Optional[Path] = None, platform: str = sys.pl
         generic_data = Path(env.get('XDG_DATA_HOME') or home / '.local' / 'share')
         sm_app_data = config_home / 'StabilityMatrix'
         krita_data = generic_data / 'krita'
+        roots.append(Path('/opt'))  # Distribution packages, such as Stability Matrix's AUR package, install here.
     return SearchLocations(
         candidate_roots=roots,
         stability_matrix_app_data=[sm_app_data],
@@ -328,7 +334,7 @@ def _stability_matrix_launch_args(launch_args: object) -> Optional[list[str]]:
     """Convert a package entry's `LaunchArgs` to command-line arguments, or `None` if the entry has none.
 
     Each option is an object with a `Name` and an `OptionValue`. A true value is a bare flag; a false or empty value
-    leaves the option out.
+    leaves the option out. The extra arguments field has an empty `Name`, and its value is split like a command line.
     """
     if not isinstance(launch_args, list):
         return None
@@ -336,11 +342,17 @@ def _stability_matrix_launch_args(launch_args: object) -> Optional[list[str]]:
     for option in launch_args:
         if not isinstance(option, dict) or not isinstance(option.get('Name'), str):
             continue
-        value = option.get('OptionValue')
-        if value is True:
-            args.append(option['Name'])
+        name, value = option['Name'], option.get('OptionValue')
+        if not name:
+            if isinstance(value, str):
+                try:
+                    args.extend(shlex.split(value))
+                except ValueError:
+                    args.extend(value.split())
+        elif value is True:
+            args.append(name)
         elif value not in (None, False, ''):
-            args.extend((option['Name'], str(value)))
+            args.extend((name, str(value)))
     return args
 
 
@@ -395,7 +407,8 @@ def _inspect(recognized: _Recognized, owner: InstallOwner, platform: str,
                               entry_point=recognized.entry_point, git_commit=read_git_commit(backend_dir))
     environments = [recognized.path / PORTABLE_ENVIRONMENT] if recognized.portable else []
     environments.extend((recognized.path / 'venv', recognized.path / '.venv', *owner_environments))
-    install.interpreter = _inspect_environment(install, environments, platform)
+    tested_python = _webui_tested_python(backend_dir) if recognized.kind == BackendKind.WEBUI else None
+    install.interpreter = _inspect_environment(install, environments, platform, tested_python)
 
     if recognized.kind == BackendKind.COMFYUI:
         install.version = _read_comfyui_version(backend_dir)
@@ -410,6 +423,7 @@ def _inspect(recognized: _Recognized, owner: InstallOwner, platform: str,
             else WEBUI_VARIANT_A1111
         install.last_used = _last_used(backend_dir, WEBUI_LAST_USED_PATHS)
         args = read_webui_user_args(backend_dir, platform) if launch_args is None else launch_args
+        args = None if args is None else redact_secret_args(args)
         install.launch_args = args
         _webui_launch_arg_findings(install, args)
         model_folders = [backend_dir / WEBUI_MODEL_FOLDER]
@@ -422,8 +436,13 @@ def _inspect(recognized: _Recognized, owner: InstallOwner, platform: str,
     return install
 
 
-def _inspect_environment(install: DetectedInstall, environments: Sequence[Path], platform: str) -> Optional[Path]:
-    """Return the interpreter in the first environment folder that exists, adding findings about that environment."""
+def _inspect_environment(install: DetectedInstall, environments: Sequence[Path], platform: str,
+                         tested_python: Optional[tuple[int, int]] = None) -> Optional[Path]:
+    """Return the interpreter in the first environment folder that exists, adding findings about that environment.
+
+    `tested_python` is the version a WebUI install says it is tested with. A WebUI environment on another version gets
+    `PYTHON_VERSION_MISMATCH`; with no tested version, its Python version isn't checked.
+    """
     environment = next((folder for folder in environments if folder.is_dir()), None)
     if environment is None:
         install.findings.append(Finding(FindingCode.INTERPRETER_UNKNOWN))
@@ -441,8 +460,8 @@ def _inspect_environment(install: DetectedInstall, environments: Sequence[Path],
     version = _python_version(environment, config)
     if version is not None:
         if install.kind == BackendKind.WEBUI:
-            mismatch = version != WEBUI_PYTHON_VERSION
-            expected = '.'.join(str(part) for part in WEBUI_PYTHON_VERSION)
+            mismatch = tested_python is not None and version != tested_python
+            expected = '.'.join(str(part) for part in tested_python or ())
         else:
             mismatch = version < MIN_COMFYUI_PYTHON_VERSION
             expected = '>=' + '.'.join(str(part) for part in MIN_COMFYUI_PYTHON_VERSION)
@@ -450,7 +469,7 @@ def _inspect_environment(install: DetectedInstall, environments: Sequence[Path],
             install.findings.append(Finding(FindingCode.PYTHON_VERSION_MISMATCH,
                                             {'version': f'{version[0]}.{version[1]}', 'expected': expected}))
 
-    site_packages = _site_packages(environment)
+    site_packages = _site_packages(environment, version)
     torch_version = None if site_packages is None else _torch_version(site_packages)
     if torch_version is None:
         install.findings.append(Finding(FindingCode.TORCH_MISSING,
@@ -488,11 +507,30 @@ def _python_version(environment: Path, config: Mapping[str, str]) -> Optional[tu
     return None
 
 
-def _site_packages(environment: Path) -> Optional[Path]:
+def _site_packages(environment: Path, version: Optional[tuple[int, int]]) -> Optional[Path]:
+    """Return the environment's `site-packages` folder.
+
+    A POSIX environment can hold folders for several Python versions, left behind when it was upgraded. The one for
+    `version` is used when it exists; otherwise the first one holding torch, else the first one.
+    """
     windows_layout = environment / 'Lib' / 'site-packages'
     if windows_layout.is_dir():
         return windows_layout
-    return next((path for path in sorted(environment.glob('lib/python3*/site-packages')) if path.is_dir()), None)
+    if version is not None:
+        matching = environment / 'lib' / f'python{version[0]}.{version[1]}' / 'site-packages'
+        if matching.is_dir():
+            return matching
+    candidates = [path for path in sorted(environment.glob('lib/python3*/site-packages')) if path.is_dir()]
+    return next((path for path in candidates if _torch_version(path) is not None), next(iter(candidates), None))
+
+
+def _webui_tested_python(webui_dir: Path) -> Optional[tuple[int, int]]:
+    """Return the Python version a WebUI's own version warning says it is tested with, if it has one.
+
+    A1111, Forge, reForge and Forge Neo each check the version differently, but all warn with the same sentence.
+    """
+    match = _TESTED_PYTHON_PATTERN.search(_read_text(webui_dir / 'modules' / 'launch_utils.py') or '')
+    return (int(match.group(1)), int(match.group(2))) if match else None
 
 
 def _torch_version(site_packages: Path) -> Optional[str]:
@@ -502,22 +540,28 @@ def _torch_version(site_packages: Path) -> Optional[str]:
     return None
 
 
-def _has_model_file(folder: Path, depth: int) -> bool:
+def _has_model_file(folder: Path, depth: int, visited: Optional[set[Path]] = None) -> bool:
     """Whether `folder`, or a folder up to `depth - 1` levels below it, holds a model file.
 
-    `folder` itself may be a link; links below it aren't followed.
+    Links are followed, since model managers such as Stability Matrix link shared model folders into each install.
+    Each real folder is read once, so a link loop ends.
     """
+    visited = set() if visited is None else visited
+    resolved = _resolve(folder)
+    if resolved in visited:
+        return False
+    visited.add(resolved)
     try:
         with os.scandir(folder) as entries:
             subfolders = []
             for entry in entries:
                 if entry.is_file() and entry.name.lower().endswith(MODEL_EXTENSIONS):
                     return True
-                if entry.is_dir(follow_symlinks=False):
+                if entry.is_dir():
                     subfolders.append(Path(entry.path))
     except OSError:
         return False
-    return depth > 1 and any(_has_model_file(subfolder, depth - 1) for subfolder in subfolders)
+    return depth > 1 and any(_has_model_file(subfolder, depth - 1, visited) for subfolder in subfolders)
 
 
 def _comfyui_model_folders(backend_dir: Path) -> Optional[list[Path]]:
@@ -620,6 +664,20 @@ def _arg_value(args: Sequence[str], name: str) -> Optional[str]:
     return None
 
 
+def redact_secret_args(args: Sequence[str]) -> list[str]:
+    """Return `args` with the value of each `SECRET_ARGS` option replaced by `REDACTED_VALUE`."""
+    redacted = list(args)
+    for index, arg in enumerate(redacted):
+        name, separator, _ = arg.partition('=')
+        if name not in SECRET_ARGS:
+            continue
+        if separator:
+            redacted[index] = f'{name}={REDACTED_VALUE}'
+        elif index + 1 < len(redacted):
+            redacted[index + 1] = REDACTED_VALUE
+    return redacted
+
+
 def _install_port(install: DetectedInstall) -> Optional[int]:
     """Return the `--port` in a WebUI install's launch arguments, if any."""
     port = _arg_value(install.launch_args or [], '--port')
@@ -715,8 +773,10 @@ def probe_server(url: str, connect: ConnectFunction) -> Optional[DetectedServer]
 def link_servers(installs: list[DetectedInstall], servers: list[DetectedServer]) -> DetectionResult:
     """Attach each server to the install it runs from, where that is unambiguous, and return the result.
 
-    A ComfyUI server links to the install holding the `main.py` in its `argv`; a relative path links when exactly one
-    install's entry point ends with it. A local WebUI server links when exactly one WebUI install uses its port.
+    A ComfyUI server links to the install holding the `main.py` in its `argv`. A relative path, such as `main.py`
+    when ComfyUI was started from its own folder, matches every install whose entry point ends with it; if several
+    match, it links to the one whose version is the server's, if exactly one is. A local WebUI server links when
+    exactly one WebUI install uses its port.
     """
     result = DetectionResult(installs=installs)
     for server in servers:
@@ -727,6 +787,8 @@ def link_servers(installs: list[DetectedInstall], servers: list[DetectedServer])
         else:
             candidates = []
         candidates = [install for install in candidates if install.server is None]
+        if len(candidates) > 1 and server.kind == BackendKind.COMFYUI and server.version is not None:
+            candidates = [install for install in candidates if install.version == server.version]
         if len(candidates) == 1:
             candidates[0].server = server
         else:
