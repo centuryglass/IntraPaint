@@ -2274,6 +2274,11 @@
         <translation>按键“{key_str}”同时分配给了选项 {key_names}，部分按键可能无法使用。</translation>
     </message>
     <message>
+        <location filename="../../src/config/key_config.py"/>
+        <source>"{key_str}" is also bound to: {key_names}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../../src/controller/app_controller.py"/>
         <location filename="../config/key_config_definitions.json"/>
         <source>Keybindings</source>
@@ -6806,22 +6811,17 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
-        <source>Remove</source>
+        <source>Bind an additional key</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
-        <source>Remove this key binding</source>
+        <source>"{key}" is already bound to this action</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
-        <source>Add key</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/input_fields/setting_fields.py"/>
-        <source>Bind an additional key to this action</source>
+        <source>That key can't be bound. Accent (dead) keys and some special keys aren't supported.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -37,6 +37,7 @@ UNEXPECTED_MODIFIER_ERROR = _tr('"{key_binding_name}" assigned unexpected modifi
                                 'problems')
 UNKNOWN_KEY_CODE_ERROR = _tr('"{key_binding_name}" value "{key_value}" is not a recognized key')
 KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names}, some keys may not work.')
+KEY_ALSO_BOUND_ERROR = _tr('"{key_str}" is also bound to: {key_names}')
 
 
 # Config keys that set the brush opacity directly, mapped to the opacity each sets:
@@ -170,7 +171,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
 
         Any binding may be empty, which leaves its action unbound. Empty values are skipped, so they never conflict.
         """
-        errors = [message for _keys, message in self._check_bindings(self.current_bindings())]
+        errors = [message for _keys, message, _shared in self._check_bindings(self.current_bindings())]
         if len(errors) > 0 and QApplication.instance() is not None:
             # Error messages can be fairly long, apply HTML to make them a bit more readable.
             # AppConfig explicit initialization is required if running the dynamic import script, otherwise
@@ -189,18 +190,29 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
         """Checks a set of keybinding values, and returns the problem messages found for each config key.
 
         `bindings` maps config keys to values, and may hold unsaved values from the settings window. A conflict is
-        listed under every key it involves. These are the checks `validate_keybindings` runs at startup.
+        listed under every key it involves, naming the other options that share the key. These are the checks
+        `validate_keybindings` runs at startup.
         """
         problems: dict[str, list[str]] = {}
-        for config_keys, message in self._check_bindings(bindings):
+        for config_keys, message, conflict_key in self._check_bindings(bindings):
             for config_key in config_keys:
+                if conflict_key is not None:
+                    others = ', '.join(f'"{self._binding_name(key)}"' for key in config_keys if key != config_key)
+                    message = KEY_ALSO_BOUND_ERROR.format(key_str=conflict_key, key_names=others)
                 problems.setdefault(config_key, []).append(message)
         return problems
 
-    def _check_bindings(self, bindings: dict[str, str]) -> list[tuple[list[str], str]]:
-        """Returns a (config keys involved, message) pair for each problem found in a set of keybinding values."""
+    def _binding_name(self, config_key: str) -> str:
+        """Returns a keybinding's label without the trailing colon it has as a row label."""
+        return self.get_label(config_key).strip().rstrip(':')
+
+    def _check_bindings(self, bindings: dict[str, str]) -> list[tuple[list[str], str, Optional[str]]]:
+        """Returns (config keys involved, message, shared key or None) for each problem found in keybinding values.
+
+        The shared key is set only for conflicts between options. A key repeated within one option isn't a conflict.
+        """
         duplicate_map: dict[str, list[str]] = {}
-        errors: list[tuple[list[str], str]] = []
+        errors: list[tuple[list[str], str, Optional[str]]] = []
         modifiers = ('Ctrl', 'Alt', 'Shift')
 
         def _standardize_key_str(base_key_str: str) -> str:
@@ -224,7 +236,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
             return False
 
         for config_key, value in bindings.items():
-            key_binding_name = self.get_label(config_key)
+            key_binding_name = self._binding_name(config_key)
             for key_value in value.split(','):
                 if key_value == '':
                     continue
@@ -232,22 +244,21 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
                 if config_key.endswith('_modifier'):
                     if not _is_modifier(standardized_key):
                         errors.append(([config_key], NOT_A_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
-                                                                                 key_value=key_value)))
+                                                                                 key_value=key_value), None))
                 else:
                     if _is_modifier(standardized_key):
                         errors.append(([config_key], UNEXPECTED_MODIFIER_ERROR.format(
-                            key_binding_name=key_binding_name, key_value=key_value)))
+                            key_binding_name=key_binding_name, key_value=key_value), None))
                 # noinspection PyUnresolvedReferences
                 if key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
                     errors.append(([config_key], UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
-                                                                               key_value=key_value)))
-                if standardized_key not in duplicate_map:
-                    duplicate_map[standardized_key] = [config_key]
-                else:
-                    duplicate_map[standardized_key].append(config_key)
+                                                                               key_value=key_value), None))
+                key_owners = duplicate_map.setdefault(standardized_key, [])
+                if config_key not in key_owners:
+                    key_owners.append(config_key)
         for key_str, config_keys in duplicate_map.items():
             if len(config_keys) > 1:
-                key_names = [self.get_label(key) for key in config_keys]
+                key_names = ', '.join(f'"{self._binding_name(key)}"' for key in config_keys)
                 if key_str in modifiers:
                     modifier_conflict_lists = [[KeyConfig.LINE_MODIFIER,
                                                 KeyConfig.FIXED_ANGLE_MODIFIER,
@@ -255,8 +266,10 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=Singleton):
                     for conflict_list in modifier_conflict_lists:
                         conflicting = [mod_key for mod_key in config_keys if mod_key in conflict_list]
                         if len(conflicting) > 1:
+                            conflict_names = ', '.join(f'"{self._binding_name(key)}"' for key in conflicting)
                             errors.append((conflicting, KEY_CONFLICT_ERROR.format(key_str=key_str,
-                                                                                   key_names=key_names)))
+                                                                                   key_names=conflict_names), key_str))
                 else:
-                    errors.append((config_keys, KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names)))
+                    errors.append((config_keys, KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names),
+                                   key_str))
         return errors

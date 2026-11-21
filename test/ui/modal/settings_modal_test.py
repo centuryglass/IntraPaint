@@ -1,14 +1,26 @@
 """Tests SettingsModal and the controls it chooses for config values."""
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtGui import QFocusEvent, QKeyEvent, QKeySequence
+from PySide6.QtWidgets import QApplication, QKeySequenceEdit, QToolButton, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
-    ModifierSettingField, OptionSegmentsField, SizeSettingField, ADD_KEY_TOOLTIP, NO_KEY_TEXT, REMOVE_KEY_TOOLTIP
+    ModifierSettingField, OptionSegmentsField, SizeSettingField, ADD_KEY_TOOLTIP, NO_KEY_TEXT, \
+    UNRECORDABLE_KEY_NOTICE, is_recordable_key
 from src.ui.modal.settings_modal import SettingsModal, _Row
 from test.base_test_case import IntraPaintTestCase
+
+
+def _press(recorder: QKeySequenceEdit, key: Qt.Key) -> None:
+    """Sends a key press and release to a key recorder, as a focused recorder receives them."""
+    for event_type in (QEvent.Type.ShortcutOverride, QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+        QApplication.sendEvent(recorder, QKeyEvent(event_type, key, Qt.KeyboardModifier.NoModifier))
+
+
+def _lose_focus(recorder: QKeySequenceEdit) -> None:
+    """Sends a key recorder the focus-out event that tabbing away from it sends."""
+    QApplication.sendEvent(recorder, QFocusEvent(QEvent.Type.FocusOut, Qt.FocusReason.TabFocusReason))
 
 
 class SettingsModalTest(IntraPaintTestCase):
@@ -133,20 +145,65 @@ class SettingsModalTest(IntraPaintTestCase):
         self.assertEqual('Shift+S,Ctrl+P', field.value())
 
     def test_keybinding_field_add_and_remove(self) -> None:
-        """Add and remove buttons change the number of alternatives, and an empty recorder adds no binding."""
+        """The add button adds one empty recorder at most, and an emptied extra recorder goes away on losing focus."""
         field = KeybindingField()
         field.setValue('A')
         changes: list[str] = []
         field.valueChanged.connect(changes.append)
-        [b for b in field.findChildren(QPushButton) if b.toolTip() == ADD_KEY_TOOLTIP][0].click()
+        add_button = [b for b in field.findChildren(QToolButton) if b.toolTip() == ADD_KEY_TOOLTIP][0]
+        add_button.click()
+        add_button.click()
         self.assertEqual(2, len(field.recorders()))
         self.assertEqual('A', field.value())
         field.recorders()[1].setKeySequence(QKeySequence('B'))
         self.assertEqual('A,B', field.value())
-        remove_buttons = [b for b in field.findChildren(QPushButton) if b.toolTip() == REMOVE_KEY_TOOLTIP and b.isVisibleTo(field)]
-        remove_buttons[0].click()
+        field.recorders()[0].clear()
         self.assertEqual('B', field.value())
         self.assertEqual('B', changes[-1])
+        _lose_focus(field.recorders()[0])
+        self.assertEqual(['B'], [recorder.keySequence().toString() for recorder in field.recorders()])
+        field.recorders()[0].clear()
+        _lose_focus(field.recorders()[0])
+        self.assertEqual(1, len(field.recorders()), 'The only recorder stays when emptied')
+        self.assertEqual(NO_KEY_TEXT, field.badge_labels()[0])
+
+    def test_keybinding_field_skips_repeated_key(self) -> None:
+        """A key already bound in the same field isn't recorded again, and saved repeats are dropped."""
+        field = KeybindingField()
+        field.setValue('E')
+        field.add_binding()
+        _press(field.recorders()[1], Qt.Key.Key_E)
+        self.assertEqual('E', field.value())
+        self.assertEqual('', field.recorders()[1].keySequence().toString())
+        self.assertIn('"E"', field.problem_text())
+        _press(field.recorders()[1], Qt.Key.Key_F)
+        self.assertEqual('E,F', field.value())
+        self.assertEqual('', field.problem_text())
+        field.setValue('E,e,F')
+        self.assertEqual('E,F', field.value())
+
+    def test_keybinding_field_esc_cancels(self) -> None:
+        """Esc leaves the recorder without changing or adding a binding."""
+        field = KeybindingField()
+        field.setValue('E')
+        _press(field.recorders()[0], Qt.Key.Key_Escape)
+        self.assertEqual('E', field.value())
+        field.add_binding()
+        _press(field.recorders()[1], Qt.Key.Key_Escape)
+        _lose_focus(field.recorders()[1])
+        self.assertEqual('E', field.value())
+        self.assertEqual(1, len(field.recorders()))
+
+    def test_keybinding_field_refuses_dead_keys(self) -> None:
+        """Accent (dead) keys, whose text reads back as a different key, are refused with an inline notice."""
+        self.assertFalse(is_recordable_key(Qt.Key.Key_Dead_Acute))
+        for key in (Qt.Key.Key_E, Qt.Key.Key_Eacute, Qt.Key.Key_F5, Qt.Key.Key_Space, Qt.Key.Key_Plus):
+            self.assertTrue(is_recordable_key(key), key)
+        field = KeybindingField()
+        field.setValue('E')
+        _press(field.recorders()[0], Qt.Key.Key_Dead_Acute)
+        self.assertEqual('E', field.value())
+        self.assertIn(UNRECORDABLE_KEY_NOTICE, field.problem_text())
 
     def test_modifier_bindings_offer_only_modifiers(self) -> None:
         """Modifier key settings use a combo box that only offers modifier combinations, or unbound."""
@@ -171,8 +228,8 @@ class SettingsModalTest(IntraPaintTestCase):
         assert isinstance(first_control, KeybindingField) and isinstance(second_control, KeybindingField)
         self.assertEqual('', first_control.problem_text())
         second_control.setValue(first_control.value())
-        self.assertIn(KeyConfig().get_label(first), second_control.problem_text())
-        self.assertIn(KeyConfig().get_label(second), first_control.problem_text())
+        self.assertIn(KeyConfig().get_label(first).rstrip(':'), second_control.problem_text())
+        self.assertIn(KeyConfig().get_label(second).rstrip(':'), first_control.problem_text())
         second_control.setValue('')
         self.assertEqual('', first_control.problem_text())
         self.assertEqual('', second_control.problem_text())

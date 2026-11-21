@@ -13,9 +13,9 @@ Each has the `value`/`setValue`/`valueChanged` interface the window's other cont
 from typing import Optional
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QKeySequence
+from PySide6.QtGui import QColor, QFocusEvent, QIcon, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QHBoxLayout, QKeySequenceEdit, QLabel, \
-    QPushButton, QSizePolicy, QVBoxLayout, QWidget
+    QPushButton, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.number_field import NumberField
@@ -46,10 +46,10 @@ HEIGHT_LABEL = _tr('Height')
 NO_KEY_TEXT = _tr('Unbound')
 RECORD_KEY_TOOLTIP = _tr('Click, then press the key or key combination to bind')
 RECORD_KEY_NAME = _tr('Key binding')
-REMOVE_KEY_LABEL = _tr('Remove')
-REMOVE_KEY_TOOLTIP = _tr('Remove this key binding')
-ADD_KEY_LABEL = _tr('Add key')
-ADD_KEY_TOOLTIP = _tr('Bind an additional key to this action')
+ADD_KEY_LABEL = '+'
+ADD_KEY_TOOLTIP = _tr('Bind an additional key')
+DUPLICATE_KEY_NOTICE = _tr('"{key}" is already bound to this action')
+UNRECORDABLE_KEY_NOTICE = _tr("That key can't be bound. Accent (dead) keys and some special keys aren't supported.")
 
 SWATCH_ICON_SIZE = 16
 SIZE_FIELD_MAX_WIDTH = 140
@@ -164,33 +164,92 @@ class DirectorySettingField(QWidget):
             self._edit.setValue(selection)
 
 
-class _KeyRecorderRow(QWidget):
-    """One recorded binding: a key recorder and a button that removes it."""
+# Keys that only start a combination or a composed character. A recorder ignores them and waits for the next key.
+_KEY_RECORDER_IGNORED_KEYS = frozenset((Qt.Key.Key_AltGr, Qt.Key.Key_Mode_switch, Qt.Key.Key_Multi_key,
+                                        Qt.Key.Key_Super_L, Qt.Key.Key_Super_R, Qt.Key.Key_Hyper_L,
+                                        Qt.Key.Key_Hyper_R, Qt.Key.Key_Direction_L, Qt.Key.Key_Direction_R))
+# Keys a recorder passes to QKeySequenceEdit unchecked, which waits for a non-modifier key:
+_KEY_RECORDER_MODIFIER_KEYS = frozenset((Qt.Key.Key_Shift, Qt.Key.Key_Control, Qt.Key.Key_Alt, Qt.Key.Key_Meta,
+                                         Qt.Key.Key_unknown))
 
-    changed = Signal()
-    removed = Signal(object)
+
+def _same_binding(first: str, second: str) -> bool:
+    """Returns whether two binding texts name the same key combination, whatever their spelling."""
+    return QKeySequence(first) == QKeySequence(second)
+
+
+def is_recordable_key(key: Qt.Key | int) -> bool:
+    """Returns whether a key's text reads back as the same key, so a binding saved as text can trigger it.
+
+    Accent (dead) keys and a few special keys fail this. A binding to one would display as an unrelated character and
+    never trigger.
+    """
+    text = QKeySequence(key).toString()
+    if text == '':
+        return False
+    sequence = QKeySequence(text)
+    return sequence.count() == 1 and sequence[0].key() == key
+
+
+class _KeyRecorder(QKeySequenceEdit):
+    """A QKeySequenceEdit that cancels on Esc and refuses keys that can't be saved as text.
+
+    Esc leaves the recorder without changing its binding. A refused key leaves the binding as it was and emits
+    `refused`.
+    """
+
+    refused = Signal()
+    focus_lost = Signal(Qt.FocusReason)
+
+    def keyPressEvent(self, event: Optional[QKeyEvent]) -> None:  # pylint: disable=invalid-name
+        """Cancels on Esc, ignores keys that start a combination, and refuses keys that can't be saved."""
+        assert event is not None
+        key = event.key()
+        if key == Qt.Key.Key_Escape:
+            event.accept()
+            self.clearFocus()
+            return
+        if key in _KEY_RECORDER_IGNORED_KEYS:
+            event.accept()
+            return
+        if key not in _KEY_RECORDER_MODIFIER_KEYS and not is_recordable_key(key):
+            event.accept()
+            self.refused.emit()
+            return
+        super().keyPressEvent(event)
+
+    def focusOutEvent(self, event: Optional[QFocusEvent]) -> None:  # pylint: disable=invalid-name
+        """Reports the focus change after handling it."""
+        assert event is not None
+        super().focusOutEvent(event)
+        self.focus_lost.emit(event.reason())
+
+
+class _KeyRecorderRow(QWidget):
+    """One alternative binding: a key recorder, whose clear button empties it."""
+
+    changed = Signal(object)
+    left_empty = Signal(object)
+    refused = Signal()
 
     def __init__(self, text: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._text = text
         self._loading = False
-        self.recorder = QKeySequenceEdit(self)
+        self.recorder = _KeyRecorder(self)
         self.recorder.setMaximumSequenceLength(1)
         self.recorder.setClearButtonEnabled(True)
         self.recorder.setMinimumWidth(KEY_TEXT_MIN_WIDTH)
         self.recorder.setMaximumWidth(KEY_TEXT_MAX_WIDTH)
         self.recorder.setToolTip(RECORD_KEY_TOOLTIP)
         self.recorder.setAccessibleName(RECORD_KEY_NAME)
-        self._show(text)
+        self.set_text(text)
         self.recorder.keySequenceChanged.connect(self._recorded)
-        self.remove_button = QPushButton(REMOVE_KEY_LABEL, self)
-        self.remove_button.setToolTip(REMOVE_KEY_TOOLTIP)
-        self.remove_button.setAccessibleName(REMOVE_KEY_TOOLTIP)
-        self.remove_button.clicked.connect(lambda _checked=False: self.removed.emit(self))
+        self.recorder.refused.connect(self.refused)
+        self.recorder.focus_lost.connect(self._focus_lost)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.recorder)
-        layout.addWidget(self.remove_button)
         layout.addStretch(1)
 
     @property
@@ -198,7 +257,9 @@ class _KeyRecorderRow(QWidget):
         """Returns the binding as text, or an empty string if none is recorded."""
         return self._text
 
-    def _show(self, text: str) -> None:
+    def set_text(self, text: str) -> None:
+        """Shows a binding without emitting `changed`."""
+        self._text = text
         self._loading = True
         try:
             self.recorder.setKeySequence(QKeySequence(text))
@@ -209,14 +270,22 @@ class _KeyRecorderRow(QWidget):
         if self._loading:
             return
         self._text = sequence.toString()
-        self.changed.emit()
+        self.changed.emit(self)
+
+    def _focus_lost(self, reason: Qt.FocusReason) -> None:
+        # Switching windows or opening a popup keeps the row, so the user can come back to it.
+        if self._text == '' and reason not in (Qt.FocusReason.ActiveWindowFocusReason, Qt.FocusReason.PopupFocusReason):
+            self.left_empty.emit(self)
 
 
 class KeybindingField(QWidget):
     """A key binding setting recorded by pressing keys, with one recorder per alternative binding.
 
     The value is the comma-separated text `KeyConfig` stores. Text that wasn't recorded here keeps its spelling until
-    the user records over it. `set_problems` shows the messages that `KeyConfig.binding_problems` reports.
+    the user records over it. The field holds at most one empty recorder: an emptied recorder is removed when it loses
+    focus unless it is the only one, and the add button focuses an existing empty recorder. A key already bound in
+    another recorder is not recorded twice. `set_problems` shows the messages that `KeyConfig.binding_problems`
+    reports.
     """
 
     valueChanged = Signal(str)
@@ -224,12 +293,17 @@ class KeybindingField(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._rows: list[_KeyRecorderRow] = []
+        self._problems: list[str] = []
+        self._notice = ''
         self._badge = KeycapBadge(NO_KEY_TEXT, self)
         self._rows_layout = QVBoxLayout()
         self._rows_layout.setContentsMargins(0, 0, 0, 0)
-        self._add_button = QPushButton(ADD_KEY_LABEL, self)
+        self._add_button = QToolButton(self)
+        self._add_button.setText(ADD_KEY_LABEL)
+        self._add_button.setAutoRaise(True)
         self._add_button.setToolTip(ADD_KEY_TOOLTIP)
-        self._add_button.clicked.connect(lambda _checked=False: self._add_row(''))
+        self._add_button.setAccessibleName(ADD_KEY_TOOLTIP)
+        self._add_button.clicked.connect(lambda _checked=False: self.add_binding())
         self._problem_label = QLabel(self)
         self._problem_label.setWordWrap(True)
         self._problem_label.hide()
@@ -239,16 +313,20 @@ class KeybindingField(QWidget):
         footer = QHBoxLayout()
         footer.setContentsMargins(0, 0, 0, 0)
         add_layout(layout, footer)
-        footer.addWidget(self._add_button)
         footer.addWidget(self._badge)
+        footer.addWidget(self._add_button)
         footer.addStretch(1)
         layout.addWidget(self._problem_label)
         self._add_row('')
         self._show_badge()
 
     def value(self) -> str:
-        """Returns the bindings as comma-separated key sequence text."""
-        return ','.join(key_alternatives(','.join(row.text for row in self._rows)))
+        """Returns the bindings as comma-separated key sequence text, without repeats."""
+        bindings: list[str] = []
+        for binding in key_alternatives(','.join(row.text for row in self._rows)):
+            if not any(_same_binding(binding, earlier) for earlier in bindings):
+                bindings.append(binding)
+        return ','.join(bindings)
 
     def setValue(self, new_value: str) -> None:  # pylint: disable=invalid-name
         """Sets the bindings from comma-separated key sequence text."""
@@ -258,17 +336,25 @@ class KeybindingField(QWidget):
             row.hide()
             row.deleteLater()
         self._rows = []
+        self._notice = ''
         for text in key_alternatives(new_value) or ['']:
             self._add_row(text)
         self._show_badge()
+        self._show_problems()
         self.valueChanged.emit(self.value())
+
+    def add_binding(self) -> None:
+        """Focuses the empty recorder, adding one first if every recorder holds a binding."""
+        empty_rows = [row for row in self._rows if row.text == '']
+        row = empty_rows[0] if empty_rows else self._add_row('')
+        row.recorder.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def badge_labels(self) -> list[str]:
         """Returns the label of each keycap shown."""
         return self._badge.labels
 
     def recorders(self) -> list[QKeySequenceEdit]:
-        """Returns the key recorders, one per alternative binding plus any empty ones."""
+        """Returns the key recorders, one per alternative binding plus at most one empty one."""
         return [row.recorder for row in self._rows]
 
     def problem_text(self) -> str:
@@ -277,28 +363,48 @@ class KeybindingField(QWidget):
 
     def set_problems(self, problems: list[str]) -> None:
         """Shows a list of problem messages inline, or hides the problem text if the list is empty."""
-        self._problem_label.setText('\n'.join(problems))
-        self._problem_label.setVisible(len(problems) > 0)
-        self._problem_label.setStyleSheet(PROBLEM_STYLE if problems else '')
+        self._problems = list(problems)
+        self._show_problems()
 
-    def _add_row(self, text: str) -> None:
+    def _show_problems(self) -> None:
+        messages = ([self._notice] if self._notice else []) + self._problems
+        self._problem_label.setText('\n'.join(messages))
+        self._problem_label.setVisible(len(messages) > 0)
+        self._problem_label.setStyleSheet(PROBLEM_STYLE if messages else '')
+
+    def _set_notice(self, notice: str) -> None:
+        if notice != self._notice:
+            self._notice = notice
+            self._show_problems()
+
+    def _add_row(self, text: str) -> _KeyRecorderRow:
         row = _KeyRecorderRow(text, self)
         row.changed.connect(self._row_changed)
-        row.removed.connect(self._remove_row)
+        row.left_empty.connect(self._remove_empty_row)
+        row.refused.connect(self._key_refused)
         self._rows.append(row)
         self._rows_layout.addWidget(row)
+        return row
 
-    def _remove_row(self, row: _KeyRecorderRow) -> None:
-        if row not in self._rows:
+    def _key_refused(self) -> None:
+        self._set_notice(UNRECORDABLE_KEY_NOTICE)
+
+    def _remove_empty_row(self, row: _KeyRecorderRow) -> None:
+        if row not in self._rows or row.text != '' or len(self._rows) < 2:
             return
         self._rows.remove(row)
         row.hide()
         row.deleteLater()
-        if len(self._rows) == 0:
-            self._add_row('')
-        self._row_changed()
 
-    def _row_changed(self) -> None:
+    def _row_changed(self, row: _KeyRecorderRow) -> None:
+        notice = ''
+        if row.text != '' and any(_same_binding(row.text, other.text) for other in self._rows if other is not row):
+            notice = DUPLICATE_KEY_NOTICE.format(key=row.text)
+            row.set_text('')
+        elif row.text == '' and self._notice != '':
+            # Recording a key clears the recorder first, so keep the notice until the next key arrives.
+            notice = self._notice
+        self._set_notice(notice)
         self._show_badge()
         self.valueChanged.emit(self.value())
 
