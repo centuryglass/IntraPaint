@@ -3,6 +3,7 @@ import base64
 import io
 import logging
 import os
+import sys
 import tempfile
 import uuid
 from typing import Optional, Any, TypeAlias, Callable
@@ -28,6 +29,17 @@ temp_image_dir = ''
 # Qt image formats IntraPaint never opens or saves. KDE's kimageformats plugin, installed with many Linux system Qt
 # packages, decodes these by running them in Ghostscript, see pil_image_utils.EXCLUDED_PIL_FORMATS.
 EXCLUDED_QIMAGE_FORMATS = {'EPS', 'EPSF', 'EPSI'}
+
+# Channel indexes into the last axis of an image_data_as_numpy_8bit array, for ARGB32 and ARGB32_Premultiplied images.
+# Qt stores those pixels as native-endian 32-bit 0xAARRGGBB values, so their bytes are BGRA on little-endian systems
+# and ARGB on big-endian ones. ARGB32_COLOR slices out the three color channels in that byte order: BGR on
+# little-endian, RGB on big-endian. Code that needs a particular color order indexes each channel by name.
+if sys.byteorder == 'little':
+    ARGB32_BLUE, ARGB32_GREEN, ARGB32_RED, ARGB32_ALPHA = 0, 1, 2, 3
+    ARGB32_COLOR = slice(0, 3)
+else:
+    ARGB32_ALPHA, ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE = 0, 1, 2, 3
+    ARGB32_COLOR = slice(1, 4)
 
 
 def read_qimage(file_path: str) -> QImage:
@@ -74,7 +86,7 @@ def image_is_fully_transparent(image: QImage | QPixmap | NpAnyArray) -> bool:
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         image = image_data_as_numpy_8bit(image)
-    return image[:, :, 3].max() == 0
+    return image[:, :, ARGB32_ALPHA].max() == 0
 
 
 def image_is_fully_opaque(image: QImage | QPixmap | NpAnyArray) -> bool:
@@ -87,7 +99,7 @@ def image_is_fully_opaque(image: QImage | QPixmap | NpAnyArray) -> bool:
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         image = image_data_as_numpy_8bit(image)
-    return image[:, :, 3].min() == 255
+    return image[:, :, ARGB32_ALPHA].min() == 255
 
 
 def image_has_partial_alpha(image: QImage | QPixmap | NpAnyArray) -> bool:
@@ -100,7 +112,7 @@ def image_has_partial_alpha(image: QImage | QPixmap | NpAnyArray) -> bool:
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         image = image_data_as_numpy_8bit(image)
-    image_alpha = image[:, :, 3]
+    image_alpha = image[:, :, ARGB32_ALPHA]
     return image_alpha.max() > 0 and image_alpha.min() < 255
 
 
@@ -179,9 +191,9 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     # If alpha_threshold is 0.0, we can use the alpha channel directly as a binary mask. Otherwise, create a new mask
     # from the comparison:
     if alpha_threshold != 0.0:
-        binary_mask = (np_image[:, :, 3] > alpha_threshold)
+        binary_mask = (np_image[:, :, ARGB32_ALPHA] > alpha_threshold)
     else:
-        binary_mask = np_image[:, :, 3]
+        binary_mask = np_image[:, :, ARGB32_ALPHA]
     coords = cv2.findNonZero(binary_mask)
 
     if coords is None:
@@ -389,9 +401,9 @@ def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Arra
     """ Performs a source-over image composition operation on two premultiplied ARGB images of equal size, writing
     changes directly to the destination image."""
     assert source.shape == destination.shape, f'Image shape mismatch: {source.shape} != {destination.shape}'
-    alpha_unchanged = source[:, :, 3] == destination[:, :, 3]
-    src_full_alpha = source[:, :, 3] == 0
-    dst_full_alpha = destination[:, :, 3] == 0
+    alpha_unchanged = source[:, :, ARGB32_ALPHA] == destination[:, :, ARGB32_ALPHA]
+    src_full_alpha = source[:, :, ARGB32_ALPHA] == 0
+    dst_full_alpha = destination[:, :, ARGB32_ALPHA] == 0
 
     # where the source is fully transparent, completely clear the destination:
     destination[src_full_alpha, :] = 0
@@ -404,13 +416,13 @@ def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Arra
     # where both images are not fully transparent and both images have differing opacity, re-multiply color
     # channels:
     re_multiply = ~src_full_alpha & ~dst_full_alpha & ~alpha_unchanged
-    for c in range(3):
+    for c in range(4)[ARGB32_COLOR]:
         destination[re_multiply, c] = (destination[re_multiply, c]
-                                       / (destination[re_multiply, 3] / 255)
-                                       * (source[re_multiply, 3] / 255))
+                                       / (destination[re_multiply, ARGB32_ALPHA] / 255)
+                                       * (source[re_multiply, ARGB32_ALPHA] / 255))
 
     # apply source alpha across the image:
-    destination[~alpha_unchanged, 3] = source[~alpha_unchanged, 3]
+    destination[~alpha_unchanged, ARGB32_ALPHA] = source[~alpha_unchanged, ARGB32_ALPHA]
 
 
 def np_composite_with_mask(source: NpUInt8Array, destination: NpUInt8Array, mask: NpUInt8Array) -> None:
@@ -420,7 +432,7 @@ def np_composite_with_mask(source: NpUInt8Array, destination: NpUInt8Array, mask
     Where the mask is opaque, the destination takes the source's value, and where it is transparent, the destination
     is unchanged. Two valid premultiplied pixels always blend into a valid one.
     """
-    alpha = mask[:, :, 3:4].astype(np.uint16)
+    alpha = mask[:, :, ARGB32_ALPHA, np.newaxis].astype(np.uint16)
     blended = source.astype(np.uint16)
     blended *= alpha
     np.subtract(255, alpha, out=alpha)
