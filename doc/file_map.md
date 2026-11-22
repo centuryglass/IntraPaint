@@ -136,6 +136,8 @@ Finding, and later installing, the Stable Diffusion backends IntraPaint can gene
   or running on this machine, by reading files and probing URLs.
 - `src/controller/image_generation/backend_install/detected_backend.py`: The result model of backend detection: installs
   found on disk, running servers, and findings about each.
+- `src/controller/image_generation/backend_install/managed_comfyui.py`: Starts, health-checks, streams logs from and
+  stops a ComfyUI install that IntraPaint launches itself.
 
 ## `src/controller/image_generation/sd_adapters`
 

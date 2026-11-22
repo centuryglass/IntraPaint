@@ -633,6 +633,15 @@
         "default": "",
         "saved": true
     },
+    "backend_install_dir": {
+        "control": "directory",
+        "label": "Stable Diffusion backend directory:",
+        "category": "Files",
+        "description": "Directory where IntraPaint installs Stable Diffusion backends. Installs can take many gigabytes, so this can be on another drive.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "autosave_enabled": {
         "label": "Autosave a recovery copy:",
         "category": "Files",

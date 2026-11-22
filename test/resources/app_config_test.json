@@ -87,5 +87,6 @@
     "warn_when_lock_forces_layer_create": true,
     "added_font_dir": "",
     "added_mypaint_brush_dir": "",
-    "libmypaint_library_dir": ""
+    "libmypaint_library_dir": "",
+    "backend_install_dir": ""
 }

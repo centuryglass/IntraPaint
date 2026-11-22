@@ -850,6 +850,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Stable Diffusion backend directory:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Directory where IntraPaint installs Stable Diffusion backends. Installs can take many gigabytes, so this can be on another drive.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Autosave a recovery copy:</source>
         <translation type="unfinished"></translation>
     </message>

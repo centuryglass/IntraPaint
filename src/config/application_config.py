@@ -18,6 +18,7 @@ qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
 
 DEFAULT_CONFIG_PATH = APP_CONFIG_PATH
+BACKEND_INSTALL_DIR_NAME = 'backends'
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/application_config_definitions.json'
 
 
@@ -75,6 +76,10 @@ class AppConfig(AppConfigKeys, Config, metaclass=AppService):
                 os.makedirs(dir_path, exist_ok=True)
                 if os.path.isdir(dir_path):
                     self.set(config_key, dir_path)
+        # Backend installs are created on demand, so their folder isn't created here. It must never default to a path
+        # under PROJECT_DIR, which the one-file bundle deletes on exit:
+        if self.get(AppConfig.BACKEND_INSTALL_DIR) == '':
+            self.set(AppConfig.BACKEND_INSTALL_DIR, os.path.join(DATA_DIR, BACKEND_INSTALL_DIR_NAME))
 
         scaling_options = list(PIL_SCALING_MODES.keys())
         self.update_options(AppConfig.PIL_UPSCALE_MODE, scaling_options)

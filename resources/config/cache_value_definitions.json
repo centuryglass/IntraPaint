@@ -1264,6 +1264,41 @@
         "pinned": true,
         "translate": false
     },
+    "managed_comfyui_path": {
+        "label": "Managed ComfyUI path:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Folder of the ComfyUI install that IntraPaint launches, or empty if none is set. ComfyUI runs from this folder.",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
+    "managed_comfyui_launch_command": {
+        "label": "Managed ComfyUI launch command:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Interpreter, entry point and arguments that launch the managed ComfyUI install. IntraPaint adds the listen address and port.",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
+    },
+    "managed_comfyui_port": {
+        "label": "Managed ComfyUI port:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Local port the managed ComfyUI install serves on. It differs from ComfyUI's default port, so a ComfyUI the user starts themselves doesn't collide with it.",
+        "type": "int",
+        "default": 8189,
+        "saved": true,
+        "translate": false,
+        "range_options": {
+            "min": 1024,
+            "max": 65535,
+            "step": 1
+        }
+    },
     "glid_server_url": {
         "label": "GLID-3-XL server URL:",
         "category": "Cache",
