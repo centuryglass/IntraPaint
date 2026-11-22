@@ -126,6 +126,16 @@ class _QuickStrokeCardTestBase(ToolTestCase):
             Cache().set(self.OPACITY_KEY, 0.25)
             self.assertAlmostEqual(opacity_field.value(), 0.25)
 
+    def test_card_reveals_pressure_links_when_a_tablet_is_seen(self) -> None:
+        """An open card, and one opened later, show the pressure links once a tablet is seen."""
+        if self.OPACITY_KEY is None:
+            self.skipTest('The tool has no pressure links')
+        Cache().set(Cache.EXPECT_TABLET_INPUT, False)
+        card = self.open_card()
+        self.assertFalse(card.size_field.pressure_link_available())
+        Cache().set(Cache.EXPECT_TABLET_INPUT, True)
+        self.assertTrue(card.size_field.pressure_link_available())
+
     def test_escape_closes_card(self) -> None:
         """Escape closes the focused card."""
         card = self.open_card()
