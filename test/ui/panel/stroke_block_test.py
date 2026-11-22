@@ -59,13 +59,13 @@ class StrokeBlockTest(IntraPaintTestCase):
         panel = DrawToolPanel()
         field = panel.stroke_block.field(Cache.DRAW_TOOL_BRUSH_SIZE)
         self.assertFalse(field.pressure_link_available())
-        panel.show_pressure_checkboxes()
+        Cache().set(Cache.EXPECT_TABLET_INPUT, True)
         self.assertTrue(field.pressure_link_available())
         field.set_pressure_link_enabled(False)
         self.assertFalse(Cache().get(Cache.DRAW_TOOL_PRESSURE_SIZE))
 
     def test_revealing_pressure_links_plans_once(self) -> None:
-        """Pen use calls show_pressure_checkboxes on every tablet event, but only the first call replans.
+        """Pen use sets EXPECT_TABLET_INPUT on every tablet event, but only the first change replans.
 
         The reveal changes no measured size, and a forced replan on every event rearranges the panel in a stream,
         flickering it.
@@ -85,10 +85,21 @@ class StrokeBlockTest(IntraPaintTestCase):
 
         planner.update = _update  # type: ignore[method-assign]
         for _ in range(10):
-            panel.show_pressure_checkboxes()
+            Cache().set(Cache.EXPECT_TABLET_INPUT, True)
             settle_layouts(panel)
         self.assertEqual(len(updates), 1, 'only the first tablet event replans the panel')
         self.assertTrue(panel.stroke_block.fields()[0].pressure_link_available())
+
+    def test_every_panel_reveals_links_when_a_tablet_is_seen(self) -> None:
+        """A tablet seen through one tool reveals the links on the other panels, built before it was seen."""
+        Cache().set(Cache.EXPECT_TABLET_INPUT, False)
+        panels = [DrawToolPanel(), EraserToolPanel(), SmudgeToolPanel()]
+        for panel in panels:
+            self.assertFalse(any(f.pressure_link_available() for f in panel.stroke_block.fields()))
+        Cache().set(Cache.EXPECT_TABLET_INPUT, True)
+        for panel in panels:
+            with self.subTest(panel=type(panel).__name__):
+                self.assertTrue(any(f.pressure_link_available() for f in panel.stroke_block.fields()))
 
     def test_selection_checkbox_uses_the_shared_label(self) -> None:
         """The selection option reads the same in every tool."""

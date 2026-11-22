@@ -174,6 +174,11 @@ def build_stroke_field(owner: QWidget, key: str, pressure_key: Optional[str], de
         field.set_pressure_link_enabled(bool(cache.get(pressure_key)))
         field.set_pressure_link_available(bool(cache.get(Cache.EXPECT_TABLET_INPUT)))
 
+        def _tablet_expected(expected: bool, *_) -> None:
+            field.set_pressure_link_available(bool(expected))
+        # One connection per object and key, so the field is the connected object, not the shared owner:
+        cache.connect(field, Cache.EXPECT_TABLET_INPUT, _tablet_expected)
+
         def _link_toggled(enabled: bool) -> None:
             if cache.get(pressure_key) != enabled:
                 cache.set(pressure_key, enabled)
@@ -277,7 +282,6 @@ class StrokeBlock(QWidget):
         super().__init__(parent)
         cache = Cache()
         self._fields: dict[str, NumberField] = {}
-        self._pressure_fields: list[NumberField] = []
         self._arrangement: Optional[StrokeArrangement] = None
 
         self._fields_widget = QWidget()
@@ -289,8 +293,6 @@ class StrokeBlock(QWidget):
         for (field, has_pressure_link), key in zip(build_stroke_fields(self, field_keys),
                                                    (k for k in (size_key, opacity_key, hardness_key) if k)):
             self._fields[key] = field
-            if has_pressure_link:
-                self._pressure_fields.append(field)
             fields_layout.addWidget(field)
         self._field_keys = list(self._fields)
 
@@ -359,11 +361,6 @@ class StrokeBlock(QWidget):
     def fields(self) -> list[NumberField]:
         """Returns the Size, Opacity and Hardness fields that exist, in display order."""
         return [self._fields[key] for key in self._field_keys]
-
-    def show_pressure_links(self) -> None:
-        """Reveals the pressure links on the fields that have one, once a tablet has been seen."""
-        for field in self._pressure_fields:
-            field.set_pressure_link_available(True)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Layout
@@ -597,6 +594,7 @@ class StrokeToolPanel(FitToolPanel):
         self._tool_items: list[tuple[FitItem, Callable[[Orientation, Optional[int]], None]]] = []
         self._planner = self._build_planner()
         block.section_toggled.connect(self._refit)
+        Cache().connect(self, Cache.EXPECT_TABLET_INPUT, self._tablet_expected_changed)
 
     @property
     def stroke_block(self) -> StrokeBlock:
@@ -663,14 +661,11 @@ class StrokeToolPanel(FitToolPanel):
         """Arranges the contents of the tool's own sections for an orientation, before the block places them.
         Subclasses override this."""
 
-    def show_pressure_checkboxes(self) -> None:
-        """Reveals the pen pressure links after a tablet is seen, and replans once for the reveal.
+    def _tablet_expected_changed(self, expected: bool, *_) -> None:
+        """Replans once the pressure links appear: the fields reveal them themselves (`build_stroke_field`).
 
-        Pen use calls this on every tablet event. The reveal changes no measured size, so only the first call
-        replans: a forced replan on every event rearranges the panel in a stream, which flickers it.
+        Only the reveal replans. Pen use sets the key on every tablet event, and a forced replan on each would
+        rearrange the panel in a stream, which flickers it.
         """
-        first_reveal = not Cache().get(Cache.EXPECT_TABLET_INPUT)
-        self._block.show_pressure_links()
-        Cache().set(Cache.EXPECT_TABLET_INPUT, True)
-        if first_reveal:
+        if expected:
             self._plan_own_size(force=True)

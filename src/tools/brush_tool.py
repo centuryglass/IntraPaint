@@ -24,7 +24,7 @@ from src.ui.graphics_items.brush_outline import BrushOutline
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.quick_stroke_card import QuickStrokeCard
-from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys
 from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -579,9 +579,7 @@ class BrushTool(BaseTool):
     def tablet_event(self, event: Optional[QTabletEvent], _image_coordinates: QPoint) -> bool:
         """Cache tablet data when received."""
         assert event is not None
-        control_panel = self.get_control_panel()
-        if isinstance(control_panel, StrokeToolPanel):
-            control_panel.show_pressure_checkboxes()
+        if not Cache().get(Cache.EXPECT_TABLET_INPUT):
             Cache().set(Cache.EXPECT_TABLET_INPUT, True)
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()

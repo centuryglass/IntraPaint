@@ -13,7 +13,6 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox, BRUSH_PATTERN_SOLID
-from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.math_utils import clamp
 
@@ -152,11 +151,6 @@ class QtPaintBrushTool(BrushTool):
             _update_antialias(cache.get(antialias_key))
 
         self.update_brush_cursor()
-
-        if cache.get(Cache.EXPECT_TABLET_INPUT):
-            control_panel = self.get_control_panel()
-            if isinstance(control_panel, StrokeToolPanel):
-                control_panel.show_pressure_checkboxes()
 
     def get_reset_config_keys(self) -> list[str]:
         """Returns the brush's own keys, leaving out the shared color."""

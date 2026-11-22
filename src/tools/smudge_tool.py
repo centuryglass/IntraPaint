@@ -14,7 +14,7 @@ from src.tools.brush_tool import BrushTool
 from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SMUDGE_STROKE_KEYS
-from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeKeys
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
@@ -113,11 +113,6 @@ class SmudgeTool(BrushTool):  # type: ignore
             brush.antialiasing = antialias
         cache.connect(self, Cache.SMUDGE_TOOL_ANTIALIAS, _antialias_update)
         _antialias_update(cache.get(Cache.SMUDGE_TOOL_ANTIALIAS))
-
-        if cache.get(Cache.EXPECT_TABLET_INPUT):
-            control_panel = self.get_control_panel()
-            assert isinstance(control_panel, StrokeToolPanel)
-            control_panel.show_pressure_checkboxes()
 
     def quick_stroke_keys(self) -> Optional[StrokeKeys]:
         """Returns the fields the right-click card shows."""

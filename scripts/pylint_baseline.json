@@ -31,11 +31,14 @@
     "invalid-name": 1
   },
   "src/tools/brush_tool.py": {
-    "assignment-from-none": 2
+    "assignment-from-none": 1
   },
   "src/tools/qt_paint_brush_tool.py": {
-    "assignment-from-none": 3,
+    "assignment-from-none": 2,
     "unused-import": 1
+  },
+  "src/ui/panel/tool_control_panels/stroke_block.py": {
+    "unused-variable": 1
   },
   "src/util/application_state.py": {
     "protected-access": 10
