@@ -10799,66 +10799,6 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
-        <source>W:</source>
-        <translation>W：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>H:</source>
-        <translation>H：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>X:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Y:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Width:</source>
-        <translation>宽度：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Height:</source>
-        <translation>高度：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Color:</source>
-        <translation>颜色：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Size:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Scale:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Zoom in</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Reset zoom</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Keep aspect ratio</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
         <source>Editing failed</source>
         <translation>编辑失败</translation>
     </message>
@@ -10919,11 +10859,6 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
-        <source>The AI image generator is busy creating other images, try again later.</source>
-        <translation>AI 图像生成器正忙于生成其他图像，请稍后重试。</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
         <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10940,11 +10875,6 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Open or create an image first.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Describing image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -11018,6 +10948,30 @@ Keys: {decrease} / {increase}</source>
         <source>{description}
 Key: {key}</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>W:</source>
+        <translation type="vanished">W：</translation>
+    </message>
+    <message>
+        <source>H:</source>
+        <translation type="vanished">H：</translation>
+    </message>
+    <message>
+        <source>Width:</source>
+        <translation type="vanished">宽度：</translation>
+    </message>
+    <message>
+        <source>Height:</source>
+        <translation type="vanished">高度：</translation>
+    </message>
+    <message>
+        <source>Color:</source>
+        <translation type="vanished">颜色：</translation>
+    </message>
+    <message>
+        <source>The AI image generator is busy creating other images, try again later.</source>
+        <translation type="vanished">AI 图像生成器正忙于生成其他图像，请稍后重试。</translation>
     </message>
 </context>
 <context>
