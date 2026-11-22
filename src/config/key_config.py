@@ -37,6 +37,7 @@ UNEXPECTED_MODIFIER_ERROR = _tr('"{key_binding_name}" assigned unexpected modifi
                                 'problems')
 UNKNOWN_KEY_CODE_ERROR = _tr('"{key_binding_name}" value "{key_value}" is not a recognized key')
 KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names}, some keys may not work.')
+KEY_ALSO_BOUND_ERROR = _tr('"{key_str}" is also bound to: {key_names}')
 
 
 # Config keys that set the brush opacity directly, mapped to the opacity each sets:
@@ -170,9 +171,48 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
 
         Any binding may be empty, which leaves its action unbound. Empty values are skipped, so they never conflict.
         """
-        key_binding_options = self.get_category_keys('Keybindings') + self.get_category_keys('Menu Shortcuts')
-        duplicate_map = {}
-        errors = []
+        errors = [message for _keys, message, _shared in self._check_bindings(self.current_bindings())]
+        if len(errors) > 0 and QApplication.instance() is not None:
+            # Error messages can be fairly long, apply HTML to make them a bit more readable.
+            # AppConfig explicit initialization is required if running the dynamic import script, otherwise
+            # WARN_ON_KEY_ERROR won't be present and any key errors will cause an unexplained failure.
+            AppConfig()
+            error_message = (f'<b>{escape_rich_text(KEY_CONFIG_ERROR_MESSAGE.strip())}</b>'
+                             + rich_text_list(errors))
+            show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
+
+    def current_bindings(self) -> dict[str, str]:
+        """Returns the saved value of every keybinding and menu shortcut, by config key."""
+        return {key: self.get(key)
+                for key in self.get_category_keys('Keybindings') + self.get_category_keys('Menu Shortcuts')}
+
+    def binding_problems(self, bindings: dict[str, str]) -> dict[str, list[str]]:
+        """Checks a set of keybinding values, and returns the problem messages found for each config key.
+
+        `bindings` maps config keys to values, and may hold unsaved values from the settings window. A conflict is
+        listed under every key it involves, naming the other options that share the key. These are the checks
+        `validate_keybindings` runs at startup.
+        """
+        problems: dict[str, list[str]] = {}
+        for config_keys, message, conflict_key in self._check_bindings(bindings):
+            for config_key in config_keys:
+                if conflict_key is not None:
+                    others = ', '.join(f'"{self._binding_name(key)}"' for key in config_keys if key != config_key)
+                    message = KEY_ALSO_BOUND_ERROR.format(key_str=conflict_key, key_names=others)
+                problems.setdefault(config_key, []).append(message)
+        return problems
+
+    def _binding_name(self, config_key: str) -> str:
+        """Returns a keybinding's label without the trailing colon it has as a row label."""
+        return self.get_label(config_key).strip().rstrip(':')
+
+    def _check_bindings(self, bindings: dict[str, str]) -> list[tuple[list[str], str, Optional[str]]]:
+        """Returns (config keys involved, message, shared key or None) for each problem found in keybinding values.
+
+        The shared key is set only for conflicts between options. A key repeated within one option isn't a conflict.
+        """
+        duplicate_map: dict[str, list[str]] = {}
+        errors: list[tuple[list[str], str, Optional[str]]] = []
         modifiers = ('Ctrl', 'Alt', 'Shift')
 
         def _standardize_key_str(base_key_str: str) -> str:
@@ -195,47 +235,41 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
                 return True
             return False
 
-        for config_key in key_binding_options:
-            key_binding_name = self.get_label(config_key)
-            key_values = self.get(config_key).split(',')
-            for key_value in key_values:
+        for config_key, value in bindings.items():
+            key_binding_name = self._binding_name(config_key)
+            for key_value in value.split(','):
                 if key_value == '':
                     continue
                 standardized_key = _standardize_key_str(key_value)
                 if config_key.endswith('_modifier'):
                     if not _is_modifier(standardized_key):
-                        errors.append(NOT_A_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
-                                                                  key_value=key_value))
+                        errors.append(([config_key], NOT_A_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
+                                                                                 key_value=key_value), None))
                 else:
                     if _is_modifier(standardized_key):
-                        errors.append(UNEXPECTED_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
-                                                                       key_value=key_value))
+                        errors.append(([config_key], UNEXPECTED_MODIFIER_ERROR.format(
+                            key_binding_name=key_binding_name, key_value=key_value), None))
                 # noinspection PyUnresolvedReferences
                 if key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
-                    errors.append(UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
-                                                                key_value=key_value))
-                if standardized_key not in duplicate_map:
-                    duplicate_map[standardized_key] = [config_key]
-                else:
-                    duplicate_map[standardized_key].append(config_key)
+                    errors.append(([config_key], UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
+                                                                               key_value=key_value), None))
+                key_owners = duplicate_map.setdefault(standardized_key, [])
+                if config_key not in key_owners:
+                    key_owners.append(config_key)
         for key_str, config_keys in duplicate_map.items():
             if len(config_keys) > 1:
-                key_names = [self.get_label(key) for key in config_keys]
+                key_names = ', '.join(f'"{self._binding_name(key)}"' for key in config_keys)
                 if key_str in modifiers:
                     modifier_conflict_lists = [[KeyConfig.LINE_MODIFIER,
                                                 KeyConfig.FIXED_ANGLE_MODIFIER,
                                                 KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER]]
                     for conflict_list in modifier_conflict_lists:
-                        conflict_key_count = len([mod_key for mod_key in conflict_list if mod_key in config_keys])
-                        if conflict_key_count > 1:
-                            errors.append(KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names))
+                        conflicting = [mod_key for mod_key in config_keys if mod_key in conflict_list]
+                        if len(conflicting) > 1:
+                            conflict_names = ', '.join(f'"{self._binding_name(key)}"' for key in conflicting)
+                            errors.append((conflicting, KEY_CONFLICT_ERROR.format(key_str=key_str,
+                                                                                   key_names=conflict_names), key_str))
                 else:
-                    errors.append(KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names))
-        if len(errors) > 0 and QApplication.instance() is not None:
-            # Error messages can be fairly long, apply HTML to make them a bit more readable.
-            # AppConfig explicit initialization is required if running the dynamic import script, otherwise
-            # WARN_ON_KEY_ERROR won't be present and any key errors will cause an unexplained failure.
-            AppConfig()
-            error_message = (f'<b>{escape_rich_text(KEY_CONFIG_ERROR_MESSAGE.strip())}</b>'
-                             + rich_text_list(errors))
-            show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
+                    errors.append((config_keys, KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names),
+                                   key_str))
+        return errors

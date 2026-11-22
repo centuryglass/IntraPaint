@@ -2272,6 +2272,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../../src/config/key_config.py"/>
+        <source>"{key_str}" is also bound to: {key_names}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../../src/controller/app_controller.py"/>
         <location filename="../config/key_config_definitions.json"/>
         <source>Keybindings</source>
@@ -6765,6 +6770,31 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Unbound</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Click, then press the key or key combination to bind</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Key binding</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Bind an additional key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>"{key}" is already bound to this action</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>That key can't be bound. Accent (dead) keys and some special keys aren't supported.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

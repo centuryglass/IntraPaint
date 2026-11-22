@@ -43,7 +43,34 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, KeyConfig().get(KeyConfig.DRAW_TOOL_KEY))
         errors = _validation_errors()
         self.assertEqual(1, len(errors))
-        self.assertIn(KeyConfig().get_label(KeyConfig.DRAW_TOOL_KEY), errors[0])
+        self.assertIn(KeyConfig().get_label(KeyConfig.DRAW_TOOL_KEY).rstrip(':'), errors[0])
+
+    def test_binding_problems_checks_unsaved_values(self) -> None:
+        """`binding_problems` checks values that aren't saved, and lists a clash under every key it involves."""
+        config = KeyConfig()
+        bindings = config.current_bindings()
+        self.assertEqual({}, config.binding_problems(bindings))
+        bindings[KeyConfig.TEXT_TOOL_KEY] = bindings[KeyConfig.DRAW_TOOL_KEY]
+        problems = config.binding_problems(bindings)
+        self.assertEqual({KeyConfig.TEXT_TOOL_KEY, KeyConfig.DRAW_TOOL_KEY}, set(problems))
+        self.assertIn(f'"{bindings[KeyConfig.DRAW_TOOL_KEY]}"', problems[KeyConfig.TEXT_TOOL_KEY][0])
+        self.assertIn(config.get_label(KeyConfig.DRAW_TOOL_KEY).rstrip(':'), problems[KeyConfig.TEXT_TOOL_KEY][0])
+        self.assertNotIn(config.get_label(KeyConfig.TEXT_TOOL_KEY).rstrip(':'), problems[KeyConfig.TEXT_TOOL_KEY][0])
+        bindings[KeyConfig.TEXT_TOOL_KEY] = 'NotAKey'
+        self.assertEqual([KeyConfig.TEXT_TOOL_KEY], list(config.binding_problems(bindings)))
+        bindings[KeyConfig.TEXT_TOOL_KEY] = ''
+        bindings[KeyConfig.LINE_MODIFIER] = 'J'
+        self.assertEqual([KeyConfig.LINE_MODIFIER], list(config.binding_problems(bindings)))
+
+    def test_repeated_key_within_one_option_is_not_a_conflict(self) -> None:
+        """A key listed twice in one option's value isn't reported as clashing with itself."""
+        config = KeyConfig()
+        bindings = config.current_bindings()
+        key = bindings[KeyConfig.DRAW_TOOL_KEY]
+        bindings[KeyConfig.DRAW_TOOL_KEY] = f'{key},{key.lower()},{key}'
+        self.assertEqual({}, config.binding_problems(bindings))
+        config.set(KeyConfig.DRAW_TOOL_KEY, bindings[KeyConfig.DRAW_TOOL_KEY])
+        self.assertEqual([], _validation_errors(), 'Startup validation skips the repeat too')
 
     def test_empty_modifier_never_held(self) -> None:
         """An empty modifier binding reads as not held, whatever modifiers are down."""
