@@ -1,6 +1,6 @@
 """CI lint gate: fail when pylint reports more messages than scripts/pylint_baseline.json allows.
 
-The codebase isn't pylint-clean yet (`.pylintrc` asks for a 10/10 score), so this blocks regressions instead of
+The codebase isn't pylint-clean yet (`pyproject.toml` asks for a 10/10 score), so this blocks regressions instead of
 requiring zero messages. It counts pylint's messages per file and message type, and compares them to the baseline:
 - A count above its baseline fails, because new code added a message. Fix it, or disable it inline with a reason.
 - A count below its baseline also fails, so the baseline only ever shrinks. Rerun with --update-baseline and commit
@@ -9,7 +9,7 @@ Counts are compared instead of line numbers, so edits that only move code around
 
 The baseline records CI's lint environment: Linux and Python 3.13, with requirements-dev.txt installed. Run it with
 that Python version, since pylint's results differ between versions (3.11 finds 7 fewer messages). Messages that depend
-on which optional packages are installed are configured away in .pylintrc (see ignored-modules).
+on which optional packages are installed are configured away in pyproject.toml (see ignored-modules).
 
 Usage: python scripts/pylint_check.py [--update-baseline]
 """
@@ -32,7 +32,7 @@ REPOSITORY_WIDE_PATH = '(repository)'
 
 def run_pylint() -> list[dict]:
     """Runs pylint over src/ and returns its messages."""
-    result = subprocess.run([sys.executable, '-m', 'pylint', '--rcfile=.pylintrc', '--output-format=json2', 'src'],
+    result = subprocess.run([sys.executable, '-m', 'pylint', '--output-format=json2', 'src'],
                             cwd=PROJECT_DIR, capture_output=True, text=True, check=False)
     # pylint's exit status is a bit field of the message categories it found; only a usage error means no report.
     if result.returncode & PYLINT_USAGE_ERROR or not result.stdout:

@@ -9,7 +9,7 @@ shows a kind it doesn't list, or when a listed kind no longer appears, so a fix 
 `scripts/capture_ui.py --sheet --only <scene>` to see where each kind appears.
 
 Each scene in `SWEEP_SCENE_NAMES` is its own test, so no test runs long enough to reach `faulthandler_timeout` in
-pytest.ini.
+pyproject.toml.
 """
 import sys
 

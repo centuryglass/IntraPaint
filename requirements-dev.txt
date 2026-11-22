@@ -2,7 +2,7 @@
 # needed to run the tests, the lint check, and packaged builds.
 -r requirements.txt
 
-# `pytest` runs the whole suite headlessly (see pytest.ini and conftest.py).
+# `pytest` runs the whole suite headlessly (see pyproject.toml and conftest.py).
 pytest==9.1.1
 
 # `pytest --random-order` shuffles the test order, to find tests that depend on what ran before them. The

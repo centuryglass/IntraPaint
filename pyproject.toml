@@ -1,0 +1,83 @@
+# Tool configuration only. There is no [project] or [build-system] table yet, so `pip install .` is unchanged.
+
+[tool.pytest.ini_options]
+# Only scan the test directory. This keeps pytest out of src/ (which contains production modules such
+# as controller/image_generation/test_generator.py whose names would otherwise trip collection).
+testpaths = "test"
+
+# The suite follows a `<name>_test.py` file convention with classes named either `Test*` or `*Test`.
+# unittest.TestCase subclasses are collected regardless, but these globs also cover plain pytest-style
+# classes/functions if any are added later.
+python_files = ["*_test.py", "test_*.py"]
+python_classes = ["Test*", "*Test"]
+python_functions = "test_*"
+
+# -ra: show a short summary of everything except passes (skips, failures, errors) at the end.
+# --strict-markers: fail on unknown @pytest.mark.* names so typos don't silently disable a marker.
+addopts = "-ra --strict-markers"
+
+# Dump every thread's stack if one test runs longer than this many seconds, so a hang shows where it is stuck
+# before the CI job times out. The dump reads other threads' stacks without the GIL, so it can segfault a test that is
+# still running: keep each test well under this limit.
+faulthandler_timeout = "180"
+
+# Headless Qt is configured in conftest.py (QT_QPA_PLATFORM=offscreen), which must be set before
+# PySide6 is imported. It is intentionally not set here because this table cannot set env vars.
+
+[tool.pylint.main]
+# Machine-specific init-hook sys.path entry dropped; pylint resolves `src` from the working directory.
+extension-pkg-allow-list = ["cv2"]
+fail-under = 10
+ignore = [
+    "build", "clip_custom", "colabFiles", "dist", "encoders", "examples", "ldm", "resources", "guided_diffusion",
+    "taming-transformers",
+]
+ignore-paths = ["^src/glid_3_xl/.*$"]
+ignored-modules = ["cv2", "cython"]
+py-version = "3.12"
+recursive = true
+
+[tool.pylint.basic]
+# Good variable names which should always be accepted. Most of these are class methods inherited from Qt.
+good-names = [
+    "i", "j", "k", "ex", "Run", "_", "boundingRect", "setEnabled", "IntraPaint", "IntraPaint_server",
+    "installEventFilter", "removeEventFilter", "mousePressEvent", "mouseDoubleClickEvent", "mouseMoveEvent",
+    "mouseReleaseEvent", "focusInEvent", "focusOutEvent", "keyPressEvent", "dragEnterEvent", "dragMoveEvent",
+    "dragLeaveEvent", "dropEvent", "paintEvent", "resizeEvent", "moveEvent", "closeEvent", "showEvent", "hideEvent",
+    "tabletEvent", "eventFilter", "sizeHint", "minimumSizeHint", "hasHeightForWidth", "heightForWidth", "setValue",
+    "setHorizontalScrollBarPolicy", "setSingleStep", "setText", "setIcon", "setTransformations", "setTransform",
+    "setZValue", "setRect", "stepBy", "stepEnabled", "singleStep", "setMinimum", "setMaximum", "setRange",
+    "setVisible", "setOpacity", "setFont", "drawBackground", "drawForeground",
+]
+
+[tool.pylint."messages control"]
+disable = [
+    "raw-checker-failed", "bad-inline-option", "locally-disabled", "file-ignored", "suppressed-message",
+    "useless-suppression", "deprecated-pragma", "use-implicit-booleaness-not-comparison-to-string",
+    "use-implicit-booleaness-not-comparison-to-zero", "use-symbolic-message-instead",
+    "too-few-public-methods",
+    "too-many-public-methods",
+    "too-many-arguments",
+    "too-many-locals",
+    "too-many-instance-attributes",
+    "too-many-branches",
+    "too-many-statements",
+    "no-name-in-module",
+    "logging-fstring-interpolation",
+    "abstract-method",
+    "too-many-return-statements",
+    "too-many-boolean-expressions",
+    "too-many-positional-arguments",
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.string]
+check-quote-consistency = true
+
+[tool.pylint.typecheck]
+ignored-classes = ["optparse.Values", "thread._local", "_thread._local", "argparse.Namespace", "Config", "PIL.Image", "torch"]
+
+[tool.pylint.variables]
+dummy-variables-rgx = "_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_|^event$|^args$|^kwargs$"

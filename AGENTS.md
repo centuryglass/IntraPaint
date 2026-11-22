@@ -192,7 +192,7 @@ comments and docstrings you write or touch, to this file, and to new docs under 
 ## Testing
 
 - Run the whole suite headlessly from the CLI with `pytest` (or `python -m pytest`), after installing
-  `requirements-dev.txt` and building `image_fill` (tests import it). `pytest.ini` scopes collection to `test/`.
+  `requirements-dev.txt` and building `image_fill` (tests import it). `pyproject.toml` scopes collection to `test/`.
   `conftest.py`:
   - forces Qt's offscreen platform before PySide6 loads, so no display is required. Override with
     `QT_QPA_PLATFORM=xcb pytest ...` to watch a test render.
@@ -269,7 +269,7 @@ welcome but not a priority; don't block work on a clean mypy run.
 
 ## Lint
 
-`scripts/pylint.sh` shows the full report (uses `.pylintrc`). Keep new code clean against it.
+`scripts/pylint.sh` shows the full report (uses `pyproject.toml`). Keep new code clean against it.
 
 `python scripts/pylint_check.py` is CI's lint gate. The code isn't pylint-clean yet, so it fails only when a file
 gains messages beyond `scripts/pylint_baseline.json`, or when fixed messages leave the baseline too high. After fixing

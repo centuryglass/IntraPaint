@@ -1,6 +1,6 @@
 """Reports what a hung test was doing, for the CI hangs in issue #390.
 
-`faulthandler_timeout` in pytest.ini already dumps every thread's stack after a test runs too long, but that dump
+`faulthandler_timeout` in pyproject.toml already dumps every thread's stack after a test runs too long, but that dump
 can't show whether a garbage collection was running. `HangWatchdog` adds the GC state to the log shortly before the
 faulthandler dump.
 """
@@ -12,7 +12,7 @@ import time
 import traceback
 from typing import Optional, TextIO
 
-REPORT_AFTER_SECONDS = 120.0  # Must stay below `faulthandler_timeout` in pytest.ini, so this report comes first.
+REPORT_AFTER_SECONDS = 120.0  # Must stay below `faulthandler_timeout` in pyproject.toml, so this report comes first.
 _POLL_SECONDS = 5.0
 _RECENT_GC_LIMIT = 5
 
