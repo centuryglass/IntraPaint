@@ -6,7 +6,6 @@ helpers can't move the expectation along with the result.
 import sys
 import unittest
 
-import pytest
 from PySide6.QtCore import QSize, QRect, QPoint, QPointF
 from PySide6.QtGui import QTransform, QImage, QColor, QPainter, Qt
 from PySide6.QtWidgets import QApplication
@@ -30,8 +29,8 @@ def _about_center(transform: QTransform) -> QTransform:
             * QTransform.fromTranslate(LAYER_CENTER.x(), LAYER_CENTER.y()))
 
 
-# Transforms the layer transform tool and menu actions can produce, as (label, matrix) pairs. Each is a scale,
-# a rotation and a translation applied in that order about some origin, which is the form
+# Transforms the layer transform tool, menu actions and loaded files can produce, as (label, matrix) pairs. Each is
+# a scale, a skew, a rotation and a translation applied in that order about some origin, which is the form
 # extract_transform_parameters decomposes.
 TOOL_TRANSFORMS = [
     ('identity', QTransform()),
@@ -52,7 +51,14 @@ TOOL_TRANSFORMS = [
     ('flip, scale, rotate about center, translate', _about_center(QTransform.fromScale(-0.75, 2.0)
                                                                   * QTransform().rotate(123.0))
      * QTransform.fromTranslate(-15.0, 7.0)),
+    ('shear', QTransform(1.0, 0.3, 0.0, 1.0, 50.0, 50.0)),
+    ('horizontal shear, flip, rotate', QTransform().shear(0.4, 0.0) * QTransform.fromScale(-1.0, 1.0)
+     * QTransform().rotate(250.0)),
 ]
+
+# A transform with a horizontal skew, a vertical skew, scale, rotation and translation:
+SKEWED_TRANSFORM = (QTransform().shear(0.5, 0.0) * QTransform().shear(0.0, -0.2) * QTransform.fromScale(1.5, 0.75)
+                    * QTransform().rotate(20.0) * QTransform.fromTranslate(30.0, 10.0))
 
 # The transform tool lets the origin sit anywhere inside the layer bounds.
 ORIGINS = [QPointF(), LAYER_CENTER, QPointF(100.0, 50.0), QPointF(12.5, 40.0)]
@@ -215,6 +221,35 @@ class TransformLayerTest(IntraPaintTestCase):
         self.assert_transforms_equal(self.layer.transform, _about_center(QTransform.fromScale(-1.0, 1.0)) * rotation)
         self.assert_points_equal(self._canvas_center(), LAYER_CENTER)
 
+    def test_rotate_keeps_skew(self) -> None:
+        """rotate turns a skewed layer about its canvas center without changing its skew."""
+        self.layer.set_transform(SKEWED_TRANSFORM)
+        skew_before = extract_transform_parameters(SKEWED_TRANSFORM, LAYER_CENTER).skew
+        center = SKEWED_TRANSFORM.map(LAYER_CENTER)
+        self.layer.rotate(90)
+        expected = (SKEWED_TRANSFORM * QTransform.fromTranslate(-center.x(), -center.y()) * QTransform().rotate(90.0)
+                    * QTransform.fromTranslate(center.x(), center.y()))
+        self.assert_transforms_equal(self.layer.transform, expected)
+        self.assertAlmostEqual(extract_transform_parameters(self.layer.transform, LAYER_CENTER).skew, skew_before,
+                               PRECISION)
+
+    def test_flip_keeps_skew(self) -> None:
+        """Flipping a skewed layer mirrors its content in place, keeping its outline and skew."""
+        skew_before = extract_transform_parameters(SKEWED_TRANSFORM, LAYER_CENTER).skew
+        self.assertNotAlmostEqual(skew_before, 0.0, PRECISION)
+        self.layer.set_transform(SKEWED_TRANSFORM)
+        skewed_bounds = self.layer.transformed_bounds
+        for label, flip, mirror in (('horizontal', self.layer.flip_horizontal, QTransform.fromScale(-1.0, 1.0)),
+                                    ('vertical', self.layer.flip_vertical, QTransform.fromScale(1.0, -1.0))):
+            with self.subTest(label):
+                self.layer.set_transform(SKEWED_TRANSFORM)
+                flip()
+                self.assert_transforms_equal(self.layer.transform, _about_center(mirror) * SKEWED_TRANSFORM)
+                self.assert_points_equal(self._canvas_center(), SKEWED_TRANSFORM.map(LAYER_CENTER))
+                self.assertEqual(self.layer.transformed_bounds, skewed_bounds)
+                skew_after = extract_transform_parameters(self.layer.transform, LAYER_CENTER).skew
+                self.assertAlmostEqual(skew_after, skew_before, PRECISION)
+
     # Matrix to parameters round trip:
 
     def test_parameter_round_trip(self) -> None:
@@ -235,13 +270,15 @@ class TransformLayerTest(IntraPaintTestCase):
                 params = extract_transform_parameters(self.layer.transform, origin)
                 self.assert_transforms_equal(combine_transform_parameters(*params, origin), self.layer.transform)
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/119: transform '
-                                           'parameters have no room for shear')
-    def test_parameter_round_trip_with_shear(self) -> None:
-        """A sheared matrix survives the round trip."""
-        transform = QTransform(1.0, 0.3, 0.0, 1.0, 50.0, 50.0)
-        params = extract_transform_parameters(transform, LAYER_CENTER)
-        self.assert_transforms_equal(combine_transform_parameters(*params, LAYER_CENTER), transform)
+    def test_parameter_round_trip_after_menu_actions_on_skewed_layer(self) -> None:
+        """Menu rotates and flips on a skewed layer leave transforms that survive the round trip."""
+        self.layer.set_transform(SKEWED_TRANSFORM)
+        for action in (lambda: self.layer.rotate(90), self.layer.flip_horizontal, lambda: self.layer.rotate(-90),
+                       self.layer.flip_vertical):
+            action()
+            for origin in ORIGINS:
+                params = extract_transform_parameters(self.layer.transform, origin)
+                self.assert_transforms_equal(combine_transform_parameters(*params, origin), self.layer.transform)
 
     # Transform changes and undo:
 

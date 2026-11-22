@@ -43,7 +43,7 @@ class PlacementOutline(QGraphicsObject):
         self._pen = QPen(LINE_COLOR, LINE_WIDTH)
         self._pen.setCosmetic(True)
         self._offset = offset
-        super().setTransform(combine_transform_parameters(offset.x(), offset.y(), 1.0, 1.0, 0.0))
+        super().setTransform(combine_transform_parameters(offset.x(), offset.y(), 1.0, 1.0, 0.0, 0.0))
 
         for handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID):
             self._handles[handle_id] = _Handle(self, handle_id)

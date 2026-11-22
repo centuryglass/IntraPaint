@@ -5,8 +5,7 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF, QRectF
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.layer import Layer
-from src.util.visual.geometry_utils import (extract_transform_parameters, combine_transform_parameters,
-                                           map_rect_precise, transform_needs_smooth_sampling)
+from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import create_transparent_image
 
 
@@ -116,18 +115,16 @@ class TransformLayer(Layer):
 
     def rotate(self, degrees: int) -> None:
         """Rotate the layer clockwise on the canvas about its center, on top of any previous transformations."""
-        center = QRectF(self.bounds).center()
-        x_off, y_off, x_scale, y_scale, base_angle = extract_transform_parameters(self.transform, center)
-        self.transform = combine_transform_parameters(x_off, y_off, x_scale, y_scale, base_angle + degrees, center)
+        center = self.transform.map(QRectF(self.bounds).center())
+        self.transform = self.transform * QTransform.fromTranslate(-center.x(), -center.y()) \
+            * QTransform().rotate(degrees) * QTransform.fromTranslate(center.x(), center.y())
 
     def _flip(self, horizontal: bool = True) -> None:
+        """Flips the layer across its own center axis, keeping the rest of its transformation."""
         center = QRectF(self.bounds).center()
-        x_off, y_off, x_scale, y_scale, angle = extract_transform_parameters(self.transform, center)
-        if horizontal:
-            x_scale *= -1
-        else:
-            y_scale *= -1
-        self.transform = combine_transform_parameters(x_off, y_off, x_scale, y_scale, angle, center)
+        flip = QTransform.fromScale(-1.0, 1.0) if horizontal else QTransform.fromScale(1.0, -1.0)
+        self.transform = QTransform.fromTranslate(-center.x(), -center.y()) * flip \
+            * QTransform.fromTranslate(center.x(), center.y()) * self.transform
 
     def flip_horizontal(self) -> None:
         """Flip the layer horizontally, on top of any previous transformations."""

@@ -116,9 +116,8 @@ class TransformHandle(QGraphicsObject):
     def _get_parent_transform_params(self) -> tuple[float, float, float]:
         parent = self.parentItem()
         assert parent is not None
-        _, _, scale_x, scale_y, angle = extract_transform_parameters(parent.transform(),
-                                                                     parent.boundingRect().center())
-        return scale_x, scale_y, angle
+        params = extract_transform_parameters(parent.transform(), parent.boundingRect().center())
+        return params.x_scale, params.y_scale, params.rotation
 
     def paint(self,
               painter: Optional[QPainter],

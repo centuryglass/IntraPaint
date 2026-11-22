@@ -1,7 +1,7 @@
 """Provides a utility function for handling image or widget placement."""
 import logging
 import math
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt, QMargins
 from PySide6.QtGui import QTransform, QPolygonF
@@ -199,10 +199,26 @@ def transform_needs_smooth_sampling(transformation: QTransform) -> bool:
     return (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0
 
 
-def extract_transform_parameters(transform: QTransform,
-                                 origin: Optional[QPointF] = None) -> tuple[float, float, float, float, float]:
-    """Break a matrix down into a scale, rotation, and translation at an arbitrary origin, returning
-     x_offset, y_offset, x_scale, y_scale, rotation_degrees"""
+class TransformParameters(NamedTuple):
+    """A transformation without perspective, measured about an origin.
+
+    Applied in the order scale, skew, rotation, offset (see `combine_transform_parameters`). `skew` and `rotation` are
+    in degrees.
+    """
+    x_offset: float
+    y_offset: float
+    x_scale: float
+    y_scale: float
+    skew: float
+    rotation: float
+
+
+def extract_transform_parameters(transform: QTransform, origin: Optional[QPointF] = None) -> TransformParameters:
+    """Breaks a matrix without perspective into offset, scale, skew and rotation about an origin.
+
+    The result round-trips through `combine_transform_parameters`. Rotation is the direction of the layer's x-axis,
+    in [0, 360). The scales are never both negative, and if one is, rotation is below 180 degrees.
+    """
     # Not all transformations can be decomposed this way, throw an error if this one can't be:
     assert transform.isInvertible(), f'Non-invertible transform {transform_str(transform)}'
     assert transform.m13() == 0.0
@@ -212,42 +228,43 @@ def extract_transform_parameters(transform: QTransform,
     if origin is None:
         origin = QPointF()
 
-    # Calculate offset:
     transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) * transform \
-                          * QTransform.fromTranslate(-origin.x(), -origin.y())
+        * QTransform.fromTranslate(-origin.x(), -origin.y())
     x_offset = transform_at_origin.dx()
     y_offset = transform_at_origin.dy()
 
-    # Calculate approximate angles (negated because the Qt y-axis points down):
-    angle_line = QLineF(transform.map(origin), transform.map(QPointF(origin.x() + 1.0, origin.y())))
-    angle_degrees = convert_degrees(-angle_line.angle())
+    # (m11, m12) is where the x-axis arrow goes, and (m21, m22) is where the y-axis arrow goes.
+    x_scale = math.hypot(transform.m11(), transform.m12())
+    angle_degrees = convert_degrees(math.degrees(math.atan2(transform.m12(), transform.m11())))
+    y_scale = transform.determinant() / x_scale
+    along_x_axis = (transform.m21() * transform.m11() + transform.m22() * transform.m12()) / x_scale
+    skew_degrees = -math.degrees(math.atan(along_x_axis / y_scale))
 
-    # Calculate scale:
-    scaling_transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) * transform \
-                                  * QTransform.fromTranslate(-origin.x() - x_offset, -origin.y() - y_offset) \
-                                  * QTransform().rotate(-angle_degrees)
-    x_scale = scaling_transform_at_origin.m11()
-    y_scale = scaling_transform_at_origin.m22()
-
-    # x_scale, y_scale, rotation equals -x_scale, -y_scale, rotation+180deg, so standardize as follows:
-    # - x_scale and Y_scale will never both be negative.
+    # x_scale, y_scale, rotation equals -x_scale, -y_scale, rotation+180deg with the same skew, so standardize:
+    # - x_scale and y_scale will never both be negative.
     # - If one of the two values must be negative, choose the option that results in a rotation that's less than 180
     #   degrees.
     if (x_scale < 0 and y_scale < 0) or ((x_scale < 0 or y_scale < 0) and angle_degrees >= 180.0):
         x_scale *= -1
         y_scale *= -1
         angle_degrees = convert_degrees(angle_degrees - 180.0)
-    return x_offset, y_offset, x_scale, y_scale, angle_degrees
+    return TransformParameters(x_offset, y_offset, x_scale, y_scale, skew_degrees, angle_degrees)
 
 
-def combine_transform_parameters(x_offset: float, y_offset: float, x_scale: float, y_scale: float,
+def combine_transform_parameters(x_offset: float, y_offset: float, x_scale: float, y_scale: float, skew: float,
                                  degrees: float, origin: Optional[QPointF] = None) -> QTransform:
-    """Combine a scale, rotation, and translation about an arbitrary origin into a single transformation"""
+    """Combines scale, skew, rotation and offset about an origin into a single transformation, applied in that order.
+
+    Positive skew moves the top edge right relative to the bottom edge, and must be strictly between -90 and 90 degrees.
+    """
     if origin is None:
         origin = QPointF()
     assert x_scale != 0.0 and y_scale != 0.0, 'Non-invertible transformation parameters used'
+    assert -90.0 < skew < 90.0, f'Skew {skew} outside (-90, 90)'
     matrix = QTransform.fromTranslate(-origin.x(), -origin.y())
     matrix *= QTransform.fromScale(x_scale, y_scale)
+    if skew != 0.0:
+        matrix *= QTransform(1.0, 0.0, -math.tan(math.radians(skew)), 1.0, 0.0, 0.0)
     matrix *= QTransform().rotate(degrees)
     matrix *= QTransform.fromTranslate(x_offset + origin.x(), y_offset + origin.y())
     return matrix
