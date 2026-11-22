@@ -1,15 +1,18 @@
 """Tests SettingsModal and the controls it chooses for config values."""
+from unittest.mock import patch
+
 from PySide6.QtCore import QEvent, QSize, Qt
 from PySide6.QtGui import QFocusEvent, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import QApplication, QKeySequenceEdit, QToolButton, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
     ModifierSettingField, OptionSegmentsField, SizeSettingField, ADD_KEY_TOOLTIP, NO_KEY_TEXT, \
     UNRECORDABLE_KEY_NOTICE, is_recordable_key
 from src.ui.modal.settings_modal import SettingsModal, _Row
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, press_key
 
 
 def _press(recorder: QKeySequenceEdit, key: Qt.Key) -> None:
@@ -181,6 +184,21 @@ class SettingsModalTest(IntraPaintTestCase):
         self.assertEqual('', field.problem_text())
         field.setValue('E,e,F')
         self.assertEqual('E,F', field.value())
+
+    def test_recorder_records_keys_with_hotkey_bindings(self) -> None:
+        """A focused key recorder records a key that has a `HotkeyFilter` binding, and the binding doesn't run."""
+        ran: list[str] = []
+        hotkeys = HotkeyFilter.instance()
+        hotkeys.register_config_keybinding('test_swap', lambda: ran.append('swap'), KeyConfig.SWAP_COLORS_SHORTCUT)
+        hotkeys.register_held_key('test_pan', lambda held: ran.append('pan'), KeyConfig.PAN_VIEW_KEY)
+        field = KeybindingField()
+        field.setValue('Q')
+        recorder = field.recorders()[0]
+        field.show()
+        with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: recorder)):
+            press_key(recorder, Qt.Key.Key_X)
+            press_key(recorder, Qt.Key.Key_Space)
+        self.assertEqual([], ran)
 
     def test_keybinding_field_esc_cancels(self) -> None:
         """Esc leaves the recorder without changing or adding a binding."""
