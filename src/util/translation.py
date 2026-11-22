@@ -14,7 +14,7 @@ import logging
 import os
 from typing import Any, Optional
 
-from PySide6.QtCore import QLocale, QTranslator
+from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator
 from PySide6.QtWidgets import QApplication
 
 from src.util.shared_constants import PROJECT_DIR, APP_CONFIG_PATH
@@ -135,14 +135,33 @@ def saved_language_setting(config_path: str = APP_CONFIG_PATH) -> str:
     return value if isinstance(value, str) else SYSTEM_LANGUAGE
 
 
-def install_translation(app: QApplication, language: str,
-                        translation_dir: str = TRANSLATION_DIR) -> list[QTranslator]:
-    """Installs the English plural forms, then the chosen language's translation unless it is English.
+def qt_translation_dir() -> str:
+    """Returns the directory holding Qt's own `.qm` files, such as `qtbase_zh_CN.qm`."""
+    return QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
 
-    Qt searches the most recently installed translator first, so the chosen language overrides the English forms.
+
+def install_translation(app: QApplication, language: str, translation_dir: str = TRANSLATION_DIR,
+                        qt_dir: Optional[str] = None) -> list[QTranslator]:
+    """Installs Qt's own translation for a non-English language, then the English plural forms, then the language.
+
+    Qt searches the most recently installed translator first, so the chosen language overrides the English forms,
+    and IntraPaint's catalog overrides Qt's where both answer a string. Qt's `qtbase` catalog covers the standard
+    buttons, text field menus and Qt-drawn dialogs. A missing file logs an error and the text stays English.
     Returns the installed translators, which must stay referenced while they are installed.
+
+    Parameters
+    ----------
+    qt_dir: str, optional
+        Directory of Qt's `.qm` files. Defaults to `qt_translation_dir()`.
     """
     translators = []
+    if language != ENGLISH:
+        qt_translator = QTranslator(app)
+        if qt_translator.load(f'qtbase_{language}', qt_dir if qt_dir is not None else qt_translation_dir()):
+            app.installTranslator(qt_translator)
+            translators.append(qt_translator)
+        else:
+            logger.error(f'Failed to load Qt translation qtbase_{language}, Qt text will be English.')
     for code in (ENGLISH, language) if language != ENGLISH else (ENGLISH,):
         translator = QTranslator(app)
         qm_path = os.path.join(translation_dir, f'{code}.qm')

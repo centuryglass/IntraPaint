@@ -1,7 +1,8 @@
 """Launch test for a packaged IntraPaint build: fail unless the bundle starts and reaches the editing state.
 
 CI's bundle job (.github/workflows/ci.yml) runs this on each PyInstaller bundle, because a bundle can fail where
-a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Four checks:
+a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Five checks:
+0. Qt's own `qtbase_zh_CN.qm` is in the bundle, so a translated UI also translates Qt's standard buttons.
 1. `--help` exits cleanly. IntraPaint.py imports most of the app before parsing arguments, so this covers imports.
 2. `--metadata <image> --print` prints a test image's generation parameters and exits cleanly. That covers the
    standalone metadata mode's startup path, which skips AppController.
@@ -33,6 +34,7 @@ EDITING_STATE_LINE = 'State change: from init to editing'
 # libmypaint doesn't load. Other optional imports (themes, GLID-3-XL) are expected to fail in a bundle.
 OPTIONAL_IMPORT_FAILURE = 'Failed to load optional import from src.tools.'
 HELP_TIMEOUT_SECONDS = 120
+QT_TRANSLATION_FILE = 'qtbase_zh_CN.qm'
 METADATA_TEST_PARAMETERS = 'smoke test prompt'
 # The line `--print` writes for the test image's parameters: source, name and value, separated by tabs.
 METADATA_PRINT_LINE = f'Text\tparameters\t{METADATA_TEST_PARAMETERS}'
@@ -71,6 +73,16 @@ def _check_help(executable: str, env: dict[str, str]) -> bool:
         print(f'FAIL: --help exited with code {result.returncode}')
         return False
     return True
+
+
+def _check_qt_translations(executable: str) -> bool:
+    """Returns whether the bundle holds Qt's own `qtbase_zh_CN.qm` anywhere beside the executable."""
+    root = os.path.dirname(executable)
+    for _, _, file_names in os.walk(root):
+        if QT_TRANSLATION_FILE in file_names:
+            return True
+    print(f'FAIL: {QT_TRANSLATION_FILE} is not in the bundle under {root}', file=sys.stderr)
+    return False
 
 
 def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
@@ -193,7 +205,7 @@ def main() -> int:
     executable = os.path.abspath(args.executable)
     with tempfile.TemporaryDirectory() as temp_dir:
         env = _bundle_env(temp_dir)
-        if not _check_help(executable, env) or not _check_metadata_print(executable, env, temp_dir) \
+        if not _check_qt_translations(executable) or not _check_help(executable, env) or not _check_metadata_print(executable, env, temp_dir) \
                 or not _check_launch(executable, env, args.timeout):
             return 1
     print('PASS')

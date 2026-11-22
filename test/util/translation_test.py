@@ -131,8 +131,8 @@ class TranslationTest(IntraPaintTestCase):
         """English installs only `en.qm`, and another language installs on top of it, falling back to its forms."""
         app = QApplication.instance()
         assert isinstance(app, QApplication)
-        self.assertEqual([], install_translation(app, ENGLISH, self.dir))
-        self.assertEqual([], install_translation(app, 'de_DE', self.dir))
+        self.assertEqual([], install_translation(app, ENGLISH, self.dir, self.dir))
+        self.assertEqual([], install_translation(app, 'de_DE', self.dir, self.dir))
 
         for code, text in (('en', ENGLISH_TS), ('de_DE', GERMAN_TS)):
             ts_path = os.path.join(self.dir, f'{code}.ts')
@@ -140,7 +140,7 @@ class TranslationTest(IntraPaintTestCase):
                 file.write(textwrap.dedent(text))
             build_translations.compile_qm(ts_path, os.path.join(self.dir, f'{code}.qm'))
         self.assertEqual([ENGLISH, 'de_DE'], available_languages(self.dir))
-        translators = install_translation(app, 'de_DE', self.dir)
+        translators = install_translation(app, 'de_DE', self.dir, self.dir)
         try:
             self.assertEqual(2, len(translators))
             self.assertEqual('Öffnen', QApplication.translate(TEST_CONTEXT, 'Open'))
@@ -151,6 +151,27 @@ class TranslationTest(IntraPaintTestCase):
                 app.removeTranslator(translator)
                 translator.setParent(None)
         self.assertEqual('Open', QApplication.translate(TEST_CONTEXT, 'Open'))
+
+    def test_installs_qt_translation(self) -> None:
+        """A non-English language also installs Qt's own catalog, so standard button text follows it."""
+        app = QApplication.instance()
+        assert isinstance(app, QApplication)
+        self.assertEqual('OK', QApplication.translate('QPlatformTheme', 'OK'))
+        translators = install_translation(app, 'zh_CN', self.dir)
+        try:
+            self.assertEqual('确定', QApplication.translate('QPlatformTheme', 'OK'))
+        finally:
+            for translator in translators:
+                app.removeTranslator(translator)
+                translator.setParent(None)
+        self.assertEqual('OK', QApplication.translate('QPlatformTheme', 'OK'))
+        translators = install_translation(app, ENGLISH, self.dir)
+        try:
+            self.assertEqual('OK', QApplication.translate('QPlatformTheme', 'OK'))
+        finally:
+            for translator in translators:
+                app.removeTranslator(translator)
+                translator.setParent(None)
 
     def test_committed_english_plurals_are_installed(self) -> None:
         """The test session installs the committed `en.qm`, as IntraPaint does, so counted text reads as English."""
