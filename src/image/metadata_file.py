@@ -50,6 +50,8 @@ class MetadataWriteMethod(Enum):
 
 _IN_PLACE_FORMATS = frozenset({OPENRASTER_FORMAT, 'PNG', 'JPEG', 'WEBP', 'GIF'})
 _JPEG_2000_FORMATS = frozenset({'JP2', 'JPX', 'J2C', 'JPC'})
+# Upper-case format names `write_file_metadata` can write, see `format_name`:
+METADATA_WRITE_FORMATS = _IN_PLACE_FORMATS | _JPEG_2000_FORMATS | {'TIFF'}
 _TIFF_JPEG_COMPRESSIONS = frozenset({'jpeg', 'tiff_jpeg'})
 # Display time for frames without their own, when a Save as re-encodes an animation:
 _DEFAULT_FRAME_DURATION_MS = 100
@@ -66,7 +68,7 @@ def format_writes_metadata(file_path: str) -> bool:
     Reads only the extension, so it is cheap enough to check on every refresh.
     """
     name = file_format(file_path)
-    return name in _IN_PLACE_FORMATS or name in _JPEG_2000_FORMATS or name == 'TIFF'
+    return name in METADATA_WRITE_FORMATS
 
 
 def metadata_write_method(file_path: str) -> MetadataWriteMethod:

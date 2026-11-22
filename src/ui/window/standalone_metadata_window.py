@@ -12,10 +12,12 @@ from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication
 
 from src.image.metadata_file import MetadataWriteMethod, metadata_write_method, read_file_metadata, \
-    save_metadata_copy, file_format
+    save_metadata_copy, file_format, METADATA_WRITE_FORMATS
+from src.image.metadata_save_rules import format_name
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, request_unsaved_changes_choice, \
     UNSAVED_SAVE, UNSAVED_DISCARD, request_confirmation, show_error_dialog
 from src.ui.window.metadata_window import MetadataWindow, SAVE_FAILED_TITLE, logger
+from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.window.standalone_metadata_window'
@@ -38,6 +40,9 @@ UNSUPPORTED_TITLE = _tr('{file_format} files can\'t hold this metadata')
 UNSUPPORTED_MESSAGE = _tr('IntraPaint can\'t write metadata into {file_format} files. Save a PNG copy of the image with'
                           ' the metadata instead?')
 PNG_EXTENSION = '.png'
+
+# The extensions Save as offers: the writable ones `write_file_metadata` can write metadata into.
+_METADATA_SAVE_FORMATS = frozenset(ext for ext in IMAGE_WRITE_FORMATS if format_name(ext) in METADATA_WRITE_FORMATS)
 
 
 class StandaloneMetadataWindow(MetadataWindow):
@@ -95,7 +100,7 @@ class StandaloneMetadataWindow(MetadataWindow):
 
         Returns whether the copy was saved.
         """
-        target_path = open_image_file(self, SAVE_IMAGE_MODE, suggested_path or self._file_path)
+        target_path = open_image_file(self, SAVE_IMAGE_MODE, suggested_path or self._file_path, _METADATA_SAVE_FORMATS)
         if target_path is None:
             return False
         if os.path.splitext(target_path)[1] == '':

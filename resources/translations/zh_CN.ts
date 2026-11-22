@@ -11116,6 +11116,219 @@ Key: {key}</source>
     </message>
 </context>
 <context>
+    <name>util.visual.image_format_utils</name>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>OpenRaster project</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>PNG image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>JPEG image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>WebP image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>AVIF image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>GIF image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Animated PNG image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>TIFF image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>BMP image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>BLP texture</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Windows cursor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>DirectDraw surface</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>DIB image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Apple icon</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Windows icon</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>IFUNC image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>MPO photo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>PCX image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>PDF document</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Palm pixmap</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>QOI image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>XBM bitmap</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>XPM pixmap</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>JPEG 2000 image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Netpbm image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>SGI image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>TGA image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Photoshop document</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Photo CD image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>FLI/FLC animation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>FITS image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>SVG image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Intel DCX image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>GIMP brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>IPTC/NAA image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>FTEX texture</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Pixar image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>Sun raster image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>MSP image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>PFM image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>WBMP image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/image_format_utils.py"/>
+        <source>{extension} image</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>util.visual.magic_wand_area</name>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
