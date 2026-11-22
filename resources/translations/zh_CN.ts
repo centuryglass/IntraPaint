@@ -10800,66 +10800,6 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
-        <source>W:</source>
-        <translation>宽度：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>H:</source>
-        <translation>高度：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>X:</source>
-        <translation>X:</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Y:</source>
-        <translation>Y:</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Width:</source>
-        <translation>宽度：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Height:</source>
-        <translation>高度：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Color:</source>
-        <translation>颜色：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Size:</source>
-        <translation>大小：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Scale:</source>
-        <translation>缩放：</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Zoom in</source>
-        <translation>放大</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Reset zoom</source>
-        <translation>重置缩放</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Keep aspect ratio</source>
-        <translation>保持宽高比</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
         <source>Editing failed</source>
         <translation>编辑失败</translation>
     </message>
@@ -10920,11 +10860,6 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
-        <source>The AI image generator is busy creating other images, try again later.</source>
-        <translation>AI 图像生成器正忙于生成其他图像，请稍后重试。</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
         <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
         <translation>无法连接到位于“{url}”的图像生成器：已取消登录。</translation>
     </message>
@@ -10942,11 +10877,6 @@ Click to pick, or press Esc to cancel</source>
         <location filename="../../src/util/shared_text.py"/>
         <source>Open or create an image first.</source>
         <translation>请先打开或创建图像。</translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Describing image</source>
-        <translation>正在反推提示词</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -11021,6 +10951,62 @@ Keys: {decrease} / {increase}</source>
 Key: {key}</source>
         <translation>{description}
 按键：{key}</translation>
+    </message>
+    <message>
+        <source>W:</source>
+        <translation type="vanished">宽度：</translation>
+    </message>
+    <message>
+        <source>H:</source>
+        <translation type="vanished">高度：</translation>
+    </message>
+    <message>
+        <source>X:</source>
+        <translation type="vanished">X:</translation>
+    </message>
+    <message>
+        <source>Y:</source>
+        <translation type="vanished">Y:</translation>
+    </message>
+    <message>
+        <source>Width:</source>
+        <translation type="vanished">宽度：</translation>
+    </message>
+    <message>
+        <source>Height:</source>
+        <translation type="vanished">高度：</translation>
+    </message>
+    <message>
+        <source>Color:</source>
+        <translation type="vanished">颜色：</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation type="vanished">大小：</translation>
+    </message>
+    <message>
+        <source>Scale:</source>
+        <translation type="vanished">缩放：</translation>
+    </message>
+    <message>
+        <source>Zoom in</source>
+        <translation type="vanished">放大</translation>
+    </message>
+    <message>
+        <source>Reset zoom</source>
+        <translation type="vanished">重置缩放</translation>
+    </message>
+    <message>
+        <source>Keep aspect ratio</source>
+        <translation type="vanished">保持宽高比</translation>
+    </message>
+    <message>
+        <source>The AI image generator is busy creating other images, try again later.</source>
+        <translation type="vanished">AI 图像生成器正忙于生成其他图像，请稍后重试。</translation>
+    </message>
+    <message>
+        <source>Describing image</source>
+        <translation type="vanished">正在反推提示词</translation>
     </message>
 </context>
 <context>

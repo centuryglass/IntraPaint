@@ -87,7 +87,7 @@ kept in English or transliterated; per-language glossaries check community local
 | ControlNet unit | One ControlNet slot, with its own model, image and settings. Up to three run at once. | ControlNet panel | "Apply this ControlNet unit when generating images" |
 | Preprocessor | The step that turns a control image into ControlNet's input, such as an edge map. | ControlNet panel | "Preprocessor" |
 | Control weight, starting control step, ending control step | How strongly a ControlNet unit applies, and the fractions of the steps where it starts and stops applying. | ControlNet panel | "Control weight:", "Starting control step:", "Ending control step:" |
-| Describe | Ask the backend to write a prompt describing the generation area's content. Uses the WebUI's interrogate endpoint, where available. | Image Generation panel's More menu | "Describe", "Describing image", "Describe failed", "Describe model (WebUI only):" |
+| Describe | Ask the backend to write a prompt describing the generation area's content. Uses the WebUI's interrogate endpoint, where available. | Image Generation panel's More menu | "Describe", "Describe failed", "Describe model (WebUI only):" |
 | CLIP skip | How many of the text encoder's final layers to skip. | Stable Diffusion settings | "CLIP skip:" |
 | Upscale | Enlarge an image. Stable Diffusion upscaling regenerates detail while enlarging, optionally with a tile ControlNet. | Scale image window | "Upscale method:", "Upscale failure" |
 | GPU memory, VRAM | Graphics card memory that models occupy. | Image Generation panel's More menu, ControlNet panel | "Clear GPU memory", "Remove cached models from GPU memory in ComfyUI.", "Low VRAM" |
