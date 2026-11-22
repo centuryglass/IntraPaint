@@ -138,14 +138,14 @@ class ImageViewerCanvasExtrasTest(IntraPaintTestCase):
         self.assertEqual(len(pins), 2)
 
     def test_stacking_order(self) -> None:
-        """Markers draw above the layers, in the order the viewer has always drawn them."""
+        """Markers draw above the layers, and the hatching outside the image draws between the veil and the outlines."""
         viewer = self.viewer
         self.viewer.set_viewport_highlight(QRectF(0, 0, 32, 32))
         scene = viewer.scene()
         assert scene is not None
         bottom_to_top = scene.items(Qt.SortOrder.AscendingOrder)
         layer_stack_item = viewer._layer_items[self.image_stack.layer_stack.id]
-        expected_order = [layer_stack_item, viewer._image_outline, viewer._image_border,
+        expected_order = [layer_stack_item, viewer._image_border, viewer.outside_hatching, viewer._image_outline,
                           viewer._active_layer_outline, viewer._pixel_outline, viewer._viewport_highlight,
                           viewer._selection_poly_outline, viewer.manual_resolution_label,
                           viewer._generation_area_outline, viewer._context_pin_items[0]]

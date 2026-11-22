@@ -6,7 +6,7 @@ from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF
-from PySide6.QtGui import QPainter, QColor, QTransform, QResizeEvent
+from PySide6.QtGui import QPainter, QPainterPath, QColor, QPolygonF, QTransform, QResizeEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
@@ -18,6 +18,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.canvas_extras import CanvasExtras, CanvasExtraCategory, CATEGORY_Z_VALUES
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_for_view, DEFAULT_MARKER_SIZE
+from src.ui.graphics_items.hatched_region import HatchedRegion
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.manual_resolution_label import ManualResolutionLabel
 from src.ui.graphics_items.outline import Outline
@@ -43,7 +44,10 @@ VIEWPORT_HIGHLIGHT_Z_VALUE = CATEGORY_Z_VALUES[CanvasExtraCategory.SELECTION] - 
 # Z-values within the generation area category. The manual resolution label sets its own lower value.
 GENERATION_AREA_OUTLINE_Z_VALUE = 2.0
 CONTEXT_PIN_Z_VALUE = GENERATION_AREA_OUTLINE_Z_VALUE + 1
-# Z-value of the active layer outline within the canvas category, above the image outline and veil:
+# Z-values within the canvas category. The image veil keeps the default of 0, so the hatching over layer content
+# outside the image draws above it, and both outlines draw above the hatching:
+OUTSIDE_HATCHING_Z_VALUE = 0.25
+IMAGE_OUTLINE_Z_VALUE = 0.5
 ACTIVE_LAYER_OUTLINE_Z_VALUE = 1.0
 
 
@@ -113,6 +117,10 @@ class ImageViewer(ImageGraphicsView):
         self._image_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
+        self._image_outline.setZValue(IMAGE_OUTLINE_Z_VALUE)
+        self._outside_hatching = HatchedRegion()
+        self._outside_hatching.setZValue(OUTSIDE_HATCHING_Z_VALUE)
+        self._canvas_extras.register(self._outside_hatching, CanvasExtraCategory.CANVAS)
         self._generation_area_outline = Outline(scene, self)
         self._generation_area_outline.setZValue(GENERATION_AREA_OUTLINE_Z_VALUE)
         self._canvas_extras.register(self._generation_area_outline, CanvasExtraCategory.GENERATION_AREA)
@@ -284,6 +292,7 @@ class ImageViewer(ImageGraphicsView):
                                  self._generation_area.height())
         image_loaded = self._image_stack.has_image
         self._image_outline.setVisible(image_loaded)
+        self._update_outside_hatching()
         self._generation_area_outline.outlined_region = generation_area
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_selection_outline.setVisible(
@@ -300,6 +309,29 @@ class ImageViewer(ImageGraphicsView):
         else:
             self._generation_area_selection_outline.setVisible(False)
         self._update_manual_resolution_label()
+
+    def _update_outside_hatching(self) -> None:
+        """Hatches the parts of shown layers' outlines that lie outside the image, transparent pixels included."""
+        image_bounds = self._image_stack.bounds
+        outside = QPainterPath()
+        if self._image_stack.has_image:
+            for layer in self._image_stack.layer_stack.recursive_child_layers:
+                if not isinstance(layer, TransformLayer) or not layer.shown \
+                        or image_bounds.contains(layer.transformed_bounds):
+                    continue
+                layer_outline = QPainterPath()
+                layer_outline.addPolygon(layer.transform.map(QPolygonF(QRectF(layer.bounds))))
+                outside = outside.united(layer_outline)
+            if not outside.isEmpty():
+                inside = QPainterPath()
+                inside.addRect(QRectF(image_bounds))
+                outside = outside.subtracted(inside)
+        self._outside_hatching.region = outside
+
+    @property
+    def outside_hatching(self) -> HatchedRegion:
+        """Returns the item that hatches layer content outside the image."""
+        return self._outside_hatching
 
     @property
     def manual_resolution_label(self) -> ManualResolutionLabel:

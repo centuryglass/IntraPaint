@@ -306,6 +306,8 @@ QGraphicsItem subclasses drawn on the canvas: outlines, handles, pins, markers a
   visualize clicking and dragging to select a region.
 - `src/ui/graphics_items/context_pin_item.py`: Push-pin marker drawn over a context pin.
 - `src/ui/graphics_items/crosshair_item.py`: Fixed-size crosshair that marks a point in the image scene.
+- `src/ui/graphics_items/hatched_region.py`: Covers a scene region with diagonal hatching drawn at a fixed screen size,
+  to mark it as excluded.
 - `src/ui/graphics_items/layer_graphics_item.py`: Renders an image layer into a QGraphicsScene.
 - `src/ui/graphics_items/layer_lock_alert_item.py`: A temporary graphics item that appears above a Layer to indicate
   that it's locked.
