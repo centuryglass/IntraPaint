@@ -107,7 +107,7 @@ class SelectionLayer(ImageLayer):
     selection_cleared = Signal()
     context_pins_changed = Signal(list)
 
-    def __init__(self, size: QSize, generation_window_signal: SignalInstance) -> None:
+    def __init__(self, size: QSize, generation_window_signal: SignalInstance, undo_stack: UndoStack) -> None:
         """
         Initializes a new selection layer.
         """
@@ -118,7 +118,7 @@ class SelectionLayer(ImageLayer):
         self._selection_color = QColor()
         self._selected_count = 0  # Number of selected pixels in the mask
         self._borrowed: Optional[QImage] = None  # Scratch image handed out by borrow_image
-        super().__init__(size, SELECTION_LAYER_NAME)
+        super().__init__(size, SELECTION_LAYER_NAME, undo_stack)
 
         def _update_color(color_str: str) -> None:
             if color_str == self._selection_color.name():
@@ -186,7 +186,7 @@ class SelectionLayer(ImageLayer):
             self._apply_context_pins(new_pins)
             return
         last_pins = self.context_pins
-        UndoStack().commit_action(lambda: self._apply_context_pins(new_pins),
+        self.undo_stack.commit_action(lambda: self._apply_context_pins(new_pins),
                                   lambda: self._apply_context_pins(last_pins),
                                   'SelectionLayer.set_context_pins')
 
@@ -200,7 +200,7 @@ class SelectionLayer(ImageLayer):
         if current_pins == previous_pins:
             return
         last_pins = [QPoint(pin) for pin in previous_pins]
-        UndoStack().commit_action(lambda: self._apply_context_pins(current_pins),
+        self.undo_stack.commit_action(lambda: self._apply_context_pins(current_pins),
                                   lambda: self._apply_context_pins(last_pins),
                                   'SelectionLayer.set_context_pins', skip_initial_call=True)
 

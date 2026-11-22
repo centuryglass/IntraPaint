@@ -23,7 +23,6 @@ from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.layers.image_layer import ImageLayer
 from src.ui.panel.tool_control_panels.preview_backdrop import backdrop_image, backdrop_motif_rect, tile_size
 from src.ui.panel.tool_control_panels.stroke_preview import StrokePreview, wave_points
-from src.undo_stack import UndoStack
 
 # Stored `Cache.CLONE_STAMP_TOOL_SOURCE_MODE` values; they match `src.tools.clone_stamp_tool` and the options in
 # cache_value_definitions.json. Code compares these raw values, never the translated labels.
@@ -181,8 +180,8 @@ class CloneStampStrokePreview(StrokePreview):
         """Draws each stroke with a `CloneStampBrush` on a scratch layer, keeping its edits out of undo history, then
         marks where the strokes copied from."""
         layout = self._layout(size)
-        with UndoStack().unrecorded():
-            layer = ImageLayer(self._backdrop(size, layout), 'brush preview')
+        with self._scratch_undo_stack.unrecorded():
+            layer = ImageLayer(self._backdrop(size, layout), 'brush preview', self._scratch_undo_stack)
             brush = self._new_brush(layer)
             brush.brush_size = round(layout.diameter)
             self._configure_brush(brush)

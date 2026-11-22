@@ -48,7 +48,7 @@ from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.panel.tool_control_panels.text_preview import TextPreview, text_overflows
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.util.layout import add_layout, clear_grid
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.shared_text import keys_tooltip
@@ -200,8 +200,9 @@ class TextToolPanel(FitToolPanel):
     # Emitted after the controls show new values, for the section summaries:
     _values_shown = Signal()
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, undo_stack: UndoStack, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self._undo_stack = UndoStackRef(undo_stack)
         self._text_rect = TextRect()
         self._text_rect.font = QApplication.font()
         self._offset = QPoint()
@@ -211,7 +212,7 @@ class TextToolPanel(FitToolPanel):
         self._text_box.setPlaceholderText(TEXT_INPUT_PLACEHOLDER)
         self._text_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._text_box.valueChanged.connect(self._text_changed)
-        self._text_box.focus_lost.connect(UndoStack().end_gesture)
+        self._text_box.focus_lost.connect(self._end_text_gesture)
 
         self._build_font_section()
         self._build_style_section()
@@ -614,6 +615,9 @@ class TextToolPanel(FitToolPanel):
             self._overflow_badge.setVisible(overflows)
             self._refit()
         self._values_shown.emit()
+
+    def _end_text_gesture(self) -> None:
+        self._undo_stack().end_gesture()
 
     def _text_changed(self, text: str) -> None:
         if self._text_rect.text != text:

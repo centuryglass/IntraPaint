@@ -23,6 +23,7 @@ from src.image.open_raster import (save_ora_image, capture_ora_image, write_ora_
                                    XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME, LAYER_TAG_SRC, TRANSFORM_SRC_TAG,
                                    TEXT_DATA_TAG)
 from src.image.text_rect import TextRect
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(16, 16)
@@ -87,8 +88,8 @@ class OpenRasterTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
-        self.loaded_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
+        self.loaded_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
     def _add_image_layer(self, name: str, parent: Optional[LayerGroup] = None) -> ImageLayer:
         color = _layer_color(len(self.image_stack.image_layers))
@@ -411,7 +412,7 @@ class OpenRasterTest(IntraPaintTestCase):
             def get_qimage(self) -> QImage:
                 return _solid_image(QColor(Qt.GlobalColor.green))
 
-        self.image_stack.layer_stack.insert_layer(_OtherLayer('other'), 0)
+        self.image_stack.layer_stack.insert_layer(_OtherLayer('other', self.image_stack.undo_stack), 0)
         with tempfile.TemporaryDirectory() as temp_dir:
             with self.assertRaises(TypeError):
                 save_ora_image(self.image_stack, os.path.join(temp_dir, 'unsupported.ora'), METADATA)

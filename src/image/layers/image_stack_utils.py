@@ -22,7 +22,6 @@ from src.image.layers.layer_resize_mode import LayerResizeMode
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
-from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_content_bounds
 from src.util.rich_text import escape_rich_text
 from src.util.visual.pil_image_utils import pil_image_scaling
@@ -84,7 +83,7 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
         if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names,
                                                                      ACTION_NAME_CROP_LAYER_TO_SELECTION):
             return
-    with UndoStack().combining_actions('image_stack_utils.crop_layer_to_selection'):
+    with image_stack.undo_stack.combining_actions('image_stack_utils.crop_layer_to_selection'):
         no_overlap_count = 0
         no_content_cropped_count = 0
         crop_success_count = 0
@@ -146,7 +145,7 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
         raise ValueError(f'size must be greater than zero, got {width}x{height}')
     if not image_stack.confirm_no_locked_layers(ERROR_TITLE_IMAGE_SCALE_FAILED):
         return
-    with UndoStack().combining_actions('image_stack_utils.scale_all_layers'):
+    with image_stack.undo_stack.combining_actions('image_stack_utils.scale_all_layers'):
         initial_size = image_stack.size
         x_scale = width / initial_size.width()
         y_scale = height / initial_size.height()
@@ -176,7 +175,7 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
             def _revert(size=initial_size) -> None:
                 image_stack.size = size
 
-            UndoStack().commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
+            image_stack.undo_stack.commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
 
 
 def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> QColor:

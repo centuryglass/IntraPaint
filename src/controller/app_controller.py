@@ -114,7 +114,7 @@ from src.ui.window.main_window import MainWindow
 from src.ui.window.metadata_window import MetadataWindow, EditorFileHooks
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.window_geometry import restore_window
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
@@ -239,7 +239,8 @@ class AppController(MenuBuilder):
         # Initialize edited image data structures:
         self._generator: Optional[ImageGenerator] = None
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
-                                       config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
+                                       config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE),
+                                       UndoStack())
         self._generation_area_controller = GenerationAreaController(self._image_stack)
 
         # Initialize main window:
@@ -387,9 +388,10 @@ class AppController(MenuBuilder):
         self._image_stack.active_layer_changed.connect(self._active_layer_changed)
         self._image_stack.selection_layer.content_changed.connect(self._refresh_enabled_actions)
         self._image_stack.selected_layers_changed.connect(self._refresh_enabled_actions)
-        UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
-        UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
-        UndoStack().clean_changed.connect(lambda _clean: self._update_window_title())  # type: ignore
+        undo_stack = self._image_stack.undo_stack
+        undo_stack.undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        undo_stack.redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        undo_stack.clean_changed.connect(lambda _clean: self._update_window_title())  # type: ignore
         Cache().connect(self._window, Cache.LAST_FILE_PATH, lambda _path: self._update_window_title())
         self._update_window_title()
         # "Reopen last generated options" also needs a stored batch, so `_update_enabled_actions` alone sets whether
@@ -554,9 +556,9 @@ class AppController(MenuBuilder):
         restored = self._autosave.offer_recovery()
 
         # Discard anything saved to the undo stack during the setup process:
-        UndoStack().clear()
+        self._image_stack.undo_stack.clear()
         if restored:  # The recovery copy holds work that was never saved.
-            UndoStack().mark_modified()
+            self._image_stack.undo_stack.mark_modified()
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
@@ -880,9 +882,10 @@ class AppController(MenuBuilder):
 
     def _update_enabled_text_relevant_actions(self) -> None:
         """Update menu action enablement state that varies when a text input is active."""
+        undo_stack = self._image_stack.undo_stack
         for method, valid_for_image, valid_for_text in (
-                (self.undo, UndoStack().undo_count() > 0, self._active_text_field_tracker.focused_can_undo()),
-                (self.redo, UndoStack().redo_count() > 0, self._active_text_field_tracker.focused_can_redo()),
+                (self.undo, undo_stack.undo_count() > 0, self._active_text_field_tracker.focused_can_undo()),
+                (self.redo, undo_stack.redo_count() > 0, self._active_text_field_tracker.focused_can_redo()),
                 (self.copy, self._can_copy_image, self._active_text_field_tracker.focused_can_copy()),
                 (self.paste, self._can_paste_image, self._active_text_field_tracker.focused_can_paste()),
                 (self.cut, self._can_clear_or_cut_image, self._active_text_field_tracker.focused_can_cut_or_clear()),
@@ -1017,7 +1020,7 @@ class AppController(MenuBuilder):
         """Shows the open file's name in the window title, marked while it has unsaved changes."""
         file_path = Cache().get(Cache.LAST_FILE_PATH)
         self._window.setWindowFilePath(file_path if file_path != '' else UNTITLED_FILE_NAME)
-        self._window.setWindowModified(not UndoStack().is_clean())
+        self._window.setWindowModified(not self._image_stack.undo_stack.is_clean())
 
     def _confirm_quit(self) -> bool:
         """Returns whether closing the main window may proceed, offering to save unsaved changes first."""
@@ -1037,7 +1040,7 @@ class AppController(MenuBuilder):
             assert text_field is not None
             text_field.undo()
         else:
-            UndoStack().undo()
+            self._image_stack.undo_stack.undo()
 
     @menu_action(MENU_EDIT, 'redo_shortcut', 101,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
@@ -1048,7 +1051,7 @@ class AppController(MenuBuilder):
             assert text_field is not None
             text_field.redo()
         else:
-            UndoStack().redo()
+            self._image_stack.undo_stack.redo()
 
     @menu_action(MENU_EDIT, 'cut_shortcut', 110, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def cut(self) -> None:
@@ -1350,7 +1353,8 @@ class AppController(MenuBuilder):
         """Opens the window for viewing and editing the image's metadata, or raises it if it is already open."""
         metadata = self._image_io.metadata
         if self._metadata_window is None:
-            file_hooks = EditorFileHooks(has_unsaved_edits=lambda: not UndoStack().is_clean(),
+            undo_stack = UndoStackRef(self._image_stack.undo_stack)  # The window is the controller's, so not `self`.
+            file_hooks = EditorFileHooks(has_unsaved_edits=lambda: not undo_stack().is_clean(),
                                          wait_for_save=held_weakly(self._image_io.wait_for_pending_save))
             self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH),
                                                    file_hooks=file_hooks)

@@ -44,8 +44,8 @@ class FilterBrushTest(BrushTestCase):
     def setUp(self) -> None:
         super().setUp()
         # Filters only use the image stack when applied from the menu:
-        self.image_stack = ImageStack(LAYER_SIZE, LAYER_SIZE, QSize(8, 8), QSize(1024, 1024))
-        self.layer = ImageLayer(brush_test_pattern(), 'filter test layer')
+        self.image_stack = ImageStack(LAYER_SIZE, LAYER_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
+        self.layer = ImageLayer(brush_test_pattern(), 'filter test layer', UndoStack())
         self.brush = FilterBrush(BlurFilter(self.image_stack), self.layer)
         self.brush.brush_size = 24
         self.brush.opacity = 1.0

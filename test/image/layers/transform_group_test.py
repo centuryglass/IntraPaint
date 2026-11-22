@@ -24,7 +24,7 @@ class TransformGroupTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         self.group = self.image_stack.create_layer_group('group')
         self.first = self.image_stack.create_layer('first', layer_parent=self.group, layer_index=0)
         self.first.set_size(QSize(40, 20))

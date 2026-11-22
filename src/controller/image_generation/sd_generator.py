@@ -31,7 +31,6 @@ from src.ui.panel.controlnet_panel import ControlNetPanel
 from src.ui.panel.generators.stable_diffusion_panel import AdvancedControls, StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
@@ -816,7 +815,7 @@ class SDGenerator(ImageGenerator, ABC):
         """Scales the image stack to the upscaled image's size and adds the image as a new layer, as one undo action.
 
         With locked layers present, only the canvas is resized."""
-        with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
+        with self._image_stack.undo_stack.combining_actions('SDWebUIGenerator.upscale'):
             if self._image_stack.confirm_no_locked_layers():
                 scale_all_layers(self._image_stack, img.width(), img.height())
             else:
@@ -829,7 +828,8 @@ class SDGenerator(ImageGenerator, ABC):
                 def _revert_size(size=old_size) -> None:
                     self._image_stack.size = size
 
-                UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
+                self._image_stack.undo_stack.commit_action(_update_size, _revert_size,
+                                                           'SDWebUIGenerator.upscale_resize')
             new_layer = self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
                                                        layer_parent=self._image_stack.layer_stack, image_data=img)
             self._image_stack.active_layer = new_layer

@@ -69,7 +69,7 @@ class TransformLayerTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = ImageLayer(LAYER_SIZE, 'transform test layer')
+        self.layer = ImageLayer(LAYER_SIZE, 'transform test layer', UndoStack())
 
     def assert_transforms_equal(self, actual: QTransform, expected: QTransform, msg: str = '') -> None:
         """Asserts that two matrices match to PRECISION decimal places."""

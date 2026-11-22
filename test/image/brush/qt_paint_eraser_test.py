@@ -29,7 +29,7 @@ class QtPaintEraserTest(BrushTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = ImageLayer(brush_test_pattern(), 'eraser test layer')
+        self.layer = ImageLayer(brush_test_pattern(), 'eraser test layer', UndoStack())
         self.brush = QtPaintBrush(self.layer)
         self.brush.eraser = True
         self.brush.brush_size = 16

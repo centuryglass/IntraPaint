@@ -55,7 +55,7 @@ class GeneratedImageSelectorViewTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack), lambda: None)
         self.selector.resize(400, 300)
         self.selector._zoom_to_option(0, True)
@@ -140,7 +140,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         # below exact:
         cache.set(Cache.GENERATION_SIZE, IMAGE_SIZE)
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
         self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack), lambda: None)
         self.selector.resize(400, 300)
@@ -405,7 +405,7 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.GENERATION_SIZE, IMAGE_SIZE)
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
         self.window = MainWindow(self.image_stack)
         self.selector: GeneratedImageSelector = self.window._ensure_image_selector()
@@ -538,7 +538,7 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
         cache.set(Cache.BATCH_COUNT, 1)
         cache.set(Cache.BATCH_SIZE, OPTION_COUNT)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(10, 20, 30)))
         self.window = MainWindow(self.image_stack)
         self.generator = TestGenerator(self.window, self.image_stack)
@@ -621,7 +621,7 @@ class _RunScreenTestCase(IntraPaintTestCase):
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
         cache.set(Cache.BATCH_COUNT, 1)
         cache.set(Cache.BATCH_SIZE, self.BATCH)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(10, 20, 30)))
         self.window = MainWindow(self.image_stack)
         self.session = self.window.generation_session
@@ -1063,7 +1063,7 @@ class GeneratedImageSelectorGridLayoutTest(IntraPaintTestCase):
     """Tests how the grid fills the view and leaves room for the bottom row's captions."""
 
     def _selector(self, option_count: int, width: int = 1600, height: int = 900) -> GeneratedImageSelector:
-        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         Cache().set(Cache.BATCH_SIZE, 1)
         Cache().set(Cache.BATCH_COUNT, option_count)
         selector = GeneratedImageSelector(image_stack, GenerationSession(image_stack), lambda: None)

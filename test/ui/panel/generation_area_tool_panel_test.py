@@ -13,6 +13,7 @@ from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel, EMPTY_SLOT_TEXT, \
     RECENT_FRAME_COUNT
+from src.undo_stack import UndoStack
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from test.base_test_case import IntraPaintTestCase
 
@@ -28,7 +29,7 @@ class GenerationAreaToolPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         Cache().set(Cache.RECENT_GENERATION_AREA_SIZES, [])
-        self.image_stack = ImageStack(IMAGE_SIZE, QSize(384, 384), QSize(8, 8), MAX_AREA_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, QSize(384, 384), QSize(8, 8), MAX_AREA_SIZE, UndoStack())
         self.panel = GenerationAreaToolPanel(self.image_stack)
         self.geometry = self.panel.geometry_block
 

@@ -5,6 +5,7 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF, QRectF
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.layer import Layer
+from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import create_transparent_image
 
@@ -14,8 +15,8 @@ class TransformLayer(Layer):
 
     transform_changed = Signal(QObject, QTransform)
 
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
+    def __init__(self, name: str, undo_stack: UndoStack) -> None:
+        super().__init__(name, undo_stack)
         self._transform = QTransform()
         self._raster: Optional[tuple[QPoint, QImage]] = None
 

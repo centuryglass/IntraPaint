@@ -39,7 +39,7 @@ class FillStrokeSelectionTest(ImageStackOpTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS, CANVAS, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(CANVAS, CANVAS, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         image = create_transparent_image(LAYER_SIZE)
         painter = QPainter(image)
         painter.fillRect(QRect(0, 0, LAYER_SIZE.width() // 2, LAYER_SIZE.height()), QColor(0, 200, 0))

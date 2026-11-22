@@ -21,7 +21,6 @@ from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
-from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.geometry_utils import panel_position, transform_at_panel_position
 from src.util.visual.text_drawing_utils import left_button_hint_text
@@ -55,10 +54,10 @@ class TextTool(BaseTool):
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
-        self._control_panel = TextToolPanel()
+        self._control_panel = TextToolPanel(image_stack.undo_stack)
         self._image_stack = image_stack
         self._image_viewer = image_viewer
-        self._placement_outline = PlacementOutline(QPointF(), QSizeF())
+        self._placement_outline = PlacementOutline(QPointF(), QSizeF(), image_stack.undo_stack)
         image_viewer.canvas_extras.register(self._placement_outline, CanvasExtraCategory.TOOL)
         self._placement_outline.setVisible(False)
         self._text_layer: Optional[TextLayer] = None
@@ -163,7 +162,7 @@ class TextTool(BaseTool):
             self._dragging = False
 
     def _connect_text_layer(self, layer: TextLayer) -> None:
-        UndoStack().end_gesture()
+        self._image_stack.undo_stack.end_gesture()
         if self._text_layer is not None:
             self._disconnect_text_layer()
         self._text_layer = layer
@@ -182,7 +181,7 @@ class TextTool(BaseTool):
         self._layer_lock_change_slot(layer, layer.locked)
 
     def _disconnect_text_layer(self) -> None:
-        UndoStack().end_gesture()
+        self._image_stack.undo_stack.end_gesture()
         if self._text_layer is not None:
             self._disconnect_signals()
             self._text_layer = None
@@ -212,7 +211,7 @@ class TextTool(BaseTool):
         self._placement_outline.placement_changed.connect(self._placement_outline_changed_slot)
 
     def _create_and_activate_text_layer(self, layer_data: Optional[TextRect], offset: QPoint) -> None:
-        with UndoStack().combining_actions('TextTool._create_and_activate_text_layer'):
+        with self._image_stack.undo_stack.combining_actions('TextTool._create_and_activate_text_layer'):
             text_layer = self._image_stack.create_text_layer(layer_data)
             text_layer.transform = QTransform.fromTranslate(offset.x(), offset.y())
             self._connect_text_layer(text_layer)
@@ -221,7 +220,7 @@ class TextTool(BaseTool):
         if not self.is_active:
             return
         if self._text_layer is not None:
-            UndoStack().begin_gesture('TextTool.edit_text')
+            self._image_stack.undo_stack.begin_gesture('TextTool.edit_text')
             self._disconnect_signals()
             self._text_layer.text_rect = text_data
             self._placement_outline.outline_size = text_data.size

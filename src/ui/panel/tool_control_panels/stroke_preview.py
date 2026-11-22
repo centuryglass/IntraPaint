@@ -59,6 +59,8 @@ class StrokePreview(BrushPreview):
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
         self._antialias_key = antialias_key
+        # Scratch layers record into this private history, so a preview can't touch the document's:
+        self._scratch_undo_stack = UndoStack.create()
         super().__init__((size_key, opacity_key, hardness_key, antialias_key, *extra_keys), parent, render_timer)
         self.setMinimumSize(PREVIEW_MIN_SIZE)
         self.setMaximumSize(PREVIEW_MAX_SIZE)
@@ -77,7 +79,7 @@ class StrokePreview(BrushPreview):
 
     def _new_layer(self, size: QSize) -> ImageLayer:
         """Returns the scratch layer the stroke is drawn on. The default is transparent."""
-        return ImageLayer(size, 'brush preview')
+        return ImageLayer(size, 'brush preview', self._scratch_undo_stack)
 
     def _new_brush(self, layer: ImageLayer) -> Any:
         """Returns the brush that draws the stroke on `layer`. The default is a `QtPaintBrush`."""
@@ -109,7 +111,7 @@ class StrokePreview(BrushPreview):
     def _render(self, size: QSize) -> QImage:
         """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""
         diameter, points = self._sample_stroke(size)
-        with UndoStack().unrecorded():
+        with self._scratch_undo_stack.unrecorded():
             layer = self._new_layer(size)
             brush = self._new_brush(layer)
             brush.brush_size = round(diameter)
@@ -177,7 +179,7 @@ class EraseStrokePreview(StrokePreview):
     def _new_layer(self, size: QSize) -> ImageLayer:
         backdrop = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
         backdrop.fill(self._backdrop_color())
-        return ImageLayer(backdrop, 'brush preview')
+        return ImageLayer(backdrop, 'brush preview', self._scratch_undo_stack)
 
     def _configure_brush(self, brush: Any) -> None:
         super()._configure_brush(brush)
@@ -197,7 +199,7 @@ class SmudgeStrokePreview(StrokePreview):
     """Previews smudging: a `SmudgeBrush` drags the stroke across the shared sample backdrop."""
 
     def _new_layer(self, size: QSize) -> ImageLayer:
-        return ImageLayer(backdrop_image(size), 'brush preview')
+        return ImageLayer(backdrop_image(size), 'brush preview', self._scratch_undo_stack)
 
     def _new_brush(self, layer: ImageLayer) -> SmudgeBrush:
         return SmudgeBrush(layer)
@@ -224,7 +226,7 @@ class FilterStrokePreview(StrokePreview):
                 Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
 
     def _new_layer(self, size: QSize) -> ImageLayer:
-        return ImageLayer(backdrop_image(size), 'brush preview')
+        return ImageLayer(backdrop_image(size), 'brush preview', self._scratch_undo_stack)
 
     def _new_brush(self, layer: ImageLayer) -> Any:
         img_filter = self._selected_filter()

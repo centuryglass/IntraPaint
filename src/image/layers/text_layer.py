@@ -8,6 +8,7 @@ from src.image.composite_mode import CompositeMode
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.ora_extensions import OraWriteContext
 from src.image.text_rect import TextRect
+from src.undo_stack import UndoStack
 from src.util.cached_data import CachedData
 
 # Attribute on a text layer's extended_data.xml entry holding its `TextRect.serialize()` JSON.
@@ -21,7 +22,7 @@ class TextLayer(NonDestructiveLayer):
 
     text_data_changed = Signal(TextRect)
 
-    def __init__(self, text_rect: Optional[TextRect]):
+    def __init__(self, text_rect: Optional[TextRect], undo_stack: UndoStack):
         """
         Initializes a new layer with text data.
 
@@ -29,8 +30,10 @@ class TextLayer(NonDestructiveLayer):
         ----------
         text_rect: TextRect, optional
             New text rendering data.
+        undo_stack: UndoStack
+            The history this layer records its changes in.
         """
-        super().__init__(self._get_name_from_text(text_rect))
+        super().__init__(self._get_name_from_text(text_rect), undo_stack)
         self._text_rect = text_rect if text_rect is not None else TextRect()
         self._image_cache = CachedData(self._text_rect.render_to_image())
         self.set_size(self._text_rect.size)
@@ -90,7 +93,7 @@ class TextLayer(NonDestructiveLayer):
 
     def copy(self) -> 'TextLayer':
         """Creates a copy of this layer."""
-        layer = TextLayer(self._text_rect)
+        layer = TextLayer(self._text_rect, self.undo_stack)
         layer.set_opacity(self.opacity)
         layer.set_visible(self.visible)
         layer.set_composition_mode(self.composition_mode)

@@ -46,7 +46,7 @@ class TextLayerGeometryTest(IntraPaintTestCase):
 
     def test_default_size(self) -> None:
         """A text layer created without text data takes TextRect's default size and has empty text."""
-        layer = TextLayer(None)
+        layer = TextLayer(None, UndoStack())
         self.assertEqual(layer.size, DEFAULT_SIZE)
         self.assertEqual(layer.bounds, QRect(QPoint(), DEFAULT_SIZE))
         self.assertEqual(layer.text_rect.text, '')
@@ -54,13 +54,13 @@ class TextLayerGeometryTest(IntraPaintTestCase):
 
     def test_size_follows_text_rect(self) -> None:
         """Layer size is the text rect's size, and the rendered image matches it."""
-        layer = TextLayer(_text_rect())
+        layer = TextLayer(_text_rect(), UndoStack())
         self.assertEqual(layer.size, LAYER_SIZE)
         self.assertEqual(layer.get_qimage().size(), LAYER_SIZE)
 
     def test_empty_text_renders_transparent(self) -> None:
         """Empty text keeps the layer size and renders nothing."""
-        layer = TextLayer(_text_rect(''))
+        layer = TextLayer(_text_rect(''), UndoStack())
         self.assertEqual(layer.size, LAYER_SIZE)
         self.assertTrue(image_is_fully_transparent(layer.get_qimage()))
 
@@ -69,21 +69,22 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         text_rect = _text_rect('')
         text_rect.fill_background = True
         text_rect.background_color = QColor(Qt.GlobalColor.white)
-        layer = TextLayer(text_rect)
+        layer = TextLayer(text_rect, UndoStack())
         self.assertEqual(_content_bounds(layer), QRect(QPoint(), LAYER_SIZE))
 
     def test_name_from_text(self) -> None:
         """The layer name is the quoted text, truncated past MAX_NAME_LENGTH_BEFORE_TRUNC characters."""
-        self.assertEqual(TextLayer(_text_rect('Short')).name, '"Short"')
+        self.assertEqual(TextLayer(_text_rect('Short'), UndoStack()).name, '"Short"')
         long_text = 'x' * (MAX_NAME_LENGTH_BEFORE_TRUNC + 5)
-        self.assertEqual(TextLayer(_text_rect(long_text)).name, f'"{"x" * MAX_NAME_LENGTH_BEFORE_TRUNC}..."')
+        self.assertEqual(TextLayer(_text_rect(long_text), UndoStack()).name,
+                         f'"{"x" * MAX_NAME_LENGTH_BEFORE_TRUNC}..."')
 
     def test_horizontal_alignment(self) -> None:
         """Text sits against the edge it is aligned to, and centered text is about equally far from both."""
         width = LAYER_SIZE.width()
-        left = _content_bounds(TextLayer(_text_rect('Hi', alignment=Qt.AlignmentFlag.AlignLeft)))
-        right = _content_bounds(TextLayer(_text_rect('Hi', alignment=Qt.AlignmentFlag.AlignRight)))
-        center = _content_bounds(TextLayer(_text_rect('Hi', alignment=Qt.AlignmentFlag.AlignHCenter)))
+        left = _content_bounds(TextLayer(_text_rect('Hi', alignment=Qt.AlignmentFlag.AlignLeft), UndoStack()))
+        right = _content_bounds(TextLayer(_text_rect('Hi', alignment=Qt.AlignmentFlag.AlignRight), UndoStack()))
+        center = _content_bounds(TextLayer(_text_rect('Hi', alignment=Qt.AlignmentFlag.AlignHCenter), UndoStack()))
         for bounds in (left, right, center):
             self.assertFalse(bounds.isEmpty())
         self.assertLessEqual(left.left(), ALIGN_MARGIN)
@@ -98,8 +99,8 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         """Bottom-aligned text sits below top-aligned text, against the bottom edge."""
         height = 120
         size = QSize(LAYER_SIZE.width(), height)
-        top = _content_bounds(TextLayer(_text_rect('Hi', size, Qt.AlignmentFlag.AlignTop)))
-        bottom = _content_bounds(TextLayer(_text_rect('Hi', size, Qt.AlignmentFlag.AlignBottom)))
+        top = _content_bounds(TextLayer(_text_rect('Hi', size, Qt.AlignmentFlag.AlignTop), UndoStack()))
+        bottom = _content_bounds(TextLayer(_text_rect('Hi', size, Qt.AlignmentFlag.AlignBottom), UndoStack()))
         self.assertLess(top.bottom(), height // 2)
         self.assertGreater(bottom.top(), height // 2)
         self.assertGreaterEqual(bottom.bottom(), height - 1 - ALIGN_MARGIN)
@@ -108,14 +109,15 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         """Alignment moves text within the layer without changing the layer's size."""
         for alignment in (Qt.AlignmentFlag.AlignLeft, Qt.AlignmentFlag.AlignRight, Qt.AlignmentFlag.AlignCenter,
                           Qt.AlignmentFlag.AlignBottom):
-            self.assertEqual(TextLayer(_text_rect('Hi', alignment=alignment)).size, LAYER_SIZE, str(alignment))
+            self.assertEqual(TextLayer(_text_rect('Hi', alignment=alignment), UndoStack()).size, LAYER_SIZE,
+                             str(alignment))
 
     def test_multi_line_text_is_taller(self) -> None:
         """Each added line of text extends the drawn content downward."""
         size = QSize(LAYER_SIZE.width(), 150)
-        one_line = _content_bounds(TextLayer(_text_rect('Line', size)))
-        two_lines = _content_bounds(TextLayer(_text_rect('Line\nLine', size)))
-        three_lines = _content_bounds(TextLayer(_text_rect('Line\nLine\nLine', size)))
+        one_line = _content_bounds(TextLayer(_text_rect('Line', size), UndoStack()))
+        two_lines = _content_bounds(TextLayer(_text_rect('Line\nLine', size), UndoStack()))
+        three_lines = _content_bounds(TextLayer(_text_rect('Line\nLine\nLine', size), UndoStack()))
         self.assertEqual(one_line.top(), two_lines.top())
         self.assertGreater(two_lines.bottom(), one_line.bottom())
         self.assertGreater(three_lines.bottom(), two_lines.bottom())
@@ -125,16 +127,16 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         """With scale_bounds_to_text set, layer size is find_text_size's result for the text and font."""
         text_rect = _text_rect('Hi')
         text_rect.scale_bounds_to_text = True
-        one_line_size = TextLayer(text_rect).size
+        one_line_size = TextLayer(text_rect, UndoStack()).size
         self.assertEqual(one_line_size, find_text_size('Hi', text_rect.font))
 
         text_rect.text = 'Hi\nHi'
-        two_line_size = TextLayer(text_rect).size
+        two_line_size = TextLayer(text_rect, UndoStack()).size
         self.assertEqual(two_line_size.width(), one_line_size.width())
         self.assertEqual(two_line_size.height(), one_line_size.height() * 2)
 
         text_rect.text = 'Hi Hi Hi'
-        self.assertGreater(TextLayer(text_rect).size.width(), one_line_size.width())
+        self.assertGreater(TextLayer(text_rect, UndoStack()).size.width(), one_line_size.width())
 
     def test_bounds_scaled_to_empty_text(self) -> None:
         """Empty text scaled to bounds still gets a non-empty layer, one line high."""
@@ -142,7 +144,7 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         text_rect.scale_bounds_to_text = True
         line_height = text_rect.size.height()
         text_rect.text = ''
-        layer = TextLayer(text_rect)
+        layer = TextLayer(text_rect, UndoStack())
         self.assertFalse(layer.bounds.isEmpty())
         self.assertEqual(layer.size.height(), line_height)
 
@@ -150,17 +152,17 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         """With scale_bounds_to_text set, a larger font makes a larger layer."""
         text_rect = _text_rect('Hi')
         text_rect.scale_bounds_to_text = True
-        small_size = TextLayer(text_rect).size
+        small_size = TextLayer(text_rect, UndoStack()).size
         font = text_rect.font
         font.setPixelSize(40)
         text_rect.font = font
-        large_size = TextLayer(text_rect).size
+        large_size = TextLayer(text_rect, UndoStack()).size
         self.assertGreater(large_size.width(), small_size.width())
         self.assertGreater(large_size.height(), small_size.height())
 
     def test_image_data_cannot_be_set(self) -> None:
         """Writing image data to a text layer raises, since it must be converted to an image layer first."""
-        layer = TextLayer(_text_rect())
+        layer = TextLayer(_text_rect(), UndoStack())
         with self.assertRaises(RuntimeError):
             layer.set_qimage(QImage(LAYER_SIZE, QImage.Format.Format_ARGB32_Premultiplied))
         with self.assertRaises(RuntimeError):
@@ -172,7 +174,7 @@ class TextLayerEditTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = TextLayer(_text_rect('First'))
+        self.layer = TextLayer(_text_rect('First'), UndoStack())
 
     def _edited(self, text: str = 'Second', size: QSize = QSize(120, 40)) -> TextRect:
         text_rect = self.layer.text_rect
@@ -291,7 +293,7 @@ class TextLayerTransformTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack())
         text_rect = _text_rect('Text')
         text_rect.fill_background = True
         text_rect.background_color = QColor(Qt.GlobalColor.white)

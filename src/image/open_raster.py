@@ -165,10 +165,10 @@ def _normalize_archive_path(path: str) -> str:
     return path.replace('\\', '/')
 
 
-def _load_text_layer(attributes: dict[str, str], _context: OraReadContext) -> Optional[Layer]:
+def _load_text_layer(attributes: dict[str, str], context: OraReadContext) -> Optional[Layer]:
     """Builds a text layer from its saved text data, or returns None if the data can't be parsed."""
     try:
-        return TextLayer(TextRect.deserialize(attributes[TEXT_DATA_TAG]))
+        return TextLayer(TextRect.deserialize(attributes[TEXT_DATA_TAG]), context.undo_stack)
     except (ValueError, KeyError, TypeError, AssertionError) as err:
         logger.error(f'Invalid text data, loading the layer as an image layer: {err}')
         return None
@@ -583,7 +583,7 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Ima
     with zipfile.ZipFile(file_path) as zip_file:
         zip_file.extractall(tmpdir)
         archive_entries = {info.filename: info for info in zip_file.infolist() if not info.is_dir()}
-    read_context = OraReadContext(tmpdir)
+    read_context = OraReadContext(tmpdir, image_stack.undo_stack)
     # Archive paths that IntraPaint reads itself, which aren't kept as foreign files:
     consumed_paths: set[str] = set(_REBUILT_ARCHIVE_FILES)
     foreign_records: list[OraForeignLayerData] = []
@@ -719,7 +719,7 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Ima
         if layer is None:
             if layer_image.isNull():
                 layer_image = read_qimage(os.path.join(tmpdir, base_image_path))
-            layer = ImageLayer(layer_image, '')
+            layer = ImageLayer(layer_image, '', read_context.undo_stack)
         is_active = _parse_common_attributes(layer, element, record)
         if isinstance(layer, ImageLayer) and alpha_locked == BOOLEAN_TRUE_STR:
             layer.set_alpha_locked(True)
@@ -738,7 +738,7 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Ima
     def parse_stack_element(element: Element) -> tuple[LayerGroup, Optional[Layer]]:
         """Load a layer group from its saved XML definition, return the selected layer (if found)"""
         assert element.tag == STACK_ELEMENT
-        layer = LayerGroup('')
+        layer = LayerGroup('', read_context.undo_stack)
         active_layer = None
         record = _capture_foreign_data(element, STACK_KNOWN_ATTRIBUTES, frozenset({STACK_ELEMENT, LAYER_ELEMENT}))
         if _parse_common_attributes(layer, element, record):

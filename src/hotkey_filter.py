@@ -6,7 +6,7 @@ from typing import Optional, Callable, cast, TypeAlias
 from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer, SIGNAL
 from PySide6.QtGui import QKeyEvent, QKeySequence, QGuiApplication, QWindow
 from PySide6.QtWidgets import (QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox,
-                               QAbstractButton, QAbstractSlider, QAbstractItemView)
+                               QAbstractButton, QAbstractSlider, QAbstractItemView, QKeySequenceEdit)
 
 from src.app_context import QObjectService
 from src.config.key_config import KeyConfig
@@ -298,8 +298,9 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
     def _focused_widget_uses_keys() -> bool:
         """Returns whether the focused widget is one that acts on a bare key press itself."""
         focused_widget = QApplication.focusWidget()
-        return (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox,
-                                            GradientSlider, QAbstractButton, QAbstractSlider, QAbstractItemView))
+        return (isinstance(focused_widget, (QKeySequenceEdit, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox,
+                                            QComboBox, GradientSlider, QAbstractButton, QAbstractSlider,
+                                            QAbstractItemView))
                 and focused_widget.isVisible())
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
@@ -313,8 +314,12 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
             return False
         event = cast(QKeyEvent, event)
 
-        # Avoid blocking inputs to text fields:
+        # A key recorder takes every key, including keys with bindings, so it is recorded instead of run:
         focused_widget = QApplication.focusWidget()
+        if isinstance(focused_widget, QKeySequenceEdit) and focused_widget.isVisible():
+            return False
+
+        # Avoid blocking inputs to text fields:
         if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox,
                                         GradientSlider))
                 and focused_widget.isVisible()):

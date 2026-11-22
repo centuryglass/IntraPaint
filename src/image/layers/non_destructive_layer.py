@@ -66,7 +66,7 @@ class NonDestructiveLayer(TransformLayer):
 
     def copy_as_image_layer(self) -> ImageLayer:
         """Creates a copy of this layer, rendered as an image layer."""
-        layer = ImageLayer(self.get_qimage(), self.name)
+        layer = ImageLayer(self.get_qimage(), self.name, self.undo_stack)
         layer.set_opacity(self.opacity)
         layer.set_visible(self.visible)
         layer.set_composition_mode(self.composition_mode)

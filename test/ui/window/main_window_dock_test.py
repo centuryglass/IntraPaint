@@ -13,6 +13,7 @@ from src.ui.layout.dock_panel import DockPanel, PanelLayout
 from src.ui.layout.panel_fit import REQUIRED, Orientation
 from src.ui.window.main_window import MainWindow, DEFAULT_SIDE_DOCK_WIDTH, DOCK_STATE_VERSION
 from src.ui.window.panel_dock import PanelDock
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 from test.ui.window.procedural_layout import use_procedural_layout
 
@@ -56,7 +57,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         test_size = QSize(64, 64)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size)
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self.windows: list[MainWindow] = []
         self.window = self._new_window()
 

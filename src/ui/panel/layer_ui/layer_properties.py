@@ -31,7 +31,6 @@ from src.ui.panel.layer_ui.layer_row import (ROW_SPACING, SELECTION_STRIPE_WIDTH
                                              selection_stripe_color)
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.elided_label import ElidedLabel
-from src.undo_stack import UndoStack
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.panel.layer_ui.layer_properties'
@@ -241,13 +240,11 @@ class LayerProperties(QWidget):
     def _layer_opacity_change_slot(self, _layer: Layer, opacity: float) -> None:
         self._show_opacity(opacity)
 
-    @staticmethod
-    def _opacity_drag_started_slot() -> None:
-        UndoStack().begin_gesture(OPACITY_UNDO_GESTURE)
+    def _opacity_drag_started_slot(self) -> None:
+        self._image_stack.undo_stack.begin_gesture(OPACITY_UNDO_GESTURE)
 
-    @staticmethod
-    def _opacity_drag_finished_slot() -> None:
-        UndoStack().end_gesture()
+    def _opacity_drag_finished_slot(self) -> None:
+        self._image_stack.undo_stack.end_gesture()
 
     # Blend mode:
 
