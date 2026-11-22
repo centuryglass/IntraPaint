@@ -6,9 +6,65 @@
 # run the test suite and the lint check: the system libraries headless Qt needs, a Python 3.13 virtual environment with
 # requirements-dev.txt, and the compiled image_fill module. Python 3.13 matches CI's lint job, since
 # scripts/pylint_baseline.json is only valid for the Python version it was generated with.
+#
+# A new web session also fast-forwards its checkout to the newest origin/integration first (sync_new_web_session), and
+# a local session keeps whatever branch and commit it started on.
 set -euo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-.}"
+
+# Reads the hook input's "source" field: startup, resume, clear or compact.
+hook_source=""
+if [ ! -t 0 ]; then
+  hook_source="$(python3 -I -c 'import json, sys
+try:
+    print(json.load(sys.stdin).get("source", ""))
+except ValueError:
+    pass' 2>/dev/null || true)"
+fi
+
+# Fast-forwards a new web session's checkout, which can start behind origin/integration. Runs only at startup, so a
+# resumed session's work is never moved. A branch that exists on the remote follows its own remote copy; any other
+# branch, such as a harness-assigned one, follows origin/integration. It moves only when the tree is clean and the
+# branch has no commits of its own; otherwise it prints how far behind the checkout is. Best-effort: any failure leaves
+# the checkout as it is. Sets checkout_moved=1 when HEAD changes.
+checkout_moved=0
+sync_new_web_session() {
+  local branch target before after behind
+  branch="$(git symbolic-ref -q --short HEAD)" || { echo "Checkout is a detached HEAD; not syncing it." >&2; return 0; }
+  if [ "$branch" != integration ] && git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+    target="$branch"
+  else
+    target=integration
+  fi
+  git fetch -q origin "+refs/heads/$target:refs/remotes/origin/$target" \
+    || { echo "git fetch of $target failed; the checkout may be behind origin/$target." >&2; return 0; }
+  behind="$(git rev-list --count "HEAD..origin/$target")"
+  [ "$behind" -eq 0 ] && return 0
+  if ! git merge-base --is-ancestor HEAD "origin/$target"; then
+    echo "Warning: $branch has commits that origin/$target lacks and is $behind commits behind it; not syncing it."
+    return 0
+  fi
+  if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    echo "Warning: $branch is $behind commits behind origin/$target, but has uncommitted changes; not syncing it."
+    return 0
+  fi
+  before="$(git rev-parse HEAD)"
+  git merge -q --ff-only "origin/$target" \
+    || { echo "Fast-forward of $branch to origin/$target failed; it is $behind commits behind." >&2; return 0; }
+  after="$(git rev-parse HEAD)"
+  echo "Fast-forwarded $branch by $behind commits to origin/$target ($(git log -1 --format='%h %s' "$after"))."
+  [ "$before" != "$after" ] && checkout_moved=1
+  return 0
+}
+
+if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] && [ "$hook_source" = startup ] && [ -z "${SESSION_START_SYNCED:-}" ]; then
+  sync_new_web_session
+  # The fast-forward may have changed this script, so the rest of the start-up runs from the new copy.
+  if [ "$checkout_moved" -eq 1 ]; then
+    SESSION_START_SYNCED=1 exec "$0" </dev/null
+  fi
+fi
 
 # Uses gh when it's on PATH and authenticated, and the REST API otherwise; scripts/issues.py covers tokens and rate
 # limits. Either fetch is best-effort, since a rate-limited or failed one must not fail session start. When both fail,
