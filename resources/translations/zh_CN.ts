@@ -5210,7 +5210,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/animation.py"/>
         <source>Frame {frame_number}</source>
-        <translation type="unfinished"></translation>
+        <translation>帧 {frame_number}</translation>
     </message>
 </context>
 <context>
@@ -5218,102 +5218,102 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Normal</source>
-        <translation type="unfinished"></translation>
+        <translation>正常</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Multiply</source>
-        <translation type="unfinished"></translation>
+        <translation>正片叠底</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Screen</source>
-        <translation type="unfinished"></translation>
+        <translation>滤色</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Overlay</source>
-        <translation type="unfinished"></translation>
+        <translation>叠加</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Darken</source>
-        <translation type="unfinished"></translation>
+        <translation>变暗</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Lighten</source>
-        <translation type="unfinished"></translation>
+        <translation>变亮</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Color Dodge</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色减淡</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Color Burn</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色加深</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Hard Light</source>
-        <translation type="unfinished"></translation>
+        <translation>强光</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Soft Light</source>
-        <translation type="unfinished"></translation>
+        <translation>柔光</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Difference</source>
-        <translation type="unfinished"></translation>
+        <translation>差值</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Color</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Luminosity</source>
-        <translation type="unfinished"></translation>
+        <translation>明度</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Hue</source>
-        <translation type="unfinished"></translation>
+        <translation>色相</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Saturation</source>
-        <translation type="unfinished"></translation>
+        <translation>饱和度</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Plus</source>
-        <translation type="unfinished"></translation>
+        <translation>Plus</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Destination In</source>
-        <translation type="unfinished"></translation>
+        <translation>Destination In</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Destination Out</source>
-        <translation type="unfinished"></translation>
+        <translation>Destination Out</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Source Atop</source>
-        <translation type="unfinished"></translation>
+        <translation>Source Atop</translation>
     </message>
     <message>
         <location filename="../../src/image/composite_mode.py"/>
         <source>Destination Atop</source>
-        <translation type="unfinished"></translation>
+        <translation>Destination Atop</translation>
     </message>
 </context>
 <context>
@@ -5321,47 +5321,48 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Simple</source>
-        <translation type="unfinished"></translation>
+        <translation>简单</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Box</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>glossary: not "Box" - this is the box blur, not the Box scaling algorithm; Photoshop zh calls it 方框模糊.</translatorcomment>
+        <translation>方框</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Gaussian</source>
-        <translation type="unfinished"></translation>
+        <translation>高斯</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Blur</source>
-        <translation type="unfinished"></translation>
+        <translation>模糊</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Blur the image</source>
-        <translation type="unfinished"></translation>
+        <translation>模糊图像</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Blurring mode:</source>
-        <translation type="unfinished"></translation>
+        <translation>模糊模式：</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Image blurring algorithm</source>
-        <translation type="unfinished"></translation>
+        <translation>图像模糊算法</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Radius:</source>
-        <translation type="unfinished"></translation>
+        <translation>半径：</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/blur.py"/>
         <source>Pixel blur radius (no effect in simple mode).</source>
-        <translation type="unfinished"></translation>
+        <translation>模糊半径（像素），在“简单”模式下无效。</translation>
     </message>
 </context>
 <context>
@@ -5369,22 +5370,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/brightness_contrast.py"/>
         <source>Brightness/contrast</source>
-        <translation type="unfinished"></translation>
+        <translation>亮度/对比度</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/brightness_contrast.py"/>
         <source>Adjust image brightness and contrast.</source>
-        <translation type="unfinished"></translation>
+        <translation>调整图像的亮度和对比度。</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/brightness_contrast.py"/>
         <source>Brightness:</source>
-        <translation type="unfinished"></translation>
+        <translation>亮度：</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/brightness_contrast.py"/>
         <source>Contrast</source>
-        <translation type="unfinished"></translation>
+        <translation>对比度</translation>
     </message>
 </context>
 <context>
@@ -5392,7 +5393,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/filter.py"/>
         <source>Apply image filter</source>
-        <translation type="unfinished"></translation>
+        <translation>应用图像滤镜</translation>
     </message>
 </context>
 <context>
@@ -5405,7 +5406,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/invert.py"/>
         <source>Invert image colors</source>
-        <translation type="unfinished"></translation>
+        <translation>反转图像颜色</translation>
     </message>
 </context>
 <context>
@@ -5413,22 +5414,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/posterize.py"/>
         <source>Posterize</source>
-        <translation type="unfinished"></translation>
+        <translation>色调分离</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/posterize.py"/>
         <source>Reduce color range by reducing image color bit count.</source>
-        <translation type="unfinished"></translation>
+        <translation>通过降低图像的颜色位数来减少颜色范围。</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/posterize.py"/>
         <source>Bit count:</source>
-        <translation type="unfinished"></translation>
+        <translation>位数：</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/posterize.py"/>
         <source>Image color bits to preserve (1-8)</source>
-        <translation type="unfinished"></translation>
+        <translation>要保留的图像颜色位数（1-8）</translation>
     </message>
 </context>
 <context>
@@ -5436,32 +5437,32 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
         <source>RGBA color balance</source>
-        <translation type="unfinished"></translation>
+        <translation>RGBA 色彩平衡</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
         <source>Adjust color balance</source>
-        <translation type="unfinished"></translation>
+        <translation>调整色彩平衡</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
         <source>Red</source>
-        <translation type="unfinished"></translation>
+        <translation>红色</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
         <source>Green</source>
-        <translation type="unfinished"></translation>
+        <translation>绿色</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
         <source>Blue</source>
-        <translation type="unfinished"></translation>
+        <translation>蓝色</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
         <source>Alpha</source>
-        <translation type="unfinished"></translation>
+        <translation>Alpha</translation>
     </message>
 </context>
 <context>
@@ -5469,17 +5470,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/saturation.py"/>
         <source>Saturation</source>
-        <translation type="unfinished"></translation>
+        <translation>饱和度</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/saturation.py"/>
         <source>Adjust image color saturation</source>
-        <translation type="unfinished"></translation>
+        <translation>调整图像的色彩饱和度</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/saturation.py"/>
         <source>Saturation multiplier</source>
-        <translation type="unfinished"></translation>
+        <translation>饱和度倍数</translation>
     </message>
 </context>
 <context>
@@ -5487,22 +5488,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/sharpen.py"/>
         <source>Sharpen</source>
-        <translation type="unfinished"></translation>
+        <translation>锐化</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/sharpen.py"/>
         <source>Sharpen the image</source>
-        <translation type="unfinished"></translation>
+        <translation>锐化图像</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/sharpen.py"/>
         <source>Factor</source>
-        <translation type="unfinished"></translation>
+        <translation>系数</translation>
     </message>
     <message>
         <location filename="../../src/image/filter/sharpen.py"/>
         <source>Sharpness factor (1.0: no change)</source>
-        <translation type="unfinished"></translation>
+        <translation>锐化系数（1.0：不变）</translation>
     </message>
 </context>
 <context>
@@ -6453,77 +6454,77 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Solid</source>
-        <translation type="unfinished"></translation>
+        <translation>实心</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>None</source>
-        <translation type="unfinished"></translation>
+        <translation>无</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 94%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，94%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 88%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，88%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 62%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，62%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 50%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，50%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 38%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，38%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 12%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，12%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Dithered, 6%</source>
-        <translation type="unfinished"></translation>
+        <translation>抖动，6%</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Diagonal lines 1</source>
-        <translation type="unfinished"></translation>
+        <translation>斜线 1</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Diagonal lines 2</source>
-        <translation type="unfinished"></translation>
+        <translation>斜线 2</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Horizontal lines</source>
-        <translation type="unfinished"></translation>
+        <translation>水平线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Vertical lines</source>
-        <translation type="unfinished"></translation>
+        <translation>垂直线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Crossed lines</source>
-        <translation type="unfinished"></translation>
+        <translation>交叉线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
         <source>Diagonal crossed lines</source>
-        <translation type="unfinished"></translation>
+        <translation>斜交叉线</translation>
     </message>
 </context>
 <context>
@@ -6531,102 +6532,102 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>X</source>
-        <translation type="unfinished"></translation>
+        <translation>X</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Y</source>
-        <translation type="unfinished"></translation>
+        <translation>Y</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>W</source>
-        <translation type="unfinished"></translation>
+        <translation>W</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>H</source>
-        <translation type="unfinished"></translation>
+        <translation>H</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Scale X</source>
-        <translation type="unfinished"></translation>
+        <translation>缩放 X</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Scale Y</source>
-        <translation type="unfinished"></translation>
+        <translation>缩放 Y</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Angle</source>
-        <translation type="unfinished"></translation>
+        <translation>角度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Horizontal position</source>
-        <translation type="unfinished"></translation>
+        <translation>水平位置</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Vertical position</source>
-        <translation type="unfinished"></translation>
+        <translation>垂直位置</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Width</source>
-        <translation type="unfinished"></translation>
+        <translation>宽度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Height</source>
-        <translation type="unfinished"></translation>
+        <translation>高度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Horizontal scale</source>
-        <translation type="unfinished"></translation>
+        <translation>水平缩放</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Vertical scale</source>
-        <translation type="unfinished"></translation>
+        <translation>垂直缩放</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Rotation angle</source>
-        <translation type="unfinished"></translation>
+        <translation>旋转角度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Lock the width:height ratio</source>
-        <translation type="unfinished"></translation>
+        <translation>锁定宽高比</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Lock the width:height ratio ({modifier} locks it temporarily)</source>
-        <translation type="unfinished"></translation>
+        <translation>锁定宽高比（按住 {modifier} 可临时锁定）</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source> px</source>
-        <translation type="unfinished"></translation>
+        <translation> px</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source> deg</source>
-        <translation type="unfinished"></translation>
+        <translation> deg</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>x</source>
-        <translation type="unfinished"></translation>
+        <translation>x</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>%</source>
-        <translation type="unfinished"></translation>
+        <translation>%</translation>
     </message>
 </context>
 <context>
@@ -6634,7 +6635,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/number_field.py"/>
         <source>Pen pressure changes this value</source>
-        <translation type="unfinished"></translation>
+        <translation>笔压会改变此值</translation>
     </message>
 </context>
 <context>
@@ -6642,17 +6643,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py"/>
         <source>Round</source>
-        <translation type="unfinished"></translation>
+        <translation>圆角</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py"/>
         <source>Bevel</source>
-        <translation type="unfinished"></translation>
+        <translation>倒角</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py"/>
         <source>Miter</source>
-        <translation type="unfinished"></translation>
+        <translation>斜接</translation>
     </message>
 </context>
 <context>
@@ -6660,32 +6661,32 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
         <source>Solid</source>
-        <translation type="unfinished"></translation>
+        <translation>实线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
         <source>Dash</source>
-        <translation type="unfinished"></translation>
+        <translation>虚线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
         <source>Dotted</source>
-        <translation type="unfinished"></translation>
+        <translation>点线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
         <source>Dash-dot</source>
-        <translation type="unfinished"></translation>
+        <translation>点划线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
         <source>Dash-dot-dot</source>
-        <translation type="unfinished"></translation>
+        <translation>双点划线</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
         <source>Custom pattern</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义样式</translation>
     </message>
 </context>
 <context>
@@ -6693,12 +6694,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/pressure_curve_input.py"/>
         <source>Input: {input_fraction}, Output: {output_fraction}</source>
-        <translation type="unfinished"></translation>
+        <translation>输入：{input_fraction}，输出：{output_fraction}</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/pressure_curve_input.py"/>
         <source>Reset</source>
-        <translation type="unfinished"></translation>
+        <translation>重置</translation>
     </message>
 </context>
 <context>
@@ -6706,12 +6707,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/seed_value_spinbox.py"/>
         <source>Reuse last seed value</source>
-        <translation type="unfinished"></translation>
+        <translation>重用上次的随机种子</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/seed_value_spinbox.py"/>
         <source>Use a random seed</source>
-        <translation type="unfinished"></translation>
+        <translation>使用随机种子</translation>
     </message>
 </context>
 <context>
@@ -6719,47 +6720,47 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Replace</source>
-        <translation type="unfinished"></translation>
+        <translation>替换</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Add</source>
-        <translation type="unfinished"></translation>
+        <translation>添加</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Subtract</source>
-        <translation type="unfinished"></translation>
+        <translation>减去</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Intersect</source>
-        <translation type="unfinished"></translation>
+        <translation>相交</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Discard the selection, and select only new areas</source>
-        <translation type="unfinished"></translation>
+        <translation>放弃当前选区，只选择新区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Add new areas to the selection</source>
-        <translation type="unfinished"></translation>
+        <translation>将新区域添加到选区</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Remove new areas from the selection</source>
-        <translation type="unfinished"></translation>
+        <translation>从选区中减去新区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>Keep only the part of the selection inside new areas</source>
-        <translation type="unfinished"></translation>
+        <translation>只保留选区中位于新区域内的部分</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
         <source>{description} (hold {keys})</source>
-        <translation type="unfinished"></translation>
+        <translation>{description}（按住 {keys}）</translation>
     </message>
 </context>
 <context>
@@ -6767,67 +6768,67 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Theme default</source>
-        <translation type="unfinished"></translation>
+        <translation>主题默认</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Use the theme's color</source>
-        <translation type="unfinished"></translation>
+        <translation>使用主题的颜色</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Choose a color</source>
-        <translation type="unfinished"></translation>
+        <translation>选择颜色</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Browse...</source>
-        <translation type="unfinished"></translation>
+        <translation>浏览...</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Choose a directory</source>
-        <translation type="unfinished"></translation>
+        <translation>选择目录</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Width</source>
-        <translation type="unfinished"></translation>
+        <translation>宽度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Height</source>
-        <translation type="unfinished"></translation>
+        <translation>高度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Unbound</source>
-        <translation type="unfinished"></translation>
+        <translation>未绑定</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Click, then press the key or key combination to bind</source>
-        <translation type="unfinished"></translation>
+        <translation>点击后，按下要绑定的键或组合键</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Key binding</source>
-        <translation type="unfinished"></translation>
+        <translation>快捷键</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>Bind an additional key</source>
-        <translation type="unfinished"></translation>
+        <translation>再绑定一个按键</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>"{key}" is already bound to this action</source>
-        <translation type="unfinished"></translation>
+        <translation>“{key}”已绑定到此操作</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/setting_fields.py"/>
         <source>That key can't be bound. Accent (dead) keys and some special keys aren't supported.</source>
-        <translation type="unfinished"></translation>
+        <translation>无法绑定该键。不支持重音键（死键）和部分特殊键。</translation>
     </message>
 </context>
 <context>
@@ -6835,12 +6836,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
         <source>W:</source>
-        <translation type="unfinished"></translation>
+        <translation>W：</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
         <source>H:</source>
-        <translation type="unfinished"></translation>
+        <translation>H：</translation>
     </message>
 </context>
 <context>
@@ -10810,12 +10811,12 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>X:</source>
-        <translation type="unfinished"></translation>
+        <translation>X：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Y:</source>
-        <translation type="unfinished"></translation>
+        <translation>Y：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10835,27 +10836,27 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>大小：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Scale:</source>
-        <translation type="unfinished"></translation>
+        <translation>缩放：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Zoom in</source>
-        <translation type="unfinished"></translation>
+        <translation>放大</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Reset zoom</source>
-        <translation type="unfinished"></translation>
+        <translation>重置缩放</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Keep aspect ratio</source>
-        <translation type="unfinished"></translation>
+        <translation>保持宽高比</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10870,12 +10871,12 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
-        <translation type="unfinished"></translation>
+        <translation>所选图层位于已锁定的图层组中，请解锁该组或选择其他图层。</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
-        <translation type="unfinished"></translation>
+        <translation>所选图层已隐藏，请先显示该图层再编辑。</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10885,12 +10886,12 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is not an image layer, select an image layer first.</source>
-        <translation type="unfinished"></translation>
+        <translation>所选图层不是图像图层，请先选择一个图像图层。</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
-        <translation type="unfinished"></translation>
+        <translation>更改仅限于所选内容，但此图层中没有选中任何内容。请选择图层内容，或允许在未选中的区域进行更改。</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10900,12 +10901,12 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Image generator connection</source>
-        <translation type="unfinished"></translation>
+        <translation>图像生成器连接</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Enter server URL:</source>
-        <translation type="unfinished"></translation>
+        <translation>输入服务器 URL：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10915,7 +10916,7 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Server connection failed, enter a new URL or click "OK" to retry</source>
-        <translation type="unfinished"></translation>
+        <translation>服务器连接失败，请输入新的 URL，或点击“OK”重试</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10925,7 +10926,7 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
-        <translation type="unfinished"></translation>
+        <translation>无法连接到位于“{url}”的图像生成器：已取消登录。</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10935,17 +10936,17 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Describe failed</source>
-        <translation type="unfinished"></translation>
+        <translation>反推提示词失败</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Open or create an image first.</source>
-        <translation type="unfinished"></translation>
+        <translation>请先打开或创建图像。</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Describing image</source>
-        <translation type="unfinished"></translation>
+        <translation>正在反推提示词</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10960,12 +10961,12 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Upscale failure</source>
-        <translation type="unfinished"></translation>
+        <translation>放大失败</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Upscaled image content</source>
-        <translation type="unfinished"></translation>
+        <translation>放大后的图像内容</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10985,7 +10986,7 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Hamming</source>
-        <translation type="unfinished"></translation>
+        <translation>Hamming</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
@@ -10995,29 +10996,31 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Lanczos</source>
-        <translation type="unfinished"></translation>
+        <translation>Lanczos</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Box</source>
-        <translation type="unfinished"></translation>
+        <translation>Box</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>{modifier_or_modifiers}: pick color</source>
-        <translation type="unfinished"></translation>
+        <translation>{modifier_or_modifiers}：取色</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>{description}
 Keys: {decrease} / {increase}</source>
-        <translation type="unfinished"></translation>
+        <translation>{description}
+按键：{decrease} / {increase}</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>{description}
 Key: {key}</source>
-        <translation type="unfinished"></translation>
+        <translation>{description}
+按键：{key}</translation>
     </message>
 </context>
 <context>
@@ -11033,32 +11036,32 @@ Key: {key}</source>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Connected</source>
-        <translation type="unfinished"></translation>
+        <translation>连续</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>By color</source>
-        <translation type="unfinished"></translation>
+        <translation>按颜色</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Holes</source>
-        <translation type="unfinished"></translation>
+        <translation>孔洞</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Select the connected area around the click that matches its color.</source>
-        <translation type="unfinished"></translation>
+        <translation>选择点击处周围与其颜色相符的连续区域。</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Select every pixel in the image that matches the clicked color, connected or not.</source>
-        <translation type="unfinished"></translation>
+        <translation>选择图像中与点击处颜色相符的所有像素，无论是否相连。</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Select the gaps enclosed by the current selection, ignoring image content.</source>
-        <translation type="unfinished"></translation>
+        <translation>选择当前选区包围的空隙，忽略图像内容。</translation>
     </message>
 </context>
 </TS>

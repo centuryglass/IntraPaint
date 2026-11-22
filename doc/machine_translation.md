@@ -152,7 +152,8 @@ For each string:
   language written without spaces moves its line breaks to where its style section allows one.
 - **A string that names another UI string uses that string's translation,** such as a message that says to click
   "Activate". When the named string belongs to a later batch, the batch PR lists the rendering it used, and that batch
-  uses the same words.
+  uses the same words. IntraPaint loads no Qt translations, so the standard buttons of Qt's own dialogs, such as
+  `QInputDialog`'s "OK", show in English, and a string that names one keeps the English name.
 - **Flag a string instead of forcing it.** A string that can't be translated correctly as written (assembled from
   fragments, one English string with two meanings in one context, an English-only plural) stays untranslated. The fix
   goes to the English source in a separate PR, such as a `_tr` disambiguation or a rewording, or into an issue. The
