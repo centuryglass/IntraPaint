@@ -65,29 +65,30 @@ class FormatFilterTest(IntraPaintTestCase):
         self.assertEqual([('png',), ('zzz',)], [group.extensions for group in groups])
         self.assertIn('ZZZ', groups[1].label)
 
-    def _run_save_dialog(self, selected_file: str) -> QFileDialog:
-        dialogs: list[QFileDialog] = []
+    def _save_dialog_state(self, selected_file: str) -> tuple[str, str, str]:
+        """Returns the selected filter and default suffix a save dialog opens with, and the suffix after choosing PNG."""
+        state: list[tuple[str, str, str]] = []
 
         def _record(dialog: QFileDialog) -> int:
-            dialogs.append(dialog)
+            opened_filter, opened_suffix = dialog.selectedNameFilter(), dialog.defaultSuffix()
+            dialog.filterSelected.emit(save_filters()[1])
+            state.append((opened_filter, opened_suffix, dialog.defaultSuffix()))
             return 0
 
-        parent = QWidget()  # The dialog is deleted with its parent, and tearDown deletes the parent.
+        parent = QWidget()  # tearDown deletes it, and the dialog with it.
         with patch.object(QFileDialog, 'exec', new=_record):
             open_image_file(parent, SAVE_IMAGE_MODE, selected_file)
-        return dialogs[0]
+        return state[0]
 
     def test_save_selects_entry_for_file_extension(self) -> None:
         """A save dialog starts on the entry listing the suggested file's extension, and appends its first one."""
-        dialog = self._run_save_dialog('picture.jpeg')
-        self.assertTrue(dialog.selectedNameFilter().startswith('JPEG'))
-        self.assertEqual('jpg', dialog.defaultSuffix())
-        dialog.selectNameFilter(save_filters()[1])
-        dialog.filterSelected.emit(save_filters()[1])
-        self.assertEqual('png', dialog.defaultSuffix())
+        selected, suffix, changed_suffix = self._save_dialog_state('picture.jpeg')
+        self.assertTrue(selected.startswith('JPEG'))
+        self.assertEqual('jpg', suffix)
+        self.assertEqual('png', changed_suffix)
 
     def test_save_defaults_to_first_entry(self) -> None:
         """With no matching file, a save dialog starts on ORA."""
-        dialog = self._run_save_dialog('')
-        self.assertEqual('ora', dialog.defaultSuffix())
-        self.assertEqual(save_filters()[0], dialog.selectedNameFilter())
+        selected, suffix, _ = self._save_dialog_state('')
+        self.assertEqual(save_filters()[0], selected)
+        self.assertEqual('ora', suffix)
