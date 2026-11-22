@@ -34,6 +34,8 @@ _PORT_ARG = '--port'
 _LISTEN_ARG = '--listen'
 
 _LINE_BREAK_PATTERN = re.compile(r'\r\n|\n|\r')
+# Terminal escape sequences, such as the color codes ComfyUI's log uses: CSI, OSC, and other two-character escapes.
+_TERMINAL_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]')
 
 # Takes a server URL and returns the `argv` the ComfyUI there reports, or `None` if nothing valid answers. Blocks.
 HealthCheck = Callable[[str], Optional[list[str]]]
@@ -124,7 +126,7 @@ class ManagedComfyUI(QObject):
     The process launcher, health check and clock are parameters so tests can drive every transition without a server.
     """
 
-    log_signal = Signal(str)
+    log_signal = Signal(str)  # One line of output, with terminal escape sequences removed.
     state_signal = Signal(ManagedState)
     wait_result_signal = Signal(WaitResult)
 
@@ -290,8 +292,9 @@ class ManagedComfyUI(QObject):
             if self._partial_line.rstrip('\r') != '':
                 lines.append(self._partial_line.rstrip('\r'))
             self._partial_line = ''
+        # Escapes are removed from whole lines only, so a sequence split across reads is still matched:
         for line in lines:
-            self.log_signal.emit(line)
+            self.log_signal.emit(_TERMINAL_ESCAPE_PATTERN.sub('', line))
 
     def _flush_output(self) -> None:
         self._emit_lines(self._partial_line + self._decoder.decode(b'', final=True), final=True)

@@ -260,6 +260,15 @@ class ManagedComfyUITest(IntraPaintTestCase):
         main_thread = QApplication.instance().thread()
         self.assertTrue(all(thread is main_thread for thread in self.log_threads))
 
+    def test_log_lines_strip_terminal_escapes(self) -> None:
+        """Color codes and other terminal escapes are removed, including a sequence split across reads."""
+        self.managed.start()
+        for chunk in (b'\x1b[32m[INFO]\x1b[0m Starting server\n', b'\x1b[1m\x1b[3', b'1m[ERROR]\x1b[0m Port in use\n',
+                      b'\x1b]0;title\x07\x1b[2Kprogress\x1b[K 50%\n'):
+            self.process.write_output(chunk)
+        self.process.exit(1)
+        self.assertEqual(self.log_lines, ['[INFO] Starting server', '[ERROR] Port in use', 'progress 50%'])
+
     def test_server_arguments_replace_port_and_listen(self) -> None:
         """Any `--port` or `--listen` in the launch command is replaced by the managed ones."""
         command = ['python', 'main.py', '--listen', '--port', '9000', '--cpu', '--listen=0.0.0.0', '--port=1']
