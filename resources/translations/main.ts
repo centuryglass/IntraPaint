@@ -10767,66 +10767,6 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
-        <source>W:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>H:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>X:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Y:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Width:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Height:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Color:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Size:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Scale:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Zoom in</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Reset zoom</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Keep aspect ratio</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
         <source>Editing failed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10887,11 +10827,6 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
-        <source>The AI image generator is busy creating other images, try again later.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
         <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10908,11 +10843,6 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Open or create an image first.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_text.py"/>
-        <source>Describing image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
