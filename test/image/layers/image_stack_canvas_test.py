@@ -169,6 +169,27 @@ class ResizeCanvasTest(ImageStackOpTestCase):
         self.assertEqual(QSize(10, 10), rotated.size)
         self.assertEqual(rotation * QTransform.fromTranslate(EXPAND_OFFSET.x(), EXPAND_OFFSET.y()), rotated.transform)
 
+    def _assert_expand_keeps_skewed_layer(self, mode: LayerResizeMode) -> None:
+        """Expands the canvas over an unrotated, skewed layer whose bounds fill the canvas, and checks that it keeps
+        its size and skew, moving with the canvas."""
+        size = QSize(CANVAS_SIZE.width() - CANVAS_SIZE.height() // 2, CANVAS_SIZE.height())
+        skewed = self.add_layer('skewed', 3, size)
+        skew = QTransform().shear(0.5, 0.0)
+        skewed.set_transform(skew)
+        self.assertEqual(QRect(QPoint(), CANVAS_SIZE), skewed.transformed_bounds)
+        self.image_stack.move_layer(skewed, self.image_stack.layer_stack, 0)
+        self._expanded(mode)
+        self.assertEqual(size, skewed.size)
+        self.assertEqual(skew * QTransform.fromTranslate(EXPAND_OFFSET.x(), EXPAND_OFFSET.y()), skewed.transform)
+
+    def test_expand_all_keeps_skewed_layer(self) -> None:
+        """RESIZE_ALL leaves a skewed layer at 0 degrees at its size and skew."""
+        self._assert_expand_keeps_skewed_layer(LayerResizeMode.RESIZE_ALL)
+
+    def test_expand_full_image_layers_keeps_skewed_layer(self) -> None:
+        """FULL_IMAGE_LAYERS_ONLY leaves a skewed layer that fills the canvas at its size and skew."""
+        self._assert_expand_keeps_skewed_layer(LayerResizeMode.FULL_IMAGE_LAYERS_ONLY)
+
     def test_crop_rotated_layer(self) -> None:
         """Cropping through a layer rotated by 45 degrees bakes its rotation into its pixels, leaving the cropped
         composite unchanged."""

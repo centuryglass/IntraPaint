@@ -12,6 +12,7 @@ from src.ui.graphics_items.transform_outline import (TransformOutline, ORIGIN_HA
 from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, WIDTH, X, Y
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
 from src.undo_stack import UndoStack
+from src.util.visual.geometry_utils import extract_transform_parameters
 from test.render_assertions import full_render
 from test.tools.tool_test_case import ToolTestCase
 
@@ -256,6 +257,24 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertAlmostEqual(self.panel.x_position, 50.0, places=2)
         self.assertAlmostEqual(self.outline.rotation_angle, 30.0, places=2)
         self.assert_panel_matches_outline()
+
+    def test_panel_edits_keep_skew(self) -> None:
+        """Angle, width and X edits in the panel leave a skewed layer's skew unchanged."""
+        self.layer.set_transform(QTransform(1.0, 0.3, 0.0, 1.0, 50.0, 50.0))
+        origin = self.outline.transformation_origin
+        skew = extract_transform_parameters(self.layer.transform, origin).skew
+        self.assertNotAlmostEqual(skew, 0.0, places=2)
+        for field_name, value in ((ANGLE, 45.0), (WIDTH, LAYER_WIDTH * 1.5), (X, 75.0)):
+            with self.subTest(field_name):
+                self.panel.geometry_block.field(field_name).set_value(value)
+                self.assertEqual(self.outline.transform(), self.layer.transform)
+                params = extract_transform_parameters(self.layer.transform, origin)
+                self.assertAlmostEqual(params.skew, skew, places=4)
+                self.assert_panel_matches_outline()
+        params = extract_transform_parameters(self.layer.transform, origin)
+        self.assertAlmostEqual(params.rotation, 45.0, places=2)
+        self.assertAlmostEqual(self.outline.width, LAYER_WIDTH * 1.5, places=2)
+        self.assertAlmostEqual(self.panel.x_position, 75.0, places=2)
 
     def test_moving_origin_keeps_layer_fixed(self) -> None:
         """Dragging the transformation origin handle moves the origin, not the layer."""

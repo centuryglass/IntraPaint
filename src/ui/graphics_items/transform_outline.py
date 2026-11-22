@@ -80,6 +80,7 @@ class TransformOutline(QGraphicsObject):
         self._y_offset = 0.0
         self._x_scale = 0.0
         self._y_scale = 0.0
+        self._skew = 0.0
         self._degrees = 0.0
         self._pen = QPen(LINE_COLOR, LINE_WIDTH)
         self._pen.setCosmetic(True)
@@ -107,6 +108,7 @@ class TransformOutline(QGraphicsObject):
             self._y_offset = 0.0
             self._x_scale = 0.0
             self._y_scale = 0.0
+            self._skew = 0.0
             self._degrees = 0.0
             self._preserve_aspect_ratio = False
             if not keep_relative_origin:
@@ -123,7 +125,7 @@ class TransformOutline(QGraphicsObject):
         """Block alternate graphics transformations, they aren't useful here, and they'll break other calculations."""
         raise RuntimeError('Do not use setTransformations with TransformOutline.')
 
-    def _set_transform_by_parameters(self, dx: float, dy: float, sx: float, sy: float, angle: float,
+    def _set_transform_by_parameters(self, dx: float, dy: float, sx: float, sy: float, skew: float, angle: float,
                                      precalculated_matrix: Optional[QTransform] = None):
         """Applies transform parameters taken about transformation_origin, the frame extract_transform_parameters
            uses in setTransform."""
@@ -133,10 +135,12 @@ class TransformOutline(QGraphicsObject):
         self._y_offset = dy
         self._x_scale = sx
         self._y_scale = sy
+        self._skew = skew
         self._degrees = angle
         origin_before = self.origin_scene_pos
         if precalculated_matrix is None:
-            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, angle, self.transformation_origin)
+            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, skew, angle,
+                                                                self.transformation_origin)
         super().setTransform(precalculated_matrix, False)
 
         origin_after = self.origin_scene_pos
@@ -160,8 +164,7 @@ class TransformOutline(QGraphicsObject):
         """Update listeners when transformations change."""
         if combine:
             matrix = self.transform() * matrix
-        dx, dy, sx, sy, angle = extract_transform_parameters(matrix, self.transformation_origin)
-        self._set_transform_by_parameters(dx, dy, sx, sy, angle, matrix)
+        self._set_transform_by_parameters(*extract_transform_parameters(matrix, self.transformation_origin), matrix)
 
     def setZValue(self, z: float) -> None:
         """Ensure handle z-values stay in sync with the outline."""
@@ -211,8 +214,8 @@ class TransformOutline(QGraphicsObject):
             x_scale = math.copysign(MIN_NONZERO, x_scale)
         if self._preserve_aspect_ratio:
             y_scale = math.copysign(x_scale / self._fixed_ratio, y_scale)
-        matrix = combine_transform_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._degrees,
-                                              self.transformation_origin)
+        matrix = combine_transform_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._skew,
+                                              self._degrees, self.transformation_origin)
         self.setTransform(matrix)
 
     @property
@@ -228,8 +231,8 @@ class TransformOutline(QGraphicsObject):
             y_scale = math.copysign(MIN_NONZERO, y_scale)
         if self._preserve_aspect_ratio:
             x_scale = math.copysign(y_scale * self._fixed_ratio, x_scale)
-        matrix = combine_transform_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._degrees,
-                                              self.transformation_origin)
+        matrix = combine_transform_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._skew,
+                                              self._degrees, self.transformation_origin)
         self.setTransform(matrix)
 
     @property
@@ -240,7 +243,7 @@ class TransformOutline(QGraphicsObject):
     @offset.setter
     def offset(self, new_offset: QPointF) -> None:
         matrix = combine_transform_parameters(new_offset.x(), new_offset.y(), self._x_scale, self._y_scale,
-                                              self._degrees, self.transformation_origin)
+                                              self._skew, self._degrees, self.transformation_origin)
         self.setTransform(matrix)
 
     @property
@@ -263,7 +266,7 @@ class TransformOutline(QGraphicsObject):
             x_scale = math.copysign(MIN_NONZERO, x_scale)
         if -MIN_NONZERO <= y_scale <= MIN_NONZERO:
             y_scale = math.copysign(MIN_NONZERO, y_scale)
-        self._set_transform_by_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._degrees)
+        self._set_transform_by_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._skew, self._degrees)
 
     @property
     def rotation_angle(self) -> float:
@@ -272,7 +275,8 @@ class TransformOutline(QGraphicsObject):
 
     @rotation_angle.setter
     def rotation_angle(self, angle: float) -> None:
-        self._set_transform_by_parameters(self._x_offset, self._y_offset, self._x_scale, self._y_scale, angle)
+        self._set_transform_by_parameters(self._x_offset, self._y_offset, self._x_scale, self._y_scale, self._skew,
+                                          angle)
 
     @property
     def transformation_origin(self) -> QPointF:
