@@ -1,16 +1,26 @@
 """Utility functions for saving and loading images across as many file formats as possible."""
 import copy
-from typing import Optional, Any, NamedTuple
+from typing import Optional, Any, NamedTuple, Iterable
 
 from PIL import Image, ExifTags, PngImagePlugin, UnidentifiedImageError
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImageReader, QImageWriter, QImage
+from PySide6.QtWidgets import QApplication
 
 from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY, COMMENT_KEY, XMP_TEXT_KEY, IPTC_RESOURCE_ID
 from src.util.visual.image_utils import logger, EXCLUDED_QIMAGE_FORMATS, read_qimage
 from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
     PIL_OPEN_FORMATS, convert_to_srgb
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'util.visual.image_format_utils'
+
+
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, key, disambiguation, n)
+
 
 OPENRASTER_FORMAT = 'ORA'
 
@@ -82,6 +92,86 @@ ANIMATION_ONLY_FORMATS = {'APNG'}
 PALETTE_FORMATS = {'BLP', 'PALM', 'XPM'}
 RGB_FORMATS = {'JPEG', 'JPG', 'MPO', 'PCX'}
 BINARY_FORMATS = {'XBM'}
+
+
+class ImageFormatGroup(NamedTuple):
+    """One file dialog entry: a format and the file extensions that name it.
+
+    `extensions` are lower-case without the dot. The first is the one a save appends to a name without an extension.
+    """
+    label: str
+    extensions: tuple[str, ...]
+    top_tier: bool = False
+
+
+# Formats people pick on purpose, in the order file dialogs list them. The remaining groups follow, alphabetically.
+# A group lists every extension that can name the format, so read-only aliases (`jfif`, `avifs`) sit beside writable
+# ones. `image_format_groups` drops extensions the run's Pillow and Qt can't read or write.
+_FORMAT_GROUPS = (
+    ImageFormatGroup(_tr('OpenRaster project'), ('ora',), True),
+    ImageFormatGroup(_tr('PNG image'), ('png',), True),
+    ImageFormatGroup(_tr('JPEG image'), ('jpg', 'jpeg', 'jpe', 'jfif'), True),
+    ImageFormatGroup(_tr('WebP image'), ('webp',), True),
+    ImageFormatGroup(_tr('AVIF image'), ('avif', 'avifs'), True),
+    ImageFormatGroup(_tr('GIF image'), ('gif',), True),
+    ImageFormatGroup(_tr('Animated PNG image'), ('apng',), True),
+    ImageFormatGroup(_tr('TIFF image'), ('tiff', 'tif'), True),
+    ImageFormatGroup(_tr('BMP image'), ('bmp',), True),
+    ImageFormatGroup(_tr('BLP texture'), ('blp',)),
+    ImageFormatGroup(_tr('Windows cursor'), ('cur',)),
+    ImageFormatGroup(_tr('DirectDraw surface'), ('dds',)),
+    ImageFormatGroup(_tr('DIB image'), ('dib',)),
+    ImageFormatGroup(_tr('Apple icon'), ('icns',)),
+    ImageFormatGroup(_tr('Windows icon'), ('ico',)),
+    ImageFormatGroup(_tr('IFUNC image'), ('im',)),
+    ImageFormatGroup(_tr('MPO photo'), ('mpo',)),
+    ImageFormatGroup(_tr('PCX image'), ('pcx',)),
+    ImageFormatGroup(_tr('PDF document'), ('pdf',)),
+    ImageFormatGroup(_tr('Palm pixmap'), ('palm',)),
+    ImageFormatGroup(_tr('QOI image'), ('qoi',)),
+    ImageFormatGroup(_tr('XBM bitmap'), ('xbm',)),
+    ImageFormatGroup(_tr('XPM pixmap'), ('xpm',)),
+    ImageFormatGroup(_tr('JPEG 2000 image'), ('jp2', 'j2k', 'jpf', 'jpx', 'jpc', 'j2c')),
+    ImageFormatGroup(_tr('Netpbm image'), ('ppm', 'pgm', 'pbm', 'pnm')),
+    ImageFormatGroup(_tr('SGI image'), ('sgi', 'rgb', 'rgba', 'bw')),
+    ImageFormatGroup(_tr('TGA image'), ('tga', 'icb', 'vda', 'vst')),
+    # Formats Pillow or Qt can read but not write:
+    ImageFormatGroup(_tr('Photoshop document'), ('psd',)),
+    ImageFormatGroup(_tr('Photo CD image'), ('pcd',)),
+    ImageFormatGroup(_tr('FLI/FLC animation'), ('fli', 'flc')),
+    ImageFormatGroup(_tr('FITS image'), ('fits', 'fit')),
+    ImageFormatGroup(_tr('SVG image'), ('svg', 'svgz')),
+    ImageFormatGroup(_tr('Intel DCX image'), ('dcx',)),
+    ImageFormatGroup(_tr('GIMP brush'), ('gbr',)),
+    ImageFormatGroup(_tr('IPTC/NAA image'), ('iim',)),
+    ImageFormatGroup(_tr('FTEX texture'), ('ftc', 'ftu')),
+    ImageFormatGroup(_tr('Pixar image'), ('pxr',)),
+    ImageFormatGroup(_tr('Sun raster image'), ('ras',)),
+    ImageFormatGroup(_tr('MSP image'), ('msp',)),
+    ImageFormatGroup(_tr('PFM image'), ('pfm',)),
+    ImageFormatGroup(_tr('WBMP image'), ('wbmp',)),
+)
+
+
+def image_format_groups(formats: Iterable[str]) -> list[ImageFormatGroup]:
+    """Groups upper-case extensions like those in `IMAGE_WRITE_FORMATS` into one entry per format for a file dialog.
+
+    - Top-tier groups come first, in table order, then the rest alphabetically by label.
+    - A group keeps only the extensions in `formats` and is dropped if none remain.
+    - An extension no group claims gets its own group, labelled from its name, among the alphabetical ones.
+    """
+    remaining = {file_format.lower() for file_format in formats}
+    top_tier: list[ImageFormatGroup] = []
+    others: list[ImageFormatGroup] = []
+    for group in _FORMAT_GROUPS:
+        extensions = tuple(ext for ext in group.extensions if ext in remaining)
+        remaining.difference_update(group.extensions)
+        if extensions:
+            (top_tier if group.top_tier else others).append(group._replace(extensions=extensions))
+    for extension in sorted(remaining):
+        others.append(ImageFormatGroup(_tr('{extension} image').format(extension=extension.upper()), (extension,)))
+    others.sort(key=lambda group: (group.label.casefold(), group.extensions))
+    return top_tier + others
 
 
 def write_data_to_exif_description(exif: Optional[Image.Exif], data: Optional[str]) -> Optional[Image.Exif]:

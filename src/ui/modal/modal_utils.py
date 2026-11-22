@@ -4,7 +4,8 @@ Provides simple popup windows for error messages, requesting confirmation, and l
 import logging
 import os
 import traceback
-from typing import Optional
+import weakref
+from typing import Optional, Iterable
 
 from PIL import UnidentifiedImageError
 from PySide6.QtCore import Qt, QDateTime, QLocale, QSize
@@ -15,10 +16,10 @@ from src.config.application_config import AppConfig
 from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_parent import modal_parent
-from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.rich_text import escape_rich_text, rich_text_format
 from src.util.visual.display_size import get_screen_size
-from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
+from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT, \
+    ImageFormatGroup, image_format_groups
 from src.util.visual.image_utils import get_standard_qt_icon
 
 logger = logging.getLogger(__name__)
@@ -74,25 +75,46 @@ UNSAVED_DISCARD = 'discard'
 UNSAVED_CANCEL = 'cancel'
 
 
-def _extension_set_to_filter_string(str_set: set[str]) -> str:
-    format_list = [f'*.{file_format.lower()}' for file_format in str_set]
-    format_list.sort()
-    # Move .ora to the front of the list to make sure it's the recommended format:
-    if '*.ora' in format_list:
-        format_list.remove('*.ora')
-        format_list.insert(0, '*.ora')
-    list_str = ' '.join(format_list)
-    return f'({list_str})'
+def _extension_patterns(groups: list[ImageFormatGroup]) -> str:
+    return ' '.join(f'*.{ext}' for group in groups for ext in group.extensions)
 
 
-SAVE_FILE_FORMATS = _extension_set_to_filter_string(IMAGE_WRITE_FORMATS)
-LOAD_FILE_FORMATS = _extension_set_to_filter_string(IMAGE_READ_FORMATS)
-LOAD_LAYER_FORMATS = _extension_set_to_filter_string({file_format for file_format in IMAGE_READ_FORMATS
-                                                      if file_format != OPENRASTER_FORMAT})
+def _filter_entries(groups: list[ImageFormatGroup]) -> list[str]:
+    """Returns one `<label> (*.ext1 *.ext2)` file dialog filter per group."""
+    return [f'{group.label} ({_extension_patterns([group])})' for group in groups]
 
-IMAGE_SAVE_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} {SAVE_FILE_FORMATS}'
-IMAGE_LOAD_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} {LOAD_FILE_FORMATS}'
-LAYER_LOAD_FILTER = f'{LAYER_FORMATS_DESCRIPTION} {LOAD_LAYER_FORMATS}'
+
+def save_filters(formats: Optional[Iterable[str]] = None) -> list[str]:
+    """Returns the Save As type filters, one per format.
+
+    `formats` are upper-case extensions to offer, defaulting to every writable one.
+    """
+    return _filter_entries(image_format_groups(IMAGE_WRITE_FORMATS if formats is None else formats))
+
+
+def load_filters(layers: bool = False) -> list[str]:
+    """Returns the Open type filters: "All supported" first, then one per readable format.
+
+    With `layers`, OpenRaster is left out, as it can't be added as one layer.
+    """
+    groups = image_format_groups(IMAGE_READ_FORMATS - {OPENRASTER_FORMAT} if layers else IMAGE_READ_FORMATS)
+    label = LAYER_FORMATS_DESCRIPTION if layers else IMAGE_FORMATS_DESCRIPTION
+    return [f'{label} ({_extension_patterns(groups)})', *_filter_entries(groups)]
+
+
+def _filter_extensions(name_filter: str) -> list[str]:
+    """Returns the extensions, without dots, that a filter built by this module lists."""
+    return [pattern[2:] for pattern in name_filter[name_filter.rindex('(') + 1:-1].split(' ')]
+
+
+def _filter_for_file(candidates: list[str], file_path: str) -> Optional[str]:
+    """Returns the first of the `candidates` filters that lists `file_path`'s extension, or None."""
+    extension = os.path.splitext(file_path)[1].lstrip('.').lower()
+    for name_filter in candidates:
+        if extension in _filter_extensions(name_filter):
+            return name_filter
+    return None
+
 
 LOAD_IMAGE_MODE = 'load'
 SAVE_IMAGE_MODE = 'save'
@@ -294,18 +316,28 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
     return confirmed_action
 
 
-def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
-                    selected_file: str = '') -> Optional[str]:
+def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE, selected_file: str = '',
+                    save_formats: Optional[Iterable[str]] = None) -> Optional[str]:
     """Opens an image file for editing, saving, etc.
 
-    `selected_file` starts the dialog on that file. A save dialog also starts on a file that doesn't exist yet.
+    - `selected_file` starts the dialog on that file. A save dialog also starts on a file that doesn't exist yet.
+    - The dialog starts on the type entry listing `selected_file`'s extension, or else the first entry: ORA when
+      saving, "All supported" when opening.
+    - A save dialog appends the selected entry's first extension to a name typed without one.
+    - `save_formats` limits a save dialog to those upper-case extensions, defaulting to every writable one.
     """
-    file_filter = IMAGE_LOAD_FILTER if mode == LOAD_IMAGE_MODE else IMAGE_SAVE_FILTER
-    file_dialog = QFileDialog(parent, filter=file_filter)
-    file_dialog.setWindowTitle(TITLE_LOAD_IMAGE if mode == LOAD_IMAGE_MODE else TITLE_SAVE_IMAGE)
+    loading = mode == LOAD_IMAGE_MODE
+    filters = load_filters() if loading else save_filters(save_formats)
+    file_dialog = QFileDialog(parent)
+    file_dialog.setNameFilters(filters)
+    file_dialog.setWindowTitle(TITLE_LOAD_IMAGE if loading else TITLE_SAVE_IMAGE)
     if os.path.isfile(selected_file) or (mode == SAVE_IMAGE_MODE and selected_file != ''):
         file_dialog.selectFile(selected_file)
-    if mode == LOAD_IMAGE_MODE:
+    # The load list's first entry covers every extension, so only the per-format entries are matched:
+    matching_filter = _filter_for_file(filters[1:] if loading else filters, selected_file)
+    if matching_filter is not None:
+        file_dialog.selectNameFilter(matching_filter)
+    if loading:
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         file_dialog.setViewMode(QFileDialog.ViewMode.Detail)
@@ -313,8 +345,14 @@ def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
         assert mode == SAVE_IMAGE_MODE
         file_dialog.setFileMode(QFileDialog.FileMode.AnyFile)
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-    if is_pyinstaller_bundle():
-        file_dialog.setOption(QFileDialog.Option.HideNameFilterDetails, True)
+        file_dialog.setDefaultSuffix(_filter_extensions(matching_filter or filters[0])[0])
+        dialog_ref = weakref.ref(file_dialog)  # A direct reference would make a cycle through the connection.
+
+        def _update_suffix(name_filter: str) -> None:
+            dialog = dialog_ref()
+            if dialog is not None:
+                dialog.setDefaultSuffix(_filter_extensions(name_filter)[0])
+        file_dialog.filterSelected.connect(_update_suffix)
     max_size = get_screen_size(parent.window())
     file_dialog.setMaximumSize(max_size)
     try:
@@ -328,4 +366,4 @@ def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
 
 def open_image_layers(parent: QWidget) -> tuple[list[str], str] | tuple[None, None]:
     """Opens multiple image files to import as layers."""
-    return QFileDialog.getOpenFileNames(parent, TITLE_LOAD_LAYER, filter=LAYER_LOAD_FILTER)
+    return QFileDialog.getOpenFileNames(parent, TITLE_LOAD_LAYER, filter=';;'.join(load_filters(layers=True)))

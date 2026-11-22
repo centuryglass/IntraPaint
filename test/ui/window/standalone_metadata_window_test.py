@@ -10,6 +10,7 @@ from PIL import Image, ImageSequence, PngImagePlugin
 from PySide6.QtWidgets import QApplication
 
 from src.image.metadata_file import read_file_metadata
+from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS
 from src.ui.modal.modal_utils import UNSAVED_CANCEL, UNSAVED_DISCARD, UNSAVED_SAVE
 from src.ui.window.metadata_window import MetadataWindow, EditorFileHooks
 from src.ui.window.standalone_metadata_window import StandaloneMetadataWindow
@@ -95,6 +96,19 @@ class StandaloneMetadataWindowTest(_FileTestCase):
         self.assertIn('copy.webp', self.window.windowTitle())
         self.assertFalse(self.window.is_modified)
 
+    def test_save_as_offers_only_metadata_formats(self) -> None:
+        """Save as lists only formats `write_file_metadata` can write."""
+        offered: list[object] = []
+
+        def _record(_parent: object, _mode: str, _suggested: str, formats: object = None) -> None:
+            offered.append(formats)
+
+        with patch(f'{_WINDOW_MODULE}.open_image_file', new=_record):
+            self.assertFalse(self.window.save_as())
+        self.assertEqual(1, len(offered))
+        self.assertEqual({'ORA', 'PNG', 'APNG', 'JPG', 'JPEG', 'JPE', 'WEBP', 'GIF', 'TIF', 'TIFF', 'JP2', 'JPX', 'J2C',
+                          'JPC'} & IMAGE_WRITE_FORMATS, set(offered[0]))
+
     def test_save_as_cancelled(self) -> None:
         with patch(f'{_WINDOW_MODULE}.open_image_file', new=_returns(None)):
             self.assertFalse(self.window.save_as())
@@ -112,7 +126,7 @@ class StandaloneMetadataWindowTest(_FileTestCase):
         png_path = os.path.join(self.dir, 'converted.png')
         suggested_paths: list[str] = []
 
-        def _choose_file(_parent: object, _mode: str, suggested_path: str) -> str:
+        def _choose_file(_parent: object, _mode: str, suggested_path: str, _formats: object = None) -> str:
             suggested_paths.append(suggested_path)
             return png_path
 
