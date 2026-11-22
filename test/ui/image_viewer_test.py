@@ -1,16 +1,17 @@
-"""Tests ImageViewer's context pin markers, its manual resolution label, its drop routing, and what deleting a viewer
-releases."""
+"""Tests ImageViewer's context pin markers, its manual resolution label, the hatching over content outside the image,
+its drop routing, and what deleting a viewer releases."""
 import sys
 
 from PySide6.QtCore import QCoreApplication, QEvent, QMimeData, QObject, QPoint, QPointF, QRect, QRectF, QSize, \
     Qt
-from PySide6.QtGui import QColor, QDragEnterEvent, QImage, QPainter
+from PySide6.QtGui import QColor, QDragEnterEvent, QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication, QMainWindow
 import shiboken6
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
     MAX_MARKER_SIZE, MARKER_REFERENCE_VIEW_SIDE
 from src.ui.image_viewer import ImageViewer, color_under_overlay, IMAGE_BORDER_COLOR, IMAGE_BORDER_OPACITY
@@ -177,6 +178,100 @@ class ImageViewerLifetimeTest(IntraPaintTestCase):
         image = QImage(layer.size, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(0xff00ff00)
         layer.image = image
+
+
+class ImageViewerOutsideHatchingTest(IntraPaintTestCase):
+    """Tests that layer content outside the image is hatched, and content inside it isn't."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        self.layer = self.image_stack.create_layer('Layer')
+        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.hatching = self.viewer.outside_hatching
+
+    def _move_layer(self, transform: QTransform) -> None:
+        self.layer.transform = transform
+        self.image_stack.flush_render()
+
+    def _fill_layer(self, color: QColor) -> None:
+        image = QImage(self.layer.size, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(color)
+        self.layer.image = image
+        self.image_stack.flush_render()
+
+    def _render_scene(self) -> QImage:
+        """Renders the scene at 1:1 over the image and the 32 pixels to its right."""
+        scene = self.viewer.scene()
+        assert scene is not None
+        image = QImage(QSize(96, 64), QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(0)
+        painter = QPainter(image)
+        scene.render(painter, QRectF(0, 0, 96, 64), QRectF(0, 0, 96, 64))
+        painter.end()
+        return image
+
+    def test_no_hatching_inside_the_image(self) -> None:
+        """A layer that fills the image leaves nothing to hatch."""
+        self.assertTrue(self.hatching.region.isEmpty())
+
+    def test_hatches_the_outside_part_of_a_layer(self) -> None:
+        """A layer moved past the right edge is hatched over exactly the part outside the image."""
+        self._move_layer(QTransform.fromTranslate(32, 0))
+        self.assertEqual(self.hatching.region.boundingRect(), QRectF(64, 0, 32, 64))
+        self.assertTrue(self.hatching.region.contains(QPointF(80, 32)))
+        self.assertFalse(self.hatching.region.contains(QPointF(48, 32)))
+
+    def test_follows_moves_rotation_and_visibility(self) -> None:
+        """The hatching follows the layer back inside, its rotated outline, and hiding the layer."""
+        self._move_layer(QTransform.fromTranslate(32, 0))
+        self._move_layer(QTransform())
+        self.assertTrue(self.hatching.region.isEmpty())
+        self.layer.rotate(45)
+        self.image_stack.flush_render()
+        region = self.hatching.region
+        self.assertFalse(region.isEmpty())
+        # The rotated square's corners stick out past the middle of each edge, but not at the image corners:
+        self.assertTrue(region.contains(QPointF(32, -4)))
+        self.assertTrue(region.contains(QPointF(68, 32)))
+        self.assertFalse(region.contains(QPointF(-1, -1)))
+        self.layer.visible = False
+        self.image_stack.flush_render()
+        self.assertTrue(self.hatching.region.isEmpty())
+
+    def test_hatching_contrasts_with_any_layer_color(self) -> None:
+        """Outside the image, black and white layers each show both their own color and a contrasting one, and
+        pixels inside the image are unchanged."""
+        self._move_layer(QTransform.fromTranslate(32, 0))
+        for color in (QColor(Qt.GlobalColor.black), QColor(Qt.GlobalColor.white)):
+            self._fill_layer(color)
+            hatched = self._render_scene()
+            self.hatching.setVisible(False)
+            plain = self._render_scene()
+            self.hatching.setVisible(True)
+            # The image outline draws just past the edge, so sample clear of it:
+            outside = [hatched.pixelColor(x, y).lightness() for x in range(76, 96) for y in range(10, 54)]
+            differences = [abs(value - color.lightness()) for value in outside]
+            self.assertLess(min(differences), 60, color.name())
+            self.assertGreater(max(differences), 100, color.name())
+            for x, y in ((10, 10), (40, 50), (63, 0)):
+                self.assertEqual(plain.pixelColor(x, y), hatched.pixelColor(x, y), (color.name(), x, y))
+
+    def test_hidden_with_canvas_extras(self) -> None:
+        """Hiding the canvas category hides the hatching."""
+        self._move_layer(QTransform.fromTranslate(32, 0))
+        self.assertTrue(self.hatching.isVisible())
+        self.viewer.canvas_extras.set_shown(CanvasExtraCategory.CANVAS, False)
+        self.assertFalse(self.hatching.isVisible())
+        self.viewer.canvas_extras.set_shown(CanvasExtraCategory.CANVAS, True)
+        self.assertTrue(self.hatching.isVisible())
+
+    def test_cleared_when_the_last_layer_is_removed(self) -> None:
+        """With no layers left there is nothing to hatch."""
+        self._move_layer(QTransform.fromTranslate(32, 0))
+        self.image_stack.remove_layer(self.layer)
+        self.image_stack.flush_render()
+        self.assertTrue(self.hatching.region.isEmpty())
 
 
 class MarkerSizeForViewTest(IntraPaintTestCase):
