@@ -2,6 +2,7 @@
 import logging
 from contextlib import contextmanager
 from typing import Callable, Optional, Generator
+from weakref import ref
 
 from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL, QCoreApplication, QThread
 from PySide6.QtGui import QUndoStack, QUndoCommand
@@ -78,8 +79,7 @@ class UndoStack(metaclass=AppService):
     """Manages the application's shared undo history.
 
     `AppController` reads the installed context's instance once and passes it to `ImageStack`. Everything else gets it
-    from `ImageStack.undo_stack`, `Layer.undo_stack` or its own constructor. `ImageStack`, layers and `OraReadContext`
-    hold it weakly, because its commands capture them, so whoever creates the stack keeps it alive.
+    from `ImageStack.undo_stack`, `Layer.undo_stack` or its own constructor, and keeps it in an `UndoStackRef`.
 
     The history also tracks whether the document matches its file: one history state is clean, the state the open
     file holds. `clear` makes the current state clean, `save_point` records a save's state, and `mark_modified` leaves
@@ -383,3 +383,19 @@ class UndoStack(metaclass=AppService):
             error = self._errors[0]
             self._errors.clear()
             raise error
+
+
+class UndoStackRef:
+    """A weak reference to an `UndoStack`, which calling returns. The stack's owner keeps it alive.
+
+    An object the stack can reach must hold it this way: through its commands' closures, or through the slots connected
+    to its signals, which capture `AppController`. A strong reference from such an object forms a reference cycle.
+    """
+
+    def __init__(self, undo_stack: UndoStack) -> None:
+        self._ref = ref(undo_stack)
+
+    def __call__(self) -> UndoStack:
+        undo_stack = self._ref()
+        assert undo_stack is not None, 'An object outlived the undo stack it records into'
+        return undo_stack

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject
 
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.ui.graphics_items.transform_handle import TransformHandle
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO, FLOAT_MIN, FLOAT_MAX
@@ -34,7 +34,7 @@ class PlacementOutline(QGraphicsObject):
 
     def __init__(self, offset: QPointF, size: QSizeF, undo_stack: UndoStack) -> None:
         super().__init__()
-        self._undo_stack = undo_stack
+        self._undo_stack = UndoStackRef(undo_stack)
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self._handles: dict[str, _Handle] = {}
@@ -106,7 +106,7 @@ class PlacementOutline(QGraphicsObject):
     def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Start dragging the outline."""
         assert event is not None
-        self._undo_stack.begin_gesture('PlacementOutline.drag')
+        self._undo_stack().begin_gesture('PlacementOutline.drag')
         for handle in self._handles.values():
             # Ensure handles can still be selected during extreme transformations by passing off input to any handle
             # within approx. 10px of the click event:
@@ -141,7 +141,7 @@ class PlacementOutline(QGraphicsObject):
             if handle.isSelected():
                 handle.mouseReleaseEvent(event)
         self.setSelected(False)
-        self._undo_stack.end_gesture()
+        self._undo_stack().end_gesture()
 
     def _get_local_rect(self) -> QRectF:
         return QRectF(QPointF(), self._size)

@@ -114,7 +114,7 @@ from src.ui.window.main_window import MainWindow
 from src.ui.window.metadata_window import MetadataWindow, EditorFileHooks
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.window_geometry import restore_window
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
@@ -1353,7 +1353,8 @@ class AppController(MenuBuilder):
         """Opens the window for viewing and editing the image's metadata, or raises it if it is already open."""
         metadata = self._image_io.metadata
         if self._metadata_window is None:
-            file_hooks = EditorFileHooks(has_unsaved_edits=lambda: not self._image_stack.undo_stack.is_clean(),
+            undo_stack = UndoStackRef(self._image_stack.undo_stack)  # The window is the controller's, so not `self`.
+            file_hooks = EditorFileHooks(has_unsaved_edits=lambda: not undo_stack().is_clean(),
                                          wait_for_save=held_weakly(self._image_io.wait_for_pending_save))
             self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH),
                                                    file_hooks=file_hooks)

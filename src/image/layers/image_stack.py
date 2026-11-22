@@ -6,7 +6,6 @@ import re
 from contextlib import contextmanager
 from enum import Enum
 from typing import Optional, cast, Callable, TypeAlias, Generator, Iterable
-from weakref import ref
 
 import numpy as np
 from PIL import Image
@@ -28,7 +27,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.image.ora_foreign_data import OraForeignDocumentData
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.rich_text import escape_rich_text, rich_text_format
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
@@ -145,8 +144,7 @@ class ImageStack(QObject):
                  undo_stack: UndoStack) -> None:
         """Initializes the image stack with an empty initial layer, recording its edits in `undo_stack`."""
         super().__init__()
-        # Weak, since the history's commands capture the stack. The undo stack's owner (its AppContext) keeps it alive.
-        self._undo_stack_ref = ref(undo_stack)
+        self._undo_stack_ref = UndoStackRef(undo_stack)
         self._size = image_size
         # Another program's data from the loaded .ora file. Only `open_raster` uses it, and every load clears it.
         self.ora_foreign_data: Optional[OraForeignDocumentData] = None
@@ -211,9 +209,7 @@ class ImageStack(QObject):
     @property
     def undo_stack(self) -> UndoStack:
         """Returns the history this stack's edits are recorded in. Every layer in the stack records into it too."""
-        undo_stack = self._undo_stack_ref()
-        assert undo_stack is not None, 'ImageStack outlived its undo stack'
-        return undo_stack
+        return self._undo_stack_ref()
 
     @property
     def count(self) -> int:

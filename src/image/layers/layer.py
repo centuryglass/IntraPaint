@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
 from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
 
 from src.image.composite_mode import CompositeMode
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
@@ -51,8 +51,7 @@ class Layer(QObject, metaclass=_LayerMeta):
 
     def __init__(self, name: str, undo_stack: UndoStack) -> None:
         super().__init__()
-        # Weak, since the history's commands capture layers. The stack's owner (its AppContext) keeps it alive.
-        self._undo_stack_ref = ref(undo_stack)
+        self._undo_stack_ref = UndoStackRef(undo_stack)
         self._name = str(name)
         self._visible = True
         self._opacity = 1.0
@@ -71,9 +70,7 @@ class Layer(QObject, metaclass=_LayerMeta):
     @property
     def undo_stack(self) -> UndoStack:
         """Returns the undo history this layer records its changes in, which every layer in one stack shares."""
-        undo_stack = self._undo_stack_ref()
-        assert undo_stack is not None, f'Layer {self._name} outlived its undo stack'
-        return undo_stack
+        return self._undo_stack_ref()
 
     # PROPERTY DEFINITIONS:
     # All changes made through property setters are registered in the undo history, and are broadcast through

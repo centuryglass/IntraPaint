@@ -1,6 +1,5 @@
 """Editable path item used to create a polygon."""
 from typing import Optional
-from weakref import ref
 
 from PySide6.QtCore import QPointF, QRectF, QLineF, Signal
 from PySide6.QtGui import QPainterPath, QPolygonF, QPainter
@@ -8,7 +7,7 @@ from PySide6.QtWidgets import QGraphicsScene, QStyleOptionGraphicsItem, QWidget
 
 from src.ui.graphics_items.animated_dash_item import AnimatedDashItem
 from src.ui.graphics_items.transform_handle import TransformHandle
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 
 PEN_WIDTH = 4
 
@@ -20,17 +19,11 @@ class PathCreationItem(AnimatedDashItem):
 
     def __init__(self, scene: QGraphicsScene, undo_stack: UndoStack) -> None:
         super().__init__()
-        # Weak, since this item's undo commands capture it. The stack's owner keeps it alive.
-        self._undo_stack_ref = ref(undo_stack)
+        self._undo_stack = UndoStackRef(undo_stack)
         self._points: list[QPointF] = []
         self._handles: list[TransformHandle] = []
         scene.addItem(self)
         self.animated = True
-
-    def _undo_stack(self) -> UndoStack:
-        undo_stack = self._undo_stack_ref()
-        assert undo_stack is not None, 'PathCreationItem outlived its undo stack'
-        return undo_stack
 
     @property
     def count(self) -> int:

@@ -35,6 +35,7 @@ from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y,
                                                 bind_step_keys)
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
+from src.undo_stack import UndoStackRef
 from src.util.layout import add_layout, clear_grid
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
@@ -102,7 +103,7 @@ class LayerTransformToolPanel(FitToolPanel):
 
     def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._undo_stack = image_stack.undo_stack
+        self._undo_stack = UndoStackRef(image_stack.undo_stack)
         self._geometry = GeometryBlock(show_scale=True, show_angle=True, integer=False, parent=self)
         self._geometry.set_image_size(image_stack.size)
         image_stack.size_changed.connect(self._geometry.set_image_size)
@@ -282,10 +283,10 @@ class LayerTransformToolPanel(FitToolPanel):
         self.preserve_aspect_ratio_changed.emit(self._geometry.effective_ratio_locked())
 
     def _drag_started(self) -> None:
-        self._undo_stack.begin_gesture(UNDO_GESTURE)
+        self._undo_stack().begin_gesture(UNDO_GESTURE)
 
     def _drag_finished(self) -> None:
-        self._undo_stack.end_gesture()
+        self._undo_stack().end_gesture()
 
     def set_preview_bounds(self, bounds: QRect) -> None:
         """Update the preview widget bounds"""
