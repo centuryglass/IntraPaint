@@ -34,7 +34,8 @@ finished translation:
 - shares an accelerator with another translation in the same context. Which strings share a menu isn't in the
   catalog, so a context is the closest approximation. Contexts that mix menus are not caught.
 - breaks a punctuation or spacing rule of its language's style section that can be checked mechanically
-  (`STYLE_RULES`), or ends without its language's colon when its source ends with `:` (`LABEL_COLONS`).
+  (`STYLE_RULES`), or ends without its language's colon when its source ends with `:` (`LABEL_COLONS`). A
+  translation written only in Latin script keeps the half-width `:`.
 - lacks the chosen rendering of a glossary term its source contains. The glossaries are `doc/translation/glossary.md`
   and the translation's language's file there (`glossary_problems`). A `glossary: not "Term"` line in the entry's
   translator comment exempts that spelling, and fails once the source no longer contains it. A translation with no
@@ -535,10 +536,22 @@ STYLE_RULES: dict[str, tuple[StyleRule, ...]] = {
     ),
 }
 
-# The colon a translation ends with when its source ends with `:`, keyed by language code prefix. A language not
-# listed is not checked. The colons come from each language's style section in `doc/translation/`.
-LABEL_COLONS: dict[str, str] = {
-    'zh': '\uff1a',
+
+@dataclass(frozen=True)
+class LabelColon:
+    """The colon a translation ends with when its source ends with `:`.
+
+    A translation with no character of `script` (a regex character class) keeps the source's half-width `:`.
+    """
+    colon: str
+    script: str
+
+
+# Label colons from each language's style section in `doc/translation/`, keyed by language code prefix. A language not
+# listed is not checked.
+LABEL_COLONS: dict[str, LabelColon] = {
+    # Chinese: full-width after Chinese text, as in `宽度：`; a Latin-only label like `X:` keeps `:`.
+    'zh': LabelColon('\uff1a', rf'[{_CJK}]'),
 }
 
 
@@ -548,7 +561,7 @@ def style_problems(file_name: str, language: str, catalog: Catalog) -> list[str]
     The rules are `STYLE_RULES` and `LABEL_COLONS`. Each rule reports its first match in a translation only.
     """
     rules = _for_language(STYLE_RULES, language) or ()
-    colon = _for_language(LABEL_COLONS, language)
+    label_colon = _for_language(LABEL_COLONS, language)
     problems = []
     for message in _finished(catalog):
         prefix = f'{file_name}: [{message.context}] {message.source!r}: the translation'
@@ -556,9 +569,10 @@ def style_problems(file_name: str, language: str, catalog: Catalog) -> list[str]
             found = rule.pattern.search(message.translation)
             if found is not None:
                 problems.append(f'{prefix} {rule.problem} at {found.group()!r}. {rule.fix}')
-        if colon is not None and message.source.rstrip().endswith(':') \
-                and not message.translation.rstrip().endswith(colon):
-            problems.append(f'{prefix} does not end with {colon!r}, as a label ending in \':\' must.')
+        if label_colon is not None and message.source.rstrip().endswith(':'):
+            expected = label_colon.colon if re.search(label_colon.script, message.translation) else ':'
+            if not message.translation.rstrip().endswith(expected):
+                problems.append(f'{prefix} does not end with {expected!r}, as a label ending in \':\' must.')
     return problems
 
 

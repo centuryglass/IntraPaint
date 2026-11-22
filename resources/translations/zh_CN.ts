@@ -5406,7 +5406,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/image/filter/invert.py"/>
         <source>Invert image colors</source>
-        <translation>反转图像颜色</translation>
+        <translation>反相图像颜色</translation>
     </message>
 </context>
 <context>
@@ -6542,12 +6542,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>W</source>
-        <translation>W</translation>
+        <translation>宽度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>H</source>
-        <translation>H</translation>
+        <translation>高度</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
@@ -6836,12 +6836,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
         <source>W:</source>
-        <translation>W：</translation>
+        <translation>宽度：</translation>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
         <source>H:</source>
-        <translation>H：</translation>
+        <translation>高度：</translation>
     </message>
 </context>
 <context>
@@ -10801,22 +10801,22 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>W:</source>
-        <translation>W：</translation>
+        <translation>宽度：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>H:</source>
-        <translation>H：</translation>
+        <translation>高度：</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>X:</source>
-        <translation>X：</translation>
+        <translation>X:</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Y:</source>
-        <translation>Y：</translation>
+        <translation>Y:</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>

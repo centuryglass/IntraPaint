@@ -383,7 +383,10 @@ class BuildTranslationsTest(IntraPaintTestCase):
         self.assertIn('not in the form', problems[0])
 
     def test_reports_style_problems(self) -> None:
-        """A Chinese translation uses full-width punctuation, spaces Latin text, and keeps a label's colon."""
+        """A Chinese translation uses full-width punctuation, spaces Latin text, and keeps a label's colon.
+
+        The colon is full-width after Chinese text, and half-width on a label written only in Latin script.
+        """
         self._write('src/ui/labels.py', """
             from PySide6.QtWidgets import QApplication
             TR_ID = 'ui.labels'
@@ -394,19 +397,22 @@ class BuildTranslationsTest(IntraPaintTestCase):
             SENTENCE = _tr('Saved. Use VAE 2, then retry.')
             OPEN = _tr('Open...')
             WIDTH = _tr('Width')
+            X_POS = _tr('X:')
         """)
         good = [('ui.labels', '&Opacity:', '不透明度(&O)：'), ('ui.labels', 'Steps: {steps}', '步数：{steps}'),
                 ('ui.labels', 'Saved. Use VAE 2, then retry.', '已保存。使用 VAE 2，然后重试。'),
-                ('ui.labels', 'Open...', '打开...'), ('ui.labels', 'Width', '宽度')]
+                ('ui.labels', 'Open...', '打开...'), ('ui.labels', 'Width', '宽度'), ('ui.labels', 'X:', 'X:')]
         self.assertEqual([], self._check_problems('zh_CN', good))
 
         problems = self._check_problems('zh_CN', [('ui.labels', '&Opacity:', '不透明度(&O):'),
                                                  ('ui.labels', 'Saved. Use VAE 2, then retry.',
-                                                  '已保存.使用VAE 2,然后重试。')])
-        self.assertEqual(3, len(problems), problems)
+                                                  '已保存.使用VAE 2,然后重试。'),
+                                                 ('ui.labels', 'X:', 'X：')])
+        self.assertEqual(4, len(problems), problems)
         self.assertIn("'&Opacity:': the translation does not end with '：'", problems[0])
         self.assertIn("half-width punctuation after Chinese text at '存.'", problems[1])
         self.assertIn("no space between Chinese text and Latin letters or digits at '用V'", problems[2])
+        self.assertIn("'X:': the translation does not end with ':'", problems[3])
 
         german = [('ui.labels', '&Opacity:', '&Deckkraft:'), ('ui.labels', 'Width', 'Breite')]
         self.assertEqual([], self._check_problems('de_DE', german))

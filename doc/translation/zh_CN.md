@@ -130,8 +130,8 @@ Interface theme names, such as "IntraPaint Ink", are also kept.
   English noun/verb words: Fill, Clear, Select, Transform, Stroke, Float, Dock and similar usually take one Chinese word for both (填充, 清除, 选择, 变换, 描边, 浮动, 停靠), but Filter differs: the noun is 滤镜 and the verb (filtering a list) is 筛选 or 过滤; Outline as a noun is 轮廓 and as a verb 描边. Invert depends on what it inverts: the color filter is 反相 (Photoshop's word), and inverting a selection is 反选. Check the code context before translating.
 - 选项值：编辑模式、「Masked content」的值、分辨率规则等同时是配置文件保存的值。配置文件仍保存英文值，只翻译显示文字（`Config.get_option_display`），因此照常翻译。选项所属的设置就是它的上下文：「fill」「original」是「Masked content」的值，不是填充工具。
   Option values: the edit modes, the "Masked content" values, the resolution rules and similar options are also values saved in config files. Config files keep the English value and only its display is translated (`Config.get_option_display`), so they are translated like other strings. The setting an option belongs to is its context: "fill" and "original" are "Masked content" values, not the Fill tool.
-- 单位与短标签：px、pt、deg、x 以及 W:、H:、X:、R、G、B、H、S、V、L、C 保留拉丁字母。
-  Unit and short labels: px, pt, deg, x and W:, H:, X:, R, G, B, H, S, V, L, C stay in Latin script.
+- 单位与短标签：px、pt、deg、x、坐标字母 X、Y 以及颜色通道字母 R、G、B、H、S、V、L、C 保留拉丁字母。宽度和高度的短标签 W、H 译为「宽度」「高度」（「W:」译为「宽度：」）：界面中这些字段有足够的空间。H 作色相通道时保留拉丁字母，作高度时译为「高度」，由上下文区分。
+  Unit and short labels: px, pt, deg, x, the coordinate letters X and Y, and the color channel letters R, G, B, H, S, V, L, C stay in Latin script. The width and height short labels W and H become 宽度 and 高度 ("W:" is 宽度：), since their fields have room for them. H stays Latin as the hue channel and becomes 高度 as height; the context tells them apart.
 
 ## 翻译风格 / Style
 
@@ -141,8 +141,8 @@ Interface theme names, such as "IntraPaint Ink", are also kept.
 - Neutral declarative tone; buttons are verb phrases with no trailing punctuation (保存, 取消, 删除).
 - 中文句内用全角标点（，。：）；拉丁字母和数字保持半角，与中文之间加半角空格（如「采样步数 80」）。
 - Chinese sentences use full-width punctuation (，。：); Latin letters and digits stay half-width, with a half-width space between them and Chinese text (for example 采样步数 80).
-- 以冒号结尾的英文标签（「Opacity:」）译文以全角冒号结尾（「不透明度：」），与 GIMP 中文界面一致；其他标签不加句末标点。
-- An English label that ends in a colon ("Opacity:") ends in a full-width colon in Chinese (不透明度：), as in GIMP's zh UI; other labels take no trailing punctuation.
+- 以冒号结尾的英文标签（「Opacity:」），译文含中文时以全角冒号结尾（「不透明度：」），与 GIMP 中文界面一致；译文只有拉丁字母、数字或单位时保留半角冒号（「X:」），与拉丁字母保持半角的规则一致。其他标签不加句末标点。
+- An English label that ends in a colon ("Opacity:") ends in a full-width colon when its translation contains Chinese (不透明度：), as in GIMP's zh UI. A translation made only of Latin letters, digits or units keeps the half-width colon (X:), as Latin text stays half-width. Other labels take no trailing punctuation.
 - 菜单快捷字母（「Sl&iders」中的 &）按中文软件惯例放在译文末尾的括号里：「滑块(&I)」。
 - Menu accelerators (the & in "Sl&iders") follow the Chinese software convention of a bracketed letter after the translation: 滑块(&I).
 - 中文无大小写规则；菜单、对话框、面板的标题措辞可以更完整，标签更短，与各软件惯例一致。
