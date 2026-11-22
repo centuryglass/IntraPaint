@@ -10,9 +10,11 @@ from unittest.mock import patch
 
 from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.field_factory import create_control_widget
+from src.util.shared_text import PIL_SCALING_MODES, scaling_mode_display
 from test.base_test_case import IntraPaintTestCase, PROJECT_ROOT
 
 DEFINITION_FILES = ('a1111_setting', 'application_config', 'cache_value', 'key_config')
@@ -105,3 +107,30 @@ class OptionDisplayTest(IntraPaintTestCase):
         control.setValue('Subtract')
         self.assertEqual('Subtract', control.value())
         self.assertEqual(['AGREGAR', 'RESTAR'], [segment.label for segment in control.segments])
+
+
+class ScalingModeOptionTest(IntraPaintTestCase):
+    """PIL scaling modes are stored by their untranslated names, whatever the interface language."""
+
+    def test_scaling_mode_options_are_untranslated(self) -> None:
+        """The upscale and downscale options are the English mode names, so a saved choice survives a language
+        change."""
+        config = AppConfig()
+        for key in (AppConfig.PIL_UPSCALE_MODE, AppConfig.PIL_DOWNSCALE_MODE):
+            self.assertEqual(['Bilinear', 'Nearest', 'Hamming', 'Bicubic', 'Lanczos', 'Box'], config.get_options(key))
+        self.assertEqual(list(PIL_SCALING_MODES), config.get_options(AppConfig.PIL_UPSCALE_MODE))
+
+    def test_settings_dropdown_displays_translation_and_keeps_stored_value(self) -> None:
+        """The settings dropdown shows `scaling_mode_display` text and saves the untranslated name."""
+        config = AppConfig()
+        config.set(AppConfig.PIL_UPSCALE_MODE, 'Bicubic')
+        with patch('src.config.application_config.scaling_mode_display', side_effect=str.upper):
+            combo_box = create_control_widget(config, AppConfig.PIL_UPSCALE_MODE)
+        self.assertEqual('BICUBIC', combo_box.currentText())
+        self.assertEqual('Bicubic', combo_box.value())
+        combo_box.setCurrentIndex(combo_box.findData('Box'))
+        self.assertEqual('Box', config.get(AppConfig.PIL_UPSCALE_MODE))
+
+    def test_backend_names_display_as_written(self) -> None:
+        """A scaling mode name `scaling_mode_display` doesn't know is shown unchanged."""
+        self.assertEqual('R-ESRGAN 4x+', scaling_mode_display('R-ESRGAN 4x+'))

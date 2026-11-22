@@ -10,7 +10,7 @@ from src.config.generated_keys import AppConfigKeys
 from src.ui.theme import THEME_INK, THEME_SYSTEM
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR, APP_CONFIG_PATH
-from src.util.shared_text import PIL_SCALING_MODES
+from src.util.shared_text import PIL_SCALING_MODES, scaling_mode_display
 from src.util.translation import SYSTEM_LANGUAGE, available_languages, language_name
 
 # Optional theme modules:
@@ -81,7 +81,10 @@ class AppConfig(AppConfigKeys, Config, metaclass=AppService):
         self.update_options(AppConfig.PIL_DOWNSCALE_MODE, scaling_options)
 
     def get_option_display(self, option: Any) -> str:
-        """Shows `AppConfig.LANGUAGE`'s language codes by their own names, and every other option as `Config` does."""
+        """Shows `AppConfig.LANGUAGE`'s language codes by their own names, PIL scaling modes through
+        `scaling_mode_display`, and every other option as `Config` does."""
         if isinstance(option, str) and option in self._language_codes:
             return language_name(option)
+        if isinstance(option, str) and option in PIL_SCALING_MODES:
+            return scaling_mode_display(option)
         return super().get_option_display(option)

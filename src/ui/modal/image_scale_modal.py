@@ -37,7 +37,7 @@ from src.ui.widget.parameter_def_widget import create_parameter_field, create_pa
 from src.util.layout import add_layout
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
 from src.util.shared_constants import APP_ICON_PATH
-from src.util.shared_text import PIL_SCALING_MODES, UPSCALE_OPTION_NONE
+from src.util.shared_text import PIL_SCALING_MODES, UPSCALE_OPTION_NONE, scaling_mode_display
 from src.util.signals_blocked import signals_blocked
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -193,8 +193,7 @@ class ImageScaleModal(QDialog):
 
         self._upscale_method_label = QLabel(LABEL_TEXT_BASIC_SCALING_DROPDOWN, self)
         self._upscale_method_dropdown = QComboBox(self)
-        self._upscale_method_dropdown.currentTextChanged.connect(
-            lambda upscale_method: Cache().set(Cache.SCALING_MODE, upscale_method))
+        self._upscale_method_dropdown.currentIndexChanged.connect(self._scaling_method_changed)
         method_row = QWidget(self)
         method_layout = QHBoxLayout(method_row)
         method_layout.setContentsMargins(0, 0, 0, 0)
@@ -339,6 +338,11 @@ class ImageScaleModal(QDialog):
     # Scaling mode
     # -----------------------------------------------------------------------------------------------------------------
 
+    def _scaling_method_changed(self, index: int) -> None:
+        """Caches the untranslated name of the selected scaling method."""
+        if index >= 0:
+            Cache().set(Cache.SCALING_MODE, self._upscale_method_dropdown.itemData(index))
+
     def _change_scaling_mode(self, mode: str) -> None:
         cache = Cache()
         self._mode = mode
@@ -355,9 +359,10 @@ class ImageScaleModal(QDialog):
                                                    else LABEL_TEXT_UPSCALE_METHOD_ADVANCED)
             if mode != MODE_GENERATOR and UPSCALE_OPTION_NONE not in scaling_modes:
                 scaling_modes.append(UPSCALE_OPTION_NONE)
-            self._upscale_method_dropdown.addItems(scaling_modes)
+            for scaling_mode in scaling_modes:
+                self._upscale_method_dropdown.addItem(scaling_mode_display(scaling_mode), userData=scaling_mode)
             if last_scaling_mode in scaling_modes:
-                self._upscale_method_dropdown.setCurrentText(last_scaling_mode)
+                self._upscale_method_dropdown.setCurrentIndex(scaling_modes.index(last_scaling_mode))
             else:
                 upscale_mode = scaling_modes[0]
                 if mode == MODE_BASIC:
@@ -372,7 +377,7 @@ class ImageScaleModal(QDialog):
                         cached_comfyui_mode = cache.get(Cache.COMFYUI_CACHED_SCALING_MODE)
                         if cached_comfyui_mode in scaling_modes:
                             upscale_mode = cached_comfyui_mode
-                self._upscale_method_dropdown.setCurrentText(upscale_mode)
+                self._upscale_method_dropdown.setCurrentIndex(scaling_modes.index(upscale_mode))
                 cache.set(Cache.SCALING_MODE, upscale_mode)
         cache.set(Cache.USE_STABLE_DIFFUSION_UPSCALING, mode == MODE_AI)
         if mode == MODE_AI:
