@@ -163,6 +163,22 @@ class TestAppControllerMenus(IntraPaintTestCase):
         layer.opacity = 1.0
         self.assertFalse(action.isEnabled())
 
+    def test_fill_and_stroke_need_selection_and_paintable_layer(self):
+        """Edit > Fill and Stroke selection are enabled only with a selection on an unlocked, non-group layer."""
+        image_stack = self.controller._image_stack
+        layer = image_stack.active_layer
+        actions = [self.controller.get_action_for_method(method) for method in
+                   (self.controller.fill_with_foreground, self.controller.fill_with_background,
+                    self.controller.stroke_selection)]
+        self.assertEqual([False] * 3, [action.isEnabled() for action in actions], 'no selection')
+        image_stack.selection_layer.select_all()
+        self.assertEqual([True] * 3, [action.isEnabled() for action in actions], 'selection')
+        layer.locked = True
+        self.assertEqual([False] * 3, [action.isEnabled() for action in actions], 'locked layer')
+        layer.locked = False
+        image_stack.active_layer = image_stack.create_layer_group()
+        self.assertEqual([False] * 3, [action.isEnabled() for action in actions], 'group')
+
 
 class TestAppControllerLayerSelectionMenus(IntraPaintTestCase):
     """Tests the Layer menu actions that act on every selected layer."""

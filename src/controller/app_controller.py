@@ -84,6 +84,7 @@ from src.image.layers.image_stack_utils import resize_image_stack_to_content, cr
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers import layer_selection_ops
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
@@ -98,6 +99,7 @@ from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.modal.stroke_selection_modal import StrokeSelectionModal
 from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
@@ -734,7 +736,16 @@ class AppController(MenuBuilder):
             self.grow_selection,
             self.shrink_selection,
             self.crop_image_to_selection,
-            self.crop_layer_to_selection
+            self.crop_layer_to_selection,
+            self.fill_with_foreground,
+            self.fill_with_background,
+            self.stroke_selection
+        }
+        # Methods that draw onto the active layer's pixels:
+        paint_methods: set[Callable[..., None]] = {
+            self.fill_with_foreground,
+            self.fill_with_background,
+            self.stroke_selection
         }
         unlocked_layer_methods: set[Callable[..., None]] = {
             self.layer_mirror_horizontal,
@@ -747,8 +758,10 @@ class AppController(MenuBuilder):
             self.flatten_layer,
             self.layer_to_image_size,
             self.crop_layer_to_content,
-            self.crop_layer_to_selection
-
+            self.crop_layer_to_selection,
+            self.fill_with_foreground,
+            self.fill_with_background,
+            self.stroke_selection
         }
         not_bottom_layer_methods: set[Callable[..., None]] = {
             self.select_next_layer,
@@ -781,7 +794,7 @@ class AppController(MenuBuilder):
 
         managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
                                | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods \
-                               | layer_group_only_methods
+                               | layer_group_only_methods | paint_methods
 
         active_layer = self._image_stack.active_layer
         is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \
@@ -805,7 +818,9 @@ class AppController(MenuBuilder):
                                                   (not_flat_methods, self._image_stack.layer_is_flat(active_layer)),
                                                   (not_layer_group_methods, isinstance(active_layer, LayerGroup)),
                                                   (layer_group_only_methods, not isinstance(active_layer, LayerGroup)),
-                                                  (not_text_layer_methods, isinstance(active_layer, TextLayer))):
+                                                  (not_text_layer_methods, isinstance(active_layer, TextLayer)),
+                                                  (paint_methods, not isinstance(active_layer, (ImageLayer,
+                                                                                                NonDestructiveLayer)))):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
                     break
@@ -1107,6 +1122,27 @@ class AppController(MenuBuilder):
             self._active_text_field_tracker.clear_selected_in_focused()
         else:
             self._image_stack.clear_selected()
+
+    @menu_action(MENU_EDIT, 'fill_foreground_shortcut', 115, valid_app_states=[APP_STATE_EDITING],
+                 separator_before=True)
+    def fill_with_foreground(self) -> None:
+        """Fill the selected area of the active layer with the foreground color."""
+        self._image_stack.fill_selected(color_controller.foreground())
+
+    @menu_action(MENU_EDIT, 'fill_background_shortcut', 116, valid_app_states=[APP_STATE_EDITING])
+    def fill_with_background(self) -> None:
+        """Fill the selected area of the active layer with the background color."""
+        self._image_stack.fill_selected(color_controller.background())
+
+    @menu_action(MENU_EDIT, 'stroke_selection_shortcut', 117, valid_app_states=[APP_STATE_EDITING])
+    def stroke_selection(self) -> None:
+        """Draw a line along the selection outline on the active layer, with options from a popup modal."""
+        stroke_modal = StrokeSelectionModal(self._window)
+        self._set_alt_window_centered_bounds(stroke_modal)
+        options = stroke_modal.show_stroke_modal()
+        if options is not None:
+            color, width, position = options
+            self._image_stack.stroke_selection(color, width, position)
 
     def swap_colors(self) -> None:
         """Swap the foreground and background colors."""

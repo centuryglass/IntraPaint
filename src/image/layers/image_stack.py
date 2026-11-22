@@ -4,12 +4,13 @@ import logging
 import os
 import re
 from contextlib import contextmanager
+from enum import Enum
 from typing import Optional, cast, Callable, TypeAlias, Generator, Iterable
 
 import numpy as np
 from PIL import Image
-from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QTimer, QRectF, QPointF
-from PySide6.QtGui import QPainter, QPixmap, QImage, QTransform, QPolygonF
+from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QTimer, QRectF, QPointF, Qt
+from PySide6.QtGui import QPainter, QPixmap, QImage, QTransform, QPolygonF, QColor, QPainterPath, QPen
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -50,6 +51,8 @@ ACTION_NAME_MERGE_LAYERS = _tr('merge layers')
 ACTION_NAME_MERGE_VISIBLE = _tr('merge visible layers')
 ACTION_NAME_LAYER_TO_IMAGE_SIZE = _tr('resize layer to image')
 ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
+ACTION_NAME_FILL_SELECTION = _tr('fill selection')
+ACTION_NAME_STROKE_SELECTION = _tr('stroke selection')
 ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
 ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
 MERGED_LAYER_NAME = _tr('Merged')
@@ -105,6 +108,16 @@ RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QI
 
 RENDER_DELAY_MS = 50
 SELECTION_UPDATE_DELAY_MS = 50
+
+
+class StrokePosition(Enum):
+    """Where `ImageStack.stroke_selection` draws its outline relative to the selection edge.
+
+    Values are the strings `Cache.STROKE_SELECTION_POSITION` stores.
+    """
+    INSIDE = 'inside'
+    CENTER = 'center'
+    OUTSIDE = 'outside'
 
 
 class ImageStack(QObject):
@@ -1415,7 +1428,11 @@ class ImageStack(QObject):
     def get_layer_selection_mask(self, layer: Layer) -> QImage:
         """Transform the selection layer to another layer's local coordinates, crop to bounds, and return the
         resulting image mask."""
-        selection_mask = self.selection_layer.image
+        return self._selection_space_to_layer(self.selection_layer.image, layer)
+
+    def _selection_space_to_layer(self, selection_mask: QImage, layer: Layer) -> QImage:
+        """Maps an image in the selection layer's local coordinates to a layer's local coordinates, cropped to the
+        layer's bounds."""
         transformed_mask = create_transparent_image(layer.size)
         # mask image coordinates to image coordinates:
         painter_transform = self.selection_layer.transform
@@ -1555,6 +1572,79 @@ class ImageStack(QObject):
         copied = self.copy_selected(layer, transformed_mask) if save_to_copy_buffer else None
         layer.cut_masked(transformed_mask)
         return copied
+
+    def fill_selected(self, color: QColor, layer: Optional[Layer] = None) -> None:
+        """Paints a color over the selected region of a layer, defaulting to the active layer, as one undo step.
+
+        The color is drawn over existing content, and an alpha-locked layer keeps its alpha.
+        """
+        fill = self.selection_layer.image
+        painter = QPainter(fill)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        painter.fillRect(fill.rect(), color)
+        painter.end()
+        self._paint_selection_space_content(fill, layer, ACTION_NAME_FILL_SELECTION, 'ImageStack.fill_selected')
+
+    def stroke_selection(self, color: QColor, width: int, position: StrokePosition,
+                         layer: Optional[Layer] = None) -> None:
+        """Draws a line along the selection outline onto a layer, defaulting to the active layer, as one undo step.
+
+        The line is `width` image pixels wide. INSIDE and OUTSIDE keep the whole width on one side of the selection
+        edge, and CENTER straddles it. Like `fill_selected`, it draws over existing content and keeps an alpha lock.
+        """
+        assert width > 0
+        selection_pos = self.selection_layer.position
+        path = QPainterPath()
+        path.setFillRule(Qt.FillRule.OddEvenFill)
+        for polygon in self.selection_layer.outline:
+            # Outline polygons can repeat a point, and a zero-length segment gives a miter join no direction:
+            points = [point for i, point in enumerate(polygon) if point != polygon[i - 1]]
+            if len(points) < 2:
+                continue
+            path.addPolygon(QPolygonF(points).translated(-selection_pos.x(), -selection_pos.y()))
+            path.closeSubpath()
+        stroke = create_transparent_image(self.selection_layer.size)
+        painter = QPainter(stroke)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        # One side of a doubled line is clipped away for INSIDE and OUTSIDE, leaving `width` pixels:
+        pen_width = width if position == StrokePosition.CENTER else width * 2
+        painter.strokePath(path, QPen(color, pen_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.SquareCap,
+                                      Qt.PenJoinStyle.MiterJoin))
+        if position == StrokePosition.INSIDE:
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            painter.drawImage(0, 0, self.selection_layer.image)
+        elif position == StrokePosition.OUTSIDE:
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+            painter.drawImage(0, 0, self.selection_layer.image)
+        painter.end()
+        self._paint_selection_space_content(stroke, layer, ACTION_NAME_STROKE_SELECTION,
+                                            'ImageStack.stroke_selection')
+
+    def _paint_selection_space_content(self, content: QImage, layer: Optional[Layer], action_name: str,
+                                       undo_name: str) -> None:
+        """Draws an image in selection layer coordinates over a layer's content as one undo step.
+
+        Groups are skipped. A non-destructive layer is rendered to an image layer first, if the user confirms.
+        """
+        if layer is None:
+            layer = self.active_layer
+        if not isinstance(layer, (ImageLayer, NonDestructiveLayer)) or not self.validate_layer_showing_errors(layer):
+            return
+        local_content = self._selection_space_to_layer(content, layer)
+        if image_is_fully_transparent(local_content):
+            return
+        if isinstance(layer, NonDestructiveLayer) \
+                and not NonDestructiveLayer.confirm_or_cancel_render_to_image([layer.name], action_name):
+            return
+        with UndoStack().combining_actions(undo_name):
+            if isinstance(layer, NonDestructiveLayer):
+                layer = self.replace_layer_with_image(layer)
+            assert isinstance(layer, ImageLayer)
+            with layer.borrow_image() as layer_image:
+                assert layer_image is not None
+                painter = QPainter(layer_image)
+                painter.drawImage(0, 0, local_content)
+                painter.end()
 
     def cut_selected(self, layer: Optional[Layer] = None) -> Optional[QImage]:
         """Replaces all masked image content in a layer with transparency, saving it in the copy buffer.

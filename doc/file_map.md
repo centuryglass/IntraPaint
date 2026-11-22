@@ -422,6 +422,8 @@ Modal dialogs: settings, new image, resize and scale, filters, login, dock layou
 - `src/ui/modal/settings_controls.py`: Chooses the control the settings window shows for each config value.
 - `src/ui/modal/settings_modal.py`: The settings window (Edit > Preferences): a category sidebar, a search field, and a
   page of sections per category.
+- `src/ui/modal/stroke_selection_modal.py`: Popup modal window that sets the width, color and position of the line Edit
+  > Stroke selection draws.
 
 ## `src/ui/panel`
 
