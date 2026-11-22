@@ -60,16 +60,34 @@ GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the generation 
 # Upscaling:
 UPSCALE_ERROR_TITLE = _tr('Upscale failure')
 UPSCALED_LAYER_NAME = _tr('Upscaled image content')
-UPSCALE_OPTION_NONE = _tr('None')
+# Upscale method that skips scaling. Stored untranslated, since Stable Diffusion backends list the same name.
+UPSCALE_OPTION_NONE = 'None'
 
+# PIL scaling modes by the untranslated names that config and cache store. `scaling_mode_display` translates them.
 PIL_SCALING_MODES = {
-    _tr('Bilinear'): Image.Resampling.BILINEAR,
-    _tr('Nearest'): Image.Resampling.NEAREST,
-    _tr('Hamming'): Image.Resampling.HAMMING,
-    _tr('Bicubic'): Image.Resampling.BICUBIC,
-    _tr('Lanczos'): Image.Resampling.LANCZOS,
-    _tr('Box'): Image.Resampling.BOX
+    'Bilinear': Image.Resampling.BILINEAR,
+    'Nearest': Image.Resampling.NEAREST,
+    'Hamming': Image.Resampling.HAMMING,
+    'Bicubic': Image.Resampling.BICUBIC,
+    'Lanczos': Image.Resampling.LANCZOS,
+    'Box': Image.Resampling.BOX
 }
+_SCALING_MODE_DISPLAY = {
+    UPSCALE_OPTION_NONE: _tr('None'),
+    'Bilinear': _tr('Bilinear'),
+    'Nearest': _tr('Nearest'),
+    'Hamming': _tr('Hamming'),
+    'Bicubic': _tr('Bicubic'),
+    'Lanczos': _tr('Lanczos'),
+    'Box': _tr('Box')
+}
+
+
+def scaling_mode_display(mode: str) -> str:
+    """Returns the text to show for a stored scaling mode name. Names from a backend display as written."""
+    return _SCALING_MODE_DISPLAY.get(mode, mode)
+
+
 COLOR_PICK_HINT = _tr('{modifier_or_modifiers}: pick color')
 KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 KEY_TOOLTIP = _tr('{description}\nKey: {key}')

@@ -1,4 +1,6 @@
 """Tests ImageScaleModal's size fields, scaling modes and Stable Diffusion upscaling controls."""
+from unittest.mock import patch
+
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QComboBox
 from sd_backend_client import CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, ControlNetUnit, \
@@ -158,6 +160,20 @@ class ImageScaleModalTest(IntraPaintTestCase):
         modal._mode_control.set_value(MODE_BASIC)
         self.assertFalse(cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING))
         self.assertTrue(modal._ai_section.isHidden())
+
+    def test_scaling_method_dropdown_translates_display_only(self) -> None:
+        """The method dropdown shows translated names, and the cache keeps the untranslated mode name."""
+        cache = Cache()
+        cache.set(Cache.USE_STABLE_DIFFUSION_UPSCALING, False)
+        cache.set(Cache.SCALING_MODE, 'Bicubic')
+        with patch('src.ui.modal.image_scale_modal.scaling_mode_display', side_effect=str.upper):
+            modal = ImageScaleModal(512, 512)
+        dropdown = modal._upscale_method_dropdown
+        self.assertEqual('BICUBIC', dropdown.currentText())
+        self.assertEqual('NONE', dropdown.itemText(dropdown.count() - 1))
+        dropdown.setCurrentIndex(dropdown.findData('Nearest'))
+        self.assertEqual('Nearest', cache.get(Cache.SCALING_MODE))
+        self.assertEqual('NEAREST', dropdown.currentText())
 
     def test_ultimate_upscale_limits_scale(self) -> None:
         """The Ultimate SD Upscale script limits the size to four times the current size in AI mode only."""
