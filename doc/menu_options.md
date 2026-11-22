@@ -25,6 +25,9 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Copy merged (Ctrl+Shift+C)](#copy-merged-ctrlshiftc)
    - [Paste (Ctrl+V)](#paste-ctrlv)
    - [Clear (Delete)](#clear-delete)
+   - [Fill with foreground color (Shift+F5)](#fill-with-foreground-color-shiftf5)
+   - [Fill with background color](#fill-with-background-color)
+   - [Stroke selection](#stroke-selection)
    - [Keyboard shortcuts (Ctrl+Alt+Shift+K)](#keyboard-shortcuts-ctrlaltshiftk)
    - [Preferences (Ctrl+K)](#preferences-ctrlk)
      - [Preferences window](#preferences-window)
@@ -215,6 +218,24 @@ If a text field is focused and the system clipboard is not empty, this will inst
 
 Behaves identically to [cut](#cut-ctrlx), except that cut image data can't be pasted, and cut text isn't saved in the system clipboard.
 
+### Fill with foreground color (Shift+F5)
+
+Paints the foreground color over the selected area of the active layer, as one undo step. Semi-transparent colors are drawn over the existing content, and a layer with locked transparency keeps its transparent pixels. Filling a text layer first asks to convert it to an image layer. The entry is disabled when nothing is selected, or when the active layer is a group or locked.
+
+### Fill with background color
+
+Behaves identically to [fill with foreground color](#fill-with-foreground-color-shiftf5), using the background color. It has no default shortcut.
+
+### Stroke selection
+
+Draws a line along the edge of the selection on the active layer, including the edges of any holes in it. A window opens with the line's options:
+
+- **Width**: The line's width in pixels.
+- **Color**: The line's color, starting as the foreground color.
+- **Position**: Whether the line is drawn inside the selection edge, centered on it, or outside it.
+
+Width and position are remembered for next time. The line is drawn as one undo step, under the same conditions as [fill with foreground color](#fill-with-foreground-color-shiftf5).
+
 ### Keyboard shortcuts (Ctrl+Alt+Shift+K)
 
 Opens the [Preferences window](#preferences-window) at the **"Keybindings"** tab. The **"Menu Shortcuts"** tab beside it holds the keys for menu entries.
@@ -244,7 +265,7 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 
 ### Swap and reset colors
 
-These have no menu entries, only keys: **Shift+X** swaps the foreground and background colors, and **Shift+D** resets them to black and white. The color picker panel has buttons for both.
+These have no menu entries, only keys: **X** swaps the foreground and background colors, and **D** resets them to black and white. The color picker panel has buttons for both.
 
 ---
 

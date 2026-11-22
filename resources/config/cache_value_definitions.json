@@ -1057,6 +1057,31 @@
         "default": true,
         "saved": true
     },
+    "stroke_selection_width": {
+        "label": "Width:",
+        "category": "Cache",
+        "subcategory": "Stroke selection",
+        "description": "Width in pixels of the line Edit > Stroke selection draws.",
+        "type": "int",
+        "default": 2,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 250,
+            "step": 1
+        }
+    },
+    "stroke_selection_position": {
+        "label": "Position:",
+        "category": "Cache",
+        "subcategory": "Stroke selection",
+        "description": "Whether Edit > Stroke selection draws its line inside, centered on, or outside the selection edge.",
+        "type": "string",
+        "default": "center",
+        "options": ["inside", "center", "outside"],
+        "saved": true,
+        "translate": false
+    },
     "animation_save_as_animation": {
         "label": "Save as an animation",
         "category": "Cache",

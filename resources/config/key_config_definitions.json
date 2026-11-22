@@ -746,6 +746,33 @@
         "default": "Delete",
         "saved": true
     },
+    "fill_foreground_shortcut": {
+        "label": "Fill with foreground color",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Fill the selected area of the active layer with the foreground color.",
+        "type": "string",
+        "default": "Shift+F5",
+        "saved": true
+    },
+    "fill_background_shortcut": {
+        "label": "Fill with background color",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Fill the selected area of the active layer with the background color.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "stroke_selection_shortcut": {
+        "label": "Stroke selection...",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Draw a line along the selection outline on the active layer.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "swap_colors_shortcut": {
         "label": "Swap colors",
         "category": "Menu Shortcuts",

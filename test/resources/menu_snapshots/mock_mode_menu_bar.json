@@ -22,6 +22,10 @@
       "Paste",
       "Clear",
       "----",
+      "Fill with foreground color",
+      "Fill with background color",
+      "Stroke selection...",
+      "----",
       "Keyboard shortcuts...",
       "Preferences..."
     ],

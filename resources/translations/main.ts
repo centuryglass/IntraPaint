@@ -1818,6 +1818,46 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
+        <source>Width:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Width in pixels of the line Edit &gt; Stroke selection draws.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stroke selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Position:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Whether Edit &gt; Stroke selection draws its line inside, centered on, or outside the selection edge.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>inside</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>center</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>outside</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
         <source>Save as an animation</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3145,6 +3185,36 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Delete selected image content in the active layer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fill with foreground color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fill the selected area of the active layer with the foreground color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fill with background color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fill the selected area of the active layer with the background color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Stroke selection...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Draw a line along the selection outline on the active layer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5530,6 +5600,16 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/image/layers/image_stack.py"/>
+        <source>fill selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>stroke selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/image/layers/image_stack.py"/>
         <source>resize image canvas</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7488,6 +7568,59 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
         <source>(empty)</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.modal.stroke_selection_modal</name>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Stroke selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Color:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Select color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Select the color of the line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Inside</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Centered</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Outside</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Draw the line inside the selection edge.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Center the line on the selection edge.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/stroke_selection_modal.py"/>
+        <source>Draw the line outside the selection edge.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
