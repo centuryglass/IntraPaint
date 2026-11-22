@@ -7,6 +7,7 @@ from PySide6.QtGui import QImage
 
 from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
+from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image
 from test.base_test_case import IntraPaintTestCase
 
@@ -82,7 +83,7 @@ class BrushTestCase(IntraPaintTestCase):
 
     def use_layer(self, image: QImage) -> None:
         """Replaces the test layer with a new layer holding `image`, and connects the brush to it."""
-        self.layer = ImageLayer(image, 'brush test layer')
+        self.layer = ImageLayer(image, 'brush test layer', UndoStack())
         self.brush.connect_to_layer(self.layer)
 
     def stroke(self, points: Sequence[StrokePoint], flush_after_each_point: bool = False) -> QImage:

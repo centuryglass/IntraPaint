@@ -200,7 +200,7 @@ class TextToolPanel(FitToolPanel):
     # Emitted after the controls show new values, for the section summaries:
     _values_shown = Signal()
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, undo_stack: UndoStack, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._text_rect = TextRect()
         self._text_rect.font = QApplication.font()
@@ -211,7 +211,7 @@ class TextToolPanel(FitToolPanel):
         self._text_box.setPlaceholderText(TEXT_INPUT_PLACEHOLDER)
         self._text_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._text_box.valueChanged.connect(self._text_changed)
-        self._text_box.focus_lost.connect(UndoStack().end_gesture)
+        self._text_box.focus_lost.connect(undo_stack.end_gesture)
 
         self._build_font_section()
         self._build_style_section()

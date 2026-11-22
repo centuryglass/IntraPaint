@@ -37,7 +37,7 @@ class ImageLayer(TransformLayer):
 
     alpha_lock_changed = Signal(QObject, bool)
 
-    def __init__(self, image_data: QImage | QSize, name: str):
+    def __init__(self, image_data: QImage | QSize, name: str, undo_stack: UndoStack):
         """
         Initializes a new layer with image data.
 
@@ -47,8 +47,10 @@ class ImageLayer(TransformLayer):
             Initial image data, or size of initial transparent image to create.
         name: str
             Name string to assign to this layer.
+        undo_stack: UndoStack
+            The history this layer records its changes in.
         """
-        super().__init__(name)
+        super().__init__(name, undo_stack)
         self._image = QImage()
         if isinstance(image_data, QImage):
             self.set_image(image_data)
@@ -77,7 +79,7 @@ class ImageLayer(TransformLayer):
             self._alpha_locked = locked
             self.alpha_lock_changed.emit(self, locked)
 
-        UndoStack().commit_action(_update_lock, _undo, 'src.layers.image_layer.alpha_locked')
+        self.undo_stack.commit_action(_update_lock, _undo, 'src.layers.image_layer.alpha_locked')
 
     @contextmanager
     def with_alpha_lock_disabled(self) -> Generator[None, None, None]:
@@ -107,7 +109,7 @@ class ImageLayer(TransformLayer):
 
     def copy(self) -> 'ImageLayer':
         """Creates a copy of this layer."""
-        layer = ImageLayer(self._image.copy(), self.name + ' copy')
+        layer = ImageLayer(self._image.copy(), self.name + ' copy', self.undo_stack)
         layer.set_opacity(self.opacity)
         layer.set_visible(self.visible)
         layer.set_composition_mode(self.composition_mode)
@@ -132,7 +134,7 @@ class ImageLayer(TransformLayer):
         def _undo_image(img=last_image, off=undo_offset) -> None:
             self.set_image(img, off)
 
-        UndoStack().commit_action(_update_image, _undo_image, 'Layer.image')
+        self.undo_stack.commit_action(_update_image, _undo_image, 'Layer.image')
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
@@ -175,7 +177,7 @@ class ImageLayer(TransformLayer):
                 self._apply_borrowed_content(c, b)
                 self.signal_content_changed(change_bounds)
 
-            UndoStack().commit_action(_apply, _undo, 'ImageLayer.borrow_image', skip_initial_call=True)
+            self.undo_stack.commit_action(_apply, _undo, 'ImageLayer.borrow_image', skip_initial_call=True)
 
             self.signal_content_changed(change_bounds)
 
@@ -238,7 +240,7 @@ class ImageLayer(TransformLayer):
             def _restore(img=source_image, off=source_offset):
                 self.set_image(img, off)
 
-            UndoStack().commit_action(_resize, _restore, 'ImageLayer.adjust_local_bounds')
+            self.undo_stack.commit_action(_resize, _restore, 'ImageLayer.adjust_local_bounds')
         else:
             self.set_image(new_image, offset)
 
@@ -330,7 +332,7 @@ class ImageLayer(TransformLayer):
         if not hasattr(self, 'alpha_locked'):
             return
         # Don't apply the alpha lock on undo, if it was applied initially there should be no need.
-        if self.alpha_locked and not UndoStack().undo_in_progress:
+        if self.alpha_locked and not self.undo_stack.undo_in_progress:
             np_source = image_data_as_numpy_8bit(last_bounds_content)
             np_dst = image_data_as_numpy_8bit(image)
             if change_bounds != image.rect():
@@ -367,7 +369,7 @@ class ImageLayer(TransformLayer):
                     self.set_image(img)
                     self.set_transform(matrix)
 
-            UndoStack().commit_action(_do_crop, _undo_crop, 'ImageLayer.crop_to_content')
+            self.undo_stack.commit_action(_do_crop, _undo_crop, 'ImageLayer.crop_to_content')
 
     def crop_to_content(self, show_warnings: bool = True):
         """Crops the layer to remove transparent areas."""

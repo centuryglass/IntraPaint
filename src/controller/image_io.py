@@ -35,7 +35,6 @@ from src.ui.modal.modal_parent import modal_parent
 from src.ui.modal.save_loss_modal import SaveLoss, request_save_loss_choice, SAVE_ORA, CANCEL
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog, request_unsaved_changes_choice, UNSAVED_SAVE, UNSAVED_DISCARD
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.recent_files import add_recent_file
@@ -230,7 +229,7 @@ class ImageIO:
         The user can save, discard or cancel. Saving waits for the write, and a cancelled or failed save stops the
         action. `discard_label` names the action on the discard button ("Quit without saving").
         """
-        if not self._image_stack.has_image or UndoStack().is_clean():
+        if not self._image_stack.has_image or self._image_stack.undo_stack.is_clean():
             return True
         choice = request_unsaved_changes_choice(self._window, self.file_name(), discard_label)
         if choice == UNSAVED_SAVE:
@@ -311,7 +310,8 @@ class ImageIO:
         A successful save makes the history state it read clean, unless it flattened layers (the condition
         `LAYERS_NOT_SAVED_MESSAGE` warns about). Then the file holds no state of the document, and no state is clean.
         """
-        mark_saved = UndoStack().save_point() if keeps_layers else UndoStack().mark_modified
+        undo_stack = self._image_stack.undo_stack
+        mark_saved = undo_stack.save_point() if keeps_layers else undo_stack.mark_modified
         autosave_saved = None if self.on_save_started is None else self.on_save_started()
 
         def _on_saved() -> None:

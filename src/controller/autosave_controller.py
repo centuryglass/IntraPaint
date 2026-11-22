@@ -35,7 +35,6 @@ from src.image.recovery_files import (RecoveryWrite, RecoverableSession, plan_re
                                       restore_session, read_manifest)
 from src.ui.modal.modal_utils import (request_recovery_choice, show_error_dialog, RECOVERY_RESTORE,
                                       RECOVERY_DISCARD)
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.rich_text import rich_text_format
@@ -143,8 +142,8 @@ class AutosaveController(QObject):
 
         for signal in (image_stack.content_changed, image_stack.size_changed, image_stack.layer_added,
                        image_stack.layer_removed, image_stack.active_layer_changed, image_stack.layer_order_changed,
-                       image_stack.generation_area_bounds_changed, UndoStack().undo_count_changed,
-                       UndoStack().redo_count_changed):
+                       image_stack.generation_area_bounds_changed, image_stack.undo_stack.undo_count_changed,
+                       image_stack.undo_stack.redo_count_changed):
             signal.connect(self._document_edited)
         image_stack.document_changed.connect(self._document_replaced)
         weak_self = weakref.ref(self)  # ImageIO outlives nothing here, and a bound method would form a cycle.

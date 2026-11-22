@@ -167,7 +167,7 @@ class _ZipReadContext(OraReadContext):
     """Reads metadata files straight from an open archive."""
 
     def __init__(self, archive: zipfile.ZipFile) -> None:
-        super().__init__('')
+        super().__init__('', None)
         self._archive = archive
 
     def read_file(self, archive_path: str) -> Optional[bytes]:

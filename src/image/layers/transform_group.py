@@ -7,7 +7,6 @@ from PySide6.QtGui import QTransform, QImage
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_layer import TransformLayer
-from src.undo_stack import UndoStack
 
 
 class TransformGroup(TransformLayer):
@@ -34,7 +33,7 @@ class TransformGroup(TransformLayer):
 
     def __init__(self, layer_group: LayerGroup) -> None:
         self._bounds = QRect()
-        super().__init__(f'TransformGroup-{layer_group.name}')
+        super().__init__(f'TransformGroup-{layer_group.name}', layer_group.undo_stack)
         self._primary_group = layer_group
         self._groups: list[LayerGroup] = []
         self._transform_layers: list[TransformLayer] = []
@@ -114,7 +113,7 @@ class TransformGroup(TransformLayer):
         def _undo(layer_transforms=before, group_transform=last_transform) -> None:
             self._write_transforms(layer_transforms, group_transform)
 
-        UndoStack().commit_action(_update, _undo, 'TransformGroup.transform', merge_target=self)
+        self.undo_stack.commit_action(_update, _undo, 'TransformGroup.transform', merge_target=self)
 
     def set_transform(self, transform: QTransform) -> None:
         """Propagate the transformation to all associated layers."""

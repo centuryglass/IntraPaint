@@ -17,7 +17,6 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.generation_area_utils import resolution_for_area, previous_frame, updated_recent_sizes, \
     RESOLUTION_RULE_MANUAL, follow_selection_target, follow_selection_position, FOLLOW_SELECTION_OFF
@@ -170,7 +169,7 @@ class GenerationAreaController(QObject):
         self._follow_timer.start(FOLLOW_SELECTION_DELAY_MS)
 
     def _selection_changed(self, *_args) -> None:
-        undo_stack = UndoStack()
+        undo_stack = self._image_stack.undo_stack
         if undo_stack.undo_in_progress or undo_stack.redo_in_progress:
             self._follow_skipped_for_history = True
         self._start_follow_timer()

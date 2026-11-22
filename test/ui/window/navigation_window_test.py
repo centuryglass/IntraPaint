@@ -90,7 +90,7 @@ class NavigationPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
-        self.image_stack = ImageStack(self.IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048))
+        self.image_stack = ImageStack(self.IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
         self.image_stack.create_layer()
         self.main_viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
         self.main_viewer.resize(600, 400)
@@ -190,7 +190,7 @@ class NavigationWindowResizeTest(IntraPaintTestCase):
     def test_resize_plans_the_canvas_bar(self) -> None:
         """Resizing the window plans its canvas bar: Reset view shows its label when wide and its glyph when
         narrow."""
-        image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048))
+        image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048), UndoStack())
         main_viewer = ImageViewer(None, image_stack, use_keybindings=False)
         window = NavigationWindow(image_stack, main_viewer)
         window.show()

@@ -1,4 +1,4 @@
-"""Global stack for tracking undo/redo state, as a thin wrapper over a QUndoStack."""
+"""The document's undo/redo history, as a thin wrapper over a QUndoStack."""
 import logging
 from contextlib import contextmanager
 from typing import Callable, Optional, Generator
@@ -76,6 +76,10 @@ class _CallableCommand(QUndoCommand):
 
 class UndoStack(metaclass=AppService):
     """Manages the application's shared undo history.
+
+    `AppController` reads the installed context's instance once and passes it to `ImageStack`. Everything else gets it
+    from `ImageStack.undo_stack`, `Layer.undo_stack` or its own constructor. `ImageStack`, layers and `OraReadContext`
+    hold it weakly, because its commands capture them, so whoever creates the stack keeps it alive.
 
     The history also tracks whether the document matches its file: one history state is clean, the state the open
     file holds. `clear` makes the current state clean, `save_point` records a save's state, and `mark_modified` leaves

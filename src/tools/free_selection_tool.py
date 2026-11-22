@@ -15,7 +15,6 @@ from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
-from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_path
 from src.util.visual.key_hint_text import rich_text_key_hints
@@ -53,7 +52,7 @@ class FreeSelectionTool(BaseTool):
         self._image_stack = image_stack
         self._control_panel = FreeSelectionPanel(image_stack.selection_layer, self)
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
-        self._path_item = PathCreationItem(self._scene)
+        self._path_item = PathCreationItem(self._scene, image_stack.undo_stack)
         self._preview_line = TempDashedLineItem(scene)
         image_viewer.canvas_extras.register(self._path_item, CanvasExtraCategory.TOOL)
         image_viewer.canvas_extras.register(self._preview_line, CanvasExtraCategory.TOOL)
@@ -107,7 +106,7 @@ class FreeSelectionTool(BaseTool):
         bounds = polygon.boundingRect().toAlignedRect()
         bounds.translate(-layer_pos.x(), -layer_pos.y())
         bounds = bounds.intersected(layer.bounds)
-        with UndoStack().combining_actions('FreeSelectionTool._close_and_select'):
+        with self._image_stack.undo_stack.combining_actions('FreeSelectionTool._close_and_select'):
             self._path_item.clear_points()
             if bounds.isEmpty() and mode.keeps_unrelated_content:
                 return

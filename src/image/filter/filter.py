@@ -17,7 +17,6 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
-from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.async_task import AsyncTask
 from src.util.parameter import Parameter
@@ -330,7 +329,7 @@ class ImageFilter:
                     if isinstance(updated_layer, (ImageLayer, LayerGroup)):
                         updated_layer.set_image(image)
 
-            UndoStack().commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
+            self._image_stack.undo_stack.commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
 
         task.finish_signal.connect(_finish)
         task.start()

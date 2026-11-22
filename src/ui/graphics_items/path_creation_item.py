@@ -1,5 +1,6 @@
 """Editable path item used to create a polygon."""
 from typing import Optional
+from weakref import ref
 
 from PySide6.QtCore import QPointF, QRectF, QLineF, Signal
 from PySide6.QtGui import QPainterPath, QPolygonF, QPainter
@@ -17,12 +18,19 @@ class PathCreationItem(AnimatedDashItem):
 
     first_handle_clicked = Signal()
 
-    def __init__(self, scene: QGraphicsScene) -> None:
+    def __init__(self, scene: QGraphicsScene, undo_stack: UndoStack) -> None:
         super().__init__()
+        # Weak, since this item's undo commands capture it. The stack's owner keeps it alive.
+        self._undo_stack_ref = ref(undo_stack)
         self._points: list[QPointF] = []
         self._handles: list[TransformHandle] = []
         scene.addItem(self)
         self.animated = True
+
+    def _undo_stack(self) -> UndoStack:
+        undo_stack = self._undo_stack_ref()
+        assert undo_stack is not None, 'PathCreationItem outlived its undo stack'
+        return undo_stack
 
     @property
     def count(self) -> int:
@@ -80,7 +88,7 @@ class PathCreationItem(AnimatedDashItem):
             if len(self._handles) > 0:
                 idx = self.count - 1
                 self._remove_handle(idx)
-        UndoStack().commit_action(_add_handle, _remove_handle, 'PathCreationItem.add_point')
+        self._undo_stack().commit_action(_add_handle, _remove_handle, 'PathCreationItem.add_point')
 
     def clear_points(self) -> None:
         """Removes all points, saving the change to the undo history."""
@@ -95,7 +103,7 @@ class PathCreationItem(AnimatedDashItem):
         def _restore() -> None:
             for point in point_list:
                 self._add_handle(point)
-        UndoStack().commit_action(_clear, _restore, 'PathCreationItem.clear_points')
+        self._undo_stack().commit_action(_clear, _restore, 'PathCreationItem.clear_points')
 
     def last_point(self) -> Optional[QPointF]:
         """Returns the last point in the list"""

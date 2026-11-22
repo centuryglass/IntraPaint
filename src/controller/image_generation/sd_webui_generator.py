@@ -30,7 +30,6 @@ from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.generators.webui_advanced_controls import WebUIAdvancedControls
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
@@ -580,7 +579,7 @@ class SDWebUIGenerator(SDGenerator):
             def _restore_prompt(text=last_prompt) -> None:
                 Cache().set(Cache.PROMPT, text)
 
-            UndoStack().commit_action(_update_prompt, _restore_prompt, 'SDWebUIGenerator._describe')
+            self._image_stack.undo_stack.commit_action(_update_prompt, _restore_prompt, 'SDWebUIGenerator._describe')
             AppStateTracker().set_app_state(APP_STATE_EDITING)
 
         task.prompt_ready.connect(set_prompt)

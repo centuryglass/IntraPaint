@@ -29,7 +29,7 @@ class QtPaintBrushTest(BrushTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = ImageLayer(brush_test_pattern(), 'draw test layer')
+        self.layer = ImageLayer(brush_test_pattern(), 'draw test layer', UndoStack())
         self.brush = QtPaintBrush(self.layer)
         self.brush.brush_size = 16
         self.brush.brush_color = BRUSH_COLOR

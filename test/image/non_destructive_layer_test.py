@@ -20,6 +20,7 @@ from src.image.open_raster import save_ora_image, read_ora_image, RESERVED_EXTEN
 from src.image.ora_extensions import (OraWriteContext, OraReadContext, DocumentExtension, register_layer_loader,
                                       unregister_layer_loader, register_document_extension,
                                       unregister_document_extension)
+from src.undo_stack import UndoStack
 from src.util.async_task import AsyncTask
 from test.base_test_case import IntraPaintTestCase
 from test.image.layers.image_stack_state import select_rect
@@ -35,8 +36,8 @@ DOCUMENT_EXTENSION = 'stub-document'
 class StubLayer(NonDestructiveLayer):
     """A non-destructive layer rendering one solid color, with a string payload saved to .ora."""
 
-    def __init__(self, payload: str = 'payload', size: QSize = QSize(16, 12)) -> None:
-        super().__init__('stub')
+    def __init__(self, undo_stack: UndoStack, payload: str = 'payload', size: QSize = QSize(16, 12)) -> None:
+        super().__init__('stub', undo_stack)
         self.payload = payload
         self.set_size(size)
 
@@ -46,7 +47,7 @@ class StubLayer(NonDestructiveLayer):
         return image
 
     def copy(self) -> 'StubLayer':
-        layer = StubLayer(self.payload, self.size)
+        layer = StubLayer(self.undo_stack, self.payload, self.size)
         layer.set_transform(self.transform)
         return layer
 
@@ -66,7 +67,7 @@ def _load_stub(attributes: dict[str, str], context: OraReadContext) -> Optional[
     file_content = context.read_file(attributes[STUB_FILE_TAG])
     if file_content is None:
         return None
-    layer = StubLayer(attributes[STUB_TAG] + ':' + file_content.decode())
+    layer = StubLayer(context.undo_stack, attributes[STUB_TAG] + ':' + file_content.decode())
     return layer
 
 
@@ -76,11 +77,11 @@ class NonDestructiveGateTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         backdrop = QImage(STACK_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         backdrop.fill(QColor(200, 0, 0))
         self.backdrop = self.image_stack.create_layer('backdrop', backdrop, layer_index=0)
-        self.stub = StubLayer()
+        self.stub = StubLayer(self.image_stack.undo_stack)
         self.image_stack.layer_stack.insert_layer(self.stub, 0)
         self.image_stack.active_layer = self.stub
 
@@ -158,8 +159,8 @@ class OraExtensionTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024))
-        self.loaded_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
+        self.loaded_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.image_stack.create_layer('backdrop', QImage(STACK_SIZE, QImage.Format.Format_ARGB32_Premultiplied),
                                       layer_index=0)
 
@@ -174,7 +175,7 @@ class OraExtensionTest(IntraPaintTestCase):
                 return '\n'.join(archive.namelist())
 
     def _add_stub(self, payload: str) -> StubLayer:
-        layer = StubLayer(payload)
+        layer = StubLayer(self.image_stack.undo_stack, payload)
         layer.set_transform(QTransform.fromTranslate(5, 6))
         self.image_stack.layer_stack.insert_layer(layer, 0)
         self.image_stack.active_layer = layer
@@ -225,7 +226,7 @@ class OraExtensionTest(IntraPaintTestCase):
         """Layer extension data can't overwrite the attributes open_raster writes itself."""
         for tag in sorted(RESERVED_EXTENDED_TAGS):
             with self.subTest(tag=tag):
-                layer = StubLayer()
+                layer = StubLayer(self.image_stack.undo_stack)
                 self.image_stack.layer_stack.insert_layer(layer, 0)
                 with patch.object(StubLayer, 'ora_extension_data', return_value={tag: 'x'}):
                     with tempfile.TemporaryDirectory() as temp_dir, self.assertRaises(ValueError):
@@ -266,7 +267,7 @@ class OraExtensionTest(IntraPaintTestCase):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 context.write_file(path, b'')
         with tempfile.TemporaryDirectory() as temp_dir:
-            read_context = OraReadContext(temp_dir)
+            read_context = OraReadContext(temp_dir, UndoStack())
             self.assertIsNone(read_context.read_file('../escape'))
             self.assertIsNone(read_context.read_file('data/missing.txt'))
 

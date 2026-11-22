@@ -36,7 +36,7 @@ class AnimationTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
     def _frame_layers_bottom_up(self) -> list[ImageLayer]:
         layers = sorted(self.image_stack.top_level_layers, key=lambda layer: layer.z_value)

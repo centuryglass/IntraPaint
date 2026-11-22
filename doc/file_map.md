@@ -68,7 +68,7 @@ IntraPaint's application source: config, controllers, the image model, editing t
 
 - `src/app_context.py`: Holds the application's global services in one replaceable `AppContext`.
 - `src/hotkey_filter.py`: Passes ImageViewer input events to an active editing tool.
-- `src/undo_stack.py`: Global stack for tracking undo/redo state, as a thin wrapper over a QUndoStack.
+- `src/undo_stack.py`: The document's undo/redo history, as a thin wrapper over a QUndoStack.
 
 ## `src/config`
 

@@ -10,6 +10,7 @@ from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -45,7 +46,7 @@ class DashAnimationTest(IntraPaintTestCase):
         self.assertFalse(timer.isActive())
 
     def test_path_animates_only_with_a_segment(self) -> None:
-        path_item = PathCreationItem(self.scene)
+        path_item = PathCreationItem(self.scene, UndoStack())
         timer = path_item._animation_timer
         path_item.add_point(QPointF(0, 0))
         self.assertFalse(timer.isActive(), 'a single point has no line to animate')

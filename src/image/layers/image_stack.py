@@ -6,6 +6,7 @@ import re
 from contextlib import contextmanager
 from enum import Enum
 from typing import Optional, cast, Callable, TypeAlias, Generator, Iterable
+from weakref import ref
 
 import numpy as np
 from PIL import Image
@@ -140,9 +141,12 @@ class ImageStack(QObject):
                  image_size: QSize,
                  generation_area_size: QSize,
                  min_generation_area_size: QSize,
-                 max_generation_area_size: QSize) -> None:
-        """Initializes the image stack with an empty initial layer."""
+                 max_generation_area_size: QSize,
+                 undo_stack: UndoStack) -> None:
+        """Initializes the image stack with an empty initial layer, recording its edits in `undo_stack`."""
         super().__init__()
+        # Weak, since the history's commands capture the stack. The undo stack's owner (its AppContext) keeps it alive.
+        self._undo_stack_ref = ref(undo_stack)
         self._size = image_size
         # Another program's data from the loaded .ora file. Only `open_raster` uses it, and every load clears it.
         self.ora_foreign_data: Optional[OraForeignDocumentData] = None
@@ -164,7 +168,7 @@ class ImageStack(QObject):
 
         Cache().connect(self, Cache.EDIT_SIZE, _update_gen_area_size)
 
-        self._layer_stack = LayerGroup(NEW_IMAGE_LAYER_GROUP_NAME)
+        self._layer_stack = LayerGroup(NEW_IMAGE_LAYER_GROUP_NAME, undo_stack)
         self._render_timer = QTimer()
         self._render_timer.setSingleShot(True)
         self._render_timer.setInterval(RENDER_DELAY_MS)
@@ -174,7 +178,7 @@ class ImageStack(QObject):
         self._selected_layer_ids: set[int] = {self._active_layer_id}
 
         # Create selection layer:
-        self._selection_layer = SelectionLayer(image_size, self.generation_area_bounds_changed)
+        self._selection_layer = SelectionLayer(image_size, self.generation_area_bounds_changed, undo_stack)
         self._selection_layer.update_generation_area(self._generation_area)
 
         self._selection_update_timer = QTimer()
@@ -203,6 +207,13 @@ class ImageStack(QObject):
         self._selection_layer.content_changed.connect(self._selection_layer_updated)
 
     # PROPERTY DEFINITIONS:
+
+    @property
+    def undo_stack(self) -> UndoStack:
+        """Returns the history this stack's edits are recorded in. Every layer in the stack records into it too."""
+        undo_stack = self._undo_stack_ref()
+        assert undo_stack is not None, 'ImageStack outlived its undo stack'
+        return undo_stack
 
     @property
     def count(self) -> int:
@@ -237,7 +248,7 @@ class ImageStack(QObject):
         def _undo_set_active(layer=last_active):
             self._set_active_layer_internal(layer)
 
-        UndoStack().commit_action(_set_active, _undo_set_active, 'ImageStack.active_layer')
+        self.undo_stack.commit_action(_set_active, _undo_set_active, 'ImageStack.active_layer')
 
     @property
     def active_layer_id(self) -> int:
@@ -476,7 +487,7 @@ class ImageStack(QObject):
                         Cache().set(Cache.EDIT_SIZE, QSize(self._generation_area.size()))
 
             action_type = 'ImageStack.generation_area'
-            UndoStack().commit_action(lambda: update_fn(bounds_rect),
+            self.undo_stack.commit_action(lambda: update_fn(bounds_rect),
                                       lambda: update_fn(last_bounds),
                                       action_type, merge_target=self)
 
@@ -538,7 +549,7 @@ class ImageStack(QObject):
                 if tested_layer.locked or tested_layer.parent_locked:
                     interfering_locked_layers.append(tested_layer)
                 affected_layers.append(tested_layer)
-        with (UndoStack().combining_actions('ImageStack.resize_canvas')):
+        with self.undo_stack.combining_actions('ImageStack.resize_canvas'):
             if len(affected_layers) > 0:
                 layer_names = [layer.name for layer in affected_layers]
                 if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names,
@@ -610,7 +621,7 @@ class ImageStack(QObject):
                 self._update_z_values()
                 self._selection_layer.restore_state(sel_state)
 
-            UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
+            self.undo_stack.commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
 
     def flip_image(self, horizontal: bool) -> None:
         """Mirrors the whole image horizontally or vertically, as one undo step. See `transform_image`."""
@@ -676,7 +687,7 @@ class ImageStack(QObject):
                 self.selection_layer.restore_state(selection_state)
                 self._set_generation_area_internal(last_generation_area)
 
-        UndoStack().commit_action(_apply, _undo, 'ImageStack.transform_image')
+        self.undo_stack.commit_action(_apply, _undo, 'ImageStack.transform_image')
 
     def qimage(self, crop_to_image: bool = True) -> QImage:
         """Returns the visible layers' combined content, read from the layer stack's tile cache.
@@ -780,7 +791,7 @@ class ImageStack(QObject):
             image_data = pil_image_to_qimage(image_data)
         if layer_name is None:
             layer_name = self._get_default_new_layer_name()
-        layer = ImageLayer(image_data, layer_name)
+        layer = ImageLayer(image_data, layer_name, self.undo_stack)
         if transform is not None:
             layer.set_transform(transform)
 
@@ -792,7 +803,7 @@ class ImageStack(QObject):
         def _remove_new(new_layer=layer):
             self._remove_layer_internal(new_layer)
 
-        UndoStack().commit_action(_create_new, _remove_new, 'ImageStack.create_layer')
+        self.undo_stack.commit_action(_create_new, _remove_new, 'ImageStack.create_layer')
         return layer
 
     def create_layer_group(self,
@@ -814,7 +825,7 @@ class ImageStack(QObject):
             layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
         if layer_name is None:
             layer_name = self._get_default_new_layer_name()
-        layer = LayerGroup(layer_name)
+        layer = LayerGroup(layer_name, self.undo_stack)
 
         def _create_new(group=layer, parent=layer_parent, idx=layer_index) -> None:
             self._insert_layer_internal(group, parent, idx)
@@ -822,7 +833,7 @@ class ImageStack(QObject):
         def _remove_new(group=layer) -> None:
             self._remove_layer_internal(group)
 
-        UndoStack().commit_action(_create_new, _remove_new, 'ImageStack.create_layer_group')
+        self.undo_stack.commit_action(_create_new, _remove_new, 'ImageStack.create_layer_group')
         return layer
 
     def create_text_layer(self,
@@ -842,7 +853,7 @@ class ImageStack(QObject):
             or at the last index if the active layer isn't in the same group."""
         if layer_parent is None or layer_index is None:
             layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
-        layer = TextLayer(layer_data)
+        layer = TextLayer(layer_data, self.undo_stack)
 
         def _create_new(group=layer, parent=layer_parent, idx=layer_index) -> None:
             self._insert_layer_internal(group, parent, idx)
@@ -850,7 +861,7 @@ class ImageStack(QObject):
         def _remove_new(group=layer) -> None:
             self._remove_layer_internal(group)
 
-        UndoStack().commit_action(_create_new, _remove_new, 'ImageStack.create_text_layer')
+        self.undo_stack.commit_action(_create_new, _remove_new, 'ImageStack.create_text_layer')
         return layer
 
     def copy_layer(self, layer: Optional[Layer] = None) -> None:
@@ -877,7 +888,7 @@ class ImageStack(QObject):
         def _remove_copy(new_layer=layer_copy):
             self._remove_layer_internal(new_layer)
 
-        UndoStack().commit_action(_add_copy, _remove_copy, 'ImageStack.copy_layer')
+        self.undo_stack.commit_action(_add_copy, _remove_copy, 'ImageStack.copy_layer')
 
     def remove_layer(self, layer: Optional[Layer] = None) -> None:
         """Removes an image layer from somewhere within the stack.
@@ -904,7 +915,7 @@ class ImageStack(QObject):
             if active_id != self.active_layer_id:
                 self._set_active_layer_internal(active_id)
 
-        UndoStack().commit_action(_remove, _undo_remove, 'ImageStack.remove_layer')
+        self.undo_stack.commit_action(_remove, _undo_remove, 'ImageStack.remove_layer')
 
     def replace_layer(self, removed_layer: Layer, replacement_layer: Layer) -> None:
         """Removes a layer from the layer stack, replacing it with another that's not in the layer stack."""
@@ -930,7 +941,7 @@ class ImageStack(QObject):
         def _revert_replacement(old: Layer = replacement_layer, new: Layer = removed_layer) -> None:
             _replace(old, new)
 
-        UndoStack().commit_action(_install_replacement, _revert_replacement, 'ImageStack.replace_layer')
+        self.undo_stack.commit_action(_install_replacement, _revert_replacement, 'ImageStack.replace_layer')
 
     def replace_layer_with_image(self, layer: NonDestructiveLayer) -> ImageLayer:
         """Convert a non-destructive layer into an image layer, replacing it in the layer stack and returning the new
@@ -1002,7 +1013,7 @@ class ImageStack(QObject):
                 if is_active:
                     self._set_active_layer_internal(moving)
 
-        UndoStack().commit_action(_move, _move_back, 'ImageStack.move_layer')
+        self.undo_stack.commit_action(_move, _move_back, 'ImageStack.move_layer')
 
     def move_layer_by_offset(self, offset: int, layer: Optional[Layer] = None) -> None:
         """Moves a layer up or down in the stack.
@@ -1134,7 +1145,7 @@ class ImageStack(QObject):
         np_top[blended_px, 3] = best_alpha
 
         layer_offset = parent.bounds.topLeft()
-        replacement_layer = ImageLayer(top_render, layer.name)
+        replacement_layer = ImageLayer(top_render, layer.name, self.undo_stack)
         replacement_layer.set_transform(QTransform.fromTranslate(layer_offset.x(), layer_offset.y()))
         self.replace_layer(layer, replacement_layer)
 
@@ -1215,7 +1226,7 @@ class ImageStack(QObject):
         if stack_bounds.isEmpty():
             return
         merged_image = self.qimage(crop_to_image=False)
-        new_layer = ImageLayer(merged_image, MERGED_LAYER_NAME)
+        new_layer = ImageLayer(merged_image, MERGED_LAYER_NAME, self.undo_stack)
         new_layer.set_transform(QTransform.fromTranslate(stack_bounds.x(), stack_bounds.y()))
 
         removed_layers = tuple(visible_layers)
@@ -1238,7 +1249,7 @@ class ImageStack(QObject):
                 self._insert_layer_internal(layer, self._layer_stack, cast(int, idx))
             self._set_active_layer_internal(active_id)
 
-        UndoStack().commit_action(_do_merge, _undo_merge, 'ImageStack.merge_all_visible')
+        self.undo_stack.commit_action(_do_merge, _undo_merge, 'ImageStack.merge_all_visible')
 
     def merge_layer_down(self, top_layer: Optional[Layer] = None) -> None:
         """Merges a layer with the one beneath it on the stack.
@@ -1280,7 +1291,7 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_MERGE)
             return
 
-        with UndoStack().combining_actions('ImageStack.merge_layer_down'):
+        with self.undo_stack.combining_actions('ImageStack.merge_layer_down'):
             layer_names = []
             if isinstance(base_layer, NonDestructiveLayer):
                 layer_names.append(base_layer.name)
@@ -1364,7 +1375,7 @@ class ImageStack(QObject):
                 if restored.shown != base.shown:
                     self._emit_content_changed()
 
-            UndoStack().commit_action(_do_merge, _undo_merge, 'ImageStack.merge_layer_down')
+            self.undo_stack.commit_action(_do_merge, _undo_merge, 'ImageStack.merge_layer_down')
 
     def layer_to_image_size(self, layer: Optional[Layer] = None) -> None:
         """Resizes a layer to match the image size. Out-of-bounds content is cropped, new content is transparent.
@@ -1380,7 +1391,7 @@ class ImageStack(QObject):
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer):
             return
-        with UndoStack().combining_actions('ImageStack.layer_to_image_size'):
+        with self.undo_stack.combining_actions('ImageStack.layer_to_image_size'):
             if isinstance(layer, LayerGroup):
                 for child_layer in layer.recursive_child_layers:
                     if child_layer.locked or child_layer.parent_locked or not isinstance(child_layer, ImageLayer):
@@ -1423,7 +1434,7 @@ class ImageStack(QObject):
             if changed:
                 self._emit_content_changed()
 
-        UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
+        self.undo_stack.commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
 
     def get_layer_selection_mask(self, layer: Layer) -> QImage:
         """Transform the selection layer to another layer's local coordinates, crop to bounds, and return the
@@ -1565,7 +1576,7 @@ class ImageStack(QObject):
             if not NonDestructiveLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
                 return None
-            with UndoStack().combining_actions('ImageStack.clear_selected'):
+            with self.undo_stack.combining_actions('ImageStack.clear_selected'):
                 layer = self.replace_layer_with_image(layer)
                 layer.cut_masked(transformed_mask)
             return selected if save_to_copy_buffer else None
@@ -1636,7 +1647,7 @@ class ImageStack(QObject):
         if isinstance(layer, NonDestructiveLayer) \
                 and not NonDestructiveLayer.confirm_or_cancel_render_to_image([layer.name], action_name):
             return
-        with UndoStack().combining_actions(undo_name):
+        with self.undo_stack.combining_actions(undo_name):
             if isinstance(layer, NonDestructiveLayer):
                 layer = self.replace_layer_with_image(layer)
             assert isinstance(layer, ImageLayer)
@@ -1657,7 +1668,7 @@ class ImageStack(QObject):
         """If the copy buffer contains image data, paste it into a new layer with the copied layer's opacity and
         composite mode."""
         if self._copy_buffer is not None:
-            with UndoStack().combining_actions('ImageStack.paste'):
+            with self.undo_stack.combining_actions('ImageStack.paste'):
                 new_layer = self.create_layer(PASTE_LAYER_NAME, self._copy_buffer.copy(),
                                               transform=self._copy_buffer_transform)
                 opacity, mode = self._copy_buffer_layer_properties
@@ -1670,7 +1681,7 @@ class ImageStack(QObject):
 
         The layer keeps the default opacity and composite mode; `transform` decides where the image sits.
         """
-        with UndoStack().combining_actions('ImageStack.paste'):
+        with self.undo_stack.combining_actions('ImageStack.paste'):
             new_layer = self.create_layer(PASTE_LAYER_NAME, image, transform=transform)
             self.active_layer = new_layer
 
@@ -1699,7 +1710,7 @@ class ImageStack(QObject):
         offset = QTransform.fromTranslate(self._generation_area.x(), self.generation_area.y())
         data_transform = scale * offset
         if not isinstance(layer, ImageLayer):
-            new_layer = ImageLayer(image_data, self._get_default_new_layer_name())
+            new_layer = ImageLayer(image_data, self._get_default_new_layer_name(), self.undo_stack)
             new_layer.set_transform(data_transform)
             if isinstance(layer, LayerGroup):
                 parent: Optional[LayerParent] = layer
@@ -1718,7 +1729,7 @@ class ImageStack(QObject):
             def _remove(removed=new_layer):
                 self._remove_layer_internal(removed)
 
-            UndoStack().commit_action(_insert, _remove, 'ImageStack.set_generation_area_content')
+            self.undo_stack.commit_action(_insert, _remove, 'ImageStack.set_generation_area_content')
         else:
             assert isinstance(layer, ImageLayer)
             data_transform = data_transform * layer.transform.inverted()[0]
@@ -1777,7 +1788,8 @@ class ImageStack(QObject):
             Layer stack size will be adjusted to match image data size.
         """
         # The replaced document's layers are still in the stack, so the default name would count past them:
-        new_layer = ImageLayer(image_data, DEFAULT_LAYER_NAME.format(number=FIRST_DEFAULT_LAYER_NUMBER))
+        new_layer = ImageLayer(image_data, DEFAULT_LAYER_NAME.format(number=FIRST_DEFAULT_LAYER_NUMBER),
+                               self.undo_stack)
         new_size = new_layer.size
         new_gen_area = self._get_closest_valid_generation_area(QRect(self._generation_area),
                                                                new_layer.transformed_bounds)
@@ -1815,7 +1827,7 @@ class ImageStack(QObject):
 
         `UndoStack.clear` asserts that no undo group is open, so a load can't run inside `UndoStack.combining_actions`.
         """
-        UndoStack().clear()
+        self.undo_stack.clear()
         self.document_changed.emit()
 
     def flush_render(self) -> None:

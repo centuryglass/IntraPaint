@@ -31,9 +31,9 @@ class LayerGroup(LayerParent):
     layer_added = Signal(Layer)
     layer_removed = Signal(Layer)
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, undo_stack: UndoStack) -> None:
         """Initialize with no layer data."""
-        super().__init__(name)
+        super().__init__(name, undo_stack)
         self._tiles = TileCache()
         # The full composite assembled from the tiles, the bounds it covers, and the part of it older than the tiles:
         self._image: Optional[QImage] = None
@@ -117,7 +117,7 @@ class LayerGroup(LayerParent):
         bounds = self.bounds
         right_edge = self.bounds.x() + self.bounds.width()
 
-        with UndoStack().combining_actions('LayerGroup.flip_horizontal'), self.all_signals_delayed():
+        with self.undo_stack.combining_actions('LayerGroup.flip_horizontal'), self.all_signals_delayed():
             for layer in self.recursive_child_layers:
                 if isinstance(layer, TransformLayer):
                     initial_bounds = layer.transformed_bounds
@@ -137,7 +137,7 @@ class LayerGroup(LayerParent):
                 raise ValueError(f'Attempted transformation on layer group containing locked layer {layer.name}.')
         bounds = self.bounds
         bottom_edge = self.bounds.y() + self.bounds.height()
-        with UndoStack().combining_actions('LayerGroup.flip_vertical'), self.all_signals_delayed():
+        with self.undo_stack.combining_actions('LayerGroup.flip_vertical'), self.all_signals_delayed():
             for layer in self.recursive_child_layers:
                 if isinstance(layer, TransformLayer):
                     initial_bounds = layer.transformed_bounds
@@ -176,7 +176,7 @@ class LayerGroup(LayerParent):
 
     def copy(self) -> 'LayerGroup':
         """Returns a copy of this layer, and all the layers within it."""
-        copy = LayerGroup(self.name + ' (copy)')
+        copy = LayerGroup(self.name + ' (copy)', self.undo_stack)
         copy.set_opacity(self.opacity)
         copy.set_composition_mode(self.composition_mode)
         copy.set_visible(self.visible)
@@ -189,7 +189,7 @@ class LayerGroup(LayerParent):
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
         assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to layer group size'
-        with UndoStack().combining_actions('image.layers.layer_group.cut_masked'):
+        with self.undo_stack.combining_actions('image.layers.layer_group.cut_masked'):
             for layer in self.recursive_child_layers:
                 if isinstance(layer, LayerGroup) or layer.locked or layer.parent_locked:
                     continue
@@ -208,7 +208,7 @@ class LayerGroup(LayerParent):
 
     def crop_to_content(self) -> None:
         """Crops the layer to remove transparent areas."""
-        with UndoStack().combining_actions('image.layers.layer_group.crop_to_content'):
+        with self.undo_stack.combining_actions('image.layers.layer_group.crop_to_content'):
             for layer in self.recursive_child_layers:
                 if isinstance(layer, (LayerGroup, TextLayer)) or layer.locked or layer.parent_locked:
                     continue
@@ -483,6 +483,7 @@ class LayerGroup(LayerParent):
         if index is None:
             index = len(self._layers)
         assert layer not in self._layers, f'layer {layer.name}:{layer.id} is already in the image group.'
+        assert layer.undo_stack is self.undo_stack, f'layer {layer.name}:{layer.id} records undo in another stack.'
         empty_image = layer.empty
         assert_valid_index(index, self._layers, allow_end=True)
         layer.content_changed.connect(self._layer_content_change_slot)

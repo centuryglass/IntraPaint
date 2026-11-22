@@ -16,6 +16,7 @@ from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionP
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.ui.widget.panel_section import PanelSection
+from src.undo_stack import UndoStack
 from src.util.layout import layout_contents
 from src.util.visual.magic_wand_area import FillArea
 from src.util.visual.selection_mode import SelectionMode
@@ -33,7 +34,7 @@ class SelectionPanelTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
-        self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.selection_layer = self.image_stack.selection_layer
         self.panel = SelectionPanel(self.selection_layer, MagicMock())
         self.button = self.panel._clear_pins_button  # pylint: disable=protected-access
@@ -146,7 +147,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.layer = self.image_stack.selection_layer
         self.tools = {name: MagicMock(is_active=False) for name in ('brush', 'fill', 'free', 'shape')}
         self.tools['shape'].get_activation_config_key.return_value = KeyConfig.SHAPE_SELECTION_TOOL_KEY

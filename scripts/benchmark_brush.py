@@ -80,7 +80,7 @@ def _smudge_steps(case: Case, _event_count: int) -> int:
 
 def _create_filter_brush(layer: ImageLayer) -> LayerBrush:
     # Filters only use the image stack when applied from the menu:
-    image_stack = ImageStack(layer.size, layer.size, QSize(8, 8), QSize(1024, 1024))
+    image_stack = ImageStack(layer.size, layer.size, QSize(8, 8), QSize(1024, 1024), layer.undo_stack)
     return FilterBrush(BlurFilter(image_stack), layer)
 
 
@@ -222,7 +222,7 @@ def run_case(benchmark: BrushBenchmark, layer: ImageLayer, case: Case) -> tuple[
             QApplication.processEvents()
     _timed(brush.end_stroke, durations)
     brush.connect_to_layer(None)
-    UndoStack().undo()
+    layer.undo_stack.undo()
     return sum(durations), max(durations), benchmark.unit_count(case, len(points))
 
 
@@ -242,7 +242,7 @@ def main() -> None:
         print(f"{'case':<44}{'draw ms':>10}{'per unit us':>13}{'worst call ms':>15}")
         for brush_name in brush_names:
             benchmark = BENCHMARKS[brush_name]
-            layer = ImageLayer(brush_test_pattern(benchmark.layer_size), 'benchmark layer')
+            layer = ImageLayer(brush_test_pattern(benchmark.layer_size), 'benchmark layer', UndoStack())
             for case in benchmark.cases:
                 runs = [run_case(benchmark, layer, case) for _ in range(args.repeats)]
                 total = min(run[0] for run in runs)

@@ -16,6 +16,7 @@ from src.controller.image_generation.image_generator import ImageGenerator, GENE
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -64,7 +65,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.window = MagicMock()
-        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240))
+        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         self.image_stack.create_layer('source', _solid(IMAGE_SIZE, SOURCE_COLOR))
         self.image_stack.generation_area = GENERATION_AREA
         with self.image_stack.selection_layer.borrow_image() as mask_image:

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -19,7 +20,7 @@ class MainWindowTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         test_size = QSize(512, 512)
-        self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
+        self._image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self._controller = Mock()
         self.window = MainWindow(self._image_stack)
         self.window.show()

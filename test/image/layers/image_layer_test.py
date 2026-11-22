@@ -23,7 +23,7 @@ class ImageLayerTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_layer = ImageLayer(IMG_SIZE, LAYER_NAME)
+        self.image_layer = ImageLayer(IMG_SIZE, LAYER_NAME, UndoStack())
 
         self.name_changed_mock = self.connect_mock(self.image_layer.name_changed)
         self.visibility_changed_mock = self.connect_mock(self.image_layer.visibility_changed)

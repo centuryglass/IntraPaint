@@ -52,10 +52,10 @@ def frame_layer_name(frame_number: int, duration_ms: Optional[int], name_prefix:
 def load_frames_as_image(image_stack: ImageStack, frames: list[ImageFrame]) -> None:
     """Replaces the edited image with one layer per frame, sizing the canvas to fit the largest frame."""
     assert len(frames) > 0
-    layer_stack = LayerGroup('')
+    layer_stack = LayerGroup('', image_stack.undo_stack)
     canvas_size = QSize()
     for frame_number, frame in enumerate(frames, start=1):
-        layer = ImageLayer(frame.image, frame_layer_name(frame_number, frame.duration_ms))
+        layer = ImageLayer(frame.image, frame_layer_name(frame_number, frame.duration_ms), image_stack.undo_stack)
         layer.set_visible(frame_number == 1)
         layer_stack.insert_layer(layer, 0)
         canvas_size = canvas_size.expandedTo(frame.image.size())

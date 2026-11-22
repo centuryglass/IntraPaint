@@ -49,8 +49,10 @@ class Layer(QObject, metaclass=_LayerMeta):
 
     _next_layer_id = 0
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, undo_stack: UndoStack) -> None:
         super().__init__()
+        # Weak, since the history's commands capture layers. The stack's owner (its AppContext) keeps it alive.
+        self._undo_stack_ref = ref(undo_stack)
         self._name = str(name)
         self._visible = True
         self._opacity = 1.0
@@ -65,6 +67,13 @@ class Layer(QObject, metaclass=_LayerMeta):
         # Another program's data from the .ora file this layer was loaded from. Only `open_raster` uses it.
         self.ora_foreign_data: Optional[OraForeignLayerData] = None
         Layer._next_layer_id += 1
+
+    @property
+    def undo_stack(self) -> UndoStack:
+        """Returns the undo history this layer records its changes in, which every layer in one stack shares."""
+        undo_stack = self._undo_stack_ref()
+        assert undo_stack is not None, f'Layer {self._name} outlived its undo stack'
+        return undo_stack
 
     # PROPERTY DEFINITIONS:
     # All changes made through property setters are registered in the undo history, and are broadcast through
@@ -123,7 +132,7 @@ class Layer(QObject, metaclass=_LayerMeta):
         def _undo(locked=not lock) -> None:
             self.set_locked(locked)
 
-        UndoStack().commit_action(_update_lock, _undo, 'src.layers.layer.locked')
+        self.undo_stack.commit_action(_update_lock, _undo, 'src.layers.layer.locked')
 
     @property
     def parent_locked(self) -> bool:
@@ -217,7 +226,7 @@ class Layer(QObject, metaclass=_LayerMeta):
         def _undo(value=not visible) -> None:
             self.set_visible(value)
 
-        UndoStack().commit_action(_update, _undo, 'layer.visible')
+        self.undo_stack.commit_action(_update, _undo, 'layer.visible')
 
     @property
     def hidden_parent(self) -> Optional[LayerParent]:
@@ -581,7 +590,7 @@ class Layer(QObject, metaclass=_LayerMeta):
         def _undo(value=last_value, setter=value_setter):
             setter(value)
 
-        UndoStack().commit_action(_update, _undo, change_type, merge_target=self)
+        self.undo_stack.commit_action(_update, _undo, change_type, merge_target=self)
 
 
 class LayerParent(Layer):

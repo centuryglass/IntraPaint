@@ -29,6 +29,7 @@ from src.image.recovery_files import (find_recoverable_sessions, read_manifest, 
                                       KEY_EXIF)
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import RECOVERY_RESTORE, RECOVERY_DISCARD, RECOVERY_LATER
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -61,7 +62,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         super().setUp()
         self._root_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         self.root = self._root_dir.name
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         self.image_stack.load_image(_solid_image(QColor(Qt.GlobalColor.white)))
         self.window = QWidget()
         self.image_io = ImageIO(self.window, self.image_stack, lambda: None)
@@ -133,7 +134,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.assertTrue(self.controller.dirty)
         self.assertTrue(self.controller.autosave_now(synchronous=True))
         crashed_dir = self._simulate_crash()
-        expected_copy = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        expected_copy = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, 'expected.ora')
             save_ora_image(self.image_stack, ora_path, None)

@@ -27,7 +27,7 @@ class LayerGroupTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         UndoStack().clear()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         self.group = self.image_stack.create_layer_group('group')
         self.layers = [self.image_stack.create_layer(f'layer {i}', layer_parent=self.group, layer_index=i)
                        for i in range(2)]
@@ -51,6 +51,20 @@ class LayerGroupTest(IntraPaintTestCase):
     def test_flip_vertical_is_one_undo_step(self) -> None:
         """Flipping a group vertically is undone in one step."""
         self.assert_one_undo_step(self.group.flip_vertical)
+
+    def test_insert_rejects_layer_from_another_undo_stack(self) -> None:
+        """A layer that records into a different history can't join the group."""
+        other_stack = UndoStack.create()
+        stray = ImageLayer(IMG_SIZE, 'stray', other_stack)
+        with self.assertRaises(AssertionError):
+            self.group.insert_layer(stray, 0)
+        self.assertFalse(self.group.contains(stray))
+
+    def test_layers_share_the_image_stack_undo_stack(self) -> None:
+        """Layers the stack creates, and their copies, record into the stack's history."""
+        copy = self.layers[0].copy()
+        for layer in (self.image_stack.layer_stack, self.group, *self.layers, copy):
+            self.assertIs(layer.undo_stack, self.image_stack.undo_stack)
 
     def test_visibility_toggles_ignore_locks(self) -> None:
         """Locking a group or its child never blocks showing or hiding either."""
