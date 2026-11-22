@@ -13,6 +13,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import MIN_OUTLINE_PIXEL_SIZE
 from src.ui.panel.image_panel import ImagePanel
+from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
 from test.base_test_case import IntraPaintTestCase
 
@@ -35,7 +36,7 @@ class ToolTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE)
+        self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, UndoStack())
         self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False)
         self.image_viewer = self.image_panel.image_viewer
         self.image_panel.resize(self.IMAGE_SIZE.width() + VIEW_MARGIN * 2, self.IMAGE_SIZE.height() + VIEW_MARGIN * 2)

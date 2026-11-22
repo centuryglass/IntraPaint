@@ -29,7 +29,7 @@ class SmudgeBrushTest(BrushTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = ImageLayer(brush_test_pattern(), 'smudge test layer')
+        self.layer = ImageLayer(brush_test_pattern(), 'smudge test layer', UndoStack())
         self.brush = SmudgeBrush(self.layer)
         self.brush.brush_size = 24
         self.brush.opacity = 0.5

@@ -151,7 +151,7 @@ class ImageStackOpTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
     def add_layer(self, name: str, seed: int, size: Optional[QSize] = None, offset: QPoint = QPoint(),
                   parent: Optional[LayerGroup] = None, min_alpha: int = 255) -> ImageLayer:

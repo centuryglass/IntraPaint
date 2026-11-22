@@ -10,7 +10,6 @@ from typing import Optional
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
-from src.undo_stack import UndoStack
 
 
 def _restore_selection_on_undo(image_stack: ImageStack, action_type: str) -> None:
@@ -18,12 +17,14 @@ def _restore_selection_on_undo(image_stack: ImageStack, action_type: str) -> Non
     its undo runs after every other step's undo, once the selected layers are back in the stack."""
     selected = image_stack.selected_layers_in_order()
     active = image_stack.active_layer
-    UndoStack().commit_action(lambda: None, lambda: image_stack.apply_layer_selection(selected, active), action_type)
+    image_stack.undo_stack.commit_action(lambda: None, lambda: image_stack.apply_layer_selection(selected, active),
+                                         action_type)
 
 
 def _apply_selection(image_stack: ImageStack, layers: list[Layer], active: Layer, action_type: str) -> None:
     """Commits a step that selects layers, and does nothing on undo. A bulk command commits it after its last change."""
-    UndoStack().commit_action(lambda: image_stack.apply_layer_selection(layers, active), lambda: None, action_type)
+    image_stack.undo_stack.commit_action(lambda: image_stack.apply_layer_selection(layers, active), lambda: None,
+                                         action_type)
 
 
 def duplicate_selected_layers(image_stack: ImageStack) -> None:
@@ -34,7 +35,7 @@ def duplicate_selected_layers(image_stack: ImageStack) -> None:
         image_stack.copy_layer(layers[0])
         return
     action_type = 'layer_selection_ops.duplicate_selected_layers'
-    with UndoStack().combining_actions(action_type):
+    with image_stack.undo_stack.combining_actions(action_type):
         _restore_selection_on_undo(image_stack, action_type)
         copies: list[Layer] = []
         for layer in layers:
@@ -80,7 +81,7 @@ def delete_selected_layers(image_stack: ImageStack) -> None:
     if next_active is None:
         next_active = image_stack.layer_stack
     action_type = 'layer_selection_ops.delete_selected_layers'
-    with UndoStack().combining_actions(action_type):
+    with image_stack.undo_stack.combining_actions(action_type):
         _restore_selection_on_undo(image_stack, action_type)
         for layer in layers:
             image_stack.remove_layer(layer)
@@ -141,7 +142,7 @@ def move_layers(image_stack: ImageStack, layers: list[Layer], new_parent: LayerG
     selected = image_stack.selected_layers_in_order()
     active = image_stack.active_layer
     action_type = 'layer_selection_ops.move_selected_layers'
-    with UndoStack().combining_actions(action_type):
+    with image_stack.undo_stack.combining_actions(action_type):
         _restore_selection_on_undo(image_stack, action_type)
         for layer in layers:
             current_index = new_parent.get_layer_index(layer) if layer.layer_parent is new_parent else None

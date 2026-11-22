@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsObject
 
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked
@@ -65,9 +65,10 @@ class TransformOutline(QGraphicsObject):
     # Emitted rectangle factors in transform scale and offset, but ignores rotation.
     transformed_rect_changed = Signal(QRectF)
 
-    def __init__(self, initial_bounds: QRectF, allow_rotate=True, include_origin_handle=True,
+    def __init__(self, initial_bounds: QRectF, undo_stack: UndoStack, allow_rotate=True, include_origin_handle=True,
                  fixed_scale=False) -> None:
         super().__init__()
+        self._undo_stack = UndoStackRef(undo_stack)
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self._allow_rotate = allow_rotate
@@ -346,7 +347,7 @@ class TransformOutline(QGraphicsObject):
         if event.button() != Qt.MouseButton.LeftButton:
             event.ignore()
             return
-        UndoStack().begin_gesture('TransformOutline.drag')
+        self._undo_stack().begin_gesture('TransformOutline.drag')
         self.drag_started.emit()
         for handle in self._handles.values():
             # Ensure handles can still be selected during extreme transformations by passing off input to any handle
@@ -394,7 +395,7 @@ class TransformOutline(QGraphicsObject):
                 handle.mouseReleaseEvent(event)
         self.setSelected(False)
         self.drag_finished.emit()
-        UndoStack().end_gesture()
+        self._undo_stack().end_gesture()
 
     def move_transformation_handle(self, handle_id: str, pos: QPointF) -> None:
         """Perform required changes whenever one of the handles moves."""

@@ -46,7 +46,7 @@ class CloneStampBrushTest(BrushTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = ImageLayer(brush_test_pattern(), 'clone stamp test layer')
+        self.layer = ImageLayer(brush_test_pattern(), 'clone stamp test layer', UndoStack())
         self.brush = CloneStampBrush(self.layer)
         self.brush.brush_size = 16
         self.brush.opacity = 1.0

@@ -48,7 +48,7 @@ class RenderTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE)
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
         self.background = self.image_stack.create_layer('background', _gradient_image(CANVAS_SIZE, 0))
 
     def add_layer(self, name: str, transform: QTransform, parent: LayerGroup | None = None,

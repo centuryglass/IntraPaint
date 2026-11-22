@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QGraphicsScene, QStyleOptionGraphicsItem, QWidget
 
 from src.ui.graphics_items.animated_dash_item import AnimatedDashItem
 from src.ui.graphics_items.transform_handle import TransformHandle
-from src.undo_stack import UndoStack
+from src.undo_stack import UndoStack, UndoStackRef
 
 PEN_WIDTH = 4
 
@@ -17,8 +17,9 @@ class PathCreationItem(AnimatedDashItem):
 
     first_handle_clicked = Signal()
 
-    def __init__(self, scene: QGraphicsScene) -> None:
+    def __init__(self, scene: QGraphicsScene, undo_stack: UndoStack) -> None:
         super().__init__()
+        self._undo_stack = UndoStackRef(undo_stack)
         self._points: list[QPointF] = []
         self._handles: list[TransformHandle] = []
         scene.addItem(self)
@@ -80,7 +81,7 @@ class PathCreationItem(AnimatedDashItem):
             if len(self._handles) > 0:
                 idx = self.count - 1
                 self._remove_handle(idx)
-        UndoStack().commit_action(_add_handle, _remove_handle, 'PathCreationItem.add_point')
+        self._undo_stack().commit_action(_add_handle, _remove_handle, 'PathCreationItem.add_point')
 
     def clear_points(self) -> None:
         """Removes all points, saving the change to the undo history."""
@@ -95,7 +96,7 @@ class PathCreationItem(AnimatedDashItem):
         def _restore() -> None:
             for point in point_list:
                 self._add_handle(point)
-        UndoStack().commit_action(_clear, _restore, 'PathCreationItem.clear_points')
+        self._undo_stack().commit_action(_clear, _restore, 'PathCreationItem.clear_points')
 
     def last_point(self) -> Optional[QPointF]:
         """Returns the last point in the list"""

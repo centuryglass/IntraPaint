@@ -59,7 +59,7 @@ class LayerTransformTool(BaseTool):
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._initial_transform = QTransform()
-        self._transform_outline = TransformOutline(QRectF())
+        self._transform_outline = TransformOutline(QRectF(), image_stack.undo_stack)
         self._transform_outline.pos_changed.connect(self._pos_change_slot)
         self._transform_outline.scale_changed.connect(self._scale_change_slot)
         self._transform_outline.angle_changed.connect(self._angle_change_slot)

@@ -58,7 +58,7 @@ class TileCacheFixture(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE)
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
         self.background = self.image_stack.create_layer('background', _noise_image(CANVAS_SIZE, 0))
         self.pass_through = self.image_stack.create_layer_group('pass-through')
         self.passed = self.add_layer('passed', QPoint(30, 20), self.pass_through, CompositeMode.MULTIPLY, 0.8)

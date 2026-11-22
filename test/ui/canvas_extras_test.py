@@ -14,6 +14,7 @@ from src.tools.text_tool import TextTool
 from src.ui.canvas_extras import CanvasExtras, CanvasExtraCategory
 from src.ui.graphics_items.context_pin_item import ContextPinItem
 from src.ui.image_viewer import ImageViewer
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 
@@ -97,7 +98,7 @@ class ImageViewerCanvasExtrasTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
         image = QImage(64, 64, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(QColor(Qt.GlobalColor.red))
         self.image_stack.create_layer(image_data=image)

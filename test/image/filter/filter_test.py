@@ -91,7 +91,7 @@ class FilterSelectionOnlyTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         image = QImage(IMAGE_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(Qt.GlobalColor.white)
         self.layer = self.image_stack.create_layer(None, image)
@@ -131,12 +131,12 @@ class MenuFilterTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
 
     def _reset_stack(self) -> None:
         """Replaces the image stack and clears the undo history, for the next filter's subTest."""
         UndoStack().clear()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024))
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
 
     def _select(self, bounds: QRect) -> None:
         with self.image_stack.selection_layer.borrow_image() as mask_image:

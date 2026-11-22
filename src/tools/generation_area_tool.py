@@ -15,7 +15,6 @@ from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.area_resize_handle import AreaResizeHandle
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel
-from src.undo_stack import UndoStack
 from src.util.generation_area_utils import area_handle_positions, resize_area_from_handle, CORNER_HANDLES, \
     EDGE_HANDLES, HANDLE_TOP_LEFT, HANDLE_BOTTOM_RIGHT, HANDLE_TOP_RIGHT, HANDLE_BOTTOM_LEFT, HANDLE_LEFT, \
     HANDLE_RIGHT, HANDLE_TOP, HANDLE_BOTTOM
@@ -186,7 +185,7 @@ class GenerationAreaTool(BaseTool):
         self._set_area_in_drag(area)
 
     def _end_left_drag(self) -> None:
-        UndoStack().end_gesture()
+        self._image_stack.undo_stack.end_gesture()
         if self._drag_handle is not None and self._drag_changed_area:
             record_generation_area_size(self._image_stack.generation_area.size())
         self._move_offset = None
@@ -222,7 +221,7 @@ class GenerationAreaTool(BaseTool):
                 handle_id = self._handle_at(event)
             if handle_id is not None:
                 self._image_viewer.follow_generation_area = False
-                UndoStack().begin_gesture(UNDO_GESTURE)
+                self._image_stack.undo_stack.begin_gesture(UNDO_GESTURE)
                 self._drag_handle = handle_id
                 self._drag_start_area = self._image_stack.generation_area
                 handle_pos = area_handle_positions(self._drag_start_area)[handle_id]
@@ -230,7 +229,7 @@ class GenerationAreaTool(BaseTool):
                 return True
             if modifiers != Qt.KeyboardModifier.NoModifier:
                 return False
-            UndoStack().begin_gesture(UNDO_GESTURE)
+            self._image_stack.undo_stack.begin_gesture(UNDO_GESTURE)
             area = self._image_stack.generation_area
             if area.contains(image_coordinates):
                 self._move_offset = area.topLeft() - image_coordinates
@@ -238,7 +237,7 @@ class GenerationAreaTool(BaseTool):
                 self._move_offset = QPoint(-(area.width() // 2), -(area.height() // 2))
                 self._move_generation_area(image_coordinates)
         elif event.buttons() == Qt.MouseButton.RightButton:
-            UndoStack().begin_gesture(UNDO_GESTURE)
+            self._image_stack.undo_stack.begin_gesture(UNDO_GESTURE)
             self._image_viewer.follow_generation_area = False
             self._resizing = True
             self._resize_generation_area(image_coordinates)

@@ -43,7 +43,6 @@ from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y, GeometryBloc
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.widget.panel_section import PanelSection
-from src.undo_stack import UndoStack
 from src.util.layout import clear_grid
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, recent_frames, \
     parse_size, size_to_str, previous_frame
@@ -343,13 +342,11 @@ class GenerationAreaToolPanel(FitToolPanel):
         finally:
             self._applying_area = None
 
-    @staticmethod
-    def _drag_started() -> None:
-        UndoStack().begin_gesture(UNDO_GESTURE)
+    def _drag_started(self) -> None:
+        self._image_stack.undo_stack.begin_gesture(UNDO_GESTURE)
 
-    @staticmethod
-    def _drag_finished() -> None:
-        UndoStack().end_gesture()
+    def _drag_finished(self) -> None:
+        self._image_stack.undo_stack.end_gesture()
 
     def _record_area_size(self) -> None:
         record_generation_area_size(self._image_stack.generation_area.size())

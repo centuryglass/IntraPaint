@@ -20,6 +20,7 @@ from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel, ButtonLayout, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, SIDE_BUTTON_FORMS, \
     STRIP_BUTTON_FORMS, STRIP_MAX_COLUMNS, STRIP_NARROW_COLUMNS, strip_button_layout
 from src.ui.widget.panel_section import PanelSection
+from src.undo_stack import UndoStack
 from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import tell_orientation
@@ -80,7 +81,7 @@ class ToolPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         test_size = QSize(512, 512)
-        self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
+        self._image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self._image_panel = ImagePanel(self._image_stack)
         self._tool_panel = ToolPanel()
         self._tool_panel.show()

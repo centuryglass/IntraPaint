@@ -62,7 +62,7 @@ class ChangedAreaTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE)
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
         self.background = self.image_stack.create_layer('background', _noise_image(CANVAS_SIZE, 0))
         self.translated = self.image_stack.create_layer('translated', _noise_image(LAYER_SIZE, 1),
                                                         transform=QTransform.fromTranslate(10, 8))

@@ -15,6 +15,7 @@ from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.apply_option import ApplyResult
 from src.image.composite_mode import CompositeMode
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING, APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
@@ -38,7 +39,7 @@ class GenerationSessionTest(IntraPaintTestCase):
         super().setUp()
         Cache().set(Cache.GENERATION_SIZE, IMAGE_SIZE)
         Cache().set(Cache.EDIT_SIZE, IMAGE_SIZE)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
         self.session = GenerationSession(self.image_stack)
         self.availability: list[bool] = []
@@ -238,7 +239,7 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.BATCH_COUNT, 1)
         cache.set(Cache.BATCH_SIZE, 2)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
         self.session = GenerationSession(self.image_stack)
         self.events: list[str] = []

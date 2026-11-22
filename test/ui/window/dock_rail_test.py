@@ -16,6 +16,7 @@ from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.tool_button import ToolButton
 from src.ui.window.dock_rail import RAIL_SPACING, RULE_SPACE, SIDE_RAIL_WIDTH
 from src.ui.window.main_window import MainWindow
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from test.base_test_case import IntraPaintTestCase
 from test.ui.window.procedural_layout import use_procedural_layout
@@ -36,7 +37,7 @@ class DockRailTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         size = QSize(64, 64)
-        image_stack = ImageStack(size, size, size, size)
+        image_stack = ImageStack(size, size, size, size, UndoStack())
         self.window = MainWindow(image_stack)
         self.window.tools_dock.set_content(QLabel('tools'))
         self.window.generation_dock.set_content(QLabel('generation'))

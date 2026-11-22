@@ -25,7 +25,7 @@ class ImageStackUtilsTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         UndoStack().clear()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         layer_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         layer_image.fill(Qt.GlobalColor.red)
         self.layers = [self.image_stack.create_layer(f'layer {i}', layer_image) for i in range(2)]
@@ -43,7 +43,7 @@ class ImageStackUtilsTest(IntraPaintTestCase):
 
     def test_color_at_point_outside_canvas(self) -> None:
         """Points outside the canvas sample layer content that extends past it, and are black outside all content."""
-        image_stack = ImageStack(QSize(100, 100), QSize(100, 100), MIN_GEN_AREA, MAX_GEN_AREA)
+        image_stack = ImageStack(QSize(100, 100), QSize(100, 100), MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         layer_image = QImage(QSize(300, 300), QImage.Format.Format_ARGB32_Premultiplied)
         layer_image.fill(Qt.GlobalColor.blue)
         layer = image_stack.create_layer('oversized', layer_image)
@@ -68,7 +68,7 @@ class LayersAtPointTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         UndoStack().clear()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
     def _layer(self, name: str, size: int = 100, offset: tuple[int, int] = (0, 0), color=Qt.GlobalColor.red):
         image = QImage(size, size, QImage.Format.Format_ARGB32_Premultiplied)

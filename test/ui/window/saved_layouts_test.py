@@ -10,6 +10,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.window import saved_layouts
 from src.ui.window.dock_state import read_dock_groups
 from src.ui.window.main_window import MainWindow, DOCK_STATE_VERSION
+from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 from test.ui.window.procedural_layout import use_procedural_layout
 
@@ -84,7 +85,7 @@ class ApplyDockStateTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         test_size = QSize(64, 64)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size)
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self.window = MainWindow(self.image_stack)
         for dock in (self.window.tools_dock, self.window.generation_dock, self.window.layers_dock,
                      self.window.color_dock, self.window.navigation_dock):

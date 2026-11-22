@@ -19,10 +19,12 @@ import os
 import posixpath
 from dataclasses import dataclass
 from typing import Callable, Optional, TYPE_CHECKING
+from weakref import ref
 
 if TYPE_CHECKING:
     from src.image.layers.image_stack import ImageStack
     from src.image.layers.layer import Layer
+    from src.undo_stack import UndoStack
 
 XML_FILE_NAME = 'stack.xml'
 EXTENDED_DATA_XML_FILE_NAME = 'extended_data.xml'
@@ -76,10 +78,23 @@ class OraWriteContext:
 
 
 class OraReadContext:
-    """Reads files from the archive being loaded, which `open_raster` has extracted to a directory."""
+    """Reads files from the archive being loaded, which `open_raster` has extracted to a directory.
 
-    def __init__(self, extracted_directory: str) -> None:
+    `undo_stack` is the loading `ImageStack`'s history, which a layer loader passes to the layers it builds. A context
+    that reads no layers, such as one reading only metadata, has none.
+    """
+
+    def __init__(self, extracted_directory: str, undo_stack: Optional['UndoStack']) -> None:
         self._directory = extracted_directory
+        # Weak, since `open_raster`'s recursive parse closures hold this context in a reference cycle:
+        self._undo_stack_ref = None if undo_stack is None else ref(undo_stack)
+
+    @property
+    def undo_stack(self) -> 'UndoStack':
+        """Returns the history the loaded layers record into."""
+        undo_stack = None if self._undo_stack_ref is None else self._undo_stack_ref()
+        assert undo_stack is not None, 'OraReadContext has no undo stack, or outlived it'
+        return undo_stack
 
     def read_file(self, archive_path: str) -> Optional[bytes]:
         """Returns a file's content, or None if the archive has no file at that path (or the path is invalid)."""

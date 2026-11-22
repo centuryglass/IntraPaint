@@ -20,7 +20,6 @@ from src.controller.image_generation.generated_image_batch import GeneratedImage
 from src.controller.image_generation.result_patch import make_result_patch
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.visual.image_format_utils import save_image
@@ -350,7 +349,7 @@ class GenerationSession(QObject):
         wouldn't display the option correctly. See `blocking_result`.
         """
         area = self.current.generation_area
-        with UndoStack().combining_actions('GenerationSession.send_to_new_layer'):
+        with self._image_stack.undo_stack.combining_actions('GenerationSession.send_to_new_layer'):
             new_layer = self._image_stack.create_layer(layer_name=layer_name)
             if blocking_result(new_layer, area) is not ApplyResult.APPLIED:
                 self._image_stack.remove_layer(new_layer)

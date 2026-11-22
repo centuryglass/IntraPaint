@@ -36,7 +36,7 @@ class ImageStackTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
         self.generation_area_bounds_changed_mock = self.connect_mock(self.image_stack.generation_area_bounds_changed)
         self.content_changed_mock = self.connect_mock(self.image_stack.content_changed)
@@ -149,8 +149,8 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.load_image(QImage(INIT_IMAGE))
         self.image_stack.create_layer()
         document_changed = self.connect_mock(self.image_stack.document_changed)
-        new_stack = LayerGroup('loaded')
-        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        new_stack = LayerGroup('loaded', UndoStack())
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer', UndoStack()), 0)
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         document_changed.assert_called_once()
         self.assertEqual(UndoStack().undo_count(), 0)
@@ -159,16 +159,16 @@ class ImageStackTest(IntraPaintTestCase):
         """Loading a layer stack clears the selection layer's transformation."""
         self.image_stack.load_image(QImage(INIT_IMAGE))
         self.image_stack.selection_layer.set_transform(QTransform().translate(7, 3))
-        new_stack = LayerGroup('loaded')
-        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        new_stack = LayerGroup('loaded', UndoStack())
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer', UndoStack()), 0)
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
 
     def test_load_layer_stack_keeps_root_isolate(self) -> None:
         """Loading a layer stack copies the root group's isolate flag."""
-        new_stack = LayerGroup('loaded')
+        new_stack = LayerGroup('loaded', UndoStack())
         new_stack.set_isolate(True)
-        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer', UndoStack()), 0)
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         self.assertTrue(self.image_stack.layer_stack.isolate)
 

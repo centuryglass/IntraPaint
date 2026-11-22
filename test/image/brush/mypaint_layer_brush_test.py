@@ -9,6 +9,7 @@ from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.libmypaint import TILE_DIM
+from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit_readonly
 from src.util.visual.image_utils import create_transparent_image
 from test.image.brush.brush_test_case import BrushTestCase, LAYER_SIZE, StrokePoint, brush_test_pattern, \
@@ -45,7 +46,7 @@ class MyPaintLayerBrushTest(BrushTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.layer = ImageLayer(brush_test_pattern(), 'mypaint test layer')
+        self.layer = ImageLayer(brush_test_pattern(), 'mypaint test layer', UndoStack())
         self.brush = MyPaintLayerBrush(self.layer)
         self.brush.brush_path = BULK_BRUSH
         self.brush.brush_size = 20
