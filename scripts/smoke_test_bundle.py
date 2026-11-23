@@ -76,12 +76,16 @@ def _check_help(executable: str, env: dict[str, str]) -> bool:
 
 
 def _check_qt_translations(executable: str) -> bool:
-    """Returns whether the bundle holds Qt's own `qtbase_zh_CN.qm` anywhere beside the executable."""
-    root = os.path.dirname(executable)
-    for _, _, file_names in os.walk(root):
-        if QT_TRANSLATION_FILE in file_names:
-            return True
-    print(f'FAIL: {QT_TRANSLATION_FILE} is not in the bundle under {root}', file=sys.stderr)
+    """Returns whether the bundle's archive holds Qt's own `qtbase_zh_CN.qm`.
+
+    The bundle is a single file that extracts itself at launch, so its contents are read from the PyInstaller archive
+    instead of the file system.
+    """
+    from PyInstaller.archive.readers import CArchiveReader  # pylint: disable=import-outside-toplevel
+    names = [name.replace('\\', '/') for name in CArchiveReader(executable).toc]
+    if any(name.rsplit('/', 1)[-1] == QT_TRANSLATION_FILE for name in names):
+        return True
+    print(f'FAIL: {QT_TRANSLATION_FILE} is not in the bundle {executable}', file=sys.stderr)
     return False
 
 
