@@ -10989,7 +10989,7 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_text.py"/>
         <source>Server connection failed, enter a new URL or click "OK" to retry</source>
-        <translation>服务器连接失败，请输入新的 URL，或点击“OK”重试</translation>
+        <translation>服务器连接失败，请输入新的 URL，或点击“确定”重试</translation>
     </message>
     <message>
         <location filename="../../src/util/shared_text.py"/>
