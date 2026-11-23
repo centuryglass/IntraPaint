@@ -8283,6 +8283,16 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Highlight generation area and selection</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Lock guides</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Clear guides</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.layer.layer_visibility_button</name>
@@ -10025,6 +10035,14 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/widget/quick_stroke_card.py"/>
         <source>Recent colors: click to set the foreground color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.widget.ruler</name>
+    <message>
+        <location filename="../../src/ui/widget/ruler.py"/>
+        <source>Delete guide</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -197,3 +197,10 @@ class ToolCanvasExtrasTest(ToolTestCase):
             if category != CanvasExtraCategory.TOOL:
                 with self.subTest(category=category):
                     self.assertLess(extras.container(category).zValue(), tool_z)
+
+    def test_guides_category_between_generation_area_and_tool(self) -> None:
+        """Guide lines draw above generation area markers and below tool overlays."""
+        extras = self.image_viewer.canvas_extras
+        guides_z = extras.container(CanvasExtraCategory.GUIDES).zValue()
+        self.assertGreater(guides_z, extras.container(CanvasExtraCategory.GENERATION_AREA).zValue())
+        self.assertLess(guides_z, extras.container(CanvasExtraCategory.TOOL).zValue())

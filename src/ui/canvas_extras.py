@@ -24,6 +24,7 @@ class CanvasExtraCategory(Enum):
     CANVAS = 'canvas'  # The image outline, the veil outside the image and the active layer outline.
     SELECTION = 'selection'  # The selection outline and overlay.
     GENERATION_AREA = 'generation_area'  # Generation area outlines, context pins and the generation area veil.
+    GUIDES = 'guides'  # Ruler guide lines.
     TOOL = 'tool'  # Markers a tool creates for its own use, such as handles and placement outlines.
 
 
@@ -33,6 +34,7 @@ CATEGORY_Z_VALUES: dict[CanvasExtraCategory, float] = {
     CanvasExtraCategory.CANVAS: 0.5,
     CanvasExtraCategory.SELECTION: 2.0,
     CanvasExtraCategory.GENERATION_AREA: 3.0,
+    CanvasExtraCategory.GUIDES: 3.5,
     CanvasExtraCategory.TOOL: 4.0,
 }
 

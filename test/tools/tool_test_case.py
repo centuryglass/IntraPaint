@@ -33,11 +33,14 @@ class ToolTestCase(IntraPaintTestCase):
     """
 
     IMAGE_SIZE = QSize(512, 512)
+    INCLUDE_RULERS = False
+    """Whether the image panel is built with rulers, and so with guides."""
 
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, UndoStack())
-        self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False)
+        self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False,
+                                      include_rulers=self.INCLUDE_RULERS)
         self.image_viewer = self.image_panel.image_viewer
         self.image_panel.resize(self.IMAGE_SIZE.width() + VIEW_MARGIN * 2, self.IMAGE_SIZE.height() + VIEW_MARGIN * 2)
         self.image_panel.show()

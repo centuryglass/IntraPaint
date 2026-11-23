@@ -306,6 +306,8 @@ QGraphicsItem subclasses drawn on the canvas: outlines, handles, pins, markers a
   visualize clicking and dragging to select a region.
 - `src/ui/graphics_items/context_pin_item.py`: Push-pin marker drawn over a context pin.
 - `src/ui/graphics_items/crosshair_item.py`: Fixed-size crosshair that marks a point in the image scene.
+- `src/ui/graphics_items/guide_line_item.py`: Scene item for one ruler guide: a line across the image that is only ever
+  drawn.
 - `src/ui/graphics_items/hatched_region.py`: Covers a scene region with diagonal hatching drawn at a fixed screen size,
   to mark it as excluded.
 - `src/ui/graphics_items/layer_graphics_item.py`: Renders an image layer into a QGraphicsScene.
@@ -563,6 +565,7 @@ Widgets shared across panels and windows: panel parts, color controls, labels, r
 - `src/ui/widget/quick_stroke_card.py`: A small card of a brush tool's stroke settings that opens at the cursor on a
   right-click.
 - `src/ui/widget/ruler.py`: Rulers that label an ImageGraphicsView's image coordinates along one edge.
+- `src/ui/widget/ruler_guides.py`: Model for the guide lines dragged out of the rulers.
 - `src/ui/widget/section_popover.py`: A popover that shows a collapsed `PanelSection`'s body under its header, for
   panels with no room to expand it.
 - `src/ui/widget/setting_row_markers.py`: The two marks a settings row shows while its value differs from the shipped

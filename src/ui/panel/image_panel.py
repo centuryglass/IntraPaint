@@ -7,9 +7,12 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QApplication, Q
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
+from src.ui.canvas_extras import CanvasExtraCategory
+from src.ui.graphics_items.guide_line_item import GuideLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.canvas_bar import CanvasBar
 from src.ui.widget.ruler import Ruler, RulerHighlight
+from src.ui.widget.ruler_guides import RulerGuides
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.image_panel'
@@ -22,6 +25,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 MENU_ACTION_HIDE_RULERS = _tr('Hide rulers')
 MENU_ACTION_RULER_HIGHLIGHTS = _tr('Highlight generation area and selection')
+MENU_ACTION_LOCK_GUIDES = _tr('Lock guides')
+MENU_ACTION_CLEAR_GUIDES = _tr('Clear guides')
 
 # Ruler highlight lanes, counting out from the image:
 GENERATION_AREA_RULER_LANE = 0
@@ -34,6 +39,9 @@ class ImagePanel(QWidget):
 
     `navigation_window_requested` fires when the bar's navigation window button is clicked, which only shows with
     `include_navigation_button`.
+
+    A panel with rulers owns a `RulerGuides` and draws its guide lines in the viewer. Guides show and hide with the
+    rulers, and any guide outside the image is removed when the image size changes.
     """
 
     navigation_window_requested = Signal()
@@ -50,6 +58,10 @@ class ImagePanel(QWidget):
         self._vertical_ruler: Optional[Ruler] = None
         self._ruler_corner: Optional[QWidget] = None
         self._ruler_highlight_action: Optional[QAction] = None
+        self._guides: Optional[RulerGuides] = None
+        self._guide_items: dict[Qt.Orientation, list[GuideLineItem]] = {Qt.Orientation.Horizontal: [],
+                                                                        Qt.Orientation.Vertical: []}
+        self._ruler_menu_actions: list[QAction] = []
         if include_rulers:
             self._layout.addWidget(self._build_ruler_grid(), stretch=255)
         else:
@@ -57,7 +69,7 @@ class ImagePanel(QWidget):
 
         self._control_bar: Optional[CanvasBar] = None
         if include_zoom_controls:
-            ruler_actions = [] if self._ruler_highlight_action is None else [self._ruler_highlight_action]
+            ruler_actions = list(self._ruler_menu_actions)
             self._control_bar = CanvasBar(self._image_viewer, include_rulers, include_navigation_button,
                                           ruler_actions, self)
             self._control_bar.navigation_requested.connect(self.navigation_window_requested)
@@ -70,8 +82,9 @@ class ImagePanel(QWidget):
         grid = QGridLayout(grid_widget)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(0)
-        self._horizontal_ruler = Ruler(self._image_viewer, Qt.Orientation.Horizontal, grid_widget)
-        self._vertical_ruler = Ruler(self._image_viewer, Qt.Orientation.Vertical, grid_widget)
+        self._guides = RulerGuides()
+        self._horizontal_ruler = Ruler(self._image_viewer, Qt.Orientation.Horizontal, grid_widget, self._guides)
+        self._vertical_ruler = Ruler(self._image_viewer, Qt.Orientation.Vertical, grid_widget, self._guides)
         self._ruler_corner = QWidget(grid_widget)
         self._ruler_corner.setFixedSize(self._vertical_ruler.thickness, self._horizontal_ruler.thickness)
 
@@ -98,9 +111,23 @@ class ImagePanel(QWidget):
         def _set_highlights_shown(shown: bool) -> None:
             AppConfig().set(AppConfig.SHOW_RULER_HIGHLIGHTS, shown)
         highlight_action.toggled.connect(_set_highlights_shown)
-        for ruler_widget in (self._horizontal_ruler, self._vertical_ruler, self._ruler_corner):
-            ruler_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
-            ruler_widget.addActions([hide_action, highlight_action])
+        lock_action = QAction(MENU_ACTION_LOCK_GUIDES, grid_widget)
+        lock_action.setCheckable(True)
+        guides = self._guides
+        lock_action.toggled.connect(lambda locked: setattr(guides, 'locked', locked))
+        guides.guides_changed.connect(lambda: lock_action.setChecked(guides.locked))
+        clear_action = QAction(MENU_ACTION_CLEAR_GUIDES, grid_widget)
+        clear_action.triggered.connect(guides.clear)
+        self._ruler_menu_actions = [hide_action, highlight_action, lock_action, clear_action]
+        for ruler in (self._horizontal_ruler, self._vertical_ruler):
+            ruler.menu_actions = self._ruler_menu_actions
+        self._ruler_corner.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+        self._ruler_corner.addActions(self._ruler_menu_actions)
+        guides.guides_changed.connect(self._update_guide_items)
+        for ruler in (self._horizontal_ruler, self._vertical_ruler):
+            ruler.guide_drag_changed.connect(self._update_guide_items)
+        self._image_stack.size_changed.connect(guides.prune)
+        self._image_stack.size_changed.connect(self._update_guide_items)
 
         def _update_highlight_action(shown: bool) -> None:
             highlight_action.setChecked(shown)
@@ -126,6 +153,49 @@ class ImagePanel(QWidget):
         for ruler_widget in (self._horizontal_ruler, self._vertical_ruler, self._ruler_corner):
             if ruler_widget is not None:
                 ruler_widget.setVisible(visible)
+        self._image_viewer.canvas_extras.set_shown(CanvasExtraCategory.GUIDES, visible)
+
+    @property
+    def guides(self) -> Optional[RulerGuides]:
+        """Returns the guide model, or None if this panel has no rulers."""
+        return self._guides
+
+    def _displayed_guides(self) -> dict[Qt.Orientation, list[int]]:
+        """Returns the coordinates of the guide lines to draw, with any guide gesture in progress applied: a moved
+        guide at its new coordinate, a guide pending deletion left out, and a guide being created included."""
+        assert self._guides is not None and self._horizontal_ruler is not None and self._vertical_ruler is not None
+        displayed = {orientation: self._guides.positions(orientation) for orientation in self._guide_items}
+        for ruler in (self._horizontal_ruler, self._vertical_ruler):
+            drag = ruler.guide_drag
+            if drag is None:
+                continue
+            displayed[drag.orientation] = drag.applied_to(displayed[drag.orientation])
+        return displayed
+
+    def _update_guide_items(self, *_) -> None:
+        """Makes the guide line items match the model and any guide gesture in progress."""
+        if self._guides is None:
+            return
+        size = self._image_stack.size
+        for orientation, coordinates in self._displayed_guides().items():
+            items = self._guide_items[orientation]
+            while len(items) > len(coordinates):
+                item = items.pop()
+                scene = item.scene()
+                if scene is not None:
+                    scene.removeItem(item)
+            length = size.width() if orientation == Qt.Orientation.Horizontal else size.height()
+            for index, coordinate in enumerate(coordinates):
+                if index == len(items):
+                    item = GuideLineItem(orientation)
+                    self._image_viewer.canvas_extras.register(item, CanvasExtraCategory.GUIDES)
+                    items.append(item)
+                items[index].set_guide(coordinate, length)
+
+    @property
+    def guide_line_items(self) -> list[GuideLineItem]:
+        """Returns the guide lines currently in the viewer's scene."""
+        return [item for items in self._guide_items.values() for item in items]
 
     def _update_ruler_highlights(self, *_) -> None:
         """Shades the generation area and the selection's bounds on the rulers, if enabled."""
