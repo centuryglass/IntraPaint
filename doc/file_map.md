@@ -548,6 +548,8 @@ Widgets shared across panels and windows: panel parts, color controls, labels, r
 - `src/ui/widget/disabled_banner.py`: A banner saying why a panel is inert, with a button that offers the fix.
 - `src/ui/widget/elided_label.py`: A one-line label that elides its text to fit, for names and paths that must not widen
   a panel.
+- `src/ui/widget/guide_handle_bar.py`: Widgets along an ImageGraphicsView's edge that draw ruler guide handles and take
+  the gestures that move them.
 - `src/ui/widget/image_graphics_view.py`: A QGraphicsView meant for displaying image content without using scrollbars.
 - `src/ui/widget/image_widget.py`: Displays a single image or pixmap, keeping aspect ratios.
 - `src/ui/widget/key_hint_label.py`: Shows a key binding to the user, drawn as raised keycaps, and follows its config

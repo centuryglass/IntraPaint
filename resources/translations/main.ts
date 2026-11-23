@@ -10018,6 +10018,14 @@ Click to pick, or press Esc to cancel</source>
     </message>
 </context>
 <context>
+    <name>ui.widget.guide_handle_bar</name>
+    <message>
+        <location filename="../../src/ui/widget/guide_handle_bar.py"/>
+        <source>Delete guide</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.widget.panel_header</name>
     <message>
         <location filename="../../src/ui/widget/panel_header.py"/>
@@ -10035,14 +10043,6 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/widget/quick_stroke_card.py"/>
         <source>Recent colors: click to set the foreground color</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>ui.widget.ruler</name>
-    <message>
-        <location filename="../../src/ui/widget/ruler.py"/>
-        <source>Delete guide</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

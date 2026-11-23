@@ -11,6 +11,7 @@ from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.guide_line_item import GuideLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.canvas_bar import CanvasBar
+from src.ui.widget.guide_handle_bar import GuideHandleBar, GuideHandleStrip
 from src.ui.widget.ruler import Ruler, RulerHighlight
 from src.ui.widget.ruler_guides import RulerGuides
 
@@ -40,8 +41,9 @@ class ImagePanel(QWidget):
     `navigation_window_requested` fires when the bar's navigation window button is clicked, which only shows with
     `include_navigation_button`.
 
-    A panel with rulers owns a `RulerGuides` and draws its guide lines in the viewer. Guides show and hide with the
-    rulers, and any guide outside the image is removed when the image size changes.
+    A panel with rulers owns a `RulerGuides` and draws its guide lines in the viewer. While the rulers are hidden, the
+    guide lines stay and their handles move to `GuideHandleStrip`s over the viewer's top and left edges. Any guide
+    outside the image is removed when the image size changes.
     """
 
     navigation_window_requested = Signal()
@@ -57,6 +59,7 @@ class ImagePanel(QWidget):
         self._horizontal_ruler: Optional[Ruler] = None
         self._vertical_ruler: Optional[Ruler] = None
         self._ruler_corner: Optional[QWidget] = None
+        self._handle_strips: tuple[GuideHandleStrip, ...] = ()
         self._ruler_highlight_action: Optional[QAction] = None
         self._guides: Optional[RulerGuides] = None
         self._guide_items: dict[Qt.Orientation, list[GuideLineItem]] = {Qt.Orientation.Horizontal: [],
@@ -124,9 +127,18 @@ class ImagePanel(QWidget):
             ruler.menu_actions = self._ruler_menu_actions
         self._ruler_corner.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._ruler_corner.addActions(self._ruler_menu_actions)
+        self._handle_strips = (
+            GuideHandleStrip(self._image_viewer, Qt.Orientation.Horizontal, guides, grid_widget),
+            GuideHandleStrip(self._image_viewer, Qt.Orientation.Vertical, guides, grid_widget))
+        for strip in self._handle_strips:
+            # Hide rulers and the highlight toggle don't apply while the rulers are hidden:
+            strip.menu_actions = [lock_action, clear_action]
+            strip.thickness = self._horizontal_ruler.thickness
+            self._horizontal_ruler.thickness_changed.connect(lambda thickness, s=strip: setattr(s, 'thickness',
+                                                                                                 thickness))
         guides.guides_changed.connect(self._update_guide_items)
-        for ruler in (self._horizontal_ruler, self._vertical_ruler):
-            ruler.guide_drag_changed.connect(self._update_guide_items)
+        for bar in self._guide_bars:
+            bar.guide_drag_changed.connect(self._update_guide_items)
         self._image_stack.size_changed.connect(guides.prune)
         self._image_stack.size_changed.connect(self._update_guide_items)
 
@@ -154,7 +166,20 @@ class ImagePanel(QWidget):
         for ruler_widget in (self._horizontal_ruler, self._vertical_ruler, self._ruler_corner):
             if ruler_widget is not None:
                 ruler_widget.setVisible(visible)
-        self._image_viewer.canvas_extras.set_shown(CanvasExtraCategory.GUIDES, visible)
+        for strip in self._handle_strips:
+            strip.shown = not visible
+
+    @property
+    def guide_handle_strips(self) -> tuple[GuideHandleStrip, ...]:
+        """Returns the (horizontal, vertical) strips that hold guide handles while the rulers are hidden, or an empty
+        tuple if this panel has no rulers."""
+        return self._handle_strips
+
+    @property
+    def _guide_bars(self) -> list[GuideHandleBar]:
+        """Returns every widget that takes guide gestures."""
+        rulers: list[GuideHandleBar] = [ruler for ruler in self.rulers if ruler is not None]
+        return rulers + list(self._handle_strips)
 
     @property
     def guides(self) -> Optional[RulerGuides]:
@@ -164,10 +189,10 @@ class ImagePanel(QWidget):
     def _displayed_guides(self) -> dict[Qt.Orientation, list[int]]:
         """Returns the coordinates of the guide lines to draw, with any guide gesture in progress applied: a moved
         guide at its new coordinate, a guide pending deletion left out, and a guide being created included."""
-        assert self._guides is not None and self._horizontal_ruler is not None and self._vertical_ruler is not None
+        assert self._guides is not None
         displayed = {orientation: self._guides.positions(orientation) for orientation in self._guide_items}
-        for ruler in (self._horizontal_ruler, self._vertical_ruler):
-            drag = ruler.guide_drag
+        for bar in self._guide_bars:
+            drag = bar.guide_drag
             if drag is None:
                 continue
             displayed[drag.orientation] = drag.applied_to(displayed[drag.orientation])
