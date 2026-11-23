@@ -1,18 +1,22 @@
 """Rulers that label an ImageGraphicsView's image coordinates along one edge.
 
-A Ruler is laid out beside its view, not inside it, and maps its own coordinates to the view's through global
-coordinates. It reads the view's scene-to-viewport transform directly, so it assumes the view applies scale and
-translation only, with no rotation or shear.
+A Ruler is laid out beside its view, not inside it. It maps its coordinates to the view's as `GuideHandleBar` does.
+
+With a RulerGuides model, a ruler also draws handles for the guides on the other axis and takes the mouse gestures
+that create, move and delete guides. Guide lines in the image are drawn by the owner of the model, which follows
+`GuideHandleBar.guide_drag`.
 """
 import math
 from typing import NamedTuple, Optional
 
-from PySide6.QtCore import Qt, QPoint, QPointF, QRect, QSize, Signal
+from PySide6.QtCore import Qt, QPoint, QPointF, QSize, Signal
 from PySide6.QtGui import QPainter, QColor, QPaintEvent, QPalette, QFont, QFontMetrics, QPolygonF
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
+from src.ui.widget.guide_handle_bar import GuideDrag, GuideHandleBar
 from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.ui.widget.ruler_guides import RulerGuides
 from src.util.visual.contrast_color import with_min_contrast
 
 # Major tick steps are a base from this list times a power of ten.
@@ -90,23 +94,25 @@ class RulerHighlight(NamedTuple):
     lane: int
 
 
-class Ruler(QWidget):
+class Ruler(GuideHandleBar):
     """Labels one axis of an ImageGraphicsView's image coordinates, marking the cursor and any highlighted spans.
 
     Thickness is the label height, set by AppConfig.RULER_FONT_SIZE, plus a strip of highlight bar lanes along the
     edge next to the view. Ticks start above that strip, so highlights never cover them.
+
+    A ruler built with `guides` draws a handle for each guide on the other axis against its inner edge, under the
+    cursor marker. Besides the handle gestures `GuideHandleBar` takes, a press anywhere else on the ruler starts
+    creating a guide along it, placed where the cursor is released over the view.
     """
 
     thickness_changed = Signal(int)
 
-    def __init__(self, view: ImageGraphicsView, orientation: Qt.Orientation, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
-        self._view = view
-        self._orientation = orientation
+    def __init__(self, view: ImageGraphicsView, orientation: Qt.Orientation, parent: Optional[QWidget] = None,
+                 guides: Optional[RulerGuides] = None) -> None:
+        super().__init__(view, orientation, guides, parent)
         self._highlights: list[RulerHighlight] = []
         self._cursor_position: Optional[float] = None
         self._label_font = QFont(self.font())
-        self._thickness = 0
         self._highlight_lanes = 0
         self._bar_thickness = MIN_HIGHLIGHT_BAR_THICKNESS
         if orientation == Qt.Orientation.Horizontal:
@@ -115,7 +121,6 @@ class Ruler(QWidget):
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         AppConfig().connect(self, AppConfig.RULER_FONT_SIZE, self._set_font_size)
         self._set_font_size(AppConfig().get(AppConfig.RULER_FONT_SIZE))
-        view.view_changed.connect(self.update)
         view.cursor_moved.connect(self._cursor_moved_slot)
 
     def _set_font_size(self, point_size: int) -> None:
@@ -134,16 +139,6 @@ class Ruler(QWidget):
             self.setFixedWidth(self._thickness)
         self.update()
         self.thickness_changed.emit(self._thickness)
-
-    @property
-    def orientation(self) -> Qt.Orientation:
-        """Returns whether this ruler labels the horizontal or the vertical axis."""
-        return self._orientation
-
-    @property
-    def thickness(self) -> int:
-        """Returns the ruler's fixed size across its axis."""
-        return self._thickness
 
     @property
     def highlight_lanes(self) -> int:
@@ -173,11 +168,6 @@ class Ruler(QWidget):
         return with_min_contrast(highlight.color, background, MIN_HIGHLIGHT_CONTRAST)
 
     @property
-    def length(self) -> int:
-        """Returns the ruler's size along its axis."""
-        return self.width() if self._orientation == Qt.Orientation.Horizontal else self.height()
-
-    @property
     def cursor_position(self) -> Optional[float]:
         """Returns the cursor marker's position along the ruler, or None if the cursor is outside the view."""
         return self._cursor_position
@@ -199,30 +189,6 @@ class Ruler(QWidget):
             self._highlights = list(highlights)
             self.update()
 
-    def _view_offset(self) -> QPointF:
-        """Returns the view's viewport origin in this ruler's coordinates."""
-        viewport = self._view.viewport()
-        assert viewport is not None
-        return self.mapFromGlobal(viewport.mapToGlobal(QPointF(0.0, 0.0)))
-
-    def _axis_mapping(self) -> tuple[float, float]:
-        """Returns (scale, origin): ruler position = scale * image coordinate + origin."""
-        transform = self._view.viewportTransform()
-        offset = self._view_offset()
-        if self._orientation == Qt.Orientation.Horizontal:
-            return transform.m11(), transform.dx() + offset.x()
-        return transform.m22(), transform.dy() + offset.y()
-
-    def image_to_ruler(self, value: float) -> float:
-        """Maps an image coordinate on this ruler's axis to a position along the ruler."""
-        scale, origin = self._axis_mapping()
-        return scale * value + origin
-
-    def ruler_to_image(self, position: float) -> float:
-        """Maps a position along the ruler to an image coordinate on this ruler's axis."""
-        scale, origin = self._axis_mapping()
-        return (position - origin) / scale
-
     def _min_label_spacing(self, start: float, end: float) -> float:
         """Returns the screen spacing major ticks need so the widest visible label fits between them."""
         digits = len(str(int(max(abs(start), abs(end)))))
@@ -234,8 +200,8 @@ class Ruler(QWidget):
         scale, _ = self._axis_mapping()
         if scale <= 0 or self.length <= 0:
             return []
-        start = self.ruler_to_image(0)
-        end = self.ruler_to_image(self.length)
+        start = self.position_to_image(0)
+        end = self.position_to_image(self.length)
         major_step = major_tick_step(scale, self._min_label_spacing(start, end))
         minor_step = minor_tick_step(major_step, scale)
         mid_step = major_step // 2 if major_step % 2 == 0 and minor_step < major_step // 2 else None
@@ -250,7 +216,7 @@ class Ruler(QWidget):
             else:
                 length = MINOR_TICK_LENGTH
                 label = None
-            ticks.append(RulerTick(value, self.image_to_ruler(value), length, label))
+            ticks.append(RulerTick(value, self.image_to_position(value), length, label))
         return ticks
 
     def _cursor_moved_slot(self, view_pos: Optional[QPoint]) -> None:
@@ -279,18 +245,6 @@ class Ruler(QWidget):
         return QPolygonF([QPointF(edge, position), QPointF(edge - depth, position - half_width),
                           QPointF(edge - depth, position + half_width)])
 
-    def _span_rect(self, start: float, end: float, inset: int = 0, depth: Optional[int] = None) -> QRect:
-        """Returns the rectangle covering [start, end] along the ruler, starting `inset` pixels in from the edge next
-        to the view and reaching `depth` pixels further, or to the far edge if `depth` is None."""
-        start_px = int(math.floor(start))
-        end_px = int(math.ceil(end))
-        if depth is None:
-            depth = self.thickness - inset
-        far_edge = self.thickness - inset - depth
-        if self._orientation == Qt.Orientation.Horizontal:
-            return QRect(start_px, far_edge, end_px - start_px, depth)
-        return QRect(far_edge, start_px, depth, end_px - start_px)
-
     def _draw_highlights(self, painter: QPainter, cap_color: QColor) -> None:
         """Draws each highlight as a bar in its lane, then end caps across every lane so span edges show at any color.
 
@@ -300,8 +254,8 @@ class Ruler(QWidget):
         for highlight in self._highlights:
             if highlight.lane >= self._highlight_lanes:
                 continue
-            start = round(self.image_to_ruler(highlight.start))
-            end = round(self.image_to_ruler(highlight.end))
+            start = round(self.image_to_position(highlight.start))
+            end = round(self.image_to_position(highlight.end))
             inset = 1 + highlight.lane * self._bar_thickness
             painter.fillRect(self._span_rect(start, end, inset, self._bar_thickness), self.highlight_color(highlight))
             spans.append((start, end))
@@ -309,6 +263,14 @@ class Ruler(QWidget):
         for start, end in spans:
             for cap_position in (start, end - 1):
                 painter.fillRect(self._span_rect(cap_position, cap_position + 1, 1, strip_depth), cap_color)
+
+    def _handle_center_across(self) -> float:
+        """Places each handle against the ruler's inner edge, like the cursor arrow."""
+        return self._thickness - 1 - self._handle_diameter / 2
+
+    def _press_off_handle(self) -> None:
+        """Starts creating a guide that runs along this ruler: the top ruler makes horizontal guides."""
+        self._set_guide_drag(GuideDrag(self._orientation, None, None))
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the background, highlighted spans, ticks, labels and cursor marker."""
@@ -340,6 +302,8 @@ class Ruler(QWidget):
                     painter.rotate(-90)
                     painter.drawText(0, 0, tick.label)
                     painter.restore()
+
+        self._draw_guide_handles(painter)
 
         if self._cursor_position is not None:
             position = round(self._cursor_position)

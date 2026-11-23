@@ -159,7 +159,7 @@ class CanvasBarTest(IntraPaintTestCase):
         self.assertFalse(AppConfig().get(AppConfig.SHOW_RULERS))
         AppConfig().set(AppConfig.SHOW_RULERS, True)
         self.assertTrue(rulers.isChecked())
-        self.assertEqual(len(rulers.actions()), 1)
+        self.assertEqual(len(rulers.actions()), 3)  # Highlights, lock guides, clear guides
 
     def test_navigation_button_requests_window(self) -> None:
         """The navigation button, in the bar or in "...", asks the panel's owner for the navigation window."""

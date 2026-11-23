@@ -8316,6 +8316,16 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Highlight generation area and selection</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Lock guides</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Clear guides</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.layer.layer_visibility_button</name>
@@ -10038,6 +10048,14 @@ Click to pick, or press Esc to cancel</source>
         <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
         <source>%n color(s)</source>
         <translation type="unfinished"><numerusform></numerusform></translation>
+    </message>
+</context>
+<context>
+    <name>ui.widget.guide_handle_bar</name>
+    <message>
+        <location filename="../../src/ui/widget/guide_handle_bar.py"/>
+        <source>Delete guide</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -87,8 +87,8 @@ class ImagePanelRulerTest(IntraPaintTestCase):
     def _assert_rulers_match_view(self) -> None:
         for scene_point in (QPointF(0.0, 0.0), QPointF(100.0, 50.0), QPointF(IMAGE_SIZE.width(), IMAGE_SIZE.height())):
             expected_x, expected_y = self._ruler_point(scene_point)
-            self.assertAlmostEqual(self.horizontal.image_to_ruler(scene_point.x()), expected_x, delta=1.0)
-            self.assertAlmostEqual(self.vertical.image_to_ruler(scene_point.y()), expected_y, delta=1.0)
+            self.assertAlmostEqual(self.horizontal.image_to_position(scene_point.x()), expected_x, delta=1.0)
+            self.assertAlmostEqual(self.vertical.image_to_position(scene_point.y()), expected_y, delta=1.0)
 
     def test_panels_have_no_rulers_by_default(self) -> None:
         """Rulers are opt-in, so the navigation window's panel has none."""
