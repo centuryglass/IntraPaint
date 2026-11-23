@@ -69,7 +69,8 @@ class ImagePanel(QWidget):
 
         self._control_bar: Optional[CanvasBar] = None
         if include_zoom_controls:
-            ruler_actions = list(self._ruler_menu_actions)
+            # The Rulers toggle already hides them, so its menu leaves out Hide rulers:
+            ruler_actions = self._ruler_menu_actions[1:]
             self._control_bar = CanvasBar(self._image_viewer, include_rulers, include_navigation_button,
                                           ruler_actions, self)
             self._control_bar.navigation_requested.connect(self.navigation_window_requested)
