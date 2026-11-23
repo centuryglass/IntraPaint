@@ -228,10 +228,20 @@ class GuideHandleBar(QWidget):
     def _press_off_handle(self) -> None:
         """Handles a left press that missed every handle. Bars that create guides override this."""
 
-    def _created_guide_position(self, unused_global_pos: QPointF, unused_orientation: Qt.Orientation) -> Optional[int]:
-        """Returns where a guide being created would land for a global cursor position. Bars that create guides
-        override this."""
-        return None
+    def _created_guide_position(self, global_pos: QPointF, orientation: Qt.Orientation) -> Optional[int]:
+        """Returns where a guide being created would land for a global cursor position: the whole-pixel image
+        coordinate on the guide's fixed axis, clamped to the image, or None if the position is outside the view."""
+        size = self._view.content_size
+        viewport = self._view.viewport()
+        if size is None or viewport is None:
+            return None
+        viewport_pos = viewport.mapFromGlobal(global_pos)
+        if not viewport.rect().contains(viewport_pos.toPoint()):
+            return None
+        scene_pos = self._view.mapToScene(viewport_pos.toPoint())
+        if orientation == Qt.Orientation.Horizontal:
+            return self._clamped_coordinate(scene_pos.y(), size.height())
+        return self._clamped_coordinate(scene_pos.x(), size.width())
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name  # Qt override
         """Starts moving the guide under a left press."""

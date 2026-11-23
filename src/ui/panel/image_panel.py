@@ -137,8 +137,8 @@ class ImagePanel(QWidget):
             self._horizontal_ruler.thickness_changed.connect(lambda thickness, s=strip: setattr(s, 'thickness',
                                                                                                  thickness))
         guides.guides_changed.connect(self._update_guide_items)
-        for bar in self._guide_bars:
-            bar.guide_drag_changed.connect(self._update_guide_items)
+        for handle_bar in self._guide_bars:
+            handle_bar.guide_drag_changed.connect(self._update_guide_items)
         self._image_stack.size_changed.connect(guides.prune)
         self._image_stack.size_changed.connect(self._update_guide_items)
 
@@ -191,8 +191,8 @@ class ImagePanel(QWidget):
         guide at its new coordinate, a guide pending deletion left out, and a guide being created included."""
         assert self._guides is not None
         displayed = {orientation: self._guides.positions(orientation) for orientation in self._guide_items}
-        for bar in self._guide_bars:
-            drag = bar.guide_drag
+        for handle_bar in self._guide_bars:
+            drag = handle_bar.guide_drag
             if drag is None:
                 continue
             displayed[drag.orientation] = drag.applied_to(displayed[drag.orientation])

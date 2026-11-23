@@ -272,21 +272,6 @@ class Ruler(GuideHandleBar):
         """Starts creating a guide that runs along this ruler: the top ruler makes horizontal guides."""
         self._set_guide_drag(GuideDrag(self._orientation, None, None))
 
-    def _created_guide_position(self, global_pos: QPointF, orientation: Qt.Orientation) -> Optional[int]:
-        """Returns the whole-pixel image coordinate under a global position on the fixed axis of a guide with the given
-        orientation, clamped to the image, or None if the position is outside the view."""
-        size = self._view.content_size
-        viewport = self._view.viewport()
-        if size is None or viewport is None:
-            return None
-        viewport_pos = viewport.mapFromGlobal(global_pos)
-        if not viewport.rect().contains(viewport_pos.toPoint()):
-            return None
-        scene_pos = self._view.mapToScene(viewport_pos.toPoint())
-        if orientation == Qt.Orientation.Horizontal:
-            return self._clamped_coordinate(scene_pos.y(), size.height())
-        return self._clamped_coordinate(scene_pos.x(), size.width())
-
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the background, highlighted spans, ticks, labels and cursor marker."""
         palette = self.palette()
