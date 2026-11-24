@@ -1,6 +1,6 @@
 """Runs the standalone metadata mode, `IntraPaint.py --metadata [image]`, which opens only the metadata window.
 
-`IntraPaint.py` calls `run_metadata_mode` before it imports `AppController`. Nothing this module imports may load the
+`src/startup.py` calls `run_metadata_mode` before it imports `AppController`. Nothing this module imports may load the
 editor, the generators or libmypaint, which `test/ui/metadata_mode_test.py` checks.
 """
 import os

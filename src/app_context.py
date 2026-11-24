@@ -2,7 +2,7 @@
 
 A global service is a class whose metaclass is `AppService` (or `QObjectService` for a `QObject`). Calling the class
 with no arguments, as in `AppConfig()`, returns the installed context's instance, which the context constructs on
-first use. `IntraPaint.py` installs the application's context at startup, and `IntraPaintTestCase` installs a fresh
+first use. `src/startup.py` installs the application's context at startup, and `IntraPaintTestCase` installs a fresh
 one for every test, so no service state carries from one test to the next.
 
 Installing a context closes the one it replaces: each of its services that defines `close()` drops its connections
