@@ -7,7 +7,8 @@ from PySide6.QtWidgets import QApplication, QLineEdit, QVBoxLayout, QWidget
 
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
-from test.base_test_case import IntraPaintTestCase
+from src.ui.input_fields.number_field import NumberField
+from test.base_test_case import IntraPaintTestCase, press_key
 
 BINDING_ID = 'hotkey_filter_test_binding'
 
@@ -228,3 +229,43 @@ class HotkeyFilterConfigRebindTest(IntraPaintTestCase):
         matches = self._bindings_for_id()
         self.assertEqual(1, len(matches))
         self.assertEqual(Qt.Key.Key_F9, matches[0].key)
+
+
+class HotkeyFilterNumberFieldTest(IntraPaintTestCase):
+    """Tests that a focused NumberField keeps the keys it handles, ahead of keybindings on the same keys."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.parent_widget = QWidget()
+        self.field = NumberField('n', 5, 0, 10, parent=self.parent_widget)
+        self.field.set_pressure_link_available(True)
+        self.parent_widget.show()
+        self.bindings = {}
+        for key in (Qt.Key.Key_Right, Qt.Key.Key_F2, Qt.Key.Key_Space):
+            action = MagicMock(return_value=True)
+            self.bindings[key] = action
+            HotkeyFilter.instance().register_keybinding(f'number_field_test_{key}', action, QKeySequence(key))
+
+    def _press(self, key: Qt.Key, focused: QWidget | None) -> None:
+        with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: focused)):
+            press_key(self.parent_widget, key)
+
+    def test_focused_field_keeps_its_keys(self) -> None:
+        """A focused field takes Right, F2 and Space from their bindings, and the key reaches its own handler."""
+        self.field.setFocus()
+        self._press(Qt.Key.Key_Right, self.field)
+        self._press(Qt.Key.Key_F2, self.field)
+        self._press(Qt.Key.Key_Space, self.field)
+        for action in self.bindings.values():
+            action.assert_not_called()
+
+    def test_unfocused_field_leaves_bindings_running(self) -> None:
+        """With no number field focused, the bindings on those keys run."""
+        for key, action in self.bindings.items():
+            self._press(key, None)
+            action.assert_called_once()
+
+    def test_number_field_counts_as_using_keys(self) -> None:
+        """A focused number field keeps Space from starting a held-key press."""
+        with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: self.field)):
+            self.assertTrue(HotkeyFilter._focused_widget_uses_keys())  # pylint: disable=protected-access
