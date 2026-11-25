@@ -234,8 +234,8 @@ class GeneratedImageSelector(QWidget):
         self._layout.addWidget(self._button_bar)
 
         key_config = KeyConfig()
-        key_config.connect(self, KeyConfig.ZOOM_TOGGLE, self._update_controls)
-        key_config.connect(self, KeyConfig.COMPARE_ORIGINAL_MODIFIER, self._update_controls)
+        key_config.connect(self, KeyConfig.ZOOM_TOGGLE, lambda _: self._update_controls())
+        key_config.connect(self, KeyConfig.COMPARE_ORIGINAL_MODIFIER, lambda _: self._update_controls())
         self.start_new_options()
 
     def _rebuild_scene(self, include_loading_images: bool, reused_items: Optional[list[ImageOption]] = None) -> None:

@@ -164,7 +164,7 @@ def config_slider_field(config: Config, key: str, parent: Optional[QWidget] = No
             config.set(key, value)
 
     field.valueChanged.connect(_field_changed)
-    config.connect(field, key, lambda value, *_: field.set_value(value))
+    config.connect(field, key, field.set_value)
     return field
 
 
@@ -790,7 +790,7 @@ class StableDiffusionPanel(DockPanel):
 
     def _connect_edit_mode(self) -> None:
         cache = Cache()
-        cache.connect(self, Cache.EDIT_MODE, lambda edit_mode, *_: self._update_edit_mode(edit_mode))
+        cache.connect(self, Cache.EDIT_MODE, self._update_edit_mode)
         self._update_edit_mode(cache.get(Cache.EDIT_MODE))
 
     def _update_edit_mode(self, edit_mode: str) -> None:

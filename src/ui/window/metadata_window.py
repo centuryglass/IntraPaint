@@ -342,7 +342,7 @@ class MetadataWindow(QDialog):
 
         cache = Cache()
         for cache_key in set(cache_field_keys().values()):
-            cache.connect(self, cache_key, self._refresh_editor_state)
+            cache.connect(self, cache_key, lambda _: self._refresh_editor_state())
         self.refresh()
         has_content = self._metadata.has_removable_data or self._metadata.parameters is not None
         # Narrower, the field table's editor and button columns are cut off:
