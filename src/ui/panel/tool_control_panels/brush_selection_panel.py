@@ -56,7 +56,7 @@ class BrushSelectionPanel(SelectionPanel):
                 cache.set(Cache.SELECTION_BRUSH_SIZE, int(value))
 
         size_field.valueChanged.connect(_field_changed)
-        cache.connect(size_field, Cache.SELECTION_BRUSH_SIZE, lambda value, *_: size_field.set_value(value))
+        cache.connect(size_field, Cache.SELECTION_BRUSH_SIZE, size_field.set_value)
         self._size_field = size_field
         self.insert_into_layout(tool_section(BRUSH_SECTION_TITLE, size_field))
 

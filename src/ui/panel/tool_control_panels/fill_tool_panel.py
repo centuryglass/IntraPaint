@@ -49,7 +49,7 @@ def build_threshold_field(parent: Optional[QWidget] = None) -> SliderField:
             cache.set(Cache.FILL_THRESHOLD, value)
 
     field.valueChanged.connect(_field_changed)
-    cache.connect(field, Cache.FILL_THRESHOLD, lambda value, *_: field.set_value(value))
+    cache.connect(field, Cache.FILL_THRESHOLD, field.set_value)
     return field
 
 

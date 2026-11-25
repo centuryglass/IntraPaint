@@ -168,13 +168,13 @@ def build_stroke_field(owner: QWidget, key: str, pressure_key: Optional[str], de
             cache.set(key, value)
 
     field.valueChanged.connect(_field_changed)
-    cache.connect(owner, key, lambda value, *_: field.set_value(value))
+    cache.connect(owner, key, field.set_value)
     if pressure_key is not None:
         field.set_pressure_link_tooltip(cache.get_tooltip(pressure_key))
         field.set_pressure_link_enabled(bool(cache.get(pressure_key)))
         field.set_pressure_link_available(bool(cache.get(Cache.EXPECT_TABLET_INPUT)))
 
-        def _tablet_expected(expected: bool, *_) -> None:
+        def _tablet_expected(expected: bool) -> None:
             field.set_pressure_link_available(bool(expected))
         # One connection per object and key, so the field is the connected object, not the shared owner:
         cache.connect(field, Cache.EXPECT_TABLET_INPUT, _tablet_expected)
@@ -184,7 +184,7 @@ def build_stroke_field(owner: QWidget, key: str, pressure_key: Optional[str], de
                 cache.set(pressure_key, enabled)
 
         field.pressureLinkToggled.connect(_link_toggled)
-        cache.connect(owner, pressure_key, lambda enabled, *_: field.set_pressure_link_enabled(bool(enabled)))
+        cache.connect(owner, pressure_key, lambda enabled: field.set_pressure_link_enabled(bool(enabled)))
     return field
 
 
@@ -224,7 +224,7 @@ def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent
         row_layout.addWidget(pattern_label)
         row_layout.addWidget(pattern_dropdown, stretch=1)  # Stretches to the row's edge, see `StrokeBlock._arrange`
         if color_key is not None:
-            def _pattern_color_update(color_str: str, *_) -> None:
+            def _pattern_color_update(color_str: str) -> None:
                 if QColor(color_str).isValid():
                     pattern_dropdown.set_icon_colors(QColor(color_str))
 
@@ -661,7 +661,7 @@ class StrokeToolPanel(FitToolPanel):
         """Arranges the contents of the tool's own sections for an orientation, before the block places them.
         Subclasses override this."""
 
-    def _tablet_expected_changed(self, expected: bool, *_) -> None:
+    def _tablet_expected_changed(self, expected: bool) -> None:
         """Replans once the pressure links appear: the fields reveal them themselves (`build_stroke_field`).
 
         Only the reveal replans. Pen use sets the key on every tablet event, and a forced replan on each would

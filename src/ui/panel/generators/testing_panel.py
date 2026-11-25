@@ -62,7 +62,7 @@ class TestControlPanel(GenerateFooterPanel):
         self._edit_mode_control.set_value(cache.get(Cache.EDIT_MODE))
         self._edit_mode_control.valueChanged.connect(lambda mode: cache.set(Cache.EDIT_MODE, mode))
         cache.connect(self._edit_mode_control, Cache.EDIT_MODE,
-                      lambda mode, *_: self._edit_mode_control.set_value(mode))
+                      self._edit_mode_control.set_value)
         section.add(self._edit_mode_control, REQUIRED)
 
         self._gen_resolution_input = create_control_widget(cache, Cache.GENERATION_SIZE)
