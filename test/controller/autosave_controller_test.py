@@ -249,7 +249,8 @@ class AutosaveControllerTest(IntraPaintTestCase):
         crashed_dir = self._simulate_crash()
 
         self.image_stack.load_image(_solid_image(QColor(Qt.GlobalColor.black)))
-        self.assertTrue(self.controller.offer_recovery(MagicMock(return_value=RECOVERY_RESTORE)))
+        # The prompt only returns a choice here. Do not let a mock retain the QWidget in its call history.
+        self.assertTrue(self.controller.offer_recovery(lambda _parent, _session: RECOVERY_RESTORE))
         self.assertFalse(os.path.exists(crashed_dir))
         restored = self.image_stack.layer_stack.child_layers[0]
         self.assertEqual('layer', restored.name)
