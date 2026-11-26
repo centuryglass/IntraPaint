@@ -16,7 +16,6 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import read_ora_image
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.visual.image_utils import create_transparent_image
 from test.base_test_case import IntraPaintTestCase
 
@@ -38,8 +37,7 @@ class ImageStackTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
         self.generation_area_bounds_changed_mock = self.connect_mock(self.image_stack.generation_area_bounds_changed)
         self.content_changed_mock = self.connect_mock(self.image_stack.content_changed)
@@ -226,28 +224,32 @@ class ImageStackTest(IntraPaintTestCase):
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 
-    def test_app_state_follows_layer_count(self) -> None:
-        """The stack's tracker reads editing once it has a layer, and no image once it has none, through undo too."""
-        app_state = self.image_stack.app_state
-        app_state.set_app_state(APP_STATE_NO_IMAGE)
+    def test_has_layers_changed_follows_layer_count(self) -> None:
+        """has_layers_changed reports the first layer added and the last one removed, through undo too."""
+        emitted: list[bool] = []
+        self.image_stack.has_layers_changed.connect(emitted.append)
         layer = self.image_stack.create_layer()
-        self.assertEqual(app_state.app_state(), APP_STATE_EDITING)
+        self.image_stack.create_layer()
+        self.assertEqual([True], emitted)
         self.image_stack.remove_layer(layer)
-        self.assertEqual(app_state.app_state(), APP_STATE_NO_IMAGE)
+        self.assertEqual([True], emitted)
+        self.image_stack.remove_layer(self.image_stack.layer_stack.child_layers[0])
+        self.assertEqual([True, False], emitted)
         self.image_stack.undo_stack.undo()
-        self.assertEqual(app_state.app_state(), APP_STATE_EDITING)
+        self.assertEqual([True, False, True], emitted)
 
-    def test_undo_crop_that_deleted_every_layer_restores_editing_state(self) -> None:
-        """Undoing a crop that deleted every layer, which restores them through the root group, reads editing."""
+    def test_undo_crop_that_deleted_every_layer_reports_layers(self) -> None:
+        """Undoing a crop that deleted every layer, which restores them through the root group, reports layers."""
         self.image_stack.create_layer(None, create_transparent_image(QSize(10, 10)))
-        app_state = self.image_stack.app_state
+        emitted: list[bool] = []
+        self.image_stack.has_layers_changed.connect(emitted.append)
         with patch('src.image.layers.image_stack.show_warning_dialog'):
             self.image_stack.resize_canvas(QSize(10, 10), -50, -50, crop_layers=True)
-        self.assertEqual(self.image_stack.count, 0)
-        self.assertEqual(app_state.app_state(), APP_STATE_NO_IMAGE)
+        self.assertEqual(0, self.image_stack.count)
+        self.assertEqual([False], emitted)
         self.image_stack.undo_stack.undo()
-        self.assertEqual(self.image_stack.count, 1)
-        self.assertEqual(app_state.app_state(), APP_STATE_EDITING)
+        self.assertEqual(1, self.image_stack.count)
+        self.assertEqual([False, True], emitted)
 
     def test_layer_move(self) -> None:
         """Test moving layers through the stack."""

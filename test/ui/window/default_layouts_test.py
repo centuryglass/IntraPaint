@@ -59,7 +59,7 @@ class DefaultLayoutWindowTest(IntraPaintTestCase):
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
         test_size = QSize(64, 64)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self.windows: list[MainWindow] = []
 
     def tearDown(self) -> None:
@@ -68,7 +68,7 @@ class DefaultLayoutWindowTest(IntraPaintTestCase):
         super().tearDown()
 
     def _new_window(self) -> MainWindow:
-        window = MainWindow(self.image_stack)
+        window = MainWindow(self.image_stack, AppStateTracker())
         self.windows.append(window)
         for dock in window.docks:
             if dock is not window.controlnet_dock:

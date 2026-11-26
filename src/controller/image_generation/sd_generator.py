@@ -31,7 +31,7 @@ from src.ui.panel.controlnet_panel import ControlNetPanel
 from src.ui.panel.generators.stable_diffusion_panel import AdvancedControls, StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import APP_STATE_LOADING, APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
@@ -234,10 +234,9 @@ class SDGenerator(ImageGenerator, ABC):
     """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
        support."""
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace, url_cache_key: str,
-                 scaling_mode_cache_key: str,
-                 show_extended_controlnet_options=False) -> None:
-        super().__init__(window, image_stack)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker, args: Namespace,
+                 url_cache_key: str, scaling_mode_cache_key: str, show_extended_controlnet_options=False) -> None:
+        super().__init__(window, image_stack, app_state)
         self._image_stack = image_stack
         self._server_url = args.server_url if args.server_url != '' else Cache().get(url_cache_key)
         self._url_cache_key = url_cache_key

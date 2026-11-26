@@ -20,7 +20,6 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase, assert_images_equal
 from test.render_assertions import full_render
@@ -152,8 +151,7 @@ class ImageStackOpTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
 
     def add_layer(self, name: str, seed: int, size: Optional[QSize] = None, offset: QPoint = QPoint(),
                   parent: Optional[LayerGroup] = None, min_alpha: int = 255) -> ImageLayer:

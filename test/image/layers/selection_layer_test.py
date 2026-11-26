@@ -23,7 +23,6 @@ from src.image.layers.layer_resize_mode import LayerResizeMode
 from src.image.layers import selection_layer as selection_layer_module
 from src.image.layers.selection_layer import SelectionLayer
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase
 
@@ -43,8 +42,7 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.INPAINT_FULL_RES_PADDING, 0)
         AppConfig().set(AppConfig.MASK_BLUR, 0)
-        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.image_stack.generation_area = GENERATION_AREA
         self.selection_layer = self.image_stack.selection_layer
         self.pins_changed = self.connect_mock(self.selection_layer.context_pins_changed)
@@ -180,8 +178,7 @@ class SelectionLayerContentBoundsTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.image_stack.generation_area = GENERATION_AREA
         self.selection_layer = self.image_stack.selection_layer
 
@@ -254,8 +251,7 @@ class SelectionLayerOperationTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(SMALL_SIZE, SMALL_SIZE, QSize(8, 8), QSize(64, 64),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(SMALL_SIZE, SMALL_SIZE, QSize(8, 8), QSize(64, 64), UndoStack())
         self.selection_layer = self.image_stack.selection_layer
         UndoStack().clear()
 
@@ -729,8 +725,7 @@ class SelectionLayerScalingTest(IntraPaintTestCase):
 
         The edits are ellipses because a fully selected traced area takes the rectangle shortcut without tracing.
         """
-        image_stack = ImageStack(self.CANVAS_SIZE, QSize(512, 512), QSize(8, 8), QSize(8000, 8000),
-                                 UndoStack(), AppStateTracker())
+        image_stack = ImageStack(self.CANVAS_SIZE, QSize(512, 512), QSize(8, 8), QSize(8000, 8000), UndoStack())
         selection_layer = image_stack.selection_layer
         with mock.patch.object(cv2, 'findContours', wraps=cv2.findContours) as find_contours, \
                 mock.patch('src.image.layers.selection_layer._binary_mask',

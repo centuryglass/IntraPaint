@@ -11,7 +11,6 @@ from src.controller.image_generation.result_patch import make_result_patch
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 
@@ -43,8 +42,7 @@ class ApplyOptionTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         self.layer = self.image_stack.create_layer('source', _solid(IMAGE_SIZE, SOURCE_COLOR))
         self.image_stack.generation_area = GENERATION_AREA
         self.option = _solid(GENERATION_AREA.size(), GENERATED_COLOR)
@@ -116,8 +114,7 @@ class ApplyPatchTest(IntraPaintTestCase):
 
     def test_patch_on_empty_layer_leaves_unchanged_pixels_transparent(self) -> None:
         """The composite shows the result, and the new layer holds nothing where the result equals the source."""
-        stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240),
-                           UndoStack(), AppStateTracker())
+        stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         stack.create_layer('source', _solid(IMAGE_SIZE, SOURCE_COLOR))
         stack.generation_area = GENERATION_AREA
         stack.flush_render()
@@ -144,8 +141,7 @@ class TopLayerFallbackTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240),
-                                UndoStack(), AppStateTracker())
+        self.stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         self.base = self.stack.create_layer('base', _solid(IMAGE_SIZE, SOURCE_COLOR))
         self.stack.generation_area = GENERATION_AREA
         self.option = _solid(GENERATION_AREA.size(), GENERATED_COLOR)

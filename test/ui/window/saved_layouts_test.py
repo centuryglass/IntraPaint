@@ -86,8 +86,8 @@ class ApplyDockStateTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         test_size = QSize(64, 64)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack(), AppStateTracker())
-        self.window = MainWindow(self.image_stack)
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
+        self.window = MainWindow(self.image_stack, AppStateTracker())
         for dock in (self.window.tools_dock, self.window.generation_dock, self.window.layers_dock,
                      self.window.color_dock, self.window.navigation_dock):
             dock.set_content(QLabel(dock.windowTitle()))

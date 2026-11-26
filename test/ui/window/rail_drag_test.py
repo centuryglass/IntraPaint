@@ -43,7 +43,7 @@ class RailDragTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         size = QSize(64, 64)
-        self.window = MainWindow(ImageStack(size, size, size, size, UndoStack(), AppStateTracker()))
+        self.window = MainWindow(ImageStack(size, size, size, size, UndoStack()), AppStateTracker())
         for dock in self.window.docks:
             if dock is not self.window.controlnet_dock:
                 dock.set_content(QLabel(dock.windowTitle()))

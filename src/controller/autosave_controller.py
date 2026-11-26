@@ -35,7 +35,7 @@ from src.image.recovery_files import (RecoveryWrite, RecoverableSession, plan_re
                                       restore_session, read_manifest)
 from src.ui.modal.modal_utils import (request_recovery_choice, show_error_dialog, RECOVERY_RESTORE,
                                       RECOVERY_DISCARD)
-from src.util.application_state import APP_STATE_LOADING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.rich_text import rich_text_format
 
@@ -96,8 +96,8 @@ class AutosaveController(QObject):
     All methods run on the GUI thread. Only `write_recovery` runs on a worker.
     """
 
-    def __init__(self, image_stack: ImageStack, image_io: ImageIO, window: Optional[QWidget],
-                 root: Optional[str] = None) -> None:
+    def __init__(self, image_stack: ImageStack, image_io: ImageIO, app_state: AppStateTracker,
+                 window: Optional[QWidget], root: Optional[str] = None) -> None:
         """Starts tracking changes to the document.
 
         Parameters
@@ -106,6 +106,8 @@ class AutosaveController(QObject):
             The document to autosave.
         image_io: ImageIO
             Supplies the metadata saved with the document, and reports finished saves.
+        app_state: AppStateTracker
+            Autosave waits while it reads `APP_STATE_LOADING`.
         window: Optional[QWidget]
             Parent of the recovery prompt.
         root: Optional[str]
@@ -114,6 +116,7 @@ class AutosaveController(QObject):
         super().__init__()
         self._image_stack = image_stack
         self._image_io = image_io
+        self._app_state = app_state
         self._window = window
         self._root = root
         self._session_dir: Optional[str] = None
@@ -259,7 +262,7 @@ class AutosaveController(QObject):
     def _busy(self) -> bool:
         return (LayerBrush.any_stroke_in_progress()
                 or QApplication.mouseButtons() != Qt.MouseButton.NoButton
-                or self._image_stack.app_state.app_state() == APP_STATE_LOADING
+                or self._app_state.app_state() == APP_STATE_LOADING
                 or self._pending_write is not None)
 
     def _document_edited(self, *_args: Any) -> None:

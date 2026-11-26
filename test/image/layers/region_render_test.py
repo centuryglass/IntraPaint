@@ -17,7 +17,6 @@ from src.image.open_raster import read_ora_image
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase, assert_images_equal
 from test.render_assertions import (assert_region_renders_match, assert_tiled_render_matches, clear_area,
@@ -49,8 +48,7 @@ class RenderTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE,
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
         self.background = self.image_stack.create_layer('background', _gradient_image(CANVAS_SIZE, 0))
 
     def add_layer(self, name: str, transform: QTransform, parent: LayerGroup | None = None,

@@ -22,7 +22,6 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from test.base_test_case import IntraPaintTestCase
 from test.image.layers.image_stack_state import select_rect
@@ -63,8 +62,7 @@ class ChangedAreaTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE,
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
         self.background = self.image_stack.create_layer('background', _noise_image(CANVAS_SIZE, 0))
         self.translated = self.image_stack.create_layer('translated', _noise_image(LAYER_SIZE, 1),
                                                         transform=QTransform.fromTranslate(10, 8))

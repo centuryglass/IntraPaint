@@ -58,7 +58,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         test_size = QSize(64, 64)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self.windows: list[MainWindow] = []
         self.window = self._new_window()
 
@@ -68,7 +68,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         super().tearDown()
 
     def _new_window(self, size: QSize = QSize(1280, 720), fill: bool = True) -> MainWindow:
-        window = MainWindow(self.image_stack)
+        window = MainWindow(self.image_stack, AppStateTracker())
         self.windows.append(window)
         if fill:
             window.tools_dock.set_content(QLabel('tools'))
@@ -259,7 +259,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         in the order AppController provides it."""
         self.window.generation_dock.open_in_group()
         saved = self.window.save_dock_state()
-        restored = MainWindow(self.image_stack)
+        restored = MainWindow(self.image_stack, AppStateTracker())
         self.windows.append(restored)
         restored.restore_dock_state(saved)
         restored.tools_dock.set_content(QLabel('tools'))
@@ -287,7 +287,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.assertTrue(filled.restore_dock_state(saved))
         self.assertEqual(self._open_docks(filled), expected)
 
-        late = MainWindow(self.image_stack)
+        late = MainWindow(self.image_stack, AppStateTracker())
         self.windows.append(late)
         late.restore_dock_state(saved)
         for dock in late.docks:
@@ -301,7 +301,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         wrong_version = self.window.saveState(99).toBase64().data().decode()
         for saved in ('', 'not a saved state', wrong_version):
             with self.subTest(saved=saved[:12]):
-                window = MainWindow(self.image_stack)
+                window = MainWindow(self.image_stack, AppStateTracker())
                 self.windows.append(window)
                 self.assertFalse(window.restore_dock_state(saved))
                 window.tools_dock.set_content(QLabel('tools'))

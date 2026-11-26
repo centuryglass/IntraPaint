@@ -36,8 +36,9 @@ logger = logging.getLogger(__name__)
 class AppStateTracker(metaclass=AppService):
     """Global service that tracks the current application state and sends signals on state change.
 
-    `AppController` reads the `AppStateTracker()` accessor once and passes the instance on. Other code under `src/`
-    receives it through a constructor, or reads `ImageStack.app_state` from the stack it works on.
+    `AppController` reads the `AppStateTracker()` accessor once, and every other class under `src/` that sets or
+    follows the state receives the instance. The image model holds no tracker: `AppController` sets the editing and
+    no-image states from `ImageStack.has_layers_changed`.
     """
 
     def __init__(self) -> None:

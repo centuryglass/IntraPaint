@@ -275,7 +275,7 @@ def _filter_modal(controller: 'AppController', filter_name: str) -> QWidget:
     from src.image.filter.invert import InvertFilter
     _with_sample_image(controller)
     filter_class = {'blur': BlurFilter, 'rgb_color_balance': RGBColorBalanceFilter, 'invert': InvertFilter}[filter_name]
-    return filter_class(controller._image_stack).get_filter_modal()
+    return filter_class(controller._image_stack).get_filter_modal(controller._app_state)
 
 
 def _resize_canvas(controller: 'AppController') -> QWidget:

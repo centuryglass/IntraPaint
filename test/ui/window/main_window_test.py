@@ -21,9 +21,9 @@ class MainWindowTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         test_size = QSize(512, 512)
-        self._image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack(), AppStateTracker())
+        self._image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self._controller = Mock()
-        self.window = MainWindow(self._image_stack)
+        self.window = MainWindow(self._image_stack, AppStateTracker())
         self.window.show()
 
     @patch('src.util.visual.display_size.get_screen_size', new_callable=lambda: QSize(800, 600))

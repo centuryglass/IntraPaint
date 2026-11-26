@@ -17,7 +17,6 @@ from src.image.metadata_file import read_file_metadata, write_file_metadata, met
     MetadataWriteMethod, save_metadata_copy, png_with_metadata, jpeg_with_metadata
 from src.image.open_raster import save_ora_image, read_ora_image
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_format_utils import save_image_with_metadata
 from test.base_test_case import IntraPaintTestCase
 from test.image.image_metadata_test import photo_metadata
@@ -246,7 +245,7 @@ class MetadataFileTest(IntraPaintTestCase):
     def test_ora_keeps_layers(self) -> None:
         """An .ora file's metadata is replaced without loading it, and every other archive member is unchanged."""
         path = self._path('layers.ora')
-        image_stack = ImageStack(QSize(*SIZE), QSize(8, 8), QSize(8, 8), QSize(64, 64), UndoStack(), AppStateTracker())
+        image_stack = ImageStack(QSize(*SIZE), QSize(8, 8), QSize(8, 8), QSize(64, 64), UndoStack())
         layer_image = QImage(QSize(*SIZE), QImage.Format.Format_ARGB32_Premultiplied)
         layer_image.fill(QColor(10, 20, 30))
         image_stack.create_layer('one', layer_image)
@@ -271,8 +270,7 @@ class MetadataFileTest(IntraPaintTestCase):
         changed = {name for name in before.keys() | after.keys() if before.get(name) != after.get(name)}
         self.assertTrue(all(name in ('extended_data.xml', 'META-INF/metadata.xml') or name.startswith(
             'data/extensions/metadata/') for name in changed), changed)
-        reloaded_stack = ImageStack(QSize(1, 1), QSize(8, 8), QSize(8, 8), QSize(64, 64),
-                                    UndoStack(), AppStateTracker())
+        reloaded_stack = ImageStack(QSize(1, 1), QSize(8, 8), QSize(8, 8), QSize(64, 64), UndoStack())
         reloaded = read_ora_image(reloaded_stack, path)
         self.assertEqual(EDITED, reloaded.parameters)
         self.assertEqual((300, 300), reloaded.format_info['dpi'])

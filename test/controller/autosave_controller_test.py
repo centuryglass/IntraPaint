@@ -79,12 +79,11 @@ class AutosaveControllerTest(IntraPaintTestCase):
         super().setUp()
         self._root_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         self.root = self._root_dir.name
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         self.image_stack.load_image(_solid_image(QColor(Qt.GlobalColor.white)))
         self.window = QWidget()
-        self.image_io = ImageIO(self.window, self.image_stack, lambda: None)
-        self.controller = AutosaveController(self.image_stack, self.image_io, self.window, self.root)
+        self.image_io = ImageIO(self.window, self.image_stack, AppStateTracker(), lambda: None)
+        self.controller = AutosaveController(self.image_stack, self.image_io, AppStateTracker(), self.window, self.root)
 
     def tearDown(self) -> None:
         self.controller.shutdown()
@@ -152,7 +151,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.assertTrue(self.controller.dirty)
         self.assertTrue(self.controller.autosave_now(synchronous=True))
         crashed_dir = self._simulate_crash()
-        expected_copy = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack(), AppStateTracker())
+        expected_copy = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, 'expected.ora')
             save_ora_image(self.image_stack, ora_path, None)

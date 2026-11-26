@@ -16,6 +16,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
+from src.util.application_state import AppStateTracker
 from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.shared_text import URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, URL_REQUEST_TITLE
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
@@ -131,8 +132,9 @@ CONNECTION_ERROR = _tr('Could not find a valid GLID-3-XL server at "{server_addr
 class Glid3WebserviceGenerator(ImageGenerator):
     """Interface for providing image generation capabilities."""
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker,
+                 args: Namespace) -> None:
+        super().__init__(window, image_stack, app_state)
         self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.GLID_SERVER_URL)
         self._fast_ngrok_connection = args.fast_ngrok_connection
         self._control_panel: Optional[GlidPanel] = None

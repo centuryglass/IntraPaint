@@ -20,7 +20,6 @@ from src.image.open_raster import (save_ora_image, read_ora_image, MIMETYPE_FILE
 from src.image.ora_extensions import DocumentExtension, register_document_extension, METADATA_EXTENSION_NAME
 from src.image.ora_metadata import XMP_ARCHIVE_PATH, EXIF_ARCHIVE_PATH, IPTC_ARCHIVE_PATH, decode_dpi
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_format_utils import load_image, save_image_with_metadata
 from test.base_test_case import IntraPaintTestCase
 from test.image.image_metadata_test import photo_metadata, PHOTO_XMP, _exif
@@ -63,11 +62,11 @@ class OraMetadataTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self._temp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-        self.image_stack = ImageStack(IMG_SIZE, IMG_SIZE, IMG_SIZE, IMG_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMG_SIZE, IMG_SIZE, IMG_SIZE, IMG_SIZE, UndoStack())
         image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(QColor(20, 120, 220))
         self.image_stack.load_image(image)
-        self.loaded_stack = ImageStack(IMG_SIZE, IMG_SIZE, IMG_SIZE, IMG_SIZE, UndoStack(), AppStateTracker())
+        self.loaded_stack = ImageStack(IMG_SIZE, IMG_SIZE, IMG_SIZE, IMG_SIZE, UndoStack())
 
     def tearDown(self) -> None:
         self._temp_dir.cleanup()

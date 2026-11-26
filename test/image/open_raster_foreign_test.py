@@ -24,7 +24,6 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.open_raster import read_ora_image, save_ora_image, XML_FILE_NAME
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -88,8 +87,8 @@ class OpenRasterForeignDataTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self._temp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, STACK_SIZE, STACK_SIZE, UndoStack(), AppStateTracker())
-        self.reloaded_stack = ImageStack(STACK_SIZE, STACK_SIZE, STACK_SIZE, STACK_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, STACK_SIZE, STACK_SIZE, UndoStack())
+        self.reloaded_stack = ImageStack(STACK_SIZE, STACK_SIZE, STACK_SIZE, STACK_SIZE, UndoStack())
 
     def tearDown(self) -> None:
         self._temp_dir.cleanup()

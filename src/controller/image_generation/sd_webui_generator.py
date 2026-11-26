@@ -30,7 +30,7 @@ from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.generators.webui_advanced_controls import WebUIAdvancedControls
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
-from src.util.application_state import APP_STATE_EDITING, APP_STATE_NO_IMAGE
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR
@@ -216,8 +216,10 @@ def _check_lora_available(_) -> bool:
 class SDWebUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, Cache.WEBUI_CACHED_SCALING_MODE, True)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker,
+                 args: Namespace) -> None:
+        super().__init__(window, image_stack, app_state, args, Cache.SD_WEBUI_SERVER_URL,
+                         Cache.WEBUI_CACHED_SCALING_MODE, True)
         self._webservice: Optional[A1111Webservice] = create_webservice(self.server_url)
         self._style_window: Optional[PromptStyleWindow] = None
 

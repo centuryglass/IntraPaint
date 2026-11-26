@@ -128,7 +128,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         backend.route('GET', ComfyEndpoints.OBJECT_INFO, OBJECT_INFO)
         backend.route('GET', f'{ComfyEndpoints.OBJECT_INFO}/{ULTIMATE_UPSCALE_NODE}', {ULTIMATE_UPSCALE_NODE: {}})
 
-        generator = SDComfyUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        generator = SDComfyUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         self.capture_generated_images(generator)
         self.generator = generator
         webservice = generator.get_webservice()

@@ -77,8 +77,7 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.backend.start()
         self.addCleanup(self.backend.stop)
 
-        self.image_stack = ImageStack(QSize(600, 400), GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(QSize(600, 400), GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         source_image = QImage(SOURCE_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         assert not source_image.isNull(), f'failed to load {SOURCE_IMAGE}'
         self.image_stack.create_layer('source', source_image)

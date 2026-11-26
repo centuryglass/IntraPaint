@@ -9,7 +9,6 @@ from PySide6.QtWidgets import QApplication
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_group import TransformGroup
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.geometry_utils import transforms_approx_equal, transform_str
 from test.base_test_case import IntraPaintTestCase
 
@@ -25,8 +24,7 @@ class TransformGroupTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         self.group = self.image_stack.create_layer_group('group')
         self.first = self.image_stack.create_layer('first', layer_parent=self.group, layer_index=0)
         self.first.set_size(QSize(40, 20))

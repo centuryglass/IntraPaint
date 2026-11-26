@@ -17,6 +17,7 @@ from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs, save_value
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
@@ -61,7 +62,7 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         backend.route('GET', Endpoints.UPSCALERS, [{'name': name, 'model_name': None, 'model_path': None, 'model_url': None, 'scale': 4.0}
                                    for name in UPSCALER_NAMES])
 
-        self.generator = SDWebUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        self.generator = SDWebUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         self.capture_generated_images(self.generator)
 
     @staticmethod

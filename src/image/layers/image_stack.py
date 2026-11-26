@@ -6,7 +6,6 @@ import re
 from contextlib import contextmanager
 from enum import Enum
 from typing import Optional, cast, Callable, TypeAlias, Generator, Iterable
-from weakref import ref
 
 import numpy as np
 from PIL import Image
@@ -29,7 +28,6 @@ from src.image.ora_foreign_data import OraForeignDocumentData
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack, UndoStackRef
-from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.rich_text import escape_rich_text, rich_text_format
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
@@ -131,6 +129,8 @@ class ImageStack(QObject):
 
     State that belongs to one document, outside the image stack, clears itself here."""
     layer_added = Signal(Layer)
+    # Emitted with True when the root group gains its first layer, and with False when it loses its last one:
+    has_layers_changed = Signal(bool)
     layer_removed = Signal(Layer)
     active_layer_changed = Signal(Layer)
     selected_layers_changed = Signal()
@@ -142,17 +142,11 @@ class ImageStack(QObject):
                  generation_area_size: QSize,
                  min_generation_area_size: QSize,
                  max_generation_area_size: QSize,
-                 undo_stack: UndoStack,
-                 app_state: AppStateTracker) -> None:
-        """Initializes the image stack with an empty initial layer, recording its edits in `undo_stack`.
-
-        The stack sets `app_state` to `APP_STATE_EDITING` when it gains its first layer, and to `APP_STATE_NO_IMAGE`
-        when it loses its last one.
-        """
+                 undo_stack: UndoStack) -> None:
+        """Initializes the image stack with an empty initial layer, recording its edits in `undo_stack`."""
         super().__init__()
         self._undo_stack_ref = UndoStackRef(undo_stack)
-        # Widgets connected to the tracker can lead back to the stack, so a strong reference could close a cycle.
-        self._app_state_ref = ref(app_state)
+        self._has_layers = False
         self._size = image_size
         # Another program's data from the loaded .ora file. Only `open_raster` uses it, and every load clears it.
         self.ora_foreign_data: Optional[OraForeignDocumentData] = None
@@ -218,13 +212,6 @@ class ImageStack(QObject):
     def undo_stack(self) -> UndoStack:
         """Returns the history this stack's edits are recorded in. Every layer in the stack records into it too."""
         return self._undo_stack_ref()
-
-    @property
-    def app_state(self) -> AppStateTracker:
-        """Returns the application state tracker this stack updates as it gains and loses layers."""
-        app_state = self._app_state_ref()
-        assert app_state is not None, 'An ImageStack outlived its AppStateTracker'
-        return app_state
 
     @property
     def count(self) -> int:
@@ -1942,15 +1929,24 @@ class ImageStack(QObject):
                     self._disconnect_layer(child_layer)
 
     def _layer_added_slot(self, layer: Layer) -> None:
-        # Undo can reinsert the first layer with `LayerGroup.restore_state`, which skips `_insert_layer_internal`:
-        if self._layer_stack.count > 0 and self.app_state.app_state() == APP_STATE_NO_IMAGE:
-            self.app_state.set_app_state(APP_STATE_EDITING)
+        self._update_has_layers()
         self._connect_layer(layer)
         self.layer_added.emit(layer)
 
     def _layer_removed_slot(self, layer: Layer) -> None:
+        self._update_has_layers()
         self._disconnect_layer(layer)
         self.layer_removed.emit(layer)
+
+    def _update_has_layers(self) -> None:
+        """Emits `has_layers_changed` if the root group gained its first layer or lost its last one.
+
+        The root group's signals call this, so it also sees layers that `LayerGroup.restore_state` adds or removes.
+        """
+        has_layers = self._layer_stack.count > 0
+        if has_layers != self._has_layers:
+            self._has_layers = has_layers
+            self.has_layers_changed.emit(has_layers)
 
     def _insert_layer_internal(self, layer: Layer, parent: LayerParent, index: int):
         assert layer is not None and layer.layer_parent is None and not self._layer_stack.contains_recursive(layer)
@@ -1960,7 +1956,6 @@ class ImageStack(QObject):
         self._connect_layer(layer)
         self._update_z_values()
         if self._layer_stack.count == 1:
-            self.app_state.set_app_state(APP_STATE_EDITING)
             if self._active_layer_id is self._layer_stack.id:
                 self._active_layer_id = layer.id
                 self.active_layer_changed.emit(layer)
@@ -2004,8 +1999,6 @@ class ImageStack(QObject):
             removed_ids.update(child.id for child in layer.recursive_child_layers)
         self._set_selected_ids(self._selected_layer_ids - removed_ids)
         self._update_z_values()
-        if self._layer_stack.count == 0:
-            self.app_state.set_app_state(APP_STATE_NO_IMAGE)
         if layer.shown and not layer.empty:
             self._last_change_timestamp = datetime.datetime.now().timestamp()
             self._trigger_content_render()

@@ -55,8 +55,9 @@ class GeneratedImageSelectorViewTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
-        self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack), lambda: None)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
+        self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack, AppStateTracker()),
+                                               lambda: None)
         self.selector.resize(400, 300)
         self.selector._zoom_to_option(0, True)
 
@@ -140,9 +141,10 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         # below exact:
         cache.set(Cache.GENERATION_SIZE, IMAGE_SIZE)
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack), lambda: None)
+        self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack, AppStateTracker()),
+                                               lambda: None)
         self.selector.resize(400, 300)
 
     def _fill_batch(self) -> None:
@@ -405,9 +407,9 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.GENERATION_SIZE, IMAGE_SIZE)
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.window = MainWindow(self.image_stack)
+        self.window = MainWindow(self.image_stack, AppStateTracker())
         self.selector: GeneratedImageSelector = self.window._ensure_image_selector()
 
     def _run_completed_generation(self) -> None:
@@ -538,10 +540,10 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
         cache.set(Cache.BATCH_COUNT, 1)
         cache.set(Cache.BATCH_SIZE, OPTION_COUNT)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(10, 20, 30)))
-        self.window = MainWindow(self.image_stack)
-        self.generator = TestGenerator(self.window, self.image_stack)
+        self.window = MainWindow(self.image_stack, AppStateTracker())
+        self.generator = TestGenerator(self.window, self.image_stack, AppStateTracker())
         # Results reach the window through a main-thread timer, which these tests bypass:
         self.generator._cache_generated_image = self.window.generation_session.store_result  # type: ignore
         start_patch = patch.object(AsyncTask, 'start', AsyncTask.run)
@@ -621,9 +623,9 @@ class _RunScreenTestCase(IntraPaintTestCase):
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
         cache.set(Cache.BATCH_COUNT, 1)
         cache.set(Cache.BATCH_SIZE, self.BATCH)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(10, 20, 30)))
-        self.window = MainWindow(self.image_stack)
+        self.window = MainWindow(self.image_stack, AppStateTracker())
         self.session = self.window.generation_session
         self.cancel_requests: list[bool] = []
         self.window.cancel_generation.connect(lambda: self.cancel_requests.append(True))
@@ -1063,10 +1065,10 @@ class GeneratedImageSelectorGridLayoutTest(IntraPaintTestCase):
     """Tests how the grid fills the view and leaves room for the bottom row's captions."""
 
     def _selector(self, option_count: int, width: int = 1600, height: int = 900) -> GeneratedImageSelector:
-        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         Cache().set(Cache.BATCH_SIZE, 1)
         Cache().set(Cache.BATCH_COUNT, option_count)
-        selector = GeneratedImageSelector(image_stack, GenerationSession(image_stack), lambda: None)
+        selector = GeneratedImageSelector(image_stack, GenerationSession(image_stack, AppStateTracker()), lambda: None)
         selector.resize(width, height)
         selector._layout.activate()
         selector._apply_ideal_image_arrangement()

@@ -69,7 +69,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         # The capability check probes the POST-only route with a GET:
         backend.route('GET', Endpoints.INTERROGATE, FakeResponse({'detail': 'Method Not Allowed'}, status_code=405))
 
-        self.generator = SDWebUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        self.generator = SDWebUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         start_patch = mock.patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
         self.addCleanup(start_patch.stop)

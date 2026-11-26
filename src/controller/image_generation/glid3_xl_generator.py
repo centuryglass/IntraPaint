@@ -16,6 +16,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
+from src.util.application_state import AppStateTracker
 from src.util.optional_import import optional_import, check_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.shared_constants import EDIT_MODE_INPAINT, PROJECT_DIR
@@ -175,8 +176,9 @@ KL_MODEL = 'KL'
 class Glid3XLGenerator(ImageGenerator):
     """Interface for providing image generation capabilities."""
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker,
+                 args: Namespace) -> None:
+        super().__init__(window, image_stack, app_state)
         config = AppConfig()
         self._control_panel: Optional[GlidPanel] = None
         self._clip_guidance = args.clip_guidance

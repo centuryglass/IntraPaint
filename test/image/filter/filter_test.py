@@ -92,8 +92,7 @@ class FilterSelectionOnlyTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         image = QImage(IMAGE_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(Qt.GlobalColor.white)
         self.layer = self.image_stack.create_layer(None, image)
@@ -111,7 +110,7 @@ class FilterSelectionOnlyTest(IntraPaintTestCase):
     def _apply_filter(self) -> None:
         """Runs apply_filter with its background task on the calling thread."""
         with patch.object(AsyncTask, 'start', AsyncTask.run):
-            self.filter.apply_filter([])
+            self.filter.apply_filter([], AppStateTracker())
 
     def test_filter_changes_every_selected_region(self) -> None:
         """Each region of a multi-region selection is filtered, and unselected pixels are left alone."""
@@ -133,14 +132,12 @@ class MenuFilterTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
 
     def _reset_stack(self) -> None:
         """Replaces the image stack and clears the undo history, for the next filter's subTest."""
         UndoStack().clear()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
 
     def _select(self, bounds: QRect) -> None:
         with self.image_stack.selection_layer.borrow_image() as mask_image:
@@ -155,7 +152,7 @@ class MenuFilterTest(IntraPaintTestCase):
         background task runs on the calling thread.
         """
         UndoStack().clear()
-        modal = image_filter.get_filter_modal()
+        modal = image_filter.get_filter_modal(AppStateTracker())
         # pylint: disable-next=protected-access
         for field_widget, value in zip(modal._param_inputs, parameter_values, strict=True):
             field_widget.set_value(value)

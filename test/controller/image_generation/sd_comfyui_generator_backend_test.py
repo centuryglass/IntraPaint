@@ -67,7 +67,7 @@ class SDComfyUIGeneratorBackendTest(SdGeneratorTestCase):
         backend.route('POST', ComfyEndpoints.PROMPT, {'prompt_id': 'prompt-0', 'number': 1, 'node_errors': {}})
         backend.route('POST', ComfyEndpoints.FREE, {})
 
-        generator = SDComfyUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        generator = SDComfyUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         self.capture_generated_images(generator)
         self.generator = generator
         webservice = generator.get_webservice()

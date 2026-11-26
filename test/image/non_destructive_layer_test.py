@@ -78,8 +78,7 @@ class NonDestructiveGateTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         backdrop = QImage(STACK_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         backdrop.fill(QColor(200, 0, 0))
         self.backdrop = self.image_stack.create_layer('backdrop', backdrop, layer_index=0)
@@ -151,7 +150,7 @@ class NonDestructiveGateTest(IntraPaintTestCase):
 
         def _apply() -> None:
             with patch.object(AsyncTask, 'start', AsyncTask.run):
-                image_filter.apply_filter([])
+                image_filter.apply_filter([], AppStateTracker())
 
         self._assert_gated(_apply)
 
@@ -161,10 +160,8 @@ class OraExtensionTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
-        self.loaded_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                       UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
+        self.loaded_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.image_stack.create_layer('backdrop', QImage(STACK_SIZE, QImage.Format.Format_ARGB32_Premultiplied),
                                       layer_index=0)
 

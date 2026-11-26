@@ -12,7 +12,6 @@ from src.ui.panel.image_panel import GENERATION_AREA_RULER_LANE, SELECTION_RULER
 from src.ui.widget.ruler import major_tick_step, minor_tick_step, tick_values, Ruler, MAJOR_TICK_LENGTH, \
     MIN_HIGHLIGHT_CONTRAST
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.contrast_color import contrast_ratio
 from test.base_test_case import IntraPaintTestCase
 
@@ -63,8 +62,7 @@ class ImagePanelRulerTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
         self.panel = ImagePanel(self.image_stack, include_rulers=True)
         self.panel.resize(PANEL_SIZE)
         self.panel.show()

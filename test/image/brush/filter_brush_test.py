@@ -19,7 +19,6 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image
 from test.image.brush.brush_test_case import BrushTestCase, LAYER_SIZE, brush_test_pattern, opacity_gradient_image, \
     line_points, rect_mask
@@ -45,8 +44,7 @@ class FilterBrushTest(BrushTestCase):
     def setUp(self) -> None:
         super().setUp()
         # Filters only use the image stack when applied from the menu:
-        self.image_stack = ImageStack(LAYER_SIZE, LAYER_SIZE, QSize(8, 8), QSize(1024, 1024),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(LAYER_SIZE, LAYER_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.layer = ImageLayer(brush_test_pattern(), 'filter test layer', UndoStack())
         self.brush = FilterBrush(BlurFilter(self.image_stack), self.layer)
         self.brush.brush_size = 24

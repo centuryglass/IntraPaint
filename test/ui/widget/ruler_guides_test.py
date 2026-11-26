@@ -14,7 +14,6 @@ from src.ui.widget.guide_handle_bar import GuideHandleBar, GuideHandleStrip, MEN
 from src.ui.widget.ruler import Ruler
 from src.ui.widget.ruler_guides import RulerGuides
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -92,8 +91,7 @@ class GuidePanelTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048),
-                                      UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
         self.panel = ImagePanel(self.image_stack, include_rulers=True)
         self.panel.resize(PANEL_SIZE)
         self.panel.show()

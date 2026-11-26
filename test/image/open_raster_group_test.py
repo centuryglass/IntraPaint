@@ -20,7 +20,6 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import MERGED_IMAGE_FILE_NAME, read_ora_image, save_ora_image
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from test.image.layers.layer_group_render_test import CANVAS_SIZE, OPAQUE, GroupRenderTestCase
 from test.render_assertions import full_render
 
@@ -34,8 +33,7 @@ class OpenRasterGroupTest(GroupRenderTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.loaded_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, CANVAS_SIZE, CANVAS_SIZE,
-                                       UndoStack(), AppStateTracker())
+        self.loaded_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, CANVAS_SIZE, CANVAS_SIZE, UndoStack())
         self.background = self.add_background()
 
     def round_trip(self) -> None:

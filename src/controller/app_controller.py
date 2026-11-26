@@ -240,15 +240,16 @@ class AppController(MenuBuilder):
         self._generator: Optional[ImageGenerator] = None
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE),
-                                       UndoStack(), self._app_state)
-        self._generation_area_controller = GenerationAreaController(self._image_stack)
+                                       UndoStack())
+        self._image_stack.has_layers_changed.connect(self._has_layers_changed_slot)
+        self._generation_area_controller = GenerationAreaController(self._image_stack, self._app_state)
 
         # Initialize main window:
-        self._window = MainWindow(self._image_stack)
+        self._window = MainWindow(self._image_stack, self._app_state)
         self._recent_files_menu: Optional[QMenu] = None
         self.menu_window = self._window
-        self._image_io = ImageIO(self._window, self._image_stack, held_weakly(self._current_generator))
-        autosave = AutosaveController(self._image_stack, self._image_io, self._window)
+        self._image_io = ImageIO(self._window, self._image_stack, self._app_state, held_weakly(self._current_generator))
+        autosave = AutosaveController(self._image_stack, self._image_io, self._app_state, self._window)
         self._autosave = autosave
         if self._except_hook is not None:
             self._except_hook.set_recovery(autosave.keep_for_recovery, lambda: autosave.enabled)
@@ -333,7 +334,7 @@ class AppController(MenuBuilder):
             filter_class_names.append(image_filter.get_name())
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
-                modal = filter_instance.get_filter_modal()
+                modal = filter_instance.get_filter_modal(self._app_state)
                 modal.filter_applied.connect(lambda values: self._record_applied_filter(filter_instance, values))
                 self._set_alt_window_centered_bounds(modal)
                 modal.exec()
@@ -442,13 +443,13 @@ class AppController(MenuBuilder):
         self._wired_generator_panels: WeakSet[QWidget] = WeakSet()
 
         # Prepare image generator options, and select one based on availability and command line arguments.
-        self._null_generator = NullGenerator(self._window, self._image_stack)
-        self._sd_webui_generator = SDWebUIGenerator(self._window, self._image_stack, args)
-        self._sd_comfyui_generator = SDComfyUIGenerator(self._window, self._image_stack, args)
+        self._null_generator = NullGenerator(self._window, self._image_stack, self._app_state)
+        self._sd_webui_generator = SDWebUIGenerator(self._window, self._image_stack, self._app_state, args)
+        self._sd_comfyui_generator = SDComfyUIGenerator(self._window, self._image_stack, self._app_state, args)
         if not is_pyinstaller_bundle():
-            self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
-        self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
-        self._test_generator = TestGenerator(self._window, self._image_stack)
+            self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, self._app_state, args)
+        self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, self._app_state, args)
+        self._test_generator = TestGenerator(self._window, self._image_stack, self._app_state)
 
         mode = args.mode
         match mode:
@@ -1658,7 +1659,11 @@ class AppController(MenuBuilder):
         image_filter, param_values, active_layer_only = self._last_filter
         image_filter.active_layer_only = active_layer_only
         image_filter.selection_only = not self._image_stack.selection_layer.empty
-        image_filter.apply_filter(param_values)
+        image_filter.apply_filter(param_values, self._app_state)
+
+    def _has_layers_changed_slot(self, has_layers: bool) -> None:
+        """Moves the application to the editing state when the image gains a layer, and out of it when it has none."""
+        self._app_state.set_app_state(APP_STATE_EDITING if has_layers else APP_STATE_NO_IMAGE)
 
     def _record_applied_filter(self, image_filter: ImageFilter, param_values: list[Any]) -> None:
         """Saves a filter applied from its dialog for repeat_last_filter, and names it in the repeat action."""

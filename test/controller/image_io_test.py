@@ -41,8 +41,8 @@ class ImageIOTestCase(IntraPaintTestCase):
         super().setUp()
         size = QSize(64, 64)
         self.window = QWidget()
-        self.image_stack = ImageStack(size, size, size, size, UndoStack(), AppStateTracker())
-        self.image_io = ImageIO(self.window, self.image_stack, lambda: None)
+        self.image_stack = ImageStack(size, size, size, size, UndoStack())
+        self.image_io = ImageIO(self.window, self.image_stack, AppStateTracker(), lambda: None)
         self.temp_dir = tempfile.TemporaryDirectory()
         self.gif_path = os.path.join(self.temp_dir.name, 'anim.gif')
         frames = [Image.new('RGBA', (16, 16), color) for color in self.COLORS]

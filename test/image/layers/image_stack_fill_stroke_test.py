@@ -14,7 +14,6 @@ from src.image.layers.image_stack import ImageStack, StrokePosition
 from src.image.layers.text_layer import TextLayer
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 from test.image.layers.image_stack_state import ImageStackOpTestCase, StackState, MIN_GEN_AREA, MAX_GEN_AREA
 
@@ -40,7 +39,7 @@ class FillStrokeSelectionTest(ImageStackOpTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS, CANVAS, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(CANVAS, CANVAS, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
         image = create_transparent_image(LAYER_SIZE)
         painter = QPainter(image)
         painter.fillRect(QRect(0, 0, LAYER_SIZE.width() // 2, LAYER_SIZE.height()), QColor(0, 200, 0))

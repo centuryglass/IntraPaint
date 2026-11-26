@@ -39,9 +39,9 @@ class GenerationSessionTest(IntraPaintTestCase):
         super().setUp()
         Cache().set(Cache.GENERATION_SIZE, IMAGE_SIZE)
         Cache().set(Cache.EDIT_SIZE, IMAGE_SIZE)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.session = GenerationSession(self.image_stack)
+        self.session = GenerationSession(self.image_stack, AppStateTracker())
         self.availability: list[bool] = []
         self.session.previous_options_available.connect(self.availability.append)
 
@@ -239,9 +239,9 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.BATCH_COUNT, 1)
         cache.set(Cache.BATCH_SIZE, 2)
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack(), AppStateTracker())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.session = GenerationSession(self.image_stack)
+        self.session = GenerationSession(self.image_stack, AppStateTracker())
         self.events: list[str] = []
         self.session.generation_started.connect(lambda _mask: self.events.append('started'))
         self.session.generation_finished.connect(lambda: self.events.append('finished'))

@@ -22,11 +22,11 @@ class GeneratorSetupWindowTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         size = QSize(64, 64)
-        image_stack = ImageStack(size, size, size, size, UndoStack(), AppStateTracker())
+        image_stack = ImageStack(size, size, size, size, UndoStack())
         main_window = MagicMock()
         self.window = GeneratorSetupWindow()
-        self.null_generator = NullGenerator(main_window, image_stack)
-        self.other_generator = TestGenerator(main_window, image_stack)
+        self.null_generator = NullGenerator(main_window, image_stack, AppStateTracker())
+        self.other_generator = TestGenerator(main_window, image_stack, AppStateTracker())
         self.window.add_generator(self.null_generator)
         self.window.add_generator(self.other_generator)
 

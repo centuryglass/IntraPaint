@@ -51,7 +51,7 @@ from src.ui.window.floating_title_bar import FloatingTitleBar
 from src.ui.window.rail_drag import RailDrag
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
-from src.util.application_state import APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.visual.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH, PROJECT_DIR
@@ -127,13 +127,16 @@ class MainWindow(QMainWindow):
     full_screen_changed = Signal(bool)  # Emitted when the window enters or leaves full screen, however it happened.
     """Emitted when `can_restore_previous_options` changes."""
 
-    def __init__(self, image_stack: ImageStack):
+    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker):
         """Builds the window around the canvas, with empty docks in the first-run layout.
 
         image_stack : ImageStack
             Image layers being edited.
+        app_state : AppStateTracker
+            Enables the canvas and docks by application state. The window sets it while generated images are shown.
         """
         super().__init__()
+        self._app_state = app_state
         self._was_full_screen = False
         # Called on every close request; returning False keeps the window open. None closes without asking.
         self.confirm_close: Optional[Callable[[], bool]] = None
@@ -157,7 +160,7 @@ class MainWindow(QMainWindow):
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack
-        self._generation_session = GenerationSession(image_stack)
+        self._generation_session = GenerationSession(image_stack, app_state)
         self._generation_session.generation_started.connect(self.show_generated_options)
         self._generation_session.image_ready.connect(self.load_sample_preview)
         self._generation_session.progress_changed.connect(self.set_loading_message)
@@ -198,7 +201,7 @@ class MainWindow(QMainWindow):
 
             def _show_spinner_when_busy(app_state: str) -> None:
                 self.set_is_loading(app_state == APP_STATE_LOADING)
-            self._image_stack.app_state.signal().connect(_show_spinner_when_busy)
+            self._app_state.signal().connect(_show_spinner_when_busy)
 
         # Docks:
         self.setDockNestingEnabled(True)
@@ -208,19 +211,19 @@ class MainWindow(QMainWindow):
         self.setCorner(Qt.Corner.TopRightCorner, Qt.DockWidgetArea.TopDockWidgetArea)
         self.setCorner(Qt.Corner.BottomLeftCorner, Qt.DockWidgetArea.BottomDockWidgetArea)
         self.setCorner(Qt.Corner.BottomRightCorner, Qt.DockWidgetArea.BottomDockWidgetArea)
-        self._tools_dock = PanelDock(TOOLS_DOCK_TITLE, DockID.TOOLS, self, image_stack.app_state,
+        self._tools_dock = PanelDock(TOOLS_DOCK_TITLE, DockID.TOOLS, self, app_state,
                                      QIcon(ICON_PATH_TOOLS_DOCK), KeyConfig.SELECT_TOOL_TAB)
-        self._generation_dock = PanelDock(GENERATION_DOCK_TITLE, DockID.GENERATION, self, image_stack.app_state,
+        self._generation_dock = PanelDock(GENERATION_DOCK_TITLE, DockID.GENERATION, self, app_state,
                                           QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB)
-        self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self, image_stack.app_state,
+        self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self, app_state,
                                           QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB)
-        self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, image_stack.app_state,
+        self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, app_state,
                                       QIcon(ICON_PATH_LAYERS_DOCK), KeyConfig.SHOW_LAYER_MENU_SHORTCUT)
-        self._color_dock = PanelDock(COLOR_DOCK_TITLE, DockID.COLOR, self, image_stack.app_state,
+        self._color_dock = PanelDock(COLOR_DOCK_TITLE, DockID.COLOR, self, app_state,
                                      QIcon(ICON_PATH_COLOR_DOCK))
-        self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self, image_stack.app_state,
+        self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self, app_state,
                                           QIcon(ICON_PATH_NAVIGATION_DOCK), KeyConfig.NAVIGATION_WINDOW_SHORTCUT)
-        self._rails = DockRails(self, image_stack.app_state)
+        self._rails = DockRails(self, app_state)
         self._rail_drag = RailDrag(self, self._rails, self._rails.sync)
         for dock in self.docks:
             button = self._rails.add_dock(dock)
@@ -244,7 +247,7 @@ class MainWindow(QMainWindow):
 
         self._image_panel.navigation_window_requested.connect(self._show_navigation_dock)
 
-        self._image_stack.app_state.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
+        self._app_state.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
 
     @property
@@ -521,7 +524,7 @@ class MainWindow(QMainWindow):
             return
         if visible:
             selector = self._ensure_image_selector()
-            self._image_stack.app_state.set_app_state(APP_STATE_SELECTION)
+            self._app_state.set_app_state(APP_STATE_SELECTION)
             self._dock_state_before_selector = self._save_state_with_waiting_docks()
             self._docks_open_before_selector = [dock for dock in self.docks if not dock.isHidden()]
             for dock in self.docks:
@@ -534,7 +537,7 @@ class MainWindow(QMainWindow):
             assert self._image_selector is not None
             # Stores the batch for re-opening when the selector didn't close itself, as when a generation fails:
             self._image_selector.archive_current_options()
-            self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
             self.removeEventFilter(self._image_selector)
             self._central_widget.setCurrentWidget(self._main_widget)
             self._central_widget.removeWidget(self._image_selector)
@@ -596,20 +599,20 @@ class MainWindow(QMainWindow):
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None) -> None:
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
         if is_loading:
-            self._image_stack.app_state.set_app_state(APP_STATE_LOADING)
+            self._app_state.set_app_state(APP_STATE_LOADING)
             self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
             # The selection screen shows its own loading state in each unfilled option:
             if TIMELAPSE_MODE_FLAG in sys.argv or not self.is_image_selector_visible():
                 self._loading_widget.show()
                 self._loading_widget.raise_()
         else:
-            if self._image_stack.app_state.app_state() == APP_STATE_LOADING:
+            if self._app_state.app_state() == APP_STATE_LOADING:
                 if self.is_image_selector_visible():
-                    self._image_stack.app_state.set_app_state(APP_STATE_SELECTION)
+                    self._app_state.set_app_state(APP_STATE_SELECTION)
                 elif self._image_stack.has_image:
-                    self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
+                    self._app_state.set_app_state(APP_STATE_EDITING)
                 else:
-                    self._image_stack.app_state.set_app_state(APP_STATE_NO_IMAGE)
+                    self._app_state.set_app_state(APP_STATE_NO_IMAGE)
             if TIMELAPSE_MODE_FLAG in sys.argv:
                 self._loading_widget.paused = True
             else:
