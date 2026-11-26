@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QTextEdit, QLineEdit, QPla
 from src.app_context import QObjectService
 from src.config.key_config import KeyConfig
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
-from src.util.key_code_utils import get_modifier_string, get_key_with_modifiers, key_alternatives
+from src.util.key_code_utils import get_modifier_string, get_key_with_modifiers
 
 logger = logging.getLogger(__name__)
 
@@ -204,9 +204,9 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
         config_key: str
             Key string for the appropriate key or keys.
         """
-        key_text = KeyConfig().get(config_key)
-        assert isinstance(key_text, str)
-        for binding_str in key_alternatives(key_text):
+        bindings = KeyConfig().get(config_key)
+        assert isinstance(bindings, list)
+        for binding_str in bindings:
             try:
                 key, modifiers = get_key_with_modifiers(binding_str)
                 self.register_keybinding(str_id, action, QKeySequence(key), modifiers)
@@ -243,9 +243,9 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
         predicate: Callable[[], bool], optional
             Whether a press may start a hold. Defaults to always.
         """
-        key_text = KeyConfig().get(config_key)
-        assert isinstance(key_text, str)
-        for binding_str in key_alternatives(key_text):
+        bindings = KeyConfig().get(config_key)
+        assert isinstance(bindings, list)
+        for binding_str in bindings:
             try:
                 key, modifiers = get_key_with_modifiers(binding_str)
             except ValueError:
@@ -337,11 +337,15 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
             for control_binding in text_control_bindings:
                 if is_text_control_event:
                     break
-                binding_string = KeyConfig().get(control_binding)
-                binding_key, binding_modifiers = get_key_with_modifiers(binding_string)
-                if binding_key is not None and event.key() == binding_key \
-                        and (binding_modifiers is None or QApplication.keyboardModifiers() == binding_modifiers):
-                    is_text_control_event = True
+                for binding_string in KeyConfig().get(control_binding):
+                    try:
+                        binding_key, binding_modifiers = get_key_with_modifiers(binding_string)
+                    except ValueError:
+                        continue
+                    if binding_key is not None and event.key() == binding_key \
+                            and (binding_modifiers is None or QApplication.keyboardModifiers() == binding_modifiers):
+                        is_text_control_event = True
+                        break
             if event.key() == Qt.Key.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
                 # In another top-level window (a floating panel), setFocus only records the focus child; the
                 # active window has to change for the field to lose keyboard focus.

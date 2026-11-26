@@ -25,6 +25,7 @@ from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
 from src.ui.window.floating_edge import draw_dock_frame
 from src.util.layout import add_layout
+from src.util.visual.key_hint_text import KeyHintSource, key_hint_labels
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.panel_header'
@@ -303,11 +304,11 @@ class PanelHeader(QWidget):
         """Puts the More button back at the end of the first line, after its owner moved it elsewhere."""
         self._first_line.addWidget(self._more_button)
 
-    def set_key_text(self, key_text: str) -> None:
-        """Shows the key binding `key_text`, such as "Shift+S,K", as keycaps after the name, or hides them if it is
-        empty."""
+    def set_key_text(self, key_text: KeyHintSource) -> None:
+        """Shows the key binding `key_text`, such as `["Shift+S", "K"]`, as keycaps after the name, or hides them if
+        nothing is bound."""
         self._key_badge.set_text(key_text)
-        self._key_badge.setVisible(key_text != '')
+        self._key_badge.setVisible(len(key_hint_labels(key_text)) > 0)
         self._fit_lines()
 
     def description(self) -> str:

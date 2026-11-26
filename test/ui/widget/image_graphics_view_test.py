@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.ui.widget.image_graphics_view import ImageGraphicsView, MAX_IMAGE_ZOOM, MIN_IMAGE_ZOOM, ZOOM_FACTOR
-from src.util.key_code_utils import get_key_with_modifiers, key_alternatives
+from src.util.key_code_utils import get_key_with_modifiers
 from test.base_test_case import IntraPaintTestCase, press_key
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -365,7 +365,7 @@ class KeybindingTest(ImageGraphicsViewTestCase):
 
     def _press_configured_key(self, config_key: str) -> None:
         """Presses the first key bound to `config_key`."""
-        key, modifiers = get_key_with_modifiers(key_alternatives(KeyConfig().get(config_key))[0])
+        key, modifiers = get_key_with_modifiers(KeyConfig().get(config_key)[0])
         assert key is not None
         # HotkeyFilter matches modifiers against QApplication.keyboardModifiers(), which a sent key event leaves set
         # for later tests, so the modifiers are patched in and the event carries none.

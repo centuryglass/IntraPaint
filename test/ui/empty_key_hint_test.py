@@ -42,9 +42,10 @@ class EmptyKeyHintTest(IntraPaintTestCase):
         key_config = KeyConfig()
         full_single = _control_hint(True, 4)
         full_grid = _control_hint(False, 4)
-        for config_key in (KeyConfig.COMPARE_ORIGINAL_MODIFIER, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP,
-                           KeyConfig.ZOOM_IN, KeyConfig.ZOOM_OUT, KeyConfig.PAN_VIEW_KEY):
-            key_config.set(config_key, '')
+        key_config.set(KeyConfig.COMPARE_ORIGINAL_MODIFIER, '')
+        for config_key in (KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP, KeyConfig.ZOOM_IN, KeyConfig.ZOOM_OUT,
+                           KeyConfig.PAN_VIEW_KEY):
+            key_config.set(config_key, [])
         single = _control_hint(True, 4)
         grid = _control_hint(False, 4)
         self.assertLess(len(single), len(full_single))

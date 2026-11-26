@@ -14,7 +14,6 @@ from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QPushButton, QSpli
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.util.key_code_utils import key_alternatives
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -152,7 +151,7 @@ class LayerPanelTest(IntraPaintTestCase):
                                    (self.panel._delete_button, KeyConfig.DELETE_LAYER_SHORTCUT,
                                     DELETE_BUTTON_TITLE)):
             tooltip = button.toolTip()
-            key_count = len(key_alternatives(KeyConfig().get(key)))
+            key_count = len(KeyConfig().get(key))
             self.assertIn(f'<b>{title}</b>', tooltip)
             self.assertEqual(tooltip.count('<img'), key_count, tooltip)
 
@@ -1264,9 +1263,9 @@ class LayerPanelTest(IntraPaintTestCase):
         shortcuts = {action.text(): [sequence.toString() for sequence in action.shortcuts()]
                      for action in menu.actions()}
         self.assertEqual(shortcuts[MENU_OPTION_RENAME],
-                         key_alternatives(KeyConfig().get(KeyConfig.RENAME_LAYER_SHORTCUT)))
+                         KeyConfig().get(KeyConfig.RENAME_LAYER_SHORTCUT))
         self.assertEqual(shortcuts[MENU_OPTION_DUPLICATE],
-                         key_alternatives(KeyConfig().get(KeyConfig.COPY_LAYER_SHORTCUT)))
+                         KeyConfig().get(KeyConfig.COPY_LAYER_SHORTCUT))
 
     def test_rename_starts_in_a_collapsed_group(self) -> None:
         """Renaming the active layer opens the groups above its row and starts editing there."""

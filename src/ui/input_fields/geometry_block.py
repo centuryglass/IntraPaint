@@ -403,7 +403,7 @@ class GeometryBlock(QWidget):
         field = self._fields[name]
         field.set_value(field.value() + steps * self._key_steps[name])
 
-    def set_step_key_tooltip(self, name: str, decrease_key: str, increase_key: str) -> None:
+    def set_step_key_tooltip(self, name: str, decrease_key: list[str], increase_key: list[str]) -> None:
         """Adds the keys that step a field to its tooltip."""
         field = self._fields[name]
         description = self._base_tooltip(name)

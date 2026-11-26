@@ -98,7 +98,7 @@ class ToolButtonKeyHintTest(IntraPaintTestCase):
     def test_wide_key_hint_switches_to_modifier_symbols(self) -> None:
         """A key hint too wide for the button shows its modifiers as symbols, and switches back when the button is
         large enough for the full text."""
-        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Shift+S')
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, ['Shift+S'])
         button = self._button(KeyConfig.TEXT_TOOL_KEY)
         button.set_edge_length(40, show_key_hint=True)
         # pylint: disable=protected-access
@@ -110,14 +110,14 @@ class ToolButtonKeyHintTest(IntraPaintTestCase):
 
     def test_key_hint_too_wide_even_with_symbols_stays_hidden(self) -> None:
         """A key hint still too wide with modifier symbols is hidden."""
-        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Alt+Shift+PgDown')
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, ['Ctrl+Alt+Shift+PgDown'])
         button = self._button(KeyConfig.TEXT_TOOL_KEY)
         button.set_edge_length(40, show_key_hint=True)
         self.assertFalse(button._key_hint.isVisibleTo(button))  # pylint: disable=protected-access
 
     def test_multiple_keys_too_wide_show_only_the_shortest(self) -> None:
         """When all of a tool's keys don't fit, the hint shows the shortest one, and the full size shows all."""
-        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Alt+T,V')
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, ['Ctrl+Alt+T', 'V'])
         button = self._button(KeyConfig.TEXT_TOOL_KEY)
         button.set_edge_length(40, show_key_hint=True)
         # pylint: disable=protected-access

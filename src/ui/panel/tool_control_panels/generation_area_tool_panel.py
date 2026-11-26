@@ -46,6 +46,7 @@ from src.ui.widget.panel_section import PanelSection
 from src.util.layout import clear_grid
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, recent_frames, \
     parse_size, size_to_str, previous_frame
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panel.generation_area_tool_panel'
@@ -142,7 +143,7 @@ class GenerationAreaToolPanel(FitToolPanel):
         self._square_button.clicked.connect(lambda: self._apply_frame(
             square_frame(image_stack.size, image_stack.max_generation_area_size)))
         self._previous_button = self._frame_button(FRAME_LABEL_PREVIOUS, FRAME_TOOLTIP_PREVIOUS.format(
-            key=KeyConfig().get(KeyConfig.PREVIOUS_GENERATION_FRAME_KEY)))
+            key=key_hint_text(KeyConfig().get(KeyConfig.PREVIOUS_GENERATION_FRAME_KEY))))
         self._previous_button.clicked.connect(self._apply_previous_frame)
         self._fit_row = QWidget(self)
         self._fit_layout = self._row_grid(self._fit_row)

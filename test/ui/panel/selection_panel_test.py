@@ -209,7 +209,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
 
     def test_sample_merged_has_no_default_key(self) -> None:
         """Toggling Sample merged is an unbound action by default."""
-        self.assertEqual(KeyConfig().get(KeyConfig.TOGGLE_SAMPLE_MERGED_HOTKEY), '')
+        self.assertEqual(KeyConfig().get(KeyConfig.TOGGLE_SAMPLE_MERGED_HOTKEY), [])
 
     def test_fill_area_persists_and_gates_fields(self) -> None:
         """The Fill area control stores its choice, and Holes disables the threshold and Sample merged."""

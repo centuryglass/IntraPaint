@@ -18,7 +18,6 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.layer_selection_ops import delete_selected_layers, duplicate_selected_layers
 from src.image.layers.transform_layer import TransformLayer
-from src.util.key_code_utils import key_alternatives
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.palette_icon import palette_icon
 
@@ -73,9 +72,9 @@ def _add_key_hint(action: QAction, config_key: Optional[str]) -> None:
         keys = KeyConfig().get(config_key)
     except KeyError:
         return
-    if isinstance(keys, str) and keys != '':
+    if isinstance(keys, list) and len(keys) > 0:
         action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
-        action.setShortcuts([QKeySequence(alternative) for alternative in key_alternatives(keys)])
+        action.setShortcuts([QKeySequence(alternative) for alternative in keys if alternative])
 
 
 def duplicate_layers_text(count: int) -> str:

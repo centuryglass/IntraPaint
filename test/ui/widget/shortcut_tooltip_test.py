@@ -38,9 +38,9 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         button = QToolButton()
         set_shortcut_tooltip(button, 'Merge down', key, rich_text=False)
         self.assertEqual(button.toolTip(), shortcut_tooltip_text('Merge down', KeyConfig().get(key)))
-        KeyConfig().set(key, 'Ctrl+Alt+K')
+        KeyConfig().set(key, ['Ctrl+Alt+K'])
         self.assertEqual(button.toolTip(), 'Merge down (Ctrl+Alt+K)')
-        KeyConfig().set(key, '')
+        KeyConfig().set(key, [])
         self.assertEqual(button.toolTip(), 'Merge down')
 
     def test_config_connections_end_with_parent_deletion(self) -> None:
@@ -59,7 +59,7 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         self.assertNotIn(button, KeyConfig()._connected[key])  # pylint: disable=protected-access
         for step_key in step_keys:
             self.assertNotIn(stepped, KeyConfig()._connected[step_key])  # pylint: disable=protected-access
-        KeyConfig().set(key, 'Ctrl+Alt+K')
+        KeyConfig().set(key, ['Ctrl+Alt+K'])
 
     def test_step_keys_tooltip(self) -> None:
         """A stepped input shows a keycap for each bound step key, drops an unbound one, and follows rebinding."""
@@ -69,9 +69,9 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         self.assertTrue(button.toolTip().startswith('<b>Size</b>'))
         both = button.toolTip().count('<img')
         self.assertGreaterEqual(both, 2)
-        KeyConfig().set(increase, '')
+        KeyConfig().set(increase, [])
         self.assertLess(button.toolTip().count('<img'), both)
-        KeyConfig().set(decrease, '')
+        KeyConfig().set(decrease, [])
         self.assertEqual(button.toolTip(), 'Size')
         set_step_shortcut_tooltip(button, 'Plain', None, None)
         self.assertEqual(button.toolTip(), 'Plain')
@@ -88,7 +88,7 @@ class RichShortcutTooltipTest(IntraPaintTestCase):
 
     def test_alternatives_and_plus_key(self) -> None:
         """Each alternative binding gets its own image, and a bound plus key stays in its binding's image."""
-        self.assertEqual(rich_shortcut_tooltip_text('T', 'Shift+S,K').count('<img'), 2)
+        self.assertEqual(rich_shortcut_tooltip_text('T', ['Shift+S', 'K']).count('<img'), 2)
         self.assertEqual(rich_shortcut_tooltip_text('T', 'Ctrl++').count('<img'), 1)
 
     def test_description(self) -> None:
@@ -110,9 +110,9 @@ class RichShortcutTooltipTest(IntraPaintTestCase):
         set_shortcut_tooltip(button, 'Merge down', key, description='Merge layers.')
         self.assertEqual(button.toolTip(), rich_shortcut_tooltip_text('Merge down', KeyConfig().get(key),
                                                                        'Merge layers.'))
-        KeyConfig().set(key, 'Ctrl+Alt+K,J')
+        KeyConfig().set(key, ['Ctrl+Alt+K', 'J'])
         self.assertEqual(button.toolTip().count('<img'), 2)
-        KeyConfig().set(key, '')
+        KeyConfig().set(key, [])
         self.assertEqual(button.toolTip().count('<img'), 0)
         self.assertIn('Merge layers.', button.toolTip())
 

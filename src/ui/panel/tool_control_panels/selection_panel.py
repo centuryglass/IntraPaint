@@ -241,7 +241,7 @@ class SelectionPanel(FitToolPanel):
     def register_hotkey(self, name: str, action: Callable[[], bool], config_key: str) -> None:
         """Binds a config key to an action for as long as the panel exists. `name` must be unique in the panel; the
            action returns whether it consumed the key."""
-        if KeyConfig().get(config_key) == '':
+        if len(KeyConfig().get(config_key)) == 0:
             return
         binding_id = f'{type(self).__name__}_{id(self)}_{name}'
         HotkeyFilter.instance().register_config_keybinding(binding_id, action, config_key)

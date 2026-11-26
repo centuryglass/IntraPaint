@@ -183,11 +183,11 @@ class DockRailTest(IntraPaintTestCase):
         key = dock.shortcut_config_key
         assert key is not None
         # pylint: disable=protected-access
-        KeyConfig().set(key, 'F5')
+        KeyConfig().set(key, ['F5'])
         self.assertEqual(button._key_labels(), ['F5'])
-        KeyConfig().set(key, 'Shift+K')
+        KeyConfig().set(key, ['Shift+K'])
         self.assertEqual(button._key_labels(), ['⇧K'])
-        KeyConfig().set(key, 'Ctrl+Alt+Shift+PgDown')
+        KeyConfig().set(key, ['Ctrl+Alt+Shift+PgDown'])
         self.assertEqual(button._key_labels(), [])
         self.assertLessEqual(button._keycap_size().width(), SIDE_RAIL_WIDTH)
 
@@ -227,7 +227,7 @@ class DockRailTest(IntraPaintTestCase):
         """Generate is primary styled, names its key in the tooltip, and emits the window's generate signal."""
         generate = self.window.rails.generate_button
         self.assertTrue(generate.property(PRIMARY_BUTTON_PROPERTY))
-        self.assertEqual(KeyConfig().get(KeyConfig.GENERATE_SHORTCUT), 'F4')
+        self.assertEqual(KeyConfig().get(KeyConfig.GENERATE_SHORTCUT), ['F4'])
         self.assertIn('<img', generate.toolTip(), 'the tooltip shows the key as a keycap')
         self.assertFalse(self.window.generation_dock.is_showing)
         self.assertFalse(generate.isHidden())

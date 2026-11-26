@@ -14,7 +14,7 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
     ModifierSettingField, NumberSettingField, OptionSegmentsField, SizeSettingField, SliderSettingField
-from src.util.parameter import TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_QSIZE, TYPE_STR
+from src.util.parameter import TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_LIST, TYPE_QSIZE, TYPE_STR
 from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -49,7 +49,7 @@ KEYBINDING_CATEGORIES = ('Keybindings', 'Menu Shortcuts')
 
 def is_keybinding(config: Config, key: str) -> bool:
     """Returns whether a config value is a key sequence."""
-    return config.get_data_type(key) == TYPE_STR and config.get_category(key) in KEYBINDING_CATEGORIES
+    return config.get_data_type(key) in (TYPE_STR, TYPE_LIST) and config.get_category(key) in KEYBINDING_CATEGORIES
 
 
 def _options(config: Config, key: str) -> list:
@@ -72,7 +72,9 @@ def create_setting_control(config: Config, key: str) -> QWidget:
     label = config.get_label(key)
     tooltip = config.get_tooltip(key)
     control: QWidget
-    if data_type == TYPE_BOOL:
+    if is_keybinding(config, key) and data_type == TYPE_LIST:
+        control = KeybindingField()
+    elif data_type == TYPE_BOOL:
         control = CheckBox()
     elif key in OPTION_LABELS and sorted(_options(config, key)) == sorted(OPTION_LABELS[key]):
         control = OptionSegmentsField(OPTION_LABELS[key])
@@ -85,7 +87,7 @@ def create_setting_control(config: Config, key: str) -> QWidget:
         elif hint == ControlHint.DIRECTORY:
             control = DirectorySettingField()
         elif is_keybinding(config, key):
-            control = ModifierSettingField() if key.endswith('_modifier') else KeybindingField()
+            control = ModifierSettingField()
         else:
             control = LineEdit()
     elif data_type in (TYPE_INT, TYPE_FLOAT):

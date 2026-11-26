@@ -210,21 +210,30 @@ class HotkeyFilterConfigRebindTest(IntraPaintTestCase):
         """Changing a config key doesn't bring back a binding removed under its ID."""
         self.filter.register_config_keybinding('rebind_test', MagicMock(), KeyConfig.ERASER_TOOL_KEY)
         self.filter.remove_keybinding('rebind_test')
-        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, 'Ctrl+F9')
+        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, ['Ctrl+F9'])
         self.assertEqual([], self._bindings_for_id())
 
     def test_removed_held_key_stays_removed(self) -> None:
         """Changing a config key doesn't bring back a held-key binding removed under its ID."""
         self.filter.register_held_key('rebind_test', MagicMock(), KeyConfig.PAN_VIEW_KEY)
         self.filter.remove_keybinding('rebind_test')
-        KeyConfig().set(KeyConfig.PAN_VIEW_KEY, 'Ctrl+F9')
+        KeyConfig().set(KeyConfig.PAN_VIEW_KEY, ['Ctrl+F9'])
         self.assertEqual([], [b for b in self.filter._held_bindings  # pylint: disable=protected-access
                               if b.str_id == 'rebind_test'])
 
     def test_registered_keybinding_follows_key_change(self) -> None:
         """A binding that wasn't removed is re-registered under the new key."""
         self.filter.register_config_keybinding('rebind_test', MagicMock(), KeyConfig.ERASER_TOOL_KEY)
-        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, 'Ctrl+F9')
+        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, ['Ctrl+F9'])
         matches = self._bindings_for_id()
         self.assertEqual(1, len(matches))
         self.assertEqual(Qt.Key.Key_F9, matches[0].key)
+
+    def test_comma_binding_registers(self) -> None:
+        """A bound comma key, bare or with a modifier, registers as the comma key."""
+        self.filter.register_config_keybinding('rebind_test', MagicMock(), KeyConfig.ERASER_TOOL_KEY)
+        KeyConfig().set(KeyConfig.ERASER_TOOL_KEY, [',', 'Ctrl+,'])
+        matches = self._bindings_for_id()
+        self.assertEqual([Qt.Key.Key_Comma, Qt.Key.Key_Comma], [binding.key for binding in matches])
+        self.assertEqual({Qt.KeyboardModifier.NoModifier, Qt.KeyboardModifier.ControlModifier},
+                         {binding.modifiers for binding in matches})
