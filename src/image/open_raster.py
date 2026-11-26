@@ -578,6 +578,74 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> ImageMetadata:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def _parse_common_attributes(layer: Layer, element: Element, record: OraForeignLayerData) -> bool:
+    """Parse shared attributes, return whether this layer is selected. An unsupported composite op is kept in
+    the layer's foreign data record."""
+    layer_name = element.get(ATTR_TAG_NAME, 'layer')
+    layer.set_name(layer_name)
+    if ATTR_TAG_VISIBILITY in element.keys():
+        visible = element.get(ATTR_TAG_VISIBILITY) == ATTR_VISIBLE
+        layer.set_visible(visible)
+    if element.get(ATTR_TAG_EDIT_LOCKED) == BOOLEAN_TRUE_STR:
+        layer.set_locked(True)
+    if ATTR_TAG_OPACITY in element.keys():
+        opacity = float(str(element.get(ATTR_TAG_OPACITY)))
+        layer.set_opacity(opacity)
+    if ATTR_TAG_COMPOSITE in element.keys():
+        composite_op = str(element.get(ATTR_TAG_COMPOSITE))
+        try:
+            comp_mode = CompositeMode.from_ora_name(composite_op)
+            if comp_mode is None:
+                logger.error(f'Unsupported layer composite mode {composite_op} ignored')
+            else:
+                layer.set_composition_mode(comp_mode)
+        except ValueError:
+            logger.warning(f'Unsupported layer composite mode {composite_op} rendered as Normal')
+            record.composite_op = composite_op
+    return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
+
+
+def _attach_foreign_data(layer: Layer, record: OraForeignLayerData) -> None:
+    """Stores the record on the layer if it holds anything foreign."""
+    if (len(record.attributes) > 0 or len(record.elements) > 0 or record.composite_op is not None
+            or record.source is not None):
+        layer.ora_foreign_data = record
+
+
+def _parse_stack_element(element: Element, read_context: OraReadContext,
+                         capture_foreign_data: Callable[[Element, frozenset[str], frozenset[str]], OraForeignLayerData],
+                         parse_image_element: Callable[[Element], tuple[Layer, bool]]
+                         ) -> tuple[LayerGroup, Optional[Layer]]:
+    """Load a layer group and return it with the selected layer, if any.
+
+    Keep recursion at module scope so it cannot retain the per-read context in a closure cycle.
+    """
+    assert element.tag == STACK_ELEMENT
+    layer = LayerGroup('', read_context.undo_stack)
+    active_layer = None
+    record = capture_foreign_data(element, STACK_KNOWN_ATTRIBUTES, frozenset({STACK_ELEMENT, LAYER_ELEMENT}))
+    if _parse_common_attributes(layer, element, record):
+        active_layer = layer
+    if STACK_TAG_ISOLATION in element.keys() and element.get(STACK_TAG_ISOLATION) == ISOLATION_ISOLATE:
+        layer.isolate = True
+    for child_element in element:
+        is_active = False
+        if child_element.tag == STACK_ELEMENT:
+            child_layer, nested_active_layer = _parse_stack_element(
+                child_element, read_context, capture_foreign_data, parse_image_element)
+            if nested_active_layer is not None:
+                active_layer = nested_active_layer
+        elif child_element.tag == LAYER_ELEMENT:
+            child_layer, is_active = parse_image_element(child_element)
+        else:
+            continue
+        if is_active:
+            active_layer = child_layer
+        layer.insert_layer(child_layer, layer.count)
+    _attach_foreign_data(layer, record)
+    return layer, active_layer
+
+
 def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> ImageMetadata:
     """Extracts a .ora file into `tmpdir` and loads it. Nothing may read from `tmpdir` after this returns."""
     with zipfile.ZipFile(file_path) as zip_file:
@@ -642,38 +710,6 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Ima
                                                          if key not in RESERVED_EXTENDED_TAGS}
             extended_data[flattened_image_path] = extended_layer_data
 
-    def _parse_common_attributes(layer: Layer, element: Element, record: OraForeignLayerData) -> bool:
-        """Parse shared attributes, return whether this layer is selected. An unsupported composite op is kept in
-        the layer's foreign data record."""
-        layer_name = element.get(ATTR_TAG_NAME, 'layer')
-        layer.set_name(layer_name)
-        if ATTR_TAG_VISIBILITY in element.keys():
-            visible = element.get(ATTR_TAG_VISIBILITY) == ATTR_VISIBLE
-            layer.set_visible(visible)
-        if element.get(ATTR_TAG_EDIT_LOCKED) == BOOLEAN_TRUE_STR:
-            layer.set_locked(True)
-        if ATTR_TAG_OPACITY in element.keys():
-            opacity = float(str(element.get(ATTR_TAG_OPACITY)))
-            layer.set_opacity(opacity)
-        if ATTR_TAG_COMPOSITE in element.keys():
-            composite_op = str(element.get(ATTR_TAG_COMPOSITE))
-            try:
-                comp_mode = CompositeMode.from_ora_name(composite_op)
-                if comp_mode is None:
-                    logger.error(f'Unsupported layer composite mode {composite_op} ignored')
-                else:
-                    layer.set_composition_mode(comp_mode)
-            except ValueError:
-                logger.warning(f'Unsupported layer composite mode {composite_op} rendered as Normal')
-                record.composite_op = composite_op
-        return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
-
-    def _attach_foreign_data(layer: Layer, record: OraForeignLayerData) -> None:
-        """Stores the record on the layer if it holds anything foreign."""
-        if (len(record.attributes) > 0 or len(record.elements) > 0 or record.composite_op is not None
-                or record.source is not None):
-            layer.ora_foreign_data = record
-
     def _claim_with_loader(extension_attributes: dict[str, str], layer_name: Optional[str]) -> Optional[Layer]:
         """Returns the layer built by the first registered loader whose attribute is present, if any."""
         for attribute_tag, loader in layer_loaders().items():
@@ -735,32 +771,6 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Ima
         _attach_foreign_data(layer, record)
         return layer, is_active
 
-    def parse_stack_element(element: Element) -> tuple[LayerGroup, Optional[Layer]]:
-        """Load a layer group from its saved XML definition, return the selected layer (if found)"""
-        assert element.tag == STACK_ELEMENT
-        layer = LayerGroup('', read_context.undo_stack)
-        active_layer = None
-        record = _capture_foreign_data(element, STACK_KNOWN_ATTRIBUTES, frozenset({STACK_ELEMENT, LAYER_ELEMENT}))
-        if _parse_common_attributes(layer, element, record):
-            active_layer = layer
-        if STACK_TAG_ISOLATION in element.keys() and element.get(STACK_TAG_ISOLATION) == ISOLATION_ISOLATE:
-            layer.isolate = True
-        for child_element in element:
-            is_active = False
-            if child_element.tag == STACK_ELEMENT:
-                child_layer, nested_active_layer = parse_stack_element(child_element)
-                if nested_active_layer is not None:
-                    active_layer = nested_active_layer
-            elif child_element.tag == LAYER_ELEMENT:
-                child_layer, is_active = parse_image_element(child_element)
-            else:
-                continue
-            if is_active:
-                active_layer = child_layer
-            layer.insert_layer(child_layer, layer.count)
-        _attach_foreign_data(layer, record)
-        return layer, active_layer
-
     xml_path = os.path.join(tmpdir, XML_FILE_NAME)
     namespaces: dict[str, str] = {}
     xml_events = iterparse(xml_path, events=('start-ns',))
@@ -774,7 +784,8 @@ def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Ima
     image_record = OraForeignLayerData(
         attributes={key: value for key, value in xml_root.attrib.items() if key not in IMAGE_KNOWN_ATTRIBUTES},
         elements=[(index, child) for index, child in enumerate(xml_root) if child is not root_stack_element])
-    layer_stack, saved_active_layer = parse_stack_element(root_stack_element)
+    layer_stack, saved_active_layer = _parse_stack_element(
+        root_stack_element, read_context, _capture_foreign_data, parse_image_element)
     root_record = layer_stack.ora_foreign_data or OraForeignLayerData()
     layer_stack.ora_foreign_data = None
 

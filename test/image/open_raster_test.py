@@ -1,8 +1,10 @@
 """Tests .ora saving and loading, including layer names that are awkward as file names and text layers."""
+import gc
 import ntpath
 import os
 import sys
 import tempfile
+import weakref
 import zipfile
 from typing import Optional, Any
 from unittest.mock import patch
@@ -13,6 +15,7 @@ from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.image.image_metadata import ImageMetadata
+from src.image import open_raster
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -148,6 +151,29 @@ class OpenRasterTest(IntraPaintTestCase):
                     with self.assertRaises(RuntimeError):
                         read_ora_image(self.loaded_stack, ora_path)
                 self.assertEqual([], os.listdir(temp_root), 'a failed read left temp files')
+
+    def test_read_releases_context_without_cyclic_collection(self) -> None:
+        """Reading nested layers does not keep the temporary context alive in a closure cycle."""
+        group = self.image_stack.create_layer_group('group')
+        self._add_image_layer('layer', group)
+        context_refs: list[weakref.ReferenceType[open_raster.OraReadContext]] = []
+        context_type = open_raster.OraReadContext
+
+        def track_context(extracted_directory: str, undo_stack: Optional[UndoStack]) -> open_raster.OraReadContext:
+            context = context_type(extracted_directory, undo_stack)
+            context_refs.append(weakref.ref(context))
+            return context
+
+        gc_was_enabled = gc.isenabled()
+        gc.disable()
+        try:
+            with patch.object(open_raster, 'OraReadContext', new=track_context):
+                self._assert_round_trip_matches()
+            self.assertEqual(len(context_refs), 1)
+            self.assertIsNone(context_refs[0]())
+        finally:
+            if gc_was_enabled:
+                gc.enable()
 
     def test_awkward_names_individually(self) -> None:
         """Each awkward layer name survives a round trip, as a top-level layer and inside a group."""

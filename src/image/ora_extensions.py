@@ -86,7 +86,7 @@ class OraReadContext:
 
     def __init__(self, extracted_directory: str, undo_stack: Optional['UndoStack']) -> None:
         self._directory = extracted_directory
-        # Weak, since `open_raster`'s recursive parse closures hold this context in a reference cycle:
+        # The read context does not own the loading ImageStack's undo history:
         self._undo_stack_ref = None if undo_stack is None else ref(undo_stack)
 
     @property
