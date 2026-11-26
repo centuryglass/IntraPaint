@@ -16,7 +16,7 @@ class TestSharedConstants(IntraPaintTestCase):
     """Test that the startup-time constants module stays free of translated strings."""
 
     def test_import_loads_no_translated_modules(self) -> None:
-        """`IntraPaint.py` imports shared_constants before the translator is installed, so it can't load a module
+        """`src/startup.py` imports shared_constants before the translator is installed, so it can't load a module
         that calls `_tr` at import time."""
         result = subprocess.run([sys.executable, '-c', _SCRIPT], capture_output=True, text=True, check=True)
         self.assertEqual(result.stdout.strip(), '')

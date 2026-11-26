@@ -262,7 +262,9 @@ class ShapeToolPanel(FitToolPanel):
         for section in self._sections:
             self._packer.watch(section)
 
-        cache.connect(self, Cache.SHAPE_TOOL_MODE, self._shape_mode_changed)
+        # The lambda drops `refit`, which the 2-argument rule would otherwise fill with the changed inner key.
+        cache.connect(self, Cache.SHAPE_TOOL_MODE,
+                      lambda mode_text: self._shape_mode_changed(mode_text))  # pylint: disable=unnecessary-lambda
         cache.connect(self, Cache.SHAPE_TOOL_LINE_JOIN_STYLE, self._join_style_changed)
         self._pen_style_dropdown.currentTextChanged.connect(self._line_style_changed)
         for cache_key in (Cache.SHAPE_TOOL_VERTEX_COUNT, Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION):
@@ -337,7 +339,7 @@ class ShapeToolPanel(FitToolPanel):
                 cache.set(key, value)
 
         field.valueChanged.connect(_field_changed)
-        cache.connect(field, key, lambda value, *_: field.set_value(value))
+        cache.connect(field, key, field.set_value)
         return field
 
     def _source_control(self, source_key: str, color_key: str) -> '_ColorSourceControl':

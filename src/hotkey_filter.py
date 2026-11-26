@@ -10,12 +10,18 @@ from PySide6.QtWidgets import (QApplication, QWidget, QTextEdit, QLineEdit, QPla
 
 from src.app_context import QObjectService
 from src.config.key_config import KeyConfig
+from src.ui.input_fields.number_field import NumberField
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
 from src.util.key_code_utils import get_modifier_string, get_key_with_modifiers
 
 logger = logging.getLogger(__name__)
 
 MODIFIER_TIMER_INTERVAL_MS = 100
+
+# Keys `NumberField.keyPressEvent` handles. A focused number field keeps these ahead of any binding.
+NUMBER_FIELD_KEYS = frozenset({
+    Qt.Key.Key_Left, Qt.Key.Key_Right, Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_PageUp, Qt.Key.Key_PageDown,
+    Qt.Key.Key_Home, Qt.Key.Key_End, Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_F2, Qt.Key.Key_Space})
 
 KeybindingAction: TypeAlias = Callable[[], bool] | Callable[[], None] | Callable[[], bool | None]
 
@@ -300,7 +306,7 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
         focused_widget = QApplication.focusWidget()
         return (isinstance(focused_widget, (QKeySequenceEdit, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox,
                                             QComboBox, GradientSlider, QAbstractButton, QAbstractSlider,
-                                            QAbstractItemView))
+                                            QAbstractItemView, NumberField))
                 and focused_widget.isVisible())
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
@@ -317,6 +323,12 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
         # A key recorder takes every key, including keys with bindings, so it is recorded instead of run:
         focused_widget = QApplication.focusWidget()
         if isinstance(focused_widget, QKeySequenceEdit) and focused_widget.isVisible():
+            return False
+
+        # A number field handles its own navigation keys, so a binding on one of them doesn't run:
+        if (isinstance(focused_widget, NumberField) and focused_widget.isVisible()
+                and event.key() in NUMBER_FIELD_KEYS
+                and event.modifiers() & ~Qt.KeyboardModifier.KeypadModifier == Qt.KeyboardModifier.NoModifier):
             return False
 
         # Avoid blocking inputs to text fields:
