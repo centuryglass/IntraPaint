@@ -1313,7 +1313,7 @@
         "label": "CLIP skip:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.",
+        "description": "How many of the text encoder's final layers to skip when reading the prompt. Usually best left at one, but some models produce better results at two.",
         "type": "int",
         "default": 1,
         "saved": true,
