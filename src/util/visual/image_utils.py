@@ -55,6 +55,11 @@ def read_qimage(file_path: str) -> QImage:
     return reader.read()
 
 
+def image_memory_bytes(size: QSize) -> int:
+    """Return the pixel buffer size for QImage.Format_ARGB32_Premultiplied in bytes."""
+    return size.width() * size.height() * 4
+
+
 def create_transparent_image(size: QSize) -> QImage:
     """Returns a new image filled with transparency, set to the requested size."""
     image = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)

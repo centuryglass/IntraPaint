@@ -7060,7 +7060,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>New size: {width} x {height} px</source>
+        <source>New size: {width} x {height} px, {memory} per layer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7300,6 +7300,11 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>{width} x {height} px, {memory} per layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
         <source>Size presets</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7418,7 +7423,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>New size: {width} x {height} ({width_change} x {height_change})</source>
+        <source>New size: {width} x {height} px ({width_change} x {height_change}), {memory} per layer</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

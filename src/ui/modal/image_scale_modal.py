@@ -8,7 +8,7 @@ another mode leaves the saved ControlNet tile settings alone.
 import logging
 from typing import Any, Optional, cast
 
-from PySide6.QtCore import QSize, Qt, QTimer
+from PySide6.QtCore import QLocale, QSize, Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import QApplication, QBoxLayout, QComboBox, QDialog, QHBoxLayout, QLabel, QSizePolicy, \
     QVBoxLayout, QWidget
@@ -39,6 +39,7 @@ from src.util.parameter_def_labels import parameter_label, parameter_tooltip
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.shared_text import PIL_SCALING_MODES, UPSCALE_OPTION_NONE, scaling_mode_display
 from src.util.signals_blocked import signals_blocked
+from src.util.visual.image_utils import image_memory_bytes
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.image_scale_modal'
@@ -68,7 +69,7 @@ UNIT_PIXELS = _tr('Pixels')
 UNIT_PIXELS_TOOLTIP = _tr('Enter the new size in pixels.')
 UNIT_PERCENT = _tr('Percent')
 UNIT_PERCENT_TOOLTIP = _tr('Enter the new size as a percentage of the current size.')
-NEW_SIZE_TEXT = _tr('New size: {width} x {height} px')
+NEW_SIZE_TEXT = _tr('New size: {width} x {height} px, {memory} per layer')
 SCALE_BUTTON_LABEL = _tr('Scale image')
 
 CONTROLNET_TILE_MODEL_LABEL = _tr('Tile ControlNet model:')
@@ -332,7 +333,9 @@ class ImageScaleModal(QDialog):
 
     def _update_size_label(self) -> None:
         new_size = self._new_size()
-        self._size_label.setText(NEW_SIZE_TEXT.format(width=new_size.width(), height=new_size.height()))
+        self._size_label.setText(NEW_SIZE_TEXT.format(
+            width=new_size.width(), height=new_size.height(),
+            memory=QLocale().formattedDataSize(image_memory_bytes(new_size))))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Scaling mode

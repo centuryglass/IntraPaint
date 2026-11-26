@@ -6,7 +6,7 @@ controls leave and never sets the window's minimum size.
 """
 from typing import Optional, cast
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QDialog, QHBoxLayout, QLabel, QVBoxLayout, QWidget)
-from PySide6.QtCore import QPoint, QRect, QSize, Qt
+from PySide6.QtCore import QLocale, QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QIcon, QResizeEvent
 
 from src.config.application_config import AppConfig
@@ -23,6 +23,7 @@ from src.ui.widget.canvas_change_preview_widget import CanvasChangePreviewWidget
 from src.ui.widget.panel_section import PanelSection
 from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
+from src.util.visual.image_utils import image_memory_bytes
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.resize_canvas_modal'
@@ -41,7 +42,7 @@ X_OFFSET_LABEL = _tr('X-offset')
 Y_OFFSET_LABEL = _tr('Y-offset')
 X_OFFSET_TOOLTIP = _tr('Horizontal offset of the image within the resized canvas')
 Y_OFFSET_TOOLTIP = _tr('Vertical offset of the image within the resized canvas')
-NEW_SIZE_TEXT = _tr('New size: {width} x {height} ({width_change} x {height_change})')
+NEW_SIZE_TEXT = _tr('New size: {width} x {height} px ({width_change} x {height_change}), {memory} per layer')
 RESIZE_BUTTON_LABEL = _tr('Resize image canvas')
 
 MIN_PX_VALUE = 1
@@ -197,7 +198,8 @@ class ResizeCanvasModal(QDialog):
         self._size_label.setText(NEW_SIZE_TEXT.format(
             width=new_size.width(), height=new_size.height(),
             width_change=_signed(new_size.width() - self._image_size.width()),
-            height_change=_signed(new_size.height() - self._image_size.height())))
+            height_change=_signed(new_size.height() - self._image_size.height()),
+            memory=QLocale().formattedDataSize(image_memory_bytes(new_size))))
         self._anchor_grid.set_anchor(self._anchor)
 
     def _confirm(self) -> None:

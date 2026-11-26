@@ -1,7 +1,7 @@
 """Tests ImageScaleModal's size fields, scaling modes and Stable Diffusion upscaling controls."""
 from unittest.mock import patch
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QLocale, QSize
 from PySide6.QtWidgets import QComboBox
 from sd_backend_client import CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, ControlNetUnit, \
     PreprocessorParams
@@ -73,12 +73,15 @@ class ImageScaleModalTest(IntraPaintTestCase):
     def test_size_fields_mirror_each_other(self) -> None:
         """Pixel edits update the percent fields and the reverse."""
         modal = ImageScaleModal(400, 200)
+        self.assertIn(QLocale().formattedDataSize(320000), modal._size_label.text())
         modal._geometry.field(geometry_block.WIDTH).set_value(800)
         self.assertEqual(modal._geometry.value(geometry_block.SCALE_X), 2.0)
+        self.assertIn(QLocale().formattedDataSize(640000), modal._size_label.text())
         modal._unit_control.set_value(UNIT_PCT)
         self.assertTrue(modal._geometry.percent_mode())
         modal._geometry.field(geometry_block.SCALE_Y).set_value(0.5)
         self.assertEqual(modal._geometry.value(geometry_block.HEIGHT), 100)
+        self.assertIn(QLocale().formattedDataSize(320000), modal._size_label.text())
         self.assertEqual(modal._geometry.field(geometry_block.SCALE_Y).value_text(), '50%')
 
     def test_aspect_lock_applies_in_both_units(self) -> None:
