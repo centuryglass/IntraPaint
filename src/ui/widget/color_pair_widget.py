@@ -19,6 +19,7 @@ from src.controller import color_controller
 from src.ui.modal.color_dialog import ColorDialog
 from src.ui.widget.color_picker.color_drag import start_color_drag, accept_color_drag_enter
 from src.util.visual.image_utils import tile_pattern_fill
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_pair_widget'
@@ -228,7 +229,7 @@ class ColorPairWidget(QWidget):
             tooltip, shortcut_key = SWAP_TOOLTIP, KeyConfig.SWAP_COLORS_SHORTCUT
         else:
             tooltip, shortcut_key = RESET_TOOLTIP, KeyConfig.RESET_COLORS_SHORTCUT
-        shortcut = KeyConfig().get(shortcut_key)
+        shortcut = key_hint_text(KeyConfig().get(shortcut_key))
         if not shortcut:
             return tooltip
         return SHORTCUT_TOOLTIP_FORMAT.format(tooltip=tooltip, shortcut=shortcut)

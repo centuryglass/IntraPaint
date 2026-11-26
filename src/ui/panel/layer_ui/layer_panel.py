@@ -278,7 +278,7 @@ class LayerPanel(DockPanel):
     def _add_more_button(self, text: str, key_config_key: str, action: Callable[[], None],
                          layout: QVBoxLayout) -> QPushButton:
         keys = KeyConfig().get(key_config_key)
-        button = QPushButton(f'{text} ({key_hint_text(keys)})' if keys != '' else text)
+        button = QPushButton(f'{text} ({key_hint_text(keys)})' if len(keys) > 0 else text)
         button.setFlat(True)
         button.clicked.connect(self.header.popover.hide)
         button.clicked.connect(lambda: action())  # pylint: disable=unnecessary-lambda

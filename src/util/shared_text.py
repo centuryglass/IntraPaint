@@ -8,6 +8,8 @@ from typing import Optional
 from PIL import Image
 from PySide6.QtWidgets import QApplication
 
+from src.util.visual.key_hint_text import KeyHintSource, key_hint_text
+
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'util.shared_text'
 
@@ -93,11 +95,13 @@ KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 KEY_TOOLTIP = _tr('{description}\nKey: {key}')
 
 
-def keys_tooltip(description: str, decrease_key: str, increase_key: str) -> str:
-    """Returns a tooltip that lists the keys that step a value down and up. An unbound key is left out, and the
-    description alone is returned when neither is bound."""
-    if decrease_key != '' and increase_key != '':
-        return KEYS_TOOLTIP.format(description=description, decrease=decrease_key, increase=increase_key)
-    if decrease_key != '' or increase_key != '':
-        return KEY_TOOLTIP.format(description=description, key=decrease_key or increase_key)
+def keys_tooltip(description: str, decrease_key: KeyHintSource, increase_key: KeyHintSource) -> str:
+    """Returns a tooltip that lists the keys that step a value down and up, each as `key_hint_text` formats it. An
+    unbound key is left out, and the description alone is returned when neither is bound."""
+    decrease = key_hint_text(decrease_key)
+    increase = key_hint_text(increase_key)
+    if decrease != '' and increase != '':
+        return KEYS_TOOLTIP.format(description=description, decrease=decrease, increase=increase)
+    if decrease != '' or increase != '':
+        return KEY_TOOLTIP.format(description=description, key=decrease or increase)
     return description

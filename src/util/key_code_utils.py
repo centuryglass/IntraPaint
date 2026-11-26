@@ -24,15 +24,11 @@ def get_key_string(key: Qt.Key) -> str:
     return QKeySequence(key).toString()
 
 
-def key_alternatives(key_string: str) -> list[str]:
-    """Splits a config key string into its comma-separated alternative bindings, dropping empty entries."""
-    return [alternative.strip() for alternative in key_string.split(',') if alternative.strip() != '']
-
-
 def get_key_with_modifiers(key_string: str) -> tuple[Optional[Qt.Key], Qt.KeyboardModifier]:
     """Converts a key string to a key code and a set of key modifiers. A trailing `+` is the plus key itself, as in
-       `+` or `Ctrl++`."""
-    assert ',' not in key_string, f'Expected single key with possible modifiers, got key list {key_string}'
+       `+` or `Ctrl++`, and a trailing `,` is the comma key, as in `,` or `Ctrl+,`."""
+    assert key_string == ',' or key_string.endswith('+,') or ',' not in key_string, \
+        f'Expected single key with possible modifiers, got key list {key_string}'
     modifiers = Qt.KeyboardModifier.NoModifier
     if key_string == '+':
         keys = ['+']

@@ -11,26 +11,27 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.key_config import KeyConfig
-from src.util.visual.key_hint_text import key_hint_text, rich_text_key_hints
+from src.util.visual.key_hint_text import KeyHintSource, key_hint_labels, key_hint_text, rich_text_key_hints
 
 # Share of the tooltip text color in the description's color, with the rest from the tooltip background:
 DIM_TEXT_WEIGHT = 0.65
 
 
-def shortcut_tooltip_text(text: str, keys: str) -> str:
+def shortcut_tooltip_text(text: str, keys: KeyHintSource) -> str:
     """Returns tooltip text followed by a key binding in parentheses, or the text alone if no key is bound."""
-    if keys == '':
+    if len(key_hint_labels(keys)) == 0:
         return text
     return f'{text} ({key_hint_text(keys)})'
 
 
-def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '',
+def rich_shortcut_tooltip_text(title: str, keys: KeyHintSource, description: str = '',
                                extra_hints: Optional[List[str]] = None) -> str:
     """Returns rich tooltip text with `title`, then an optional dim `description`, then the keycaps for `keys`.
        `extra_hints` are keycap strings from `rich_text_key_hints`, shown after `keys` and joined by slashes.
        Returns `title` unchanged if there is nothing else to show."""
     extra_hints = [] if extra_hints is None else extra_hints
-    if description == '' and keys == '' and len(extra_hints) == 0:
+    has_keys = len(key_hint_labels(keys)) > 0
+    if description == '' and not has_keys and len(extra_hints) == 0:
         return title
     palette = QApplication.palette()
     text_color = palette.color(QPalette.ColorRole.ToolTipText)
@@ -42,7 +43,7 @@ def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '',
     if description != '':
         escaped_description = description.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         lines.append(f'<span style="color: {dim};">{escaped_description}</span>')
-    if keys != '':
+    if has_keys:
         lines.append(rich_text_key_hints(keys))
     if len(extra_hints) > 0:
         lines.append('&nbsp;/&nbsp;'.join(extra_hints))
@@ -90,8 +91,8 @@ def set_shortcut_tooltip(widget: QWidget, text: Union[str, Callable[[], str]], c
     """
     key_config = KeyConfig()
 
-    def _keys() -> str:
-        return '' if config_key is None else key_config.get(config_key)
+    def _keys() -> list[str]:
+        return [] if config_key is None else key_config.get(config_key)
 
     # The widget's owner may store the returned refresher on the widget, so it holds the widget weakly:
     widget_ref = ref(widget)
@@ -124,8 +125,8 @@ def set_step_shortcut_tooltip(widget: QWidget, text: str, decrease_config_key: O
     key_config = KeyConfig()
     config_keys = (decrease_config_key, increase_config_key)
 
-    def _refresh(_keys: Optional[str] = None) -> None:
-        bound = [key_config.get(key) for key in config_keys if key is not None and key_config.get(key) != '']
+    def _refresh(_keys: Optional[list[str]] = None) -> None:
+        bound = [key_config.get(key) for key in config_keys if key is not None and len(key_config.get(key)) > 0]
         hints = [rich_text_key_hints(keys) for keys in bound]
         widget.setToolTip(rich_shortcut_tooltip_text(text, '', description, hints))
 

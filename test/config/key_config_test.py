@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import tempfile
+from typing import Any, Callable
 from unittest.mock import patch
 
 from PySide6.QtCore import Qt, QEvent
@@ -11,7 +12,7 @@ from PySide6.QtGui import QKeyEvent
 from src.config.config import Config
 from src.config.key_config import CONFIG_DEFINITIONS, KeyConfig
 from src.tools.base_tool import FIXED_ASPECT_HINT, BaseTool
-from src.util.key_code_utils import get_key_with_modifiers, key_alternatives
+from src.util.key_code_utils import get_key_with_modifiers
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -35,7 +36,7 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         """A tool key, a menu shortcut and a modifier left empty produce no warnings, and don't conflict."""
         for config_key in (KeyConfig.DRAW_TOOL_KEY, KeyConfig.TEXT_TOOL_KEY, KeyConfig.SAVE_SHORTCUT,
                            KeyConfig.UNDO_SHORTCUT, KeyConfig.LINE_MODIFIER, KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER):
-            KeyConfig().set(config_key, '')
+            KeyConfig().set(config_key, '' if config_key.endswith('_modifier') else [])
         self.assertEqual([], _validation_errors())
 
     def test_duplicate_binding_reported(self) -> None:
@@ -53,12 +54,12 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         bindings[KeyConfig.TEXT_TOOL_KEY] = bindings[KeyConfig.DRAW_TOOL_KEY]
         problems = config.binding_problems(bindings)
         self.assertEqual({KeyConfig.TEXT_TOOL_KEY, KeyConfig.DRAW_TOOL_KEY}, set(problems))
-        self.assertIn(f'"{bindings[KeyConfig.DRAW_TOOL_KEY]}"', problems[KeyConfig.TEXT_TOOL_KEY][0])
+        self.assertIn(f'"{bindings[KeyConfig.DRAW_TOOL_KEY][0]}"', problems[KeyConfig.TEXT_TOOL_KEY][0])
         self.assertIn(config.get_label(KeyConfig.DRAW_TOOL_KEY).rstrip(':'), problems[KeyConfig.TEXT_TOOL_KEY][0])
         self.assertNotIn(config.get_label(KeyConfig.TEXT_TOOL_KEY).rstrip(':'), problems[KeyConfig.TEXT_TOOL_KEY][0])
-        bindings[KeyConfig.TEXT_TOOL_KEY] = 'NotAKey'
+        bindings[KeyConfig.TEXT_TOOL_KEY] = ['NotAKey']
         self.assertEqual([KeyConfig.TEXT_TOOL_KEY], list(config.binding_problems(bindings)))
-        bindings[KeyConfig.TEXT_TOOL_KEY] = ''
+        bindings[KeyConfig.TEXT_TOOL_KEY] = []
         bindings[KeyConfig.LINE_MODIFIER] = 'J'
         self.assertEqual([KeyConfig.LINE_MODIFIER], list(config.binding_problems(bindings)))
 
@@ -66,8 +67,8 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         """A key listed twice in one option's value isn't reported as clashing with itself."""
         config = KeyConfig()
         bindings = config.current_bindings()
-        key = bindings[KeyConfig.DRAW_TOOL_KEY]
-        bindings[KeyConfig.DRAW_TOOL_KEY] = f'{key},{key.lower()},{key}'
+        key = bindings[KeyConfig.DRAW_TOOL_KEY][0]
+        bindings[KeyConfig.DRAW_TOOL_KEY] = [key, key.lower(), key]
         self.assertEqual({}, config.binding_problems(bindings))
         config.set(KeyConfig.DRAW_TOOL_KEY, bindings[KeyConfig.DRAW_TOOL_KEY])
         self.assertEqual([], _validation_errors(), 'Startup validation skips the repeat too')
@@ -90,11 +91,14 @@ class _ScratchKeyConfig(Config):
     def __init__(self, json_path: str) -> None:
         super().__init__(CONFIG_DEFINITIONS, json_path)
 
+    def _migrations(self) -> list[Callable[[dict[str, Any]], None]]:
+        return super()._migrations() + [lambda json_data: KeyConfig._migrate_binding_lists(self, json_data)]
+
 
 class KeyConfigMigrationTest(IntraPaintTestCase):
     """Saved key bindings from before a default changed follow the new default, unless the user changed them."""
 
-    def _load(self, saved: dict[str, str]) -> _ScratchKeyConfig:
+    def _load(self, saved: dict[str, Any]) -> _ScratchKeyConfig:
         temp_dir = tempfile.mkdtemp(prefix='intrapaint-key-config-test-')
         self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         json_path = os.path.join(temp_dir, 'key_config.json')
@@ -106,14 +110,14 @@ class KeyConfigMigrationTest(IntraPaintTestCase):
 
     def test_rename_and_resize_defaults(self) -> None:
         """Rename layer takes F2, and Resize canvas keeps Shift+F2 as its second binding."""
-        self.assertEqual('F2', KeyConfig().get(KeyConfig.RENAME_LAYER_SHORTCUT))
-        self.assertEqual('Ctrl+Alt+C,Shift+F2', KeyConfig().get(KeyConfig.RESIZE_CANVAS_SHORTCUT))
+        self.assertEqual(['F2'], KeyConfig().get(KeyConfig.RENAME_LAYER_SHORTCUT))
+        self.assertEqual(['Ctrl+Alt+C', 'Shift+F2'], KeyConfig().get(KeyConfig.RESIZE_CANVAS_SHORTCUT))
 
     def test_saved_old_resize_default_moves(self) -> None:
         """An unversioned file that holds the old F2 for Resize canvas loads the new default."""
         config = self._load({'resize_canvas_shortcut': 'F2'})
-        self.assertEqual('Ctrl+Alt+C,Shift+F2', config.get('resize_canvas_shortcut'))
-        self.assertEqual('F2', config.get('rename_layer_shortcut'))
+        self.assertEqual(['Ctrl+Alt+C', 'Shift+F2'], config.get('resize_canvas_shortcut'))
+        self.assertEqual(['F2'], config.get('rename_layer_shortcut'))
 
     def test_every_previous_default_moves_to_the_current_one(self) -> None:
         """An unversioned file holding the old default of any changed binding loads the current default."""
@@ -127,7 +131,7 @@ class KeyConfigMigrationTest(IntraPaintTestCase):
     def test_custom_resize_binding_kept(self) -> None:
         """An unversioned file keeps a Resize canvas binding the user chose."""
         config = self._load({'resize_canvas_shortcut': 'Ctrl+Alt+Z'})
-        self.assertEqual('Ctrl+Alt+Z', config.get('resize_canvas_shortcut'))
+        self.assertEqual(['Ctrl+Alt+Z'], config.get('resize_canvas_shortcut'))
 
 
 class KeyConfigDefaultsTest(IntraPaintTestCase):
@@ -156,7 +160,7 @@ class KeyConfigDefaultsTest(IntraPaintTestCase):
         }
         for config_key, expected in expectations.items():
             with self.subTest(config_key=config_key):
-                parsed = [get_key_with_modifiers(binding) for binding in key_alternatives(KeyConfig().get(config_key))]
+                parsed = [get_key_with_modifiers(binding) for binding in KeyConfig().get(config_key)]
                 self.assertEqual(expected, parsed)
 
     def test_layer_selection_shortcuts(self) -> None:
@@ -177,13 +181,13 @@ class KeyConfigDefaultsTest(IntraPaintTestCase):
         }
         for config_key, expected in expectations.items():
             with self.subTest(config_key=config_key):
-                parsed = [get_key_with_modifiers(binding) for binding in key_alternatives(KeyConfig().get(config_key))]
+                parsed = [get_key_with_modifiers(binding) for binding in KeyConfig().get(config_key)]
                 self.assertEqual(expected, parsed)
 
     def test_grow_and_shrink_selection_leave_the_zoom_keys(self) -> None:
         """Ctrl+= and Ctrl+- zoom, so selection resizing uses Ctrl+Alt."""
-        self.assertEqual('Ctrl+Alt+=', KeyConfig().get(KeyConfig.GROW_SELECTION_SHORTCUT))
-        self.assertEqual('Ctrl+Alt+-', KeyConfig().get(KeyConfig.SHRINK_SELECTION_SHORTCUT))
+        self.assertEqual(['Ctrl+Alt+='], KeyConfig().get(KeyConfig.GROW_SELECTION_SHORTCUT))
+        self.assertEqual(['Ctrl+Alt+-'], KeyConfig().get(KeyConfig.SHRINK_SELECTION_SHORTCUT))
 
     def test_pan_and_speed_modifiers_are_gone(self) -> None:
         """Ctrl-drag panning and the key speed modifier no longer exist."""
@@ -197,7 +201,7 @@ class KeyConfigDefaultsTest(IntraPaintTestCase):
         tool_keys = [key for key in KeyConfig().get_category_keys('Keybindings') if key.endswith('_tool_key')]
         for config_key in tool_keys:
             with self.subTest(config_key=config_key):
-                for binding in key_alternatives(KeyConfig().get(config_key)):
+                for binding in KeyConfig().get(config_key):
                     self.assertNotIn(binding.upper(), ('X', 'D'))
 
     def test_event_matches_requires_exact_modifiers(self) -> None:
@@ -228,3 +232,62 @@ class KeyConfigModifierTest(IntraPaintTestCase):
         """modifier_hint returns an empty string for an unbound modifier instead of raising."""
         KeyConfig().set(KeyConfig.FIXED_ASPECT_MODIFIER, '')
         self.assertEqual('', BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT))
+
+
+class KeyConfigBindingListTest(IntraPaintTestCase):
+    """Bindings are stored as lists, so the comma key can be bound."""
+
+    _load = KeyConfigMigrationTest._load
+
+    def test_string_bindings_migrate_to_lists(self) -> None:
+        """Unversioned and version-1 files with comma-separated bindings load as lists of alternatives."""
+        for version in (None, 1):
+            with self.subTest(version=version):
+                saved: dict[str, Any] = {'brush_tool_key': 'Shift+S,K', 'text_tool_key': '', 'zoom_in': 'F5, ,Ctrl+X',
+                                         'line_modifier': 'Ctrl+Shift', 'select_tool_tab': '1'}
+                if version is not None:
+                    saved['config_version'] = version
+                config = self._load(saved)
+                self.assertEqual(['Shift+S', 'K'], config.get('brush_tool_key'))
+                self.assertEqual([], config.get('text_tool_key'))
+                self.assertEqual(['F5', 'Ctrl+X'], config.get('zoom_in'))
+                self.assertEqual('Ctrl+Shift', config.get('line_modifier'))
+                with open(config.json_path, encoding='utf-8') as file:  # type: ignore[arg-type]
+                    written = json.load(file)
+                self.assertEqual(2, written['config_version'])
+                self.assertEqual(['Shift+S', 'K'], written['brush_tool_key'])
+                self.assertEqual('Ctrl+Shift', written['line_modifier'])
+
+    def test_stale_previous_default_is_shed(self) -> None:
+        """An unversioned file holding a previous default string follows the current default after migration."""
+        config = self._load({'resize_canvas_shortcut': 'F2'})
+        self.assertEqual(config.get_default('resize_canvas_shortcut'), config.get('resize_canvas_shortcut'))
+
+    def test_list_files_are_not_migrated_again(self) -> None:
+        """A version-2 file keeps its list bindings, including a comma."""
+        config = self._load({'config_version': 2, 'zoom_in': [',', 'Ctrl+,']})
+        self.assertEqual([',', 'Ctrl+,'], config.get('zoom_in'))
+
+    @staticmethod
+    def _comma_event(modifiers: Qt.KeyboardModifier) -> QKeyEvent:
+        return QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Comma, modifiers)
+
+    def test_event_matches_comma_bindings(self) -> None:
+        """A bare comma and Ctrl+comma match key events for the comma key."""
+        KeyConfig().set(KeyConfig.ZOOM_IN, [','])
+        KeyConfig().set(KeyConfig.ZOOM_OUT, ['Ctrl+,'])
+        self.assertTrue(KeyConfig.event_matches(self._comma_event(Qt.KeyboardModifier.NoModifier), KeyConfig.ZOOM_IN))
+        self.assertFalse(KeyConfig.event_matches(self._comma_event(Qt.KeyboardModifier.ControlModifier),
+                                                 KeyConfig.ZOOM_IN))
+        self.assertTrue(KeyConfig.event_matches(self._comma_event(Qt.KeyboardModifier.ControlModifier),
+                                                KeyConfig.ZOOM_OUT))
+
+    def test_comma_conflict_reported(self) -> None:
+        """Two options bound to the comma key conflict."""
+        config = KeyConfig()
+        bindings = config.current_bindings()
+        bindings[KeyConfig.DRAW_TOOL_KEY] = [',']
+        bindings[KeyConfig.TEXT_TOOL_KEY] = [',']
+        self.assertEqual({KeyConfig.DRAW_TOOL_KEY, KeyConfig.TEXT_TOOL_KEY}, set(config.binding_problems(bindings)))
+        bindings[KeyConfig.TEXT_TOOL_KEY] = ['Ctrl+,']
+        self.assertEqual({}, config.binding_problems(bindings))

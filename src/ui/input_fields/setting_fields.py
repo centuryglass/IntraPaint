@@ -23,7 +23,6 @@ from src.ui.input_fields.segmented_control import DisplayMode, Segment, Segmente
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.modal.color_dialog import ColorDialog
 from src.ui.widget.keycap_badge import KeycapBadge
-from src.util.key_code_utils import key_alternatives
 from src.util.layout import add_layout
 from src.util.visual.image_utils import get_color_icon
 
@@ -281,14 +280,14 @@ class _KeyRecorderRow(QWidget):
 class KeybindingField(QWidget):
     """A key binding setting recorded by pressing keys, with one recorder per alternative binding.
 
-    The value is the comma-separated text `KeyConfig` stores. Text that wasn't recorded here keeps its spelling until
-    the user records over it. The field holds at most one empty recorder: an emptied recorder is removed when it loses
-    focus unless it is the only one, and the add button focuses an existing empty recorder. A key already bound in
-    another recorder is not recorded twice. `set_problems` shows the messages that `KeyConfig.binding_problems`
-    reports.
+    The value is the list of alternative bindings `KeyConfig` stores. Text that wasn't recorded here keeps its
+    spelling until the user records over it. The field holds at most one empty recorder: an emptied recorder is
+    removed when it loses focus unless it is the only one, and the add button focuses an existing empty recorder. A
+    key already bound in another recorder is not recorded twice. `set_problems` shows the messages that
+    `KeyConfig.binding_problems` reports.
     """
 
-    valueChanged = Signal(str)
+    valueChanged = Signal(list)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -320,16 +319,16 @@ class KeybindingField(QWidget):
         self._add_row('')
         self._show_badge()
 
-    def value(self) -> str:
-        """Returns the bindings as comma-separated key sequence text, without repeats."""
+    def value(self) -> list[str]:
+        """Returns the bindings as key sequence text, without repeats."""
         bindings: list[str] = []
-        for binding in key_alternatives(','.join(row.text for row in self._rows)):
-            if not any(_same_binding(binding, earlier) for earlier in bindings):
+        for binding in (row.text.strip() for row in self._rows):
+            if binding != '' and not any(_same_binding(binding, earlier) for earlier in bindings):
                 bindings.append(binding)
-        return ','.join(bindings)
+        return bindings
 
-    def setValue(self, new_value: str) -> None:  # pylint: disable=invalid-name
-        """Sets the bindings from comma-separated key sequence text."""
+    def setValue(self, new_value: list[str]) -> None:  # pylint: disable=invalid-name
+        """Sets the bindings from a list of key sequence text."""
         if new_value == self.value():
             return
         for row in self._rows:
@@ -337,7 +336,7 @@ class KeybindingField(QWidget):
             row.deleteLater()
         self._rows = []
         self._notice = ''
-        for text in key_alternatives(new_value) or ['']:
+        for text in [binding.strip() for binding in new_value if binding.strip() != ''] or ['']:
             self._add_row(text)
         self._show_badge()
         self._show_problems()
@@ -409,9 +408,9 @@ class KeybindingField(QWidget):
         self.valueChanged.emit(self.value())
 
     def _show_badge(self) -> None:
-        key_text = self.value()
-        self._badge.set_text(key_text if key_text != '' else NO_KEY_TEXT)
-        self._badge.setEnabled(key_text != '')
+        bindings = self.value()
+        self._badge.set_text(bindings if len(bindings) > 0 else NO_KEY_TEXT)
+        self._badge.setEnabled(len(bindings) > 0)
 
 
 class ModifierSettingField(QComboBox):

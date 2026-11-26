@@ -62,6 +62,7 @@ from src.ui.widget.panel_header import PanelHeader
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.section_popover import SectionPopover
 from src.util.layout import add_layout
+from src.util.visual.key_hint_text import KeyHintSource
 
 QWIDGETSIZE_MAX = 16777215
 
@@ -260,7 +261,7 @@ class DockPanel(QWidget):
 
     title_note_changed = Signal()
 
-    def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: str = '',
+    def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: KeyHintSource = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         # The orientation the panel is arranged in:

@@ -8,6 +8,7 @@ from PySide6 import QtTest
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.ui.widget.color_pair_widget import ColorPairWidget, ColorPairRegion
+from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
 from test.ui.widget.color_picker_test_utils import press, move, release
 
@@ -159,9 +160,9 @@ class ColorPairWidgetTest(IntraPaintTestCase):
 
     def test_control_tooltips_name_shortcuts(self) -> None:
         """The swap and reset tooltips name their configured shortcuts."""
-        self.assertIn(KeyConfig().get(KeyConfig.SWAP_COLORS_SHORTCUT),
+        self.assertIn(key_hint_text(KeyConfig().get(KeyConfig.SWAP_COLORS_SHORTCUT)),
                       ColorPairWidget.region_tooltip(ColorPairRegion.SWAP))
-        self.assertIn(KeyConfig().get(KeyConfig.RESET_COLORS_SHORTCUT),
+        self.assertIn(key_hint_text(KeyConfig().get(KeyConfig.RESET_COLORS_SHORTCUT)),
                       ColorPairWidget.region_tooltip(ColorPairRegion.RESET))
 
     def test_paints_both_colors(self) -> None:

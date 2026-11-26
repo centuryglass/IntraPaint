@@ -10,7 +10,6 @@ from PySide6.QtWidgets import QMainWindow, QMenu, QMenuBar
 
 from src.config.key_config import KeyConfig
 from src.util.application_state import AppStateTracker
-from src.util.key_code_utils import key_alternatives
 from src.util.shared_constants import INT_MAX
 
 GenericFn = TypeVar('GenericFn', bound=Callable[..., Any])
@@ -24,9 +23,9 @@ MENU_TITLE_PROPERTY = 'menu_builder_title'
 logger = logging.getLogger(__name__)
 
 
-def _key_sequences(key_str: str) -> list[QKeySequence]:
-    """Returns one key sequence for each comma-separated alternative binding in a config key string."""
-    return [QKeySequence(alternative) for alternative in key_alternatives(key_str)]
+def _key_sequences(bindings: list[str]) -> list[QKeySequence]:
+    """Returns one key sequence for each alternative binding in a config key's value."""
+    return [QKeySequence(alternative) for alternative in bindings if alternative]
 
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
@@ -99,7 +98,7 @@ class MenuBuilder:
                         config_key: Optional[str] = None,
                         title: Optional[str] = None,
                         tooltip: Optional[str] = None,
-                        keybinding: Optional[str] = None,
+                        keybinding: Optional[list[str]] = None,
                         priority: Optional[int] = None) -> Optional[QAction]:
         """Adds a new menu action to a window, or return an existing action with the same name.
 
@@ -117,8 +116,8 @@ class MenuBuilder:
             Displayed title for the new menu option. If None, config_key cannot be None.
         tooltip: str, optional
             Tooltip to display over the new menu option.
-        keybinding: str, optional
-            A hotkey that should trigger this menu option.
+        keybinding: list[str], optional
+            Hotkeys that should trigger this menu option, one per alternative binding.
         priority: int, optional
             If provided, the new action is placed before the first action in the menu with a higher priority, so
             actions added by different builders end up in one order. Otherwise it goes at the end of the menu.
@@ -133,7 +132,7 @@ class MenuBuilder:
                     title = config.get_label(config_key)
                 if tooltip is None or tooltip == '':
                     tooltip = config.get_tooltip(config_key)
-                if keybinding is None or keybinding == '':
+                if not keybinding:
                     keybinding = config.get(config_key)
             if title is None or title == '':
                 raise RuntimeError('Missing menu action title')
@@ -153,11 +152,11 @@ class MenuBuilder:
         action.setProperty(MENU_TITLE_PROPERTY, title)
         if tooltip is not None and tooltip != '':
             action.setToolTip(tooltip)
-        if keybinding is not None and keybinding != '':
+        if keybinding:
             action.setShortcuts(_key_sequences(keybinding))
         action.triggered.connect(lambda: new_action())
         if config_key is not None and config_key != '':
-            KeyConfig().connect(self, config_key, lambda key_str: action.setShortcuts(_key_sequences(key_str)))
+            KeyConfig().connect(self, config_key, lambda bindings: action.setShortcuts(_key_sequences(bindings)))
         self._add_by_priority(menu, action, priority)
         return action
 

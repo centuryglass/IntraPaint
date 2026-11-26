@@ -177,12 +177,12 @@ class TestAppController(IntraPaintTestCase):
     @patch('src.controller.app_controller.show_warning_dialog')
     def test_update_settings(self, mock_warning_dialog):
         AppConfig().set('max_undo', 10)
-        KeyConfig().set('zoom_in', 'PgUp')
+        KeyConfig().set('zoom_in', ['PgUp'])
 
         # Define changed settings
         changed_settings = {
             'max_undo': 50,  # should be applied to app_config
-            'zoom_in': 'Home',  # should be applied to key_config
+            'zoom_in': ['Home'],  # should be applied to key_config
             'key5': 'value5'  # should be ignored
         }
         self.assertNotEqual(changed_settings['max_undo'], AppConfig().get('max_undo'))
@@ -193,7 +193,7 @@ class TestAppController(IntraPaintTestCase):
         mock_warning_dialog.assert_called_once()  # The new undo limit applies after a restart.
         self.assertEqual(changed_settings['max_undo'], AppConfig().get('max_undo'))
         self.assertEqual(changed_settings['zoom_in'], KeyConfig().get('zoom_in'))
-        KeyConfig().set('zoom_in', 'PgUp')
+        KeyConfig().set('zoom_in', ['PgUp'])
 
     @patch('src.ui.theme.qdarktheme')
     @patch('src.ui.theme.qt_material')

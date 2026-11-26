@@ -128,41 +128,54 @@ class SettingsModalTest(IntraPaintTestCase):
         key = KeyConfig.DRAW_TOOL_KEY
         control = self.modal._inputs[key]  # pylint: disable=protected-access
         assert isinstance(control, KeybindingField)
-        control.setValue('Ctrl+Shift+Z')
+        control.setValue(['Ctrl+Shift+Z'])
         self.assertEqual(control.badge_labels(), ['Ctrl+Shift+Z'])
-        control.setValue('Shift+S,K')
+        control.setValue(['Shift+S', 'K'])
         self.assertEqual(control.badge_labels(), ['Shift+S', 'K'])
-        control.setValue('')
+        control.setValue([])
         self.assertEqual(control.badge_labels(), [NO_KEY_TEXT])
 
-    def test_keybinding_field_round_trips_comma_separated_value(self) -> None:
+    def test_keybinding_field_round_trips_list_value(self) -> None:
         """The key recorder field keeps the stored text, one recorder per alternative, until a key is recorded."""
         field = KeybindingField()
-        for text in ('', 'PgDown', 'Shift+S,K', 'Ctrl+J,Ctrl+Shift+C', 'q'):
-            with self.subTest(text=text):
-                field.setValue(text)
-                self.assertEqual(text, field.value())
-        field.setValue('Shift+S,K')
+        for bindings in ([], ['PgDown'], ['Shift+S', 'K'], ['Ctrl+J', 'Ctrl+Shift+C'], ['q'], [','], ['Ctrl+,', 'F5']):
+            with self.subTest(bindings=bindings):
+                field.setValue(bindings)
+                self.assertEqual(bindings, field.value())
+        field.setValue(['Shift+S', 'K'])
         self.assertEqual(2, len(field.recorders()))
         field.recorders()[1].setKeySequence(QKeySequence('Ctrl+P'))
-        self.assertEqual('Shift+S,Ctrl+P', field.value())
+        self.assertEqual(['Shift+S', 'Ctrl+P'], field.value())
+
+    def test_keybinding_field_records_comma(self) -> None:
+        """Pressing the comma key, with or without Ctrl, records it as one binding."""
+        self.assertTrue(is_recordable_key(Qt.Key.Key_Comma))
+        field = KeybindingField()
+        field.setValue([])
+        _press(field.recorders()[0], Qt.Key.Key_Comma)
+        self.assertEqual([','], field.value())
+        field.setValue([','])
+        self.assertEqual(1, len(field.recorders()))
+        self.assertEqual([','], field.badge_labels())
+        field.setValue(['Ctrl+,'])
+        self.assertEqual(['Ctrl+,'], field.value())
 
     def test_keybinding_field_add_and_remove(self) -> None:
         """The add button adds one empty recorder at most, and an emptied extra recorder goes away on losing focus."""
         field = KeybindingField()
-        field.setValue('A')
-        changes: list[str] = []
+        field.setValue(['A'])
+        changes: list[list[str]] = []
         field.valueChanged.connect(changes.append)
         add_button = [b for b in field.findChildren(QToolButton) if b.toolTip() == ADD_KEY_TOOLTIP][0]
         add_button.click()
         add_button.click()
         self.assertEqual(2, len(field.recorders()))
-        self.assertEqual('A', field.value())
+        self.assertEqual(['A'], field.value())
         field.recorders()[1].setKeySequence(QKeySequence('B'))
-        self.assertEqual('A,B', field.value())
+        self.assertEqual(['A', 'B'], field.value())
         field.recorders()[0].clear()
-        self.assertEqual('B', field.value())
-        self.assertEqual('B', changes[-1])
+        self.assertEqual(['B'], field.value())
+        self.assertEqual(['B'], changes[-1])
         _lose_focus(field.recorders()[0])
         self.assertEqual(['B'], [recorder.keySequence().toString() for recorder in field.recorders()])
         field.recorders()[0].clear()
@@ -173,17 +186,17 @@ class SettingsModalTest(IntraPaintTestCase):
     def test_keybinding_field_skips_repeated_key(self) -> None:
         """A key already bound in the same field isn't recorded again, and saved repeats are dropped."""
         field = KeybindingField()
-        field.setValue('E')
+        field.setValue(['E'])
         field.add_binding()
         _press(field.recorders()[1], Qt.Key.Key_E)
-        self.assertEqual('E', field.value())
+        self.assertEqual(['E'], field.value())
         self.assertEqual('', field.recorders()[1].keySequence().toString())
         self.assertIn('"E"', field.problem_text())
         _press(field.recorders()[1], Qt.Key.Key_F)
-        self.assertEqual('E,F', field.value())
+        self.assertEqual(['E', 'F'], field.value())
         self.assertEqual('', field.problem_text())
-        field.setValue('E,e,F')
-        self.assertEqual('E,F', field.value())
+        field.setValue(['E', 'e', 'F'])
+        self.assertEqual(['E', 'F'], field.value())
 
     def test_recorder_records_keys_with_hotkey_bindings(self) -> None:
         """A focused key recorder records a key that has a `HotkeyFilter` binding, and the binding doesn't run."""
@@ -192,7 +205,7 @@ class SettingsModalTest(IntraPaintTestCase):
         hotkeys.register_config_keybinding('test_swap', lambda: ran.append('swap'), KeyConfig.SWAP_COLORS_SHORTCUT)
         hotkeys.register_held_key('test_pan', lambda held: ran.append('pan'), KeyConfig.PAN_VIEW_KEY)
         field = KeybindingField()
-        field.setValue('Q')
+        field.setValue(['Q'])
         recorder = field.recorders()[0]
         field.show()
         with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: recorder)):
@@ -203,13 +216,13 @@ class SettingsModalTest(IntraPaintTestCase):
     def test_keybinding_field_esc_cancels(self) -> None:
         """Esc leaves the recorder without changing or adding a binding."""
         field = KeybindingField()
-        field.setValue('E')
+        field.setValue(['E'])
         _press(field.recorders()[0], Qt.Key.Key_Escape)
-        self.assertEqual('E', field.value())
+        self.assertEqual(['E'], field.value())
         field.add_binding()
         _press(field.recorders()[1], Qt.Key.Key_Escape)
         _lose_focus(field.recorders()[1])
-        self.assertEqual('E', field.value())
+        self.assertEqual(['E'], field.value())
         self.assertEqual(1, len(field.recorders()))
 
     def test_keybinding_field_refuses_dead_keys(self) -> None:
@@ -218,9 +231,9 @@ class SettingsModalTest(IntraPaintTestCase):
         for key in (Qt.Key.Key_E, Qt.Key.Key_Eacute, Qt.Key.Key_F5, Qt.Key.Key_Space, Qt.Key.Key_Plus):
             self.assertTrue(is_recordable_key(key), key)
         field = KeybindingField()
-        field.setValue('E')
+        field.setValue(['E'])
         _press(field.recorders()[0], Qt.Key.Key_Dead_Acute)
-        self.assertEqual('E', field.value())
+        self.assertEqual(['E'], field.value())
         self.assertIn(UNRECORDABLE_KEY_NOTICE, field.problem_text())
 
     def test_modifier_bindings_offer_only_modifiers(self) -> None:
@@ -248,7 +261,7 @@ class SettingsModalTest(IntraPaintTestCase):
         second_control.setValue(first_control.value())
         self.assertIn(KeyConfig().get_label(first).rstrip(':'), second_control.problem_text())
         self.assertIn(KeyConfig().get_label(second).rstrip(':'), first_control.problem_text())
-        second_control.setValue('')
+        second_control.setValue([])
         self.assertEqual('', first_control.problem_text())
         self.assertEqual('', second_control.problem_text())
 

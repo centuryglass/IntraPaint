@@ -1,6 +1,6 @@
 """Provides access to the user-editable application keybinding config."""
 import logging
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QKeyEvent
@@ -11,7 +11,8 @@ from src.config.application_config import AppConfig
 from src.config.config import Config
 from src.config.generated_keys import KeyConfigKeys
 from src.ui.modal.modal_utils import show_warning_dialog
-from src.util.key_code_utils import get_modifiers, get_key_with_modifiers, key_alternatives
+from src.util.key_code_utils import get_modifiers, get_key_with_modifiers
+from src.util.parameter import TYPE_LIST
 from src.util.rich_text import escape_rich_text, rich_text_list
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 
@@ -47,7 +48,9 @@ BRUSH_OPACITY_PRESETS = {f'brush_opacity_{percent}': percent / 100 for percent i
 class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
     """Provides access to the user-editable application keybinding config."""
 
-    # Defaults from released versions, so installs that never changed them follow the current default:
+    # Defaults from released versions, so installs that never changed them follow the current default. These are
+    # version-0 saved values, so bindings are comma-separated strings: `_migrate_unversioned` runs before
+    # `_migrate_binding_lists`.
     PREVIOUS_DEFAULTS = {
         'draw_tool_key': ['D'],
         'generation_area_tool_key': ['G'],
@@ -118,6 +121,19 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
         super().__init__(CONFIG_DEFINITIONS, json_path)
         self.validate_keybindings()
 
+    def _migrations(self) -> list[Callable[[dict[str, Any]], None]]:
+        return super()._migrations() + [self._migrate_binding_lists]
+
+    def _migrate_binding_lists(self, json_data: dict[str, Any]) -> None:
+        """Migration from version 1 to 2: converts comma-separated binding strings to lists of alternatives.
+
+        Earlier versions couldn't store a literal comma, so every comma in a saved string is a separator.
+        """
+        for key, entry in self._entries.items():
+            if entry.type_name == TYPE_LIST and isinstance(json_data.get(key), str):
+                json_data[key] = [alternative.strip() for alternative in json_data[key].split(',')
+                                  if alternative.strip() != '']
+
     @staticmethod
     def modifier_held(modifier_key: str, exclusive=False,
                       held_modifiers: Optional[Qt.KeyboardModifier] = None) -> bool:
@@ -144,7 +160,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
     def event_matches(event: QKeyEvent, config_key: str) -> bool:
         """Returns whether a key event is the key and exact modifiers of any alternative bound to a config key."""
         event_modifiers = event.modifiers() & ~Qt.KeyboardModifier.KeypadModifier
-        for alternative in key_alternatives(KeyConfig().get(config_key)):
+        for alternative in KeyConfig().get(config_key):
             try:
                 key, modifiers = get_key_with_modifiers(alternative)
             except ValueError:
@@ -181,17 +197,17 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
                              + rich_text_list(errors))
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
 
-    def current_bindings(self) -> dict[str, str]:
+    def current_bindings(self) -> dict[str, list[str] | str]:
         """Returns the saved value of every keybinding and menu shortcut, by config key."""
         return {key: self.get(key)
                 for key in self.get_category_keys('Keybindings') + self.get_category_keys('Menu Shortcuts')}
 
-    def binding_problems(self, bindings: dict[str, str]) -> dict[str, list[str]]:
+    def binding_problems(self, bindings: dict[str, list[str] | str]) -> dict[str, list[str]]:
         """Checks a set of keybinding values, and returns the problem messages found for each config key.
 
-        `bindings` maps config keys to values, and may hold unsaved values from the settings window. A conflict is
-        listed under every key it involves, naming the other options that share the key. These are the checks
-        `validate_keybindings` runs at startup.
+        `bindings` maps config keys to values: a list of alternative bindings, or a modifier string. It may hold
+        unsaved values from the settings window. A conflict is listed under every key it involves, naming the other
+        options that share the key. These are the checks `validate_keybindings` runs at startup.
         """
         problems: dict[str, list[str]] = {}
         for config_keys, message, conflict_key in self._check_bindings(bindings):
@@ -206,7 +222,7 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
         """Returns a keybinding's label without the trailing colon it has as a row label."""
         return self.get_label(config_key).strip().rstrip(':')
 
-    def _check_bindings(self, bindings: dict[str, str]) -> list[tuple[list[str], str, Optional[str]]]:
+    def _check_bindings(self, bindings: dict[str, list[str] | str]) -> list[tuple[list[str], str, Optional[str]]]:
         """Returns (config keys involved, message, shared key or None) for each problem found in keybinding values.
 
         The shared key is set only for conflicts between options. A key repeated within one option isn't a conflict.
@@ -237,7 +253,8 @@ class KeyConfig(KeyConfigKeys, Config, metaclass=AppService):
 
         for config_key, value in bindings.items():
             key_binding_name = self._binding_name(config_key)
-            for key_value in value.split(','):
+            alternatives = [value] if isinstance(value, str) and value else [] if isinstance(value, str) else value
+            for key_value in alternatives:
                 if key_value == '':
                     continue
                 standardized_key = _standardize_key_str(key_value)

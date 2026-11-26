@@ -2,12 +2,12 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QPoint, QPointF, QSize
-from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont
+from PySide6.QtGui import QPainter, QPaintEvent, QFont
 from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.util.visual.key_hint_text import key_hint_labels, shortest_key_label
+from src.util.visual.key_hint_text import KeyHintSource, key_hint_labels, shortest_key_label
 from src.util.visual.keycap import KEYCAP_SEPARATOR, draw_keycap_row, keycap_colors, keycap_font, keycap_row_size
 
 
@@ -17,7 +17,7 @@ class KeyHintLabel(QLabel):
     The labels come from `key_hint_labels`, and the keycaps are drawn by `draw_keycap_row`.
     """
 
-    def __init__(self, keys: Optional[QKeySequence | Qt.KeyboardModifier | str] = None,
+    def __init__(self, keys: Optional[KeyHintSource] = None,
                  config_key: Optional[str] = None,
                  parent: Optional[QWidget] = None):
         super().__init__('', parent=parent)
@@ -30,7 +30,7 @@ class KeyHintLabel(QLabel):
         self._saved_size: Optional[QSize] = None
         self._compact = False
         self._shortest_only = False
-        self._key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str] = None
+        self._key_codes: Optional[KeyHintSource] = None
         self._config_key = config_key
         if keys is None and config_key is not None:
             keys = KeyConfig().get(config_key)
@@ -119,7 +119,7 @@ class KeyHintLabel(QLabel):
         """Returns the label of each keycap shown."""
         return list(self._labels)
 
-    def _update_text(self, key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str]) -> None:
+    def _update_text(self, key_codes: Optional[KeyHintSource]) -> None:
         self._key_codes = key_codes
         labels = key_hint_labels(key_codes, self._compact)
         self._labels = shortest_key_label(labels) if self._shortest_only else labels
@@ -133,5 +133,5 @@ class KeyHintLabel(QLabel):
         text_color = keycap_colors(self.palette())[2].name()
         self.setText(f'<span style="color: {text_color};"><strong>{key_display_str}</strong></span>')
 
-    def _key_update_slot(self, key_string: str) -> None:
+    def _key_update_slot(self, key_string: list[str]) -> None:
         self._update_text(key_string)

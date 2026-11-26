@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.geometry_block import (ANGLE, GeometryBlock, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y,
                                                 bind_step_keys, MORE_KEY_STEPS, LOCK_TOOLTIP)
+from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -210,7 +211,7 @@ class GeometryBlockTest(IntraPaintTestCase):
         bind_step_keys(block, hotkey_filter, KeyConfig, lambda: False)
         self.assertFalse(registered[KeyConfig.MOVE_RIGHT]())
         self.assertEqual(block.value(X), 0)
-        self.assertIn(KeyConfig().get(KeyConfig.MOVE_RIGHT), block.field(X).toolTip())
+        self.assertIn(key_hint_text(KeyConfig().get(KeyConfig.MOVE_RIGHT)), block.field(X).toolTip())
 
     def test_horizontal_layout_puts_rows_on_one_line(self) -> None:
         """The short-strip form puts all four fields on one row, and the stacked form uses two."""
@@ -247,14 +248,14 @@ class GeometryBlockTest(IntraPaintTestCase):
     def test_tooltips_with_unbound_keys(self) -> None:
         """An unbound step key leaves the 'Keys' line, and an unbound fixed-aspect modifier leaves the lock hint."""
         key_config = KeyConfig()
-        key_config.set(KeyConfig.MOVE_LEFT, '')
+        key_config.set(KeyConfig.MOVE_LEFT, [])
         key_config.set(KeyConfig.FIXED_ASPECT_MODIFIER, '')
         block = GeometryBlock()
         bind_step_keys(block, _FakeHotkeyFilter(), KeyConfig, lambda: True)
         tooltip = block.field(X).toolTip()
-        self.assertIn(key_config.get(KeyConfig.MOVE_RIGHT), tooltip)
+        self.assertIn(key_hint_text(key_config.get(KeyConfig.MOVE_RIGHT)), tooltip)
         self.assertNotIn(' / ', tooltip)
         self.assertEqual(block.lock_button().toolTip(), LOCK_TOOLTIP)
-        key_config.set(KeyConfig.MOVE_RIGHT, '')
+        key_config.set(KeyConfig.MOVE_RIGHT, [])
         bind_step_keys(block, _FakeHotkeyFilter(), KeyConfig, lambda: True)
         self.assertNotIn('Key', block.field(X).toolTip())

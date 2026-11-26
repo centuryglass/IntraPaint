@@ -15,6 +15,7 @@ from src.ui.panel.tool_control_panels.generation_area_tool_panel import Generati
     RECENT_FRAME_COUNT
 from src.undo_stack import UndoStack
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
+from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -137,7 +138,7 @@ class GenerationAreaToolPanelTest(IntraPaintTestCase):
 
     def test_previous_button(self) -> None:
         """Previous switches to the last other size, names its key, and is disabled until there is one."""
-        key = KeyConfig().get(KeyConfig.PREVIOUS_GENERATION_FRAME_KEY)
+        key = key_hint_text(KeyConfig().get(KeyConfig.PREVIOUS_GENERATION_FRAME_KEY))
         self.assertIn(key, self.panel.previous_button.toolTip())
         self.assertFalse(self.panel.previous_button.isEnabled())
         apply_generation_area_frame(self.image_stack, QSize(300, 300))

@@ -9,7 +9,7 @@ from PySide6.QtCore import QPointF, QSize
 from PySide6.QtGui import QPainter, QPaintEvent
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from src.util.visual.key_hint_text import key_hint_labels
+from src.util.visual.key_hint_text import KeyHintSource, key_hint_labels
 from src.util.visual.keycap import draw_keycap_row, keycap_font, keycap_row_size
 
 
@@ -19,15 +19,15 @@ class KeycapBadge(QWidget):
     # Whether keycaps draw their labels. Image tests that must not depend on fonts turn it off:
     DRAW_TEXT = True
 
-    def __init__(self, text: str = '', parent: Optional[QWidget] = None) -> None:
+    def __init__(self, text: KeyHintSource = '', parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._text = text
         self._labels = key_hint_labels(text)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     @property
-    def text(self) -> str:
-        """Returns the key binding, such as "Shift+S,K"."""
+    def text(self) -> KeyHintSource:
+        """Returns the key binding as it was set, such as `["Shift+S", "K"]`."""
         return self._text
 
     @property
@@ -35,7 +35,7 @@ class KeycapBadge(QWidget):
         """Returns the label of each keycap shown."""
         return list(self._labels)
 
-    def set_text(self, text: str) -> None:
+    def set_text(self, text: KeyHintSource) -> None:
         """Changes the key binding and resizes the badge to fit."""
         if text != self._text:
             self._text = text

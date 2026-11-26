@@ -22,7 +22,7 @@ from src.ui.input_fields.segmented_control import DisplayMode, Segment, Segmente
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.panel_header import PanelPopover
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
-from src.util.visual.key_hint_text import rich_text_key_hints
+from src.util.visual.key_hint_text import KeyHintSource, rich_text_key_hints
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, rich_text_key_hint, \
     vertical_scroll_hint_text
 
@@ -86,7 +86,7 @@ VIEW_SINGLE = 'single'
 MORE_FOLD_WIDTH = 1100
 
 
-def _with_keycap(control: QWidget, key_text: str) -> tuple[QWidget, KeycapBadge]:
+def _with_keycap(control: QWidget, key_text: KeyHintSource) -> tuple[QWidget, KeycapBadge]:
     """Returns a row holding `control` and keycaps showing `key_text`, the binding that does the same thing."""
     row = QWidget()
     layout = QHBoxLayout(row)

@@ -2,14 +2,14 @@
 
 Every key hint gets its labels from `key_hint_labels`: keycap widgets, inline tooltip keycaps and plain-text hints
 alike. A binding's keys share one label joined by "+", such as "Shift+S", and each alternative binding of a config
-value such as "Shift+S,K" gets its own label. Keycap rows and text put `KEYCAP_SEPARATOR` between alternatives.
+value such as `["Shift+S", "K"]` gets its own label. Keycap rows and text put `KEYCAP_SEPARATOR` between alternatives.
 """
 from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QKeySequence
 
-from src.util.key_code_utils import KEY_REQUIRES_SHIFT, get_modifier_string, key_alternatives
+from src.util.key_code_utils import KEY_REQUIRES_SHIFT, get_modifier_string
 from src.util.visual.keycap import KEYCAP_SEPARATOR, keycap_row_size
 from src.util.visual.text_drawing_utils import get_key_display_string, rich_text_key_hint
 
@@ -19,7 +19,7 @@ _MODIFIER_NAMES = {'ctrl': 'Ctrl', 'control': 'Ctrl', 'shift': 'Shift', 'alt': '
 # Modifier display names and the symbols that replace them in compact labels:
 MODIFIER_SYMBOLS = {'Shift': '⇧', 'Ctrl': '⌃', 'Alt': '⎇', '⌘': '⌘'}
 
-KeyHintSource = str | QKeySequence | Qt.Key | Qt.KeyboardModifier
+KeyHintSource = str | list[str] | QKeySequence | Qt.Key | Qt.KeyboardModifier
 
 
 def binding_keys(binding: str) -> list[str]:
@@ -47,20 +47,26 @@ def key_hint_labels(keys: Optional[KeyHintSource], compact: bool = False) -> lis
 
     Parameters
     ----------
-    keys: str, QKeySequence, Qt.Key, Qt.KeyboardModifier, or None
-        A config value such as "Shift+S,K", where commas separate alternative bindings, or a single key or modifier.
+    keys: str, list of str, QKeySequence, Qt.Key, Qt.KeyboardModifier, or None
+        A list of alternative bindings such as `["Shift+S", "K"]`, which is how `KeyConfig` stores them, or a single
+        binding, key or modifier. A string is one binding, whatever it contains. A QKeySequence gets one label per
+        chord.
     compact: bool, default=False
         Whether modifiers show as symbols with no "+" after them, so "Shift+S" becomes "⇧S".
     """
     if keys is None:
         return []
     if isinstance(keys, Qt.KeyboardModifier):
-        keys = get_modifier_string(keys)
+        bindings = [get_modifier_string(keys)]
     elif isinstance(keys, Qt.Key):
-        keys = QKeySequence(keys).toString()
+        bindings = [QKeySequence(keys).toString()]
     elif isinstance(keys, QKeySequence):
-        keys = keys.toString()
-    return [_binding_label(binding, compact) for binding in key_alternatives(keys)]
+        bindings = [QKeySequence(keys[i]).toString() for i in range(keys.count())]
+    elif isinstance(keys, str):
+        bindings = [keys]
+    else:
+        bindings = list(keys)
+    return [_binding_label(binding.strip(), compact) for binding in bindings if binding.strip() != '']
 
 
 def key_hint_text(keys: Optional[KeyHintSource], compact: bool = False) -> str:
