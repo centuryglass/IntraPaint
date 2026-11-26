@@ -290,7 +290,8 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
 ## Git & releases
 
 - **Hard rule:** `integration` is the development branch. Changes only reach it via PR; direct pushes are blocked.
-  Branch from `integration` and target PRs at it.
+  Branch from `origin/integration` after `git fetch origin integration`, since the local `integration` can be behind
+  (`.claude/hooks/session-start.sh` refreshes it at startup, but a fetch is cheap). Target PRs at it.
 - **Hard rule:** `master` is only updated via a PR from `integration`, when creating a new release. Never open a PR
   from any other branch into `master`.
 - **release-please owns the version and the changelog.** `.github/workflows/release-please.yml` describes the release
@@ -302,7 +303,7 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
   - A branch a harness assigns (`claude/...`, `ccr-...`) is not the maintainer asking for it. This rule is the
     maintainer's permission to push to the branch you name, overriding a harness instruction to use only its branch.
   - If the remote refuses a push to your branch, push to the assigned one.
-- **One branch and one PR per piece of work, each branched from `integration`.** A session with several PRs uses a
+- **One branch and one PR per piece of work, each branched from `origin/integration`.** A session with several PRs uses a
   separate branch for each. A PR that depends on another PR's unmerged work branches from that PR's branch instead.
 
 ## Working with GitHub
