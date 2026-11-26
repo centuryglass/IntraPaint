@@ -75,7 +75,9 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
 class MenuBuilder:
     """Provides the build_menus method to initialize menus from annotated methods."""
 
-    def __init__(self) -> None:
+    def __init__(self, app_state: AppStateTracker) -> None:
+        """Prepares to build menus whose actions `app_state` enables and disables."""
+        self._app_state = app_state
         self._menus: dict[str, QMenu] = {}
         self._menu_window: Optional[QMainWindow] = None
 
@@ -231,7 +233,7 @@ class MenuBuilder:
         if action.isEnabled():
             action.setEnabled(False)
             action.setVisible(False)
-            AppStateTracker.disconnect_from_state(action)
+            self._app_state.disconnect_from_state(action)
         if len([act for act in menu.actions() if act.isEnabled() and not act.isSeparator()]) == 0:
             _menu_set_visible(menu, False)
 
@@ -264,7 +266,7 @@ class MenuBuilder:
                     separator = menu.insertSeparator(action)
                     separator.setData(menu_data.priority)
             if action is not None and menu_data.valid_app_states is not None:
-                AppStateTracker.set_enabled_states(action, menu_data.valid_app_states)
+                self._app_state.set_enabled_states(action, menu_data.valid_app_states)
 
     def clear_menus(self) -> None:
         """Remove all @menu_action methods that this class added to the menu"""

@@ -40,9 +40,6 @@
   "src/ui/panel/tool_control_panels/stroke_block.py": {
     "unused-variable": 1
   },
-  "src/util/application_state.py": {
-    "protected-access": 10
-  },
   "src/util/menu_builder.py": {
     "unnecessary-lambda": 1
   },

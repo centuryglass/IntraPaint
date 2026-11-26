@@ -215,7 +215,7 @@ class AppController(MenuBuilder):
     """AppController coordinates IntraPaint application behavior."""
 
     def __init__(self, args: Namespace) -> None:
-        super().__init__()
+        super().__init__(AppStateTracker())
         app = QApplication.instance() or QApplication(sys.argv)
         app.setApplicationName(APP_NAME)
         app.setApplicationDisplayName(APP_NAME)
@@ -240,7 +240,7 @@ class AppController(MenuBuilder):
         self._generator: Optional[ImageGenerator] = None
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE),
-                                       UndoStack())
+                                       UndoStack(), self._app_state)
         self._generation_area_controller = GenerationAreaController(self._image_stack)
 
         # Initialize main window:
@@ -344,7 +344,7 @@ class AppController(MenuBuilder):
                                           _open_filter_modal,
                                           config_key)
             assert action is not None
-            AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
+            self._app_state.set_enabled_states(action, [APP_STATE_EDITING])
             if filter_class is BlurFilter:
                 self.get_menu(MENU_FILTERS).insertSeparator(action)
         cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)  # type: ignore
@@ -398,9 +398,9 @@ class AppController(MenuBuilder):
         # it is enabled, re-checking whenever either the app state or the batch changes:
         restore_action = self.get_action_for_method(self.restore_previous_image_choices)
         assert restore_action is not None
-        AppStateTracker.disconnect_from_state(restore_action)
+        self._app_state.disconnect_from_state(restore_action)
         self._window.previous_options_available.connect(self._refresh_enabled_actions)
-        AppStateTracker.signal().connect(lambda _state: self._update_enabled_actions())
+        self._app_state.signal().connect(lambda _state: self._update_enabled_actions())
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
@@ -560,7 +560,7 @@ class AppController(MenuBuilder):
         if restored:  # The recovery copy holds work that was never saved.
             self._image_stack.undo_stack.mark_modified()
 
-        AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+        self._app_state.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
         self._autosave.shutdown()
         # Saves scheduled in the last moments before exit never got an event loop to run them:
@@ -725,7 +725,7 @@ class AppController(MenuBuilder):
     def _update_enabled_actions(self) -> None:
 
         def _test_state(menu_action_method: Callable[..., None]) -> bool:
-            app_state = AppStateTracker.app_state()
+            app_state = self._app_state.app_state()
             assert callable(menu_action_method) and hasattr(menu_action_method, MENU_DATA_ATTR)
             data = getattr(menu_action_method, MENU_DATA_ATTR, None)
             assert isinstance(data, MenuData)
@@ -923,7 +923,7 @@ class AppController(MenuBuilder):
             Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
             self._image_io.clear_metadata()
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
 
     @menu_action(MENU_FILE, 'save_shortcut', 10,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING], separator_before=True)
@@ -977,7 +977,7 @@ class AppController(MenuBuilder):
         assert menu is not None
         menu.clear()
         paths = recent_files()
-        can_open = AppStateTracker.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
+        can_open = self._app_state.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
         for path in paths:
             action = menu.addAction(os.path.basename(path).replace('&', '&&'))
             assert action is not None
@@ -993,7 +993,7 @@ class AppController(MenuBuilder):
 
     def open_dropped_files(self, file_paths: list[str]) -> None:
         """Opens image files dropped on the window, adding them as layers if an image is already open."""
-        if AppStateTracker.app_state() not in (APP_STATE_EDITING, APP_STATE_NO_IMAGE) or len(file_paths) == 0:
+        if self._app_state.app_state() not in (APP_STATE_EDITING, APP_STATE_NO_IMAGE) or len(file_paths) == 0:
             return
         if self._image_stack.has_image:
             self._image_io.add_layers_from_files(file_paths)
@@ -1261,7 +1261,7 @@ class AppController(MenuBuilder):
         separator = menu.addSeparator()
         assert separator is not None
         separator.setProperty(LAYOUT_ACTION_PROPERTY, True)
-        enabled = AppStateTracker.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
+        enabled = self._app_state.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
         for name in names:
             action = menu.addAction(name.replace('&', '&&'))
             assert action is not None
@@ -1393,7 +1393,7 @@ class AppController(MenuBuilder):
     @menu_action(MENU_GENERATION, 'generate_shortcut', 500, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
-        if AppStateTracker.app_state() != APP_STATE_EDITING:
+        if self._app_state.app_state() != APP_STATE_EDITING:
             return
         if self._generator == self._null_generator:
             self.show_generator_window()
@@ -1663,7 +1663,7 @@ class AppController(MenuBuilder):
     def _record_applied_filter(self, image_filter: ImageFilter, param_values: list[Any]) -> None:
         """Saves a filter applied from its dialog for repeat_last_filter, and names it in the repeat action."""
         if self._last_filter is None:
-            AppStateTracker.set_enabled_states(self._repeat_filter_action, [APP_STATE_EDITING])
+            self._app_state.set_enabled_states(self._repeat_filter_action, [APP_STATE_EDITING])
         self._last_filter = (image_filter, list(param_values), image_filter.active_layer_only)
         self._repeat_filter_action.setText(REPEAT_FILTER_TITLE.format(filter_name=image_filter.get_name()))
 

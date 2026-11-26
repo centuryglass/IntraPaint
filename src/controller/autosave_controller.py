@@ -35,7 +35,7 @@ from src.image.recovery_files import (RecoveryWrite, RecoverableSession, plan_re
                                       restore_session, read_manifest)
 from src.ui.modal.modal_utils import (request_recovery_choice, show_error_dialog, RECOVERY_RESTORE,
                                       RECOVERY_DISCARD)
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING
+from src.util.application_state import APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.rich_text import rich_text_format
 
@@ -259,7 +259,7 @@ class AutosaveController(QObject):
     def _busy(self) -> bool:
         return (LayerBrush.any_stroke_in_progress()
                 or QApplication.mouseButtons() != Qt.MouseButton.NoButton
-                or AppStateTracker.app_state() == APP_STATE_LOADING
+                or self._image_stack.app_state.app_state() == APP_STATE_LOADING
                 or self._pending_write is not None)
 
     def _document_edited(self, *_args: Any) -> None:

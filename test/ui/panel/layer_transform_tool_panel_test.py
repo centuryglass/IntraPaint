@@ -11,6 +11,7 @@ from src.ui.input_fields.geometry_block import FIELD_NAMES, HEIGHT, SCALE_X, SCA
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -23,7 +24,7 @@ class LayerTransformToolPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack(), AppStateTracker())
         self.panel = LayerTransformToolPanel(self.image_stack)
         self.lock_changes: list[bool] = []
         self.panel.preserve_aspect_ratio_changed.connect(self.lock_changes.append)

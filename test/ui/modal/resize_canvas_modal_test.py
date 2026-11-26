@@ -5,11 +5,12 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields import geometry_block
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 
 def _modal(size: QSize = QSize(100, 80)) -> ResizeCanvasModal:
-    return ResizeCanvasModal(ImageStack(size, size, size, size, UndoStack()))
+    return ResizeCanvasModal(ImageStack(size, size, size, size, UndoStack(), AppStateTracker()))
 
 
 class ResizeCanvasModalTest(IntraPaintTestCase):

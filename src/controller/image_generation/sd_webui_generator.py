@@ -30,7 +30,7 @@ from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.generators.webui_advanced_controls import WebUIAdvancedControls
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
+from src.util.application_state import APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR
@@ -505,12 +505,12 @@ class SDWebUIGenerator(SDGenerator):
                 except (KeyError, SDBackendError) as err:
                     error_signal.emit(err)
 
-            update_task = _SettingsUpdateTask(_update_config, True)
+            update_task = _SettingsUpdateTask(_update_config, self._app_state)
             # Set by `_handle_error`, which runs before `_update_setting`, so a rejected update changes nothing locally:
             update_failed = False
 
             def _update_setting() -> None:
-                AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+                self._app_state.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
                 if not update_failed:
                     for key, changed_value in web_changes.items():
                         web_config.set(key, changed_value)
@@ -567,7 +567,7 @@ class SDWebUIGenerator(SDGenerator):
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
 
-        task = _DescribeTask(_describe, True)
+        task = _DescribeTask(_describe, self._app_state)
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the description."""
@@ -580,14 +580,14 @@ class SDWebUIGenerator(SDGenerator):
                 Cache().set(Cache.PROMPT, text)
 
             self._image_stack.undo_stack.commit_action(_update_prompt, _restore_prompt, 'SDWebUIGenerator._describe')
-            AppStateTracker().set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
 
         task.prompt_ready.connect(set_prompt)
 
         def handle_error(err: BaseException) -> None:
             """Show an error popup if describing fails."""
             assert self._window is not None
-            AppStateTracker().set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
             show_error_dialog(self._window, DESCRIBE_ERROR_TITLE, err)
 
         task.error_signal.connect(handle_error)
@@ -596,7 +596,8 @@ class SDWebUIGenerator(SDGenerator):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = self._create_control_panel(StableDiffusionPanel(True), WebUIAdvancedControls())
+            self._control_panel = self._create_control_panel(StableDiffusionPanel(True, self._app_state),
+                                                             WebUIAdvancedControls())
             self._control_panel.describe_signal.connect(self.describe)
             self._control_panel.styles_requested.connect(self.show_style_window)
         return self._control_panel

@@ -17,7 +17,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
-from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.application_state import APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.parameter import Parameter
 from src.util.shared_constants import PROJECT_DIR
@@ -304,11 +304,11 @@ class ImageFilter:
             for layer_id, image in layer_images.items():
                 updated_layer_images[layer_id] = image
 
-        task = AsyncTask(_filter_images, True)
+        task = AsyncTask(_filter_images, self._image_stack.app_state)
 
         # _finish must not reference task: the task's connection holds _finish, so that would leave a reference cycle.
         def _finish() -> None:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
             if len(updated_layer_images) == 0:
                 return
             source_images: dict[int, QImage] = {}

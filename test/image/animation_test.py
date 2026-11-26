@@ -11,6 +11,7 @@ from src.image.animation import frame_layer_name, load_frames_as_image, add_fram
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.visual.image_format_utils import ImageFrame
 from test.base_test_case import IntraPaintTestCase
 
@@ -36,7 +37,8 @@ class AnimationTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
+                                      UndoStack(), AppStateTracker())
 
     def _frame_layers_bottom_up(self) -> list[ImageLayer]:
         layers = sorted(self.image_stack.top_level_layers, key=lambda layer: layer.z_value)

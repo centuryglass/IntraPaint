@@ -294,8 +294,8 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         assert webservice is not None
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
         handle = _CancelledWhileWaitingHandle(self.generator)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-        self.addCleanup(AppStateTracker.set_app_state, APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_LOADING)
+        self.addCleanup(AppStateTracker().set_app_state, APP_STATE_EDITING)
         with mock.patch.object(webservice, 'submit_txt2img', return_value=handle) as submit:
             self.run_generate()
         submit.assert_called_once()

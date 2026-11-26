@@ -12,6 +12,7 @@ from src.ui.window import default_layouts
 from src.ui.window.default_layouts import LAYOUT_1080P, LAYOUT_4K_TALL, LAYOUT_SMALL, select_default_layout_state
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -58,7 +59,7 @@ class DefaultLayoutWindowTest(IntraPaintTestCase):
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
         test_size = QSize(64, 64)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack(), AppStateTracker())
         self.windows: list[MainWindow] = []
 
     def tearDown(self) -> None:

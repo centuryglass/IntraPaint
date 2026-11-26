@@ -21,6 +21,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import UNSAVED_SAVE, UNSAVED_DISCARD, UNSAVED_CANCEL
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.main_thread import is_main_thread
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS, AnimationSaveOptions, count_image_frames, load_image_frames
@@ -40,7 +41,7 @@ class ImageIOTestCase(IntraPaintTestCase):
         super().setUp()
         size = QSize(64, 64)
         self.window = QWidget()
-        self.image_stack = ImageStack(size, size, size, size, UndoStack())
+        self.image_stack = ImageStack(size, size, size, size, UndoStack(), AppStateTracker())
         self.image_io = ImageIO(self.window, self.image_stack, lambda: None)
         self.temp_dir = tempfile.TemporaryDirectory()
         self.gif_path = os.path.join(self.temp_dir.name, 'anim.gif')

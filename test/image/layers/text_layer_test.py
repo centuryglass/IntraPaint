@@ -12,6 +12,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer, MAX_NAME_LENGTH_BEFORE_TRUNC
 from src.image.text_rect import TextRect, DEFAULT_SIZE
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_content_bounds, image_is_fully_transparent
 from src.util.visual.text_drawing_utils import find_text_size
 from test.base_test_case import IntraPaintTestCase
@@ -293,7 +294,7 @@ class TextLayerTransformTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack(), AppStateTracker())
         text_rect = _text_rect('Text')
         text_rect.fill_background = True
         text_rect.background_color = QColor(Qt.GlobalColor.white)

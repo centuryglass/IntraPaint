@@ -43,6 +43,7 @@ from src.image.filter.blur import BlurFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.image.brush.brush_test_case import brush_test_pattern, line_points
 
 # Time between input events. Each case's point spacing over this interval sets the drag speed.
@@ -80,7 +81,8 @@ def _smudge_steps(case: Case, _event_count: int) -> int:
 
 def _create_filter_brush(layer: ImageLayer) -> LayerBrush:
     # Filters only use the image stack when applied from the menu:
-    image_stack = ImageStack(layer.size, layer.size, QSize(8, 8), QSize(1024, 1024), layer.undo_stack)
+    image_stack = ImageStack(layer.size, layer.size, QSize(8, 8), QSize(1024, 1024),
+                             layer.undo_stack, AppStateTracker())
     return FilterBrush(BlurFilter(image_stack), layer)
 
 

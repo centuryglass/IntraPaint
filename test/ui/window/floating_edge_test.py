@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow
 
 from src.ui.window.floating_edge import FloatingEdge
 from src.ui.window.panel_dock import PanelDock
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -13,7 +14,7 @@ class FloatingEdgeTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.window = QMainWindow()
-        self.dock = PanelDock('Edge', 'edge', self.window)
+        self.dock = PanelDock('Edge', 'edge', self.window, AppStateTracker())
         content = QLabel('content')
         content.setStyleSheet('background: white')
         self.dock.set_content(content)

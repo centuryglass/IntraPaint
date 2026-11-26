@@ -35,7 +35,7 @@ from src.ui.modal.modal_parent import modal_parent
 from src.ui.modal.save_loss_modal import SaveLoss, request_save_loss_choice, SAVE_ORA, CANCEL
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog, request_unsaved_changes_choice, UNSAVED_SAVE, UNSAVED_DISCARD
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING
+from src.util.application_state import APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.recent_files import add_recent_file
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
@@ -215,7 +215,7 @@ class ImageIO:
         """
         self.metadata = restored.metadata
         Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
 
     @staticmethod
     def file_name() -> str:
@@ -542,7 +542,7 @@ class ImageIO:
             cache.set(Cache.LAST_FILE_PATH, file_path)
             add_recent_file(file_path)
             self._apply_loaded_parameters()
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
         except (UnidentifiedImageError, OSError) as err:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
@@ -588,7 +588,7 @@ class ImageIO:
             show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE,
                               rich_text_format(LOAD_LAYER_ERROR_MESSAGE, file_list=', '.join(errors)))
         if self._image_stack.has_image:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
 
     def _apply_loaded_parameters(self) -> None:
         """Applies the `LOAD_APPLIED_FIELDS` of the loaded image's A1111 parameters to the editor, if it has any."""

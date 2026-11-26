@@ -16,6 +16,7 @@ from src.ui.window.navigation_window import (ZoomTool, NavigationWindow, ZOOM_LA
                                              GENERATION_AREA_LABEL_SHORT, VIEW_HINT_LINES, GEN_AREA_HINT_LINES,
                                              CONTEXT_PIN_HINT)
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 
@@ -90,7 +91,8 @@ class NavigationPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
-        self.image_stack = ImageStack(self.IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
+        self.image_stack = ImageStack(self.IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048),
+                                      UndoStack(), AppStateTracker())
         self.image_stack.create_layer()
         self.main_viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
         self.main_viewer.resize(600, 400)
@@ -190,7 +192,8 @@ class NavigationWindowResizeTest(IntraPaintTestCase):
     def test_resize_plans_the_canvas_bar(self) -> None:
         """Resizing the window plans its canvas bar: Reset view shows its label when wide and its glyph when
         narrow."""
-        image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048), UndoStack())
+        image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048),
+                                 UndoStack(), AppStateTracker())
         main_viewer = ImageViewer(None, image_stack, use_keybindings=False)
         window = NavigationWindow(image_stack, main_viewer)
         window.show()

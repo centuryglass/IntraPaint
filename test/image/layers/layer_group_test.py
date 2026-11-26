@@ -11,6 +11,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit_readonly, image_is_fully_transparent
 from test.base_test_case import IntraPaintTestCase
 
@@ -27,7 +28,8 @@ class LayerGroupTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         UndoStack().clear()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
+                                      UndoStack(), AppStateTracker())
         self.group = self.image_stack.create_layer_group('group')
         self.layers = [self.image_stack.create_layer(f'layer {i}', layer_parent=self.group, layer_index=i)
                        for i in range(2)]

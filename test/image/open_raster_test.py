@@ -24,6 +24,7 @@ from src.image.open_raster import (save_ora_image, capture_ora_image, write_ora_
                                    TEXT_DATA_TAG)
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(16, 16)
@@ -88,8 +89,10 @@ class OpenRasterTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
-        self.loaded_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
+                                      UndoStack(), AppStateTracker())
+        self.loaded_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
+                                       UndoStack(), AppStateTracker())
 
     def _add_image_layer(self, name: str, parent: Optional[LayerGroup] = None) -> ImageLayer:
         color = _layer_color(len(self.image_stack.image_layers))

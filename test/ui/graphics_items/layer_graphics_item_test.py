@@ -13,6 +13,7 @@ from src.image.composite_mode import CompositeMode
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from src.util.visual.tile_cache import TILE_SIZE
 from test.base_test_case import IntraPaintTestCase
@@ -52,7 +53,8 @@ class LayerGraphicsItemTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE,
+                                      UndoStack(), AppStateTracker())
         self.background = self.image_stack.create_layer('background', _noise_image(CANVAS_SIZE, 0))
         self.top = self.image_stack.create_layer('top', _noise_image(LAYER_SIZE, 1))
         self.top.transform = QTransform.fromTranslate(TILE_SIZE - 60, TILE_SIZE - 40)
@@ -153,7 +155,8 @@ class OpaqueContentTest(IntraPaintTestCase):
 
     def test_hiding_opaque_content_shows_transparency(self) -> None:
         """The item's pixmap keeps an alpha channel for opaque content, so hiding the layer shows what is behind."""
-        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64),
+                                 UndoStack(), AppStateTracker())
         opaque = QImage(QSize(64, 64), QImage.Format.Format_ARGB32_Premultiplied)
         opaque.fill(Qt.GlobalColor.red)
         image_stack.load_image(opaque)

@@ -117,7 +117,7 @@ class IdleActivityTest(IntraPaintTestCase):
         self.controller = AppController(args)
         self.window = self.controller._window
         self.window.show()
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
 
     def tearDown(self) -> None:
         self.window.hide()

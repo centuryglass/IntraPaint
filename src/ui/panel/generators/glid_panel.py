@@ -51,9 +51,9 @@ PROMPT_BOX_PADDING = 12
 class GlidPanel(GenerateFooterPanel):
     """Control panel widget for GLID-3-XL inpainting."""
 
-    def __init__(self) -> None:
+    def __init__(self, app_state: AppStateTracker) -> None:
         super().__init__(PANEL_TITLE)
-        AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
+        app_state.set_enabled_states(self, [APP_STATE_EDITING])
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self.header.set_description(BACKEND_DESCRIPTION)
         self.header.reset_button.hide()

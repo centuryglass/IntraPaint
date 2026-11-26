@@ -212,7 +212,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = GlidPanel()
+            self._control_panel = GlidPanel(self._app_state)
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
         return self._control_panel
 

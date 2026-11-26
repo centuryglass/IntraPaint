@@ -369,11 +369,11 @@ class StableDiffusionPanel(DockPanel):
     setup_requested = Signal()
     settings_requested = Signal()
 
-    def __init__(self, webui: bool) -> None:
+    def __init__(self, webui: bool, app_state: AppStateTracker) -> None:
         # `build` runs in the superclass constructor and needs this:
         self._webui = webui
         super().__init__(PANEL_TITLE)
-        AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
+        app_state.set_enabled_states(self, [APP_STATE_EDITING])
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self.header.reset_button.hide()
         self._advanced_controls: Optional[AdvancedControls] = None

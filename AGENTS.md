@@ -87,7 +87,8 @@ pip install -r requirements-dev.txt   # for development: adds the test, lint and
   instance and take no arguments; constructor arguments go through `AppContext`. Every test installs a new context,
   so a module-level or class-level attribute must not hold a service, and `test/base_test_case_test.py` fails on one.
   Code under `src/` reaches the undo stack through the `ImageStack` or layer it works on, never `UndoStack()`
-  (`UndoStack`'s docstring).
+  (`UndoStack`'s docstring). Only `AppController` calls `AppStateTracker()`. Other code receives the tracker or reads
+  `ImageStack.app_state` (`AppStateTracker`'s docstring).
 - **On-canvas markers register with `ImageViewer.canvas_extras`** (`src/ui/canvas_extras.py`), which groups them by
   category so each category can be hidden. A tool that adds a marker to the viewer's scene registers it there.
 - **`src/util/`:** helpers, including `visual/image_fill` (Cython-compiled).

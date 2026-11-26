@@ -420,7 +420,7 @@ class SDComfyUIGenerator(SDGenerator):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = self._create_control_panel(StableDiffusionPanel(False),
+            self._control_panel = self._create_control_panel(StableDiffusionPanel(False, self._app_state),
                                                              ComfyUIAdvancedControls())
             self._control_panel.clear_memory_requested.connect(self.clear_comfyui_memory)
         return self._control_panel

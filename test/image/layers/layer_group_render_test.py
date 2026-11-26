@@ -22,6 +22,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase
 from test.render_assertions import assert_tiled_render_matches, clear_area, displayed_image, full_render
@@ -73,7 +74,8 @@ class GroupRenderTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE,
+                                      UndoStack(), AppStateTracker())
         self._seed = 0
 
     def add_layer(self, name: str, offset: QPoint, parent: Optional[LayerGroup] = None,

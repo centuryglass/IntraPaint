@@ -17,6 +17,7 @@ from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT
 from src.ui.image_viewer import ImageViewer, color_under_overlay, IMAGE_BORDER_COLOR, IMAGE_BORDER_OPACITY
 from src.ui.ink_style import ink_colors
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from test.base_test_case import IntraPaintTestCase
 
@@ -28,7 +29,8 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64),
+                                      UndoStack(), AppStateTracker())
         self.selection_layer = self.image_stack.selection_layer
 
     @staticmethod
@@ -69,7 +71,8 @@ class ImageViewerManualResolutionLabelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA)
-        self.image_stack = ImageStack(QSize(512, 512), QSize(256, 256), QSize(8, 8), QSize(512, 512), UndoStack())
+        self.image_stack = ImageStack(QSize(512, 512), QSize(256, 256), QSize(8, 8), QSize(512, 512),
+                                      UndoStack(), AppStateTracker())
         self.image_stack.create_layer('Background')
         self.image_stack.generation_area = QRect(128, 128, 256, 256)
         self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
@@ -127,7 +130,8 @@ class ImageViewerSurroundTest(IntraPaintTestCase):
 
     def test_background_fills_with_canvas_surround(self) -> None:
         """Drawing the background fills the exposed area with the canvas surround color, before the image's tiles."""
-        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64),
+                                 UndoStack(), AppStateTracker())
         viewer = ImageViewer(None, image_stack, use_keybindings=False)
         image = QImage(QSize(32, 32), QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(0)
@@ -165,7 +169,8 @@ class ImageViewerLifetimeTest(IntraPaintTestCase):
 
     def test_delete_releases_scene_and_layer_items(self) -> None:
         """Deleting a viewer deletes its scene and disconnects its layer items, so layer changes don't reach them."""
-        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64),
+                                 UndoStack(), AppStateTracker())
         layer = image_stack.create_layer()
         viewer = ImageViewer(None, image_stack, use_keybindings=False)
         scene = viewer.scene()
@@ -186,7 +191,8 @@ class ImageViewerOutsideHatchingTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64),
+                                      UndoStack(), AppStateTracker())
         self.layer = self.image_stack.create_layer('Layer')
         self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
         self.hatching = self.viewer.outside_hatching
@@ -322,7 +328,8 @@ class ImageViewerDropRoutingTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64),
+                                      UndoStack(), AppStateTracker())
         self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
         self.window = QMainWindow()
         self.window.setCentralWidget(self.viewer)

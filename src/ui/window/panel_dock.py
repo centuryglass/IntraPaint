@@ -79,9 +79,10 @@ class PanelDock(QDockWidget):
         assert window is not None, 'A dock outlived its window'
         return window
 
-    def __init__(self, title: str, object_name: str, window: QMainWindow, icon: Optional[QIcon] = None,
-                 shortcut_config_key: Optional[str] = None) -> None:
+    def __init__(self, title: str, object_name: str, window: QMainWindow, app_state: AppStateTracker,
+                 icon: Optional[QIcon] = None, shortcut_config_key: Optional[str] = None) -> None:
         super().__init__(title, window)
+        self._app_state = app_state
         self._window_ref = ref(window)
         self.setObjectName(object_name)
         if icon is not None:
@@ -306,7 +307,7 @@ class PanelDock(QDockWidget):
 
         The key is left unused while the generated image selector hides every dock, so the selector receives it.
         """
-        if self._content is None or AppStateTracker.app_state() == APP_STATE_SELECTION:
+        if self._content is None or self._app_state.app_state() == APP_STATE_SELECTION:
             return False
         if self._showing and not self.isHidden():
             self.hide()

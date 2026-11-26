@@ -20,7 +20,7 @@ from src.controller.image_generation.generated_image_batch import GeneratedImage
 from src.controller.image_generation.result_patch import make_result_patch
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
+from src.util.application_state import APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.visual.image_format_utils import save_image
 from src.util.visual.pil_image_utils import pil_image_scaling
@@ -197,7 +197,7 @@ class GenerationSession(QObject):
         inpaint_task.finish_signal.connect(_finished)
 
         self.generation_started.emit(paste_mask)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        self._image_stack.app_state.set_app_state(APP_STATE_LOADING)
         inpaint_task.start()
         return True
 
@@ -339,7 +339,7 @@ class GenerationSession(QObject):
         outcome = None
         if option_index != 0:
             outcome = self.apply(option_index, self._image_stack.active_layer, layer_name, True)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        self._image_stack.app_state.set_app_state(APP_STATE_EDITING)
         return outcome
 
     def send_to_new_layer(self, option_index: int, layer_name: str) -> Layer:

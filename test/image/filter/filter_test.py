@@ -25,6 +25,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.async_task import AsyncTask
 from test.base_test_case import IntraPaintTestCase
 from test.image.brush.brush_test_case import brush_test_pattern
@@ -91,7 +92,8 @@ class FilterSelectionOnlyTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), QSize(1024, 1024),
+                                      UndoStack(), AppStateTracker())
         image = QImage(IMAGE_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(Qt.GlobalColor.white)
         self.layer = self.image_stack.create_layer(None, image)
@@ -131,12 +133,14 @@ class MenuFilterTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
+                                      UndoStack(), AppStateTracker())
 
     def _reset_stack(self) -> None:
         """Replaces the image stack and clears the undo history, for the next filter's subTest."""
         UndoStack().clear()
-        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024), UndoStack())
+        self.image_stack = ImageStack(STACK_SIZE, STACK_SIZE, QSize(8, 8), QSize(1024, 1024),
+                                      UndoStack(), AppStateTracker())
 
     def _select(self, bounds: QRect) -> None:
         with self.image_stack.selection_layer.borrow_image() as mask_image:

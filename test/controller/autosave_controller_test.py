@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from PIL import ExifTags, Image
 from PySide6.QtCore import QSize, QRect, Qt
@@ -30,6 +30,7 @@ from src.image.recovery_files import (find_recoverable_sessions, read_manifest, 
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import RECOVERY_RESTORE, RECOVERY_DISCARD, RECOVERY_LATER
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -55,6 +56,22 @@ def _dead_pid() -> int:
     return process.pid
 
 
+class _FixedPrompt:
+    """A recovery prompt that gives one answer and counts its calls.
+
+    It keeps none of its arguments. A mock would record the window it is passed, and a mock's own reference cycles would
+    then hold the window's wrapper, which fails the test's cycle check.
+    """
+
+    def __init__(self, choice: str) -> None:
+        self.choice = choice
+        self.calls = 0
+
+    def __call__(self, _window: object, _session: object) -> str:
+        self.calls += 1
+        return self.choice
+
+
 class AutosaveControllerTest(IntraPaintTestCase):
     """Tests AutosaveController and the recovery folder it writes."""
 
@@ -62,7 +79,8 @@ class AutosaveControllerTest(IntraPaintTestCase):
         super().setUp()
         self._root_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         self.root = self._root_dir.name
-        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA,
+                                      UndoStack(), AppStateTracker())
         self.image_stack.load_image(_solid_image(QColor(Qt.GlobalColor.white)))
         self.window = QWidget()
         self.image_io = ImageIO(self.window, self.image_stack, lambda: None)
@@ -134,7 +152,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.assertTrue(self.controller.dirty)
         self.assertTrue(self.controller.autosave_now(synchronous=True))
         crashed_dir = self._simulate_crash()
-        expected_copy = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack())
+        expected_copy = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA, UndoStack(), AppStateTracker())
         with tempfile.TemporaryDirectory() as temp_dir:
             ora_path = os.path.join(temp_dir, 'expected.ora')
             save_ora_image(self.image_stack, ora_path, None)
@@ -146,10 +164,10 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.image_stack.load_image(_solid_image(QColor(Qt.GlobalColor.black)))
         self.image_io.clear_metadata()
         Cache().set(Cache.LAST_FILE_PATH, '')
-        prompt = MagicMock(return_value=RECOVERY_RESTORE)
+        prompt = _FixedPrompt(RECOVERY_RESTORE)
 
         self.assertTrue(self.controller.offer_recovery(prompt))
-        prompt.assert_called_once()
+        self.assertEqual(1, prompt.calls)
         self._assert_layers_match(expected_copy.layer_stack, self.image_stack.layer_stack)
         self.assertEqual(IMG_SIZE, self.image_stack.size)
         self.assertEqual(expected_gen_area, self.image_stack.generation_area)
@@ -163,7 +181,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
     def _restore_crashed_copy(self) -> None:
         """Clears the open document's metadata, then restores the crashed copy that `_simulate_crash` made."""
         self.image_io.clear_metadata()
-        self.assertTrue(self.controller.offer_recovery(MagicMock(return_value=RECOVERY_RESTORE)))
+        self.assertTrue(self.controller.offer_recovery(_FixedPrompt(RECOVERY_RESTORE)))
 
     def test_restored_document_keeps_every_metadata_part(self) -> None:
         """A restored copy keeps the EXIF tags, XMP packet, IPTC datasets and DPI, as an .ora save does."""
@@ -249,7 +267,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         crashed_dir = self._simulate_crash()
 
         self.image_stack.load_image(_solid_image(QColor(Qt.GlobalColor.black)))
-        self.assertTrue(self.controller.offer_recovery(MagicMock(return_value=RECOVERY_RESTORE)))
+        self.assertTrue(self.controller.offer_recovery(_FixedPrompt(RECOVERY_RESTORE)))
         self.assertFalse(os.path.exists(crashed_dir))
         restored = self.image_stack.layer_stack.child_layers[0]
         self.assertEqual('layer', restored.name)
@@ -287,13 +305,13 @@ class AutosaveControllerTest(IntraPaintTestCase):
         with open(os.path.join(empty_dir, LOCK_FILE_NAME), 'w', encoding='utf-8') as lock_file:
             lock_file.write(str(_dead_pid()))
 
-        prompt = MagicMock(return_value=RECOVERY_LATER)
+        prompt = _FixedPrompt(RECOVERY_LATER)
         self.assertFalse(self.controller.offer_recovery(prompt))
-        prompt.assert_called_once()
+        self.assertEqual(1, prompt.calls)
         self.assertTrue(os.path.isdir(crashed_dir))
         self.assertFalse(os.path.exists(empty_dir))
 
-        self.assertFalse(self.controller.offer_recovery(MagicMock(return_value=RECOVERY_DISCARD)))
+        self.assertFalse(self.controller.offer_recovery(_FixedPrompt(RECOVERY_DISCARD)))
         self.assertFalse(os.path.exists(crashed_dir))
 
     def test_shutdown_removes_folder(self) -> None:

@@ -65,7 +65,8 @@ class ImageGeneratorTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.window = MagicMock()
-        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
+        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240),
+                                      UndoStack(), AppStateTracker())
         self.image_stack.create_layer('source', _solid(IMAGE_SIZE, SOURCE_COLOR))
         self.image_stack.generation_area = GENERATION_AREA
         with self.image_stack.selection_layer.borrow_image() as mask_image:

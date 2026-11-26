@@ -2,6 +2,7 @@
 from PySide6.QtWidgets import QMainWindow
 
 from src.config.key_config import KeyConfig
+from src.util.application_state import AppStateTracker
 from src.util.menu_builder import MenuBuilder, menu_action
 from test.base_test_case import IntraPaintTestCase
 
@@ -32,7 +33,7 @@ class MenuBuilderTest(IntraPaintTestCase):
     def test_separator_before(self) -> None:
         """A separator appears only before items that request it, and not again when menus are rebuilt."""
         window = QMainWindow()
-        builder = _Builder()
+        builder = _Builder(AppStateTracker())
         builder.menu_window = window
         for _ in range(2):
             builder.build_menus()
@@ -46,7 +47,7 @@ class MenuBuilderTest(IntraPaintTestCase):
             def only(self) -> None:
                 """The only item."""
         window = QMainWindow()
-        builder = _FirstBuilder()
+        builder = _FirstBuilder(AppStateTracker())
         builder.menu_window = window
         builder.build_menus()
         self.assertEqual([action.isSeparator() for action in builder.menu_actions(MENU)], [False])
@@ -58,11 +59,11 @@ class MenuBuilderTest(IntraPaintTestCase):
             def late(self) -> None:
                 """Sorts between the first builder's first two items."""
         window = QMainWindow()
-        main = _Builder()
+        main = _Builder(AppStateTracker())
         main.menu_window = window
         main.build_menus()
         main.add_menu_separator(MENU, 10)
-        late = _Late()
+        late = _Late(AppStateTracker())
         late.menu_window = window
         late.build_menus()
         def _names() -> list[str]:
@@ -80,7 +81,7 @@ class MenuBuilderTest(IntraPaintTestCase):
     def test_action_found_after_its_text_changes(self) -> None:
         """An action's owner can change the text it shows, and lookups still find it by the title it was added with."""
         window = QMainWindow()
-        builder = _Builder()
+        builder = _Builder(AppStateTracker())
         builder.menu_window = window
         builder.build_menus()
         action = builder.get_action_for_method(builder.first)

@@ -9,6 +9,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.widget.canvas_bar import CanvasBar, split_hint_pairs
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -35,7 +36,8 @@ class CanvasBarTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
+        self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048),
+                                      UndoStack(), AppStateTracker())
         self.panel = ImagePanel(self.image_stack, include_rulers=True, include_navigation_button=True)
         self.panel.resize(WIDE, PANEL_HEIGHT)
         self.panel.show()
@@ -214,7 +216,8 @@ class PlainCanvasBarTest(IntraPaintTestCase):
     def test_no_toggles_and_no_more_button(self) -> None:
         """Without Rulers or the navigation button, the bar never shows "...", and its popover holds only the hints
         toggle."""
-        image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
+        image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048),
+                                 UndoStack(), AppStateTracker())
         panel = ImagePanel(image_stack)
         panel.show()
         try:

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QPushButton, QSpli
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.util.application_state import AppStateTracker
 from src.util.key_code_utils import key_alternatives
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
@@ -88,7 +89,7 @@ class LayerPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack())
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack(), AppStateTracker())
         root = self.image_stack.layer_stack
         # Layer order, top to bottom: group [inner_top, nested [nested_child], inner_bottom], bottom
         self.bottom = self.image_stack.create_layer('bottom', layer_parent=root, layer_index=0)
@@ -920,7 +921,7 @@ class LayerPanelTest(IntraPaintTestCase):
         with one layer doesn't scroll while that layer fits."""
         layer_list = self.panel.layer_list
         self.assertLess(layer_list.minimumSizeHint().height(), layer_list.sizeHint().height())
-        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack())
+        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack(), AppStateTracker())
         image_stack.create_layer()
         panel = LayerPanel(image_stack)
         panel.resize(QSize(270, 270))

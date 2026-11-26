@@ -18,6 +18,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, image_is_fully_transparent
 from src.util.visual.tile_cache import TILE_SIZE
 from test.base_test_case import IntraPaintTestCase
@@ -58,7 +59,8 @@ class TileCacheFixture(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE, UndoStack())
+        self.image_stack = ImageStack(CANVAS_SIZE, CANVAS_SIZE, QSize(8, 8), CANVAS_SIZE,
+                                      UndoStack(), AppStateTracker())
         self.background = self.image_stack.create_layer('background', _noise_image(CANVAS_SIZE, 0))
         self.pass_through = self.image_stack.create_layer_group('pass-through')
         self.passed = self.add_layer('passed', QPoint(30, 20), self.pass_through, CompositeMode.MULTIPLY, 0.8)

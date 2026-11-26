@@ -17,7 +17,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING
+from src.util.application_state import APP_STATE_EDITING
 from src.util.generation_area_utils import resolution_for_area, previous_frame, updated_recent_sizes, \
     RESOLUTION_RULE_MANUAL, follow_selection_target, follow_selection_position, FOLLOW_SELECTION_OFF
 from src.util.shared_constants import EDIT_MODE_INPAINT
@@ -157,7 +157,7 @@ class GenerationAreaController(QObject):
         return True
 
     def _previous_frame_hotkey(self) -> bool:
-        if AppStateTracker.app_state() != APP_STATE_EDITING:
+        if self._image_stack.app_state.app_state() != APP_STATE_EDITING:
             return False
         return self.select_previous_frame()
 

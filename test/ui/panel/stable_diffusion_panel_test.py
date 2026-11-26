@@ -50,7 +50,7 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         super().setUp()
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         AppStateTracker().set_app_state(APP_STATE_EDITING)
-        self.panel = StableDiffusionPanel(True)
+        self.panel = StableDiffusionPanel(True, AppStateTracker())
         self.panel.set_advanced_content(WebUIAdvancedControls())
 
     def _visible(self, widget) -> bool:
@@ -244,7 +244,7 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
         cache.set(Cache.WEBUI_TILING, True)
-        panel = StableDiffusionPanel(False)
+        panel = StableDiffusionPanel(False, AppStateTracker())
         self.assertFalse(self._visible(panel.tiling_button))
 
     def test_moved_controls_are_reachable_in_their_new_places(self) -> None:
@@ -359,7 +359,7 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def test_comfyui_panel_has_only_the_lora_tool(self) -> None:
         """ComfyUI has no styles or describe, and offers Clear GPU memory in the More menu."""
-        panel = StableDiffusionPanel(False)
+        panel = StableDiffusionPanel(False, AppStateTracker())
         self.assertEqual(len(panel.prompt_tool_buttons), 1)
         describe, _, _, _, clear = panel.more_menu_buttons
         self.assertTrue(describe.isHidden())
@@ -450,7 +450,7 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def test_comfyui_tile_size_is_dimmed_until_tiled_vae_is_on(self) -> None:
         """Tile size is enabled only while tiled VAE encoding is on, and the summary names it."""
-        panel = StableDiffusionPanel(False)
+        panel = StableDiffusionPanel(False, AppStateTracker())
         panel.set_advanced_content(ComfyUIAdvancedControls())
         controls = panel.advanced_controls
         assert isinstance(controls, ComfyUIAdvancedControls)

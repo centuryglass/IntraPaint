@@ -33,7 +33,7 @@ class ImageGenerator(MenuBuilder, ABC):
     # Used to emit additional information when anything goes wrong with an active generator.
 
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
-        super().__init__()
+        super().__init__(image_stack.app_state)
         self._window = window
         self._image_stack = image_stack
 

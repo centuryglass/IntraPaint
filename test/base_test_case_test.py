@@ -228,27 +228,27 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         def _change_undo_count_and_state(new_state: str) -> None:
             UndoStack().commit_action(lambda: None, lambda: None, 'test.signals')
             UndoStack().undo()
-            AppStateTracker.set_app_state(new_state)
+            AppStateTracker().set_app_state(new_state)
 
         class _Case(IntraPaintTestCase):
             def test_body(self) -> None:
                 """Checks that earlier connections are gone, then adds its own."""
-                observed['state'] = AppStateTracker.app_state()
+                observed['state'] = AppStateTracker().app_state()
                 _change_undo_count_and_state(APP_STATE_LOADING)
                 observed['outside_listener'] = outside_listener.call_count
                 for signal in (UndoStack().undo_count_changed, UndoStack().redo_count_changed,
-                               AppStateTracker.signal()):
+                               AppStateTracker().signal()):
                     signal.connect(inside_listener)
 
-        for signal in (UndoStack().undo_count_changed, UndoStack().redo_count_changed, AppStateTracker.signal()):
+        for signal in (UndoStack().undo_count_changed, UndoStack().redo_count_changed, AppStateTracker().signal()):
             signal.connect(outside_listener)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
         outside_listener.reset_mock()
         result = unittest.TestResult()
         _Case('test_body').run(result)
         self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
         self.assertEqual(observed, {'state': APP_STATE_INIT, 'outside_listener': 0})
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_INIT)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_INIT)
         _change_undo_count_and_state(APP_STATE_EDITING)
         inside_listener.assert_not_called()
 
@@ -297,12 +297,12 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         widget = QWidget()
         self.addCleanup(widget.deleteLater)
         old_tracker = AppStateTracker()
-        AppStateTracker.set_enabled_states(widget, [APP_STATE_EDITING])
+        AppStateTracker().set_enabled_states(widget, [APP_STATE_EDITING])
         self.assertFalse(widget.isEnabled())
         install_test_context()
         widget.setEnabled(False)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
-        old_tracker._set_app_state(APP_STATE_EDITING)  # pylint: disable=protected-access
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
+        old_tracker.set_app_state(APP_STATE_EDITING)
         self.assertFalse(widget.isEnabled())
         del old_tracker
 

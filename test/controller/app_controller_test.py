@@ -387,7 +387,7 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.window = self.controller._window
         self.image_stack = self.controller._image_stack
         self.image_stack.load_image(self._image(QColor(10, 20, 30)))
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
 
     def _image(self, color: QColor) -> QImage:
         image = QImage(self.IMAGE_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
@@ -448,7 +448,7 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         """A stored batch does not make the action available in another application state."""
         self._complete_a_generation()
         self.window.set_image_selector_visible(False)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        AppStateTracker().set_app_state(APP_STATE_LOADING)
         self.assertFalse(self._action().isEnabled())
 
 

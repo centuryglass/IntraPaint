@@ -11,7 +11,6 @@ from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
-from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.signals_blocked import signals_blocked
 from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import map_rect_precise
@@ -497,8 +496,6 @@ class LayerGroup(LayerParent):
         layer.size_changed.connect(self._layer_bounds_change_slot)
         self._layers.insert(index, layer)
         layer.layer_parent = self
-        if len(self._layers) == 1 and AppStateTracker.app_state() == APP_STATE_NO_IMAGE:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
         if layer.visible and not empty_image:
             self._trigger_render(self._layer_image_area(layer))
         self.layer_added.emit(layer)

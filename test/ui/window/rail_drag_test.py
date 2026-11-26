@@ -15,6 +15,7 @@ from src.ui.window.panel_dock import PanelDock
 from src.ui.window.qt_dock_drag import TITLE_PRESS_INSET, TITLE_PRESS_Y
 from src.ui.window.rail_drag import DRAG_DISTANCE
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 from test.ui.window.procedural_layout import use_procedural_layout
 
@@ -42,7 +43,7 @@ class RailDragTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         size = QSize(64, 64)
-        self.window = MainWindow(ImageStack(size, size, size, size, UndoStack()))
+        self.window = MainWindow(ImageStack(size, size, size, size, UndoStack(), AppStateTracker()))
         for dock in self.window.docks:
             if dock is not self.window.controlnet_dock:
                 dock.set_content(QLabel(dock.windowTitle()))
