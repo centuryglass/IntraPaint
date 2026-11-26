@@ -42,7 +42,7 @@ X_OFFSET_LABEL = _tr('X-offset')
 Y_OFFSET_LABEL = _tr('Y-offset')
 X_OFFSET_TOOLTIP = _tr('Horizontal offset of the image within the resized canvas')
 Y_OFFSET_TOOLTIP = _tr('Vertical offset of the image within the resized canvas')
-NEW_SIZE_TEXT = _tr('New size: {width} x {height} px ({width_change} x {height_change}), {memory} per layer')
+NEW_SIZE_TEXT = _tr('New size: {width} x {height} px ({width_change} x {height_change})\n{memory} per layer')
 RESIZE_BUTTON_LABEL = _tr('Resize image canvas')
 
 MIN_PX_VALUE = 1

@@ -7423,7 +7423,8 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>New size: {width} x {height} px ({width_change} x {height_change}), {memory} per layer</source>
+        <source>New size: {width} x {height} px ({width_change} x {height_change})
+{memory} per layer</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
