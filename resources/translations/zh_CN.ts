@@ -6,7 +6,7 @@
     <message>
         <location filename="../../src/config/a1111_config.py"/>
         <source>key "{key}" had unexpected type {value_type}, value {value}</source>
-        <translation>键“{key}”的类型 {value_type} 不符合预期，值为 {value}</translation>
+        <translation>配置项“{key}”的类型 {value_type} 不符合预期，值为 {value}</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
@@ -6227,7 +6227,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Saved image option to {image_path}</source>
-        <translation>已将图像选项保存到 {image_path}</translation>
+        <translation>已将图像选项保存到“{image_path}”</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
@@ -6242,7 +6242,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Failed to insert into layer "{layer_name}"</source>
-        <translation>无法插入图层“{layer_name}”</translation>
+        <translation>无法插入到图层“{layer_name}”中</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
@@ -6473,7 +6473,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Controls</source>
-        <translation>操作提示</translation>
+        <translation>控制提示</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
