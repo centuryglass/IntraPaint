@@ -153,8 +153,8 @@ Interface theme names, such as "IntraPaint Ink", are also kept.
 - A reference to another UI string uses that string's translation, without its accelerator, ellipsis or trailing colon: "Manage layouts..." is written “管理布局”.
 - 清空列表的命令要写明清空的是列表，以免读成删除文件或对象：「Clear recent files」写作「清空最近文件列表」，而不是「清除最近打开的文件」。
 - A command that empties a list names the list, so it can't read as deleting the files or objects: "Clear recent files" is 清空最近文件列表, not 清除最近打开的文件.
-- 展开为数字或拉丁字母的占位符（{count}、{width}、{key}）与中文之间加半角空格，如「已启用 {count} 个控制单元」。展开为名称的占位符（{layout_name}、{filter_name}）放在引号里，不加空格，如「布局“{layout_name}”」。
-- A placeholder that expands to digits or Latin text ({count}, {width}, {key}) takes a half-width space on each side next to Chinese, as in 已启用 {count} 个控制单元. A placeholder that expands to a name ({layout_name}, {filter_name}) goes inside quotes with no space, as in 布局“{layout_name}”.
+- 展开为数字或拉丁字母的占位符（{count}、{width}、{key}）与中文之间加半角空格，如「已启用 {count} 个控制单元」。展开为名称或路径的占位符（{layout_name}、{filter_name}、{image_path}）在句中放在引号里，不加空格，如「布局“{layout_name}”」。标签冒号后的值不加引号，冒号已把它与标签分开，如「图像文件：{file_name}」。
+- A placeholder that expands to digits or Latin text ({count}, {width}, {key}) takes a half-width space on each side next to Chinese, as in 已启用 {count} 个控制单元. A placeholder that expands to a name or path ({layout_name}, {filter_name}, {image_path}) goes inside quotes with no space within a sentence, as in 布局“{layout_name}”. A value after a label's colon takes no quotes, since the colon already sets it apart, as in 图像文件：{file_name}.
 - 中文文字中的括号用全角（），如「用户界面的主题（可能需要重启）」「{front_title}（+{count}）」；只有快捷字母的括号用半角：「文件(&F)」。
 - Brackets in Chinese text are full-width （）, as in 用户界面的主题（可能需要重启） and {front_title}（+{count}）; only the accelerator's brackets are half-width: 文件(&F).
 - HTML 文本中，Qt 把段落内的换行显示为空格，而中文字之间不应有空格。保留原文的换行数，但把换行放在本来就需要空格的位置（中文与拉丁字母之间、标签旁），或放在段落开头和结尾。

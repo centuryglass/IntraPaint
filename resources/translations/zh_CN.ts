@@ -6,72 +6,72 @@
     <message>
         <location filename="../../src/config/a1111_config.py"/>
         <source>key "{key}" had unexpected type {value_type}, value {value}</source>
-        <translation type="unfinished"></translation>
+        <translation>配置项“{key}”的类型 {value_type} 不符合预期，值为 {value}</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Stable Diffusion model:</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion 模型：</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Active image generation model</source>
-        <translation type="unfinished"></translation>
+        <translation>当前使用的图像生成模型</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Stable Diffusion</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Stable Diffusion WebUI image generator</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion WebUI 图像生成器</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Only keep one model on GPU/TPU</source>
-        <translation type="unfinished"></translation>
+        <translation>仅在 GPU/TPU 上保留一个模型</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>If selected, checkpoints after the first are cached in RAM instead</source>
-        <translation type="unfinished"></translation>
+        <translation>选中后，第一个之后的模型改为缓存在内存（RAM）中</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Max checkpoints loaded:</source>
-        <translation type="unfinished"></translation>
+        <translation>最多加载的模型数：</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Number of image generation models to keep in memory.</source>
-        <translation type="unfinished"></translation>
+        <translation>在内存中保留的图像生成模型数量。</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Stable Diffusion VAE model:</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion VAE 模型：</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>VAE model used for final image data creation.</source>
-        <translation type="unfinished"></translation>
+        <translation>用于生成最终图像数据的 VAE 模型。</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Stable Diffusion VAE models cached:</source>
-        <translation type="unfinished"></translation>
+        <translation>缓存的 Stable Diffusion VAE 模型数：</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>Number of VAE models to keep in memory.</source>
-        <translation type="unfinished"></translation>
+        <translation>在内存中保留的 VAE 模型数量。</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
         <source>CLIP skip:</source>
-        <translation type="unfinished"></translation>
+        <translation>CLIP 跳过层：</translation>
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
@@ -6182,102 +6182,102 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>{ready} of {total} ready</source>
-        <translation type="unfinished"></translation>
+        <translation>已就绪 {ready}/{total}</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>{ready} of {total} ready - {progress}</source>
-        <translation type="unfinished"></translation>
+        <translation>已就绪 {ready}/{total} - {progress}</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Only inpainted options have a selection.</source>
-        <translation type="unfinished"></translation>
+        <translation>只有局部重绘的选项才有选区。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Original image content</source>
-        <translation type="unfinished"></translation>
+        <translation>原始图像内容</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Current image content</source>
-        <translation type="unfinished"></translation>
+        <translation>当前图像内容</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Option {index}</source>
-        <translation type="unfinished"></translation>
+        <translation>选项 {index}</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Select this option</source>
-        <translation type="unfinished"></translation>
+        <translation>选择此选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Save to new file</source>
-        <translation type="unfinished"></translation>
+        <translation>保存为新文件</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Send to new layer</source>
-        <translation type="unfinished"></translation>
+        <translation>发送到新图层</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Saved image option to {image_path}</source>
-        <translation type="unfinished"></translation>
+        <translation>已将图像选项保存到“{image_path}”</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Created new layer "{layer_name}"</source>
-        <translation type="unfinished"></translation>
+        <translation>已创建新图层“{layer_name}”</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Cancelled saving image option to file.</source>
-        <translation type="unfinished"></translation>
+        <translation>已取消将图像选项保存到文件。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Failed to insert into layer "{layer_name}"</source>
-        <translation type="unfinished"></translation>
+        <translation>无法插入到图层“{layer_name}”中</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Changes were blocked because the layer is locked. </source>
-        <translation type="unfinished"></translation>
+        <translation>更改被阻止，因为该图层已锁定。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Changes were blocked because the layer is hidden. </source>
-        <translation type="unfinished"></translation>
+        <translation>更改被阻止，因为该图层已隐藏。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>The active layer is not an image layer, image content cannot be inserted. </source>
-        <translation type="unfinished"></translation>
+        <translation>当前图层不是图像图层，无法插入图像内容。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>The layer or a group around it uses a blend mode, opacity or isolation that would change how the result looks. </source>
-        <translation type="unfinished"></translation>
+        <translation>该图层或其所在的组使用了会改变结果外观的混合模式、不透明度或隔离设置。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>A layer above it draws over the edited area, which would show the result twice. </source>
-        <translation type="unfinished"></translation>
+        <translation>其上方的图层覆盖了编辑区域，结果会显示两次。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Image content was added as new layer "{new_layer_name}" at the top of the layer stack</source>
-        <translation type="unfinished"></translation>
+        <translation>图像内容已作为新图层“{new_layer_name}”添加到图层堆栈顶部。</translation>
     </message>
     <message numerus="yes">
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>{mode}, {width} x {height}, %n option(s)</source>
-        <translation type="unfinished"><numerusform></numerusform></translation>
+        <translation><numerusform>{mode}，{width} x {height}，%n 个选项</numerusform></translation>
     </message>
 </context>
 <context>
@@ -6285,37 +6285,37 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Original</source>
-        <translation type="unfinished"></translation>
+        <translation>原图</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Current</source>
-        <translation type="unfinished"></translation>
+        <translation>当前</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>{label} of {count}</source>
-        <translation type="unfinished"></translation>
+        <translation>{label}（共 {count} 个）</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Hold {key} to compare</source>
-        <translation type="unfinished"></translation>
+        <translation>按住 {key} 对比</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Click to use</source>
-        <translation type="unfinished"></translation>
+        <translation>点击使用</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Generating</source>
-        <translation type="unfinished"></translation>
+        <translation>正在生成</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Waiting</source>
-        <translation type="unfinished"></translation>
+        <translation>等待中</translation>
     </message>
 </context>
 <context>
@@ -6323,157 +6323,157 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Choose a result</source>
-        <translation type="unfinished"></translation>
+        <translation>选择结果</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Grid</source>
-        <translation type="unfinished"></translation>
+        <translation>网格</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Single</source>
-        <translation type="unfinished"></translation>
+        <translation>单张</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Show every option</source>
-        <translation type="unfinished"></translation>
+        <translation>显示所有选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Show the focused option up close</source>
-        <translation type="unfinished"></translation>
+        <translation>放大显示当前选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>View</source>
-        <translation type="unfinished"></translation>
+        <translation>视图</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Show selection, zoom to changes and full resolution</source>
-        <translation type="unfinished"></translation>
+        <translation>显示选区、缩放到更改区域和全分辨率</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Zoom to changes</source>
-        <translation type="unfinished"></translation>
+        <translation>缩放到更改区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Show selection</source>
-        <translation type="unfinished"></translation>
+        <translation>显示选区</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Full resolution</source>
-        <translation type="unfinished"></translation>
+        <translation>全分辨率</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>取消</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Stop generating and return to the editor.</source>
-        <translation type="unfinished"></translation>
+        <translation>停止生成并返回编辑器。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Close</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Close without choosing. These options stay available to re-open.</source>
-        <translation type="unfinished"></translation>
+        <translation>不做选择直接关闭。这些选项之后仍可重新打开。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Stop</source>
-        <translation type="unfinished"></translation>
+        <translation>停止</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Stop generating and keep the finished options.</source>
-        <translation type="unfinished"></translation>
+        <translation>停止生成，保留已完成的选项。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Stopping...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在停止...</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>‹ Previous</source>
-        <translation type="unfinished"></translation>
+        <translation>‹ 上一个</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Next ›</source>
-        <translation type="unfinished"></translation>
+        <translation>下一个 ›</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Previous option</source>
-        <translation type="unfinished"></translation>
+        <translation>上一个选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Next option</source>
-        <translation type="unfinished"></translation>
+        <translation>下一个选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Send to new layer</source>
-        <translation type="unfinished"></translation>
+        <translation>发送到新图层</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Save to file...</source>
-        <translation type="unfinished"></translation>
+        <translation>保存到文件...</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>More</source>
-        <translation type="unfinished"></translation>
+        <translation>更多</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Use option {index}</source>
-        <translation type="unfinished"></translation>
+        <translation>使用选项 {index}</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Keep original</source>
-        <translation type="unfinished"></translation>
+        <translation>保留原图</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Keep current</source>
-        <translation type="unfinished"></translation>
+        <translation>保留当前图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Use original</source>
-        <translation type="unfinished"></translation>
+        <translation>使用原图</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Apply the focused option and return to the editor.</source>
-        <translation type="unfinished"></translation>
+        <translation>应用当前选项并返回编辑器。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>This option is still generating.</source>
-        <translation type="unfinished"></translation>
+        <translation>此选项仍在生成中。</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Controls</source>
-        <translation type="unfinished"></translation>
+        <translation>控制提示</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
@@ -6498,12 +6498,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>{keys} hold: original</source>
-        <translation type="unfinished"></translation>
+        <translation>{keys} 按住查看原图</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>{keys} back to grid</source>
-        <translation type="unfinished"></translation>
+        <translation>{keys} 返回网格</translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
@@ -6518,7 +6518,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>{v_scroll_icon} zoom</source>
-        <translation type="unfinished"></translation>
+        <translation>{v_scroll_icon} 缩放</translation>
     </message>
 </context>
 <context>
@@ -7690,263 +7690,265 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>ControlNet</source>
-        <translation type="unfinished"></translation>
+        <translation>ControlNet</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>WebUI</source>
-        <translation type="unfinished"></translation>
+        <translation>WebUI</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>ComfyUI</source>
-        <translation type="unfinished"></translation>
+        <translation>ComfyUI</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Reset this unit to its default settings</source>
-        <translation type="unfinished"></translation>
+        <translation>将此控制单元重置为默认设置</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>{unit_number} {control_type}</source>
         <comment>ControlNet unit tab title</comment>
-        <translation type="unfinished"></translation>
+        <translation>{unit_number} {control_type}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Unit {unit_number}: on</source>
-        <translation type="unfinished"></translation>
+        <translation>控制单元 {unit_number}：已启用</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Unit {unit_number}: off</source>
-        <translation type="unfinished"></translation>
+        <translation>控制单元 {unit_number}：未启用</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Unit {unit_number}: on, skipped outside Inpaint mode</source>
-        <translation type="unfinished"></translation>
+        <translation>控制单元 {unit_number}：已启用，非局部重绘模式下跳过</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Skipped outside Inpaint mode</source>
-        <translation type="unfinished"></translation>
+        <translation>非局部重绘模式下跳过</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>This preprocessor needs the inpainting mask, so requests skip the unit in other edit modes</source>
-        <translation type="unfinished"></translation>
+        <translation>此预处理器需要局部重绘蒙版，因此在其他编辑模式下，请求会跳过此控制单元</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Enabled</source>
-        <translation type="unfinished"></translation>
+        <translation>启用</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Apply this ControlNet unit when generating images</source>
-        <translation type="unfinished"></translation>
+        <translation>生成图像时应用此控制单元</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Edit settings</source>
-        <translation type="unfinished"></translation>
+        <translation>编辑设置</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Hide settings</source>
-        <translation type="unfinished"></translation>
+        <translation>隐藏设置</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Change the unit's settings without turning it on</source>
-        <translation type="unfinished"></translation>
+        <translation>修改此控制单元的设置，但不启用它</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Unit</source>
-        <translation type="unfinished"></translation>
+        <translation>控制单元</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Control image</source>
-        <translation type="unfinished"></translation>
+        <translation>控制图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Preprocessor</source>
-        <translation type="unfinished"></translation>
+        <translation>预处理器</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Strength</source>
-        <translation type="unfinished"></translation>
+        <translation>强度</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Preview</source>
         <comment>Preprocessor preview section title</comment>
-        <translation type="unfinished"></translation>
+        <translation>预览</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Generation area</source>
-        <translation type="unfinished"></translation>
+        <translation>生成区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Image file</source>
-        <translation type="unfinished"></translation>
+        <translation>图像文件</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Use the generation area's content as the control image</source>
-        <translation type="unfinished"></translation>
+        <translation>使用生成区域的内容作为控制图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Use an image file as the control image</source>
-        <translation type="unfinished"></translation>
+        <translation>使用图像文件作为控制图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Image file path</source>
-        <translation type="unfinished"></translation>
+        <translation>图像文件路径</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>...</source>
         <comment>Button that opens a file picker</comment>
-        <translation type="unfinished"></translation>
+        <translation>...</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Choose a control image file</source>
-        <translation type="unfinished"></translation>
+        <translation>选择控制图像文件</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Type</source>
-        <translation type="unfinished"></translation>
+        <translation>类型</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Model</source>
-        <translation type="unfinished"></translation>
+        <translation>模型</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>预览</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Show what the preprocessor makes of the control image</source>
-        <translation type="unfinished"></translation>
+        <translation>显示预处理器对控制图像的处理结果</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Low VRAM</source>
-        <translation type="unfinished"></translation>
+        <translation>低显存</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Pixel perfect</source>
-        <translation type="unfinished"></translation>
+        <translation>完美像素</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Weight</source>
-        <translation type="unfinished"></translation>
+        <translation>权重</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Start</source>
-        <translation type="unfinished"></translation>
+        <translation>开始</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>End</source>
-        <translation type="unfinished"></translation>
+        <translation>结束</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>generation area</source>
         <comment>Control image section summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>生成区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>no image</source>
         <comment>Control image section summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>无图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>{preprocessor}, {model}</source>
         <comment>Preprocessor section summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>{preprocessor}，{model}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>weight {weight}, steps {start}-{end}</source>
         <comment>Strength section summary</comment>
-        <translation type="unfinished"></translation>
+        <translatorcomment>glossary: not "Steps" - the start and end values are fractions of the sampling steps, so they take the glossary's 时机 for the control step range, not 采样步数.</translatorcomment>
+        <translation>权重 {weight}，时机 {start}-{end}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>{control_type} · {preprocessor}</source>
         <comment>First line of a disabled unit's summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>{control_type} · {preprocessor}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Weight {weight}, steps {start}-{end}</source>
         <comment>A disabled unit's summary</comment>
-        <translation type="unfinished"></translation>
+        <translatorcomment>glossary: not "Steps" - the start and end values are fractions of the sampling steps, so they take the glossary's 时机 for the control step range, not 采样步数.</translatorcomment>
+        <translation>权重 {weight}，时机 {start}-{end}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Image file: {file_name}</source>
         <comment>A disabled unit's summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>图像文件：{file_name}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Control image: generation area</source>
         <comment>A disabled unit's summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>控制图像：生成区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Control weight:</source>
-        <translation type="unfinished"></translation>
+        <translation>控制强度：</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Starting control step:</source>
-        <translation type="unfinished"></translation>
+        <translation>控制介入时机：</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Ending control step:</source>
-        <translation type="unfinished"></translation>
+        <translation>控制结束时机：</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>A multiplier that controls how strongly the ControlNet unit will affect image generation.</source>
-        <translation type="unfinished"></translation>
+        <translation>一个倍数，控制此控制单元对图像生成的影响强度。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>The step in the image generation process where the ControlNet unit will be enabled, as a fraction of the total step count.</source>
-        <translation type="unfinished"></translation>
+        <translation>图像生成过程中启用此控制单元的时机，以占总采样步数的比例表示。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>The step in the image generation process where the ControlNet unit will be disabled, as a fraction of the total step count.</source>
-        <translation type="unfinished"></translation>
+        <translation>图像生成过程中停用此控制单元的时机，以占总采样步数的比例表示。</translation>
     </message>
 </context>
 <context>
@@ -7954,32 +7956,32 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
         <source>Model loading</source>
-        <translation type="unfinished"></translation>
+        <translation>模型加载</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
         <source>Encoding</source>
-        <translation type="unfinished"></translation>
+        <translation>编码</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
         <source>Tiled VAE encoding</source>
-        <translation type="unfinished"></translation>
+        <translation>分块 VAE 编码</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
         <source>{config} config</source>
-        <translation type="unfinished"></translation>
+        <translation>{config} 配置</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
         <source>inpainting model</source>
-        <translation type="unfinished"></translation>
+        <translation>局部重绘模型</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
         <source>tiled VAE {size}</source>
-        <translation type="unfinished"></translation>
+        <translation>分块 VAE {size}</translation>
     </message>
 </context>
 <context>
@@ -8020,198 +8022,198 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Image generation</source>
-        <translation type="unfinished"></translation>
+        <translation>图像生成</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>WebUI</source>
-        <translation type="unfinished"></translation>
+        <translation>WebUI</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>ComfyUI</source>
-        <translation type="unfinished"></translation>
+        <translation>ComfyUI</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Mask</source>
-        <translation type="unfinished"></translation>
+        <translation>蒙版</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Sampling</source>
-        <translation type="unfinished"></translation>
+        <translation>采样</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Size and batch</source>
-        <translation type="unfinished"></translation>
+        <translation>尺寸与批次</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Advanced</source>
-        <translation type="unfinished"></translation>
+        <translation>高级</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Inpainting and size</source>
-        <translation type="unfinished"></translation>
+        <translation>局部重绘与尺寸</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Model</source>
-        <translation type="unfinished"></translation>
+        <translation>模型</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>CFG scale</source>
-        <translation type="unfinished"></translation>
+        <translation>CFG Scale</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Steps</source>
-        <translation type="unfinished"></translation>
+        <translation>采样步数</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Negative prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>负面提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Last seed {seed}</source>
-        <translation type="unfinished"></translation>
+        <translation>上次随机种子 {seed}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>whole area</source>
         <comment>Inpaint context while it covers the whole generation area</comment>
-        <translation type="unfinished"></translation>
+        <translation>整个区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Inpainting ignores the context limit while tiling is on.</source>
-        <translation type="unfinished"></translation>
+        <translation>平铺开启时，局部重绘会忽略周边范围限制。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Tiling on</source>
-        <translation type="unfinished"></translation>
+        <translation>平铺已开启</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Generated images tile, and inpainting ignores the context limit. Click to turn tiling off.</source>
-        <translation type="unfinished"></translation>
+        <translation>生成的图像可无缝平铺，局部重绘会忽略周边范围限制。点击关闭平铺。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>LoRA</source>
-        <translation type="unfinished"></translation>
+        <translation>LoRA</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Choose LoRA models to add to the prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>选择要添加到提示词中的 LoRA 模型</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Styles</source>
-        <translation type="unfinished"></translation>
+        <translation>风格模板</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Add saved prompt styles to the prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>将已保存的风格模板添加到提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Describe</source>
-        <translation type="unfinished"></translation>
+        <translation>反推提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Replace the prompt with a description of the generation area</source>
-        <translation type="unfinished"></translation>
+        <translation>用生成区域内容的描述替换提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Select image generator...</source>
-        <translation type="unfinished"></translation>
+        <translation>选择图像生成器...</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Stable Diffusion settings...</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion 设置...</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>LCM mode</source>
-        <translation type="unfinished"></translation>
+        <translation>LCM 模式</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Clear GPU memory</source>
-        <translation type="unfinished"></translation>
+        <translation>清理显存</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Remove cached models from GPU memory in ComfyUI.</source>
-        <translation type="unfinished"></translation>
+        <translation>从 ComfyUI 的显存中移除缓存的模型。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Image to image: ignores the mask</source>
-        <translation type="unfinished"></translation>
+        <translation>图生图：忽略蒙版</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Text to image: ignores the canvas</source>
-        <translation type="unfinished"></translation>
+        <translation>文生图：忽略画布</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>{count} x {width}x{height}</source>
         <comment>Generate button summary: image count and size</comment>
-        <translation type="unfinished"></translation>
+        <translation>{count} 张，{width}x{height}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Setup...</source>
-        <translation type="unfinished"></translation>
+        <translation>设置...</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>blur {blur}</source>
         <comment>Mask section summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>模糊 {blur}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>blur {blur}, soft inpainting</source>
         <comment>Mask section summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>模糊 {blur}，柔和局部重绘</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>seed {seed}, {sampler}</source>
         <comment>Sampling section summary while the seed is fixed</comment>
-        <translation type="unfinished"></translation>
+        <translation>随机种子 {seed}，{sampler}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>{width} x {height}, count {count}</source>
         <comment>Size and batch section summary</comment>
-        <translation type="unfinished"></translation>
+        <translation>{width} x {height}，{count} 批</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>defaults</source>
-        <translation type="unfinished"></translation>
+        <translation>默认</translation>
     </message>
 </context>
 <context>
@@ -8219,12 +8221,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/generators/soft_inpainting_controls.py"/>
         <source>Soft inpainting settings</source>
-        <translation type="unfinished"></translation>
+        <translation>柔和局部重绘设置</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/soft_inpainting_controls.py"/>
         <source>Soft inpainting works best with a mask blur of {blur} or more: the blurred edge sets how gradually the content changes.</source>
-        <translation type="unfinished"></translation>
+        <translation>蒙版模糊为 {blur} 或以上时，柔和局部重绘效果最好：模糊的边缘决定内容变化的渐变程度。</translation>
     </message>
 </context>
 <context>
@@ -8232,27 +8234,27 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/generators/testing_panel.py"/>
         <source>Test generator</source>
-        <translation type="unfinished"></translation>
+        <translation>测试生成器</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/testing_panel.py"/>
         <source>--mode mock</source>
-        <translation type="unfinished"></translation>
+        <translation>--mode mock</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/testing_panel.py"/>
         <source>Inpaint</source>
-        <translation type="unfinished"></translation>
+        <translation>局部重绘</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/testing_panel.py"/>
         <source>Img2img</source>
-        <translation type="unfinished"></translation>
+        <translation>图生图</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/testing_panel.py"/>
         <source>Txt2img</source>
-        <translation type="unfinished"></translation>
+        <translation>文生图</translation>
     </message>
 </context>
 <context>
@@ -8260,48 +8262,48 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>Seed variation</source>
-        <translation type="unfinished"></translation>
+        <translation>差异种子</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>Output</source>
-        <translation type="unfinished"></translation>
+        <translation>输出</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>Last variation seed {seed}</source>
-        <translation type="unfinished"></translation>
+        <translation>上次差异种子 {seed}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>Resize seed from</source>
-        <translation type="unfinished"></translation>
+        <translation>从以下分辨率调整随机种子</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>Off</source>
         <comment>Variation strength is zero</comment>
-        <translation type="unfinished"></translation>
+        <translation>关闭</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>variation {strength}</source>
-        <translation type="unfinished"></translation>
+        <translation>差异强度 {strength}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>tiling</source>
-        <translation type="unfinished"></translation>
+        <translation>平铺</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>restore faces</source>
-        <translation type="unfinished"></translation>
+        <translation>面部修复</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
         <source>seed resize</source>
-        <translation type="unfinished"></translation>
+        <translation>随机种子尺寸调整</translation>
     </message>
 </context>
 <context>
@@ -8855,17 +8857,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Position and size</source>
-        <translation type="unfinished"></translation>
+        <translation>位置和大小</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Size presets</source>
-        <translation type="unfinished"></translation>
+        <translation>预设尺寸</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Sent to generator</source>
-        <translation type="unfinished"></translation>
+        <translation>发送给生成器</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
@@ -8875,37 +8877,37 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Recent</source>
-        <translation type="unfinished"></translation>
+        <translation>最近</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Custom</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Full image</source>
-        <translation type="unfinished"></translation>
+        <translation>整张图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Square</source>
-        <translation type="unfinished"></translation>
+        <translation>正方形</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Previous</source>
-        <translation type="unfinished"></translation>
+        <translation>上次</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to cover the entire image.</source>
-        <translation type="unfinished"></translation>
+        <translation>将生成区域调整为覆盖整张图像。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to the largest square that fits in the image.</source>
-        <translation type="unfinished"></translation>
+        <translation>将生成区域调整为图像内能容纳的最大正方形。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
@@ -8915,22 +8917,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to a recently used size.</source>
-        <translation type="unfinished"></translation>
+        <translation>将生成区域调整为最近使用过的大小。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Sizes you use appear here.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用过的尺寸会显示在这里。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>-</source>
-        <translation type="unfinished"></translation>
+        <translation>-</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>768 or 640x480</source>
-        <translation type="unfinished"></translation>
+        <translation>768 或 640x480</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
@@ -8955,12 +8957,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Edit</source>
-        <translation type="unfinished"></translation>
+        <translation>编辑</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Change the resolution and resolution rule in the Image generation panel.</source>
-        <translation type="unfinished"></translation>
+        <translation>在“图像生成”面板中修改分辨率和分辨率规则。</translation>
     </message>
 </context>
 <context>
@@ -10178,42 +10180,42 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>LoRA Models</source>
-        <translation type="unfinished"></translation>
+        <translation>LoRA 模型</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>Close</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>LoRA</source>
-        <translation type="unfinished"></translation>
+        <translation>LoRA</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>Search LoRA models</source>
-        <translation type="unfinished"></translation>
+        <translation>搜索 LoRA 模型</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>Weight</source>
-        <translation type="unfinished"></translation>
+        <translation>权重</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>Weight of the selected LoRA in the prompt. Add the LoRA to the prompt to change it.</source>
-        <translation type="unfinished"></translation>
+        <translation>所选 LoRA 在提示词中的权重。将该 LoRA 添加到提示词后才能修改。</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>In prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>已在提示词中</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>No LoRA models match the search.</source>
-        <translation type="unfinished"></translation>
+        <translation>没有与搜索匹配的 LoRA 模型。</translation>
     </message>
 </context>
 <context>
@@ -10846,42 +10848,42 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Saved Prompt Styles</source>
-        <translation type="unfinished"></translation>
+        <translation>已保存的风格模板</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Name:</source>
-        <translation type="unfinished"></translation>
+        <translation>名称：</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Prompt:</source>
-        <translation type="unfinished"></translation>
+        <translation>提示词：</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Negative:</source>
-        <translation type="unfinished"></translation>
+        <translation>负面提示词：</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Add to prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>添加到提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Replace prompt</source>
-        <translation type="unfinished"></translation>
+        <translation>替换提示词</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Save changes</source>
-        <translation type="unfinished"></translation>
+        <translation>保存更改</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/prompt_style_window.py"/>
         <source>Close</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭</translation>
     </message>
 </context>
 <context>
