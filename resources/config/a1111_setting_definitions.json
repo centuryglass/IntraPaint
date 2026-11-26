@@ -50,7 +50,7 @@
     "label": "CLIP skip:",
     "category": "Stable Diffusion",
     "subcategory": "Stable Diffusion WebUI image generator",
-    "description": "Number of final image generation steps taken without prompt guidance.",
+    "description": "How many of the text encoder's final layers to skip when reading the prompt.",
     "type": "int",
     "range_options": {
       "min": 1,

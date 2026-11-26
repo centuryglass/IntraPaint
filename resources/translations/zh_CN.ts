@@ -75,7 +75,7 @@
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
-        <source>Number of final image generation steps taken without prompt guidance.</source>
+        <source>How many of the text encoder's final layers to skip when reading the prompt.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1979,7 +1979,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.</source>
+        <source>How many of the text encoder's final layers to skip when reading the prompt. Usually best left at one, but some models produce better results at two.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
