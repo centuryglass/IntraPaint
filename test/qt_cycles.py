@@ -10,6 +10,10 @@ collection frees something turns `gc.DEBUG_SAVEALL` off around it.
 Only wrappers of objects that C++ can point to count (`TRACKED_TYPES`). Value types such as `QColor`, and mocks that
 pass `isinstance` checks for a Qt class, are safe to free at any time.
 
+A `MagicMock` always sits in reference cycles, so a widget passed to one, such as a patched dialog's parent window, is
+freed only by a cyclic collection and can fail the check. A test that patches a function its code calls with a widget
+calls the mock's `reset_mock()` once its assertions are done.
+
 A test fails when it leaves any such wrappers in cycles.
 
 Counts differ between Python versions, since each version leaves different garbage, so they are checked only on
