@@ -51,7 +51,7 @@ from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack, UndoStackRef
 from src.util.layout import add_layout, clear_grid
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
-from src.util.shared_text import keys_tooltip
+from src.util.shared_text import join_display_list, keys_tooltip
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.image_utils import get_color_icon
 
@@ -719,11 +719,11 @@ class TextToolPanel(FitToolPanel):
         parts = [button.toolTip() for button in self._style_toggles if button.isChecked()]
         parts += [segment.label for segment in self._alignment_control.segments
                   if segment.value == self._alignment_control.value()]
-        return ', '.join(parts)
+        return join_display_list(parts)
 
     def _advanced_summary(self) -> str:
-        return ', '.join([self._stretch_field.value_text()]
-                         + [button.toolTip() for button in self._advanced_toggles if button.isChecked()])
+        return join_display_list([self._stretch_field.value_text()]
+                                 + [button.toolTip() for button in self._advanced_toggles if button.isChecked()])
 
     def _preview_summary(self) -> str:
         return PREVIEW_OVERFLOWS if text_overflows(self._text_rect) else PREVIEW_FITS

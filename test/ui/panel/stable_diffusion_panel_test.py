@@ -1,6 +1,6 @@
 """Tests the Stable Diffusion generation panel: its sections, the action block, edit mode handling, bindings to config
 values, prompt tools, More menu, Advanced section and where each control sits in both orientations."""
-from PySide6.QtCore import QEvent, QPoint, QPointF, QSize, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, QSize, Qt, QTranslator
 from PySide6.QtGui import QKeyEvent, QPalette, QWheelEvent
 from PySide6.QtWidgets import QApplication, QBoxLayout, QPushButton, QScrollArea, QWidget
 
@@ -20,11 +20,13 @@ from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_T
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
                                                             SECTION_TITLE_SIZE, StableDiffusionPanel)
 from src.ui.panel.generators.field_pair import FieldPair
-from src.ui.panel.generators.webui_advanced_controls import VARIATION_OFF, WebUIAdvancedControls
+from src.ui.panel.generators.webui_advanced_controls import (SUMMARY_RESTORE_FACES, SUMMARY_TILING, VARIATION_OFF,
+                                                           WebUIAdvancedControls)
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.translation import TRANSLATION_DIR
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
 from test.ui.panel_capture import PanelHost, tell_orientation
@@ -431,6 +433,27 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertTrue(self._visible(rows))
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
         self.assertFalse(self._visible(rows))
+
+    def test_webui_advanced_summary_uses_the_catalog_list_separator(self) -> None:
+        """Simplified Chinese uses an enumeration comma between options, while English keeps comma-space."""
+        controls = self.panel.advanced_controls
+        assert isinstance(controls, WebUIAdvancedControls)
+        cache = Cache()
+        cache.set(Cache.WEBUI_SUBSEED_STRENGTH, 0.0)
+        cache.set(Cache.WEBUI_SEED_RESIZE_ENABLED, False)
+        cache.set(Cache.WEBUI_TILING, True)
+        cache.set(Cache.WEBUI_RESTORE_FACES, True)
+        self.assertEqual(controls.summary(), f'{SUMMARY_TILING}, {SUMMARY_RESTORE_FACES}')
+
+        app = QApplication.instance()
+        assert isinstance(app, QApplication)
+        translator = QTranslator()
+        self.assertTrue(translator.load(f'{TRANSLATION_DIR}/zh_CN.qm'))
+        self.assertTrue(app.installTranslator(translator))
+        try:
+            self.assertEqual(controls.summary(), f'{SUMMARY_TILING}、{SUMMARY_RESTORE_FACES}')
+        finally:
+            app.removeTranslator(translator)
 
     def test_variation_strength_reads_off_at_zero(self) -> None:
         """Zero variation strength shows "Off"."""

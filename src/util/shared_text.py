@@ -3,6 +3,7 @@
 This module calls `_tr` when it is first imported, so it must not be imported before the translator is installed.
 Path, flag and numeric constants that startup code needs earlier are in `src.util.shared_constants`.
 """
+from collections.abc import Iterable
 from typing import Optional
 
 from PIL import Image
@@ -17,6 +18,11 @@ TR_ID = 'util.shared_text'
 def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
+
+
+def join_display_list(parts: Iterable[str]) -> str:
+    """Joins UI fragments using the list separator from the active translation."""
+    return _tr(', ', 'Separator between items in a display list').join(parts)
 
 
 # Display text:

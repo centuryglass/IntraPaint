@@ -10,6 +10,7 @@ from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.generators.stable_diffusion_panel import (SUMMARY_ADVANCED_DEFAULT, AdvancedControls, LabeledRows,
                                                             config_slider_field, group_label)
 from src.ui.input_fields.field_factory import create_control_widget
+from src.util.shared_text import join_display_list
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.webui_advanced_controls'
@@ -90,7 +91,7 @@ class WebUIAdvancedControls(AdvancedControls):
             parts.append(SUMMARY_TILING)
         if cache.get(Cache.WEBUI_RESTORE_FACES):
             parts.append(SUMMARY_RESTORE_FACES)
-        return ', '.join(parts) if parts else SUMMARY_ADVANCED_DEFAULT
+        return join_display_list(parts) if parts else SUMMARY_ADVANCED_DEFAULT
 
     def change_signals(self) -> list:
         """Returns the signals of the controls that `summary` reads."""
