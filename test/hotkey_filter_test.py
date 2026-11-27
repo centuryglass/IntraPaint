@@ -23,7 +23,7 @@ class HotkeyFilterTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.action = MagicMock(return_value=True)
-        HotkeyFilter.instance().register_keybinding(BINDING_ID, self.action, QKeySequence(Qt.Key.Key_F12))
+        HotkeyFilter().register_keybinding(BINDING_ID, self.action, QKeySequence(Qt.Key.Key_F12))
         self.widget = QWidget()
         self.widget.winId()  # Creates the QWindow.
         window = self.widget.windowHandle()
@@ -45,14 +45,14 @@ class HotkeyFilterTest(IntraPaintTestCase):
 
     def test_key_sent_to_widget_skips_bindings(self) -> None:
         """A key press sent straight to a widget doesn't pass through a QWindow, so no binding sees it."""
-        HotkeyFilter.instance().watch_window(self.window)
+        HotkeyFilter().watch_window(self.window)
         QApplication.sendEvent(self.widget, _key_press())
         self.action.assert_not_called()
 
     def test_watching_twice_runs_binding_once(self) -> None:
         """Watching a window again doesn't install the filter a second time."""
-        HotkeyFilter.instance().watch_window(self.window)
-        HotkeyFilter.instance().watch_window(self.window)
+        HotkeyFilter().watch_window(self.window)
+        HotkeyFilter().watch_window(self.window)
         self.action.return_value = False
         QApplication.sendEvent(self.window, _key_press())
         self.action.assert_called_once()
@@ -66,7 +66,7 @@ class HotkeyFilterTest(IntraPaintTestCase):
         target = QWidget(main)
         for widget in (floating, main):
             widget.show()
-        hotkeys = HotkeyFilter.instance()
+        hotkeys = HotkeyFilter()
         hotkeys.set_default_focus(target)
         escape = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
         # Offscreen windows never become active, so report the field as focused directly.
@@ -78,7 +78,7 @@ class HotkeyFilterTest(IntraPaintTestCase):
     def test_modifiers_in_key_sequence_are_required(self) -> None:
         """A binding registered as 'Shift+Z' runs only while Shift is held, and leaves plain Z unbound."""
         action = MagicMock(return_value=True)
-        hotkeys = HotkeyFilter.instance()
+        hotkeys = HotkeyFilter()
         hotkeys.register_keybinding('hotkey_filter_test_shift_z', action, QKeySequence('Shift+Z'))
         z_press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Z, Qt.KeyboardModifier.NoModifier)
         for held, expect_handled in ((Qt.KeyboardModifier.NoModifier, False),
@@ -96,7 +96,7 @@ class HotkeyFilterZoomKeyTest(IntraPaintTestCase):
         super().setUp()
         self.zoom_out = MagicMock(return_value=True)
         self.zoom_in = MagicMock(return_value=True)
-        hotkeys = HotkeyFilter.instance()
+        hotkeys = HotkeyFilter()
         hotkeys.register_config_keybinding('zoom_key_test_out', self.zoom_out, KeyConfig.ZOOM_OUT)
         hotkeys.register_config_keybinding('zoom_key_test_in', self.zoom_in, KeyConfig.ZOOM_IN)
         self.widget = QWidget()
@@ -110,7 +110,7 @@ class HotkeyFilterZoomKeyTest(IntraPaintTestCase):
         # Offscreen key events don't update the application's focus or modifier state, so report them directly.
         with patch.object(QApplication, 'keyboardModifiers', new=staticmethod(lambda: modifiers)), \
                 patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: focused)):
-            HotkeyFilter.instance().eventFilter(self.window, QKeyEvent(QEvent.Type.KeyPress, key, modifiers))
+            HotkeyFilter().eventFilter(self.window, QKeyEvent(QEvent.Type.KeyPress, key, modifiers))
 
     def test_minus_zooms_out_unless_typing(self) -> None:
         """Minus zooms out with no text field focused, and types into the focused field otherwise."""
@@ -137,7 +137,7 @@ class HotkeyFilterHeldKeyTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.changes: list[bool] = []
-        self.filter = HotkeyFilter.instance()
+        self.filter = HotkeyFilter()
         self.filter.register_held_key('held_key_test', self.changes.append, KeyConfig.PAN_VIEW_KEY)
         self.widget = QWidget()
         self.widget.winId()  # Creates the QWindow.
@@ -197,7 +197,7 @@ class HotkeyFilterConfigRebindTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.filter = HotkeyFilter.instance()
+        self.filter = HotkeyFilter()
 
     def tearDown(self) -> None:
         self.filter.remove_keybinding('rebind_test')
@@ -252,7 +252,7 @@ class HotkeyFilterNumberFieldTest(IntraPaintTestCase):
         for key in (Qt.Key.Key_Right, Qt.Key.Key_F2, Qt.Key.Key_Space):
             action = MagicMock(return_value=True)
             self.bindings[key] = action
-            HotkeyFilter.instance().register_keybinding(f'number_field_test_{key}', action, QKeySequence(key))
+            HotkeyFilter().register_keybinding(f'number_field_test_{key}', action, QKeySequence(key))
 
     def _press(self, key: Qt.Key, focused: QWidget | None) -> None:
         with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: focused)):

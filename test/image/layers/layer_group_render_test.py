@@ -15,6 +15,7 @@ from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -569,7 +570,7 @@ class CachedCompositeTest(GroupRenderTestCase):
         """The view shows the full render of a stack with nested groups."""
         inner = self.add_group('inner', self.group, mode=CompositeMode.OVERLAY, opacity=0.5)
         self.add_layer('inner layer', QPoint(-4, 20), inner)
-        viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.image_stack.flush_render()
         self.assert_images_equal(displayed_image(viewer, self.image_stack), full_render(self.image_stack))
         clear_area(self.upper, QRect(0, 0, 12, 12))

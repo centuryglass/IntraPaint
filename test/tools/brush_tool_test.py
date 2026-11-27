@@ -245,7 +245,7 @@ class BrushToolTest(ToolTestCase):
         self.mouse_release(QPoint(50, 50))
         cursor = self.image_viewer.mapToGlobal(self.image_point_to_widget(QPoint(150, 150)))
         with patch('src.tools.brush_tool.QCursor.pos', return_value=cursor):
-            HotkeyFilter.instance().modifiers_changed.emit(modifiers)
+            HotkeyFilter().modifiers_changed.emit(modifiers)
         return self.brush_tool._preview_line.isVisible()
 
     def test_line_modifier_press_shows_line_preview(self) -> None:

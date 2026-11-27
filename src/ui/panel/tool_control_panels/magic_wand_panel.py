@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
@@ -33,8 +34,8 @@ class MagicWandPanel(SelectionPanel):
     the Fill tool shows, and have no effect in Holes mode, so the panel disables them there.
     """
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
-        super().__init__(selection_layer, selection_tool)
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, hotkey_filter: HotkeyFilter) -> None:
+        super().__init__(selection_layer, selection_tool, hotkey_filter)
         cache = Cache()
         self._area_control = SegmentedControl(
             [Segment(area.value, area.label, tooltip=area.tooltip) for area in FillArea], DisplayMode.LABEL,

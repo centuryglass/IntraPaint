@@ -73,9 +73,9 @@ def color_under_overlay(shown: QColor, overlay: QColor, opacity: float) -> QColo
 class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
 
-    def __init__(self, parent: Optional[QWidget], image_stack: ImageStack, use_keybindings=True) -> None:
-        super().__init__(parent, use_keybindings)
-        hotkey_filter = HotkeyFilter.instance()
+    def __init__(self, parent: Optional[QWidget], image_stack: ImageStack, hotkey_filter: HotkeyFilter,
+                 use_keybindings=True) -> None:
+        super().__init__(hotkey_filter, parent, use_keybindings)
         if hotkey_filter.default_focus() is None:
             hotkey_filter.set_default_focus(self)
         config = AppConfig()

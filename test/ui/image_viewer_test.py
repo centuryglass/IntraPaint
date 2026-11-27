@@ -10,6 +10,7 @@ import shiboken6
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
@@ -38,12 +39,12 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
     def test_viewer_created_after_pins_draws_them(self) -> None:
         """A viewer created while pins exist, like a navigation panel opened later, draws markers for them."""
         self.selection_layer.set_context_pins([QPoint(5, 5), QPoint(20, 40)])
-        viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.assertEqual(self._marker_count(viewer), 2)
 
     def test_markers_follow_pin_changes(self) -> None:
         """Markers are added and removed as pins change."""
-        viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.assertEqual(self._marker_count(viewer), 0)
         self.selection_layer.add_context_pin(QPoint(5, 5))
         self.assertEqual(self._marker_count(viewer), 1)
@@ -53,7 +54,7 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
     def test_marker_size_follows_view_size(self) -> None:
         """Resizing the view rescales existing markers, within the size limits."""
         self.selection_layer.set_context_pins([QPoint(5, 5)])
-        viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         viewer.resize(MARKER_REFERENCE_VIEW_SIDE * 2, MARKER_REFERENCE_VIEW_SIDE)
         viewer.resizeEvent(None)
         self.assertEqual(viewer.context_pin_marker_size, DEFAULT_MARKER_SIZE)
@@ -72,7 +73,7 @@ class ImageViewerManualResolutionLabelTest(IntraPaintTestCase):
         self.image_stack = ImageStack(QSize(512, 512), QSize(256, 256), QSize(8, 8), QSize(512, 512), UndoStack())
         self.image_stack.create_layer('Background')
         self.image_stack.generation_area = QRect(128, 128, 256, 256)
-        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.viewer.resize(600, 600)
         self.viewer.resizeEvent(None)
         self.viewer.set_generation_area_visible(True)
@@ -128,7 +129,7 @@ class ImageViewerSurroundTest(IntraPaintTestCase):
     def test_background_fills_with_canvas_surround(self) -> None:
         """Drawing the background fills the exposed area with the canvas surround color, before the image's tiles."""
         image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
-        viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, image_stack, HotkeyFilter(), use_keybindings=False)
         image = QImage(QSize(32, 32), QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(0)
         painter = QPainter(image)
@@ -167,7 +168,7 @@ class ImageViewerLifetimeTest(IntraPaintTestCase):
         """Deleting a viewer deletes its scene and disconnects its layer items, so layer changes don't reach them."""
         image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
         layer = image_stack.create_layer()
-        viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, image_stack, HotkeyFilter(), use_keybindings=False)
         scene = viewer.scene()
         layer_items = list(viewer._layer_items.values())  # pylint: disable=protected-access
         self.assertNotEqual(layer_items, [])
@@ -188,7 +189,7 @@ class ImageViewerOutsideHatchingTest(IntraPaintTestCase):
         super().setUp()
         self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
         self.layer = self.image_stack.create_layer('Layer')
-        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.hatching = self.viewer.outside_hatching
 
     def _move_layer(self, transform: QTransform) -> None:
@@ -323,7 +324,7 @@ class ImageViewerDropRoutingTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
-        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.window = QMainWindow()
         self.window.setCentralWidget(self.viewer)
         self.window.resize(300, 200)
@@ -355,7 +356,7 @@ class ImageViewerDropRoutingTest(IntraPaintTestCase):
     def test_claimed_drag_is_accepted_by_the_view(self) -> None:
         """A drag that `accepts_mime_data` claims is accepted at the view, which stops the
         drag's parent walk before it reaches the window."""
-        claiming = _DropClaimingViewer(None, self.image_stack, use_keybindings=False)
+        claiming = _DropClaimingViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         window = QMainWindow()
         window.setCentralWidget(claiming)
         window.resize(300, 200)

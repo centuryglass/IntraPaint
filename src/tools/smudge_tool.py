@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QApplication, QWidget
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
 from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
@@ -44,7 +43,7 @@ class SmudgeTool(BrushTool):  # type: ignore
                          image_stack, image_viewer, brush)
         self._control_panel = SmudgeToolPanel()
         cache = Cache()
-        key_filter = HotkeyFilter.instance()
+        key_filter = image_viewer.hotkey_filter
 
         def _size_update(size: int) -> None:
             self.brush_size = size

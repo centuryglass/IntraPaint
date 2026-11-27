@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QWidget
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.draw_tool import DrawTool
 from src.tools.eyedropper_tool import EyedropperTool
@@ -82,7 +83,7 @@ class ToolPanelTest(IntraPaintTestCase):
         super().setUp()
         test_size = QSize(512, 512)
         self._image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
-        self._image_panel = ImagePanel(self._image_stack)
+        self._image_panel = ImagePanel(self._image_stack, HotkeyFilter(), HotkeyFilter())
         self._tool_panel = ToolPanel()
         self._tool_panel.show()
 

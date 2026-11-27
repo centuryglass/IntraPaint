@@ -6,7 +6,6 @@ from PySide6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainterPath
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
@@ -50,7 +49,8 @@ class FreeSelectionTool(BaseTool):
         assert scene is not None
         self._scene = scene
         self._image_stack = image_stack
-        self._control_panel = FreeSelectionPanel(image_stack.selection_layer, self)
+        hotkey_filter = image_viewer.hotkey_filter
+        self._control_panel = FreeSelectionPanel(image_stack.selection_layer, self, hotkey_filter)
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._path_item = PathCreationItem(self._scene, image_stack.undo_stack)
         self._preview_line = TempDashedLineItem(scene)
@@ -62,8 +62,8 @@ class FreeSelectionTool(BaseTool):
                 return False
             self._close_and_select()
             return True
-        HotkeyFilter.instance().register_keybinding('FreeSelectionTool._close_on_enter', _close_on_enter,
-                                                    QKeySequence(Qt.Key.Key_Enter, Qt.Key.Key_Return))
+        hotkey_filter.register_keybinding('FreeSelectionTool._close_on_enter', _close_on_enter,
+                                          QKeySequence(Qt.Key.Key_Enter, Qt.Key.Key_Return))
 
         def _cancel_on_escape() -> bool:
             if not self.is_active or self._path_item.count == 0:
@@ -72,8 +72,8 @@ class FreeSelectionTool(BaseTool):
             self._preview_line.setVisible(False)
             self._path_item.clear_points()
             return True
-        HotkeyFilter.instance().register_keybinding(f'FreeSelectionTool_{id(self)}_cancel_on_escape',
-                                                    _cancel_on_escape, QKeySequence(Qt.Key.Key_Escape))
+        hotkey_filter.register_keybinding(f'FreeSelectionTool_{id(self)}_cancel_on_escape', _cancel_on_escape,
+                                          QKeySequence(Qt.Key.Key_Escape))
 
         self._path_item.first_handle_clicked.connect(self._first_handle_click_slot)
 

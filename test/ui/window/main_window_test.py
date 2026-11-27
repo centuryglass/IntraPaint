@@ -6,6 +6,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
@@ -23,7 +24,7 @@ class MainWindowTest(IntraPaintTestCase):
         test_size = QSize(512, 512)
         self._image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
         self._controller = Mock()
-        self.window = MainWindow(self._image_stack, AppStateTracker())
+        self.window = MainWindow(self._image_stack, AppStateTracker(), HotkeyFilter())
         self.window.show()
 
     @patch('src.util.visual.display_size.get_screen_size', new_callable=lambda: QSize(800, 600))

@@ -75,7 +75,7 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.drag_finished.connect(self._drag_finish_slot)
 
         # prepare control panel:
-        self._control_panel = LayerTransformToolPanel(image_stack)
+        self._control_panel = LayerTransformToolPanel(image_stack, image_viewer.hotkey_filter)
         self._control_panel.x_changed.connect(self.set_x)
         self._control_panel.y_changed.connect(self.set_y)
         self._control_panel.width_changed.connect(self.set_width)

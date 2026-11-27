@@ -242,10 +242,12 @@ class AppController(MenuBuilder):
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE),
                                        UndoStack())
         self._image_stack.has_layers_changed.connect(self._has_layers_changed_slot)
-        self._generation_area_controller = GenerationAreaController(self._image_stack, self._app_state)
+        self._hotkey_filter = HotkeyFilter()
+        self._generation_area_controller = GenerationAreaController(self._image_stack, self._app_state,
+                                                                    self._hotkey_filter)
 
         # Initialize main window:
-        self._window = MainWindow(self._image_stack, self._app_state)
+        self._window = MainWindow(self._image_stack, self._app_state, self._hotkey_filter)
         self._recent_files_menu: Optional[QMenu] = None
         self.menu_window = self._window
         self._image_io = ImageIO(self._window, self._image_stack, self._app_state, held_weakly(self._current_generator))
@@ -363,8 +365,7 @@ class AppController(MenuBuilder):
                                      (KeyConfig.CLEAR_SHORTCUT, self.clear),
                                      (KeyConfig.SWAP_COLORS_SHORTCUT, self.swap_colors),
                                      (KeyConfig.RESET_COLORS_SHORTCUT, self.reset_colors)):
-            HotkeyFilter.instance().register_config_keybinding(f'AppController_{binding_key}', handler,
-                                                               binding_key)
+            self._hotkey_filter.register_config_keybinding(f'AppController_{binding_key}', handler, binding_key)
         # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
         # that we don't need to recalculate that every time they become invalid for an active text field:
         self._can_copy_image = False

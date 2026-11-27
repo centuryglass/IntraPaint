@@ -10,6 +10,7 @@ from shiboken6 import delete
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.controller.tool_controller import ToolController
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY, caution_color
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -38,7 +39,7 @@ class DockRailTest(IntraPaintTestCase):
         use_procedural_layout(self)
         size = QSize(64, 64)
         image_stack = ImageStack(size, size, size, size, UndoStack())
-        self.window = MainWindow(image_stack, AppStateTracker())
+        self.window = MainWindow(image_stack, AppStateTracker(), HotkeyFilter())
         self.window.tools_dock.set_content(QLabel('tools'))
         self.window.generation_dock.set_content(QLabel('generation'))
         self.tool_controller = ToolController(image_stack, self.window.image_panel.image_viewer, use_hotkeys=False)

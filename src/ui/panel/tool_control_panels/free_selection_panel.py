@@ -3,6 +3,7 @@ from typing import Optional
 
 from PySide6.QtWidgets import QApplication, QLabel
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
@@ -24,8 +25,8 @@ FREE_SECTION_HINT = _tr('Click adds a point. Enter closes the shape and applies 
 class FreeSelectionPanel(SelectionPanel):
     """Selection panel for the FreeSelectionTool class: Mode, one line of instructions, then Selection."""
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
-        super().__init__(selection_layer, selection_tool)
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, hotkey_filter: HotkeyFilter) -> None:
+        super().__init__(selection_layer, selection_tool, hotkey_filter)
         hint = QLabel(FREE_SECTION_HINT)
         hint.setWordWrap(True)
         self.insert_into_layout(tool_section(FREE_SECTION_TITLE, hint))

@@ -101,7 +101,7 @@ class LayerTransformToolPanel(FitToolPanel):
     reset_signal = Signal()
     clear_signal = Signal()
 
-    def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, image_stack: ImageStack, hotkey_filter: HotkeyFilter, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._undo_stack = UndoStackRef(image_stack.undo_stack)
         self._geometry = GeometryBlock(show_scale=True, show_angle=True, integer=False, parent=self)
@@ -121,7 +121,7 @@ class LayerTransformToolPanel(FitToolPanel):
             return (self.isVisible() and self.isEnabled() and active_layer is not None and not active_layer.locked
                     and not active_layer.parent_locked)
 
-        bind_step_keys(self._geometry, HotkeyFilter.instance(), KeyConfig, _key_predicate)
+        bind_step_keys(self._geometry, hotkey_filter, KeyConfig, _key_predicate)
         self._geometry.ratioLockToggled.connect(self._lock_changed)
         self._geometry.temporaryLockToggled.connect(self._lock_changed)
 

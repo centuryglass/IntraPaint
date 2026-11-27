@@ -7,7 +7,6 @@ from PySide6.QtGui import QColor, Qt, QIcon, QBrush
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
@@ -68,7 +67,7 @@ class QtPaintBrushTool(BrushTool):
             # Register slider hotkeys:
             down_id = f'QtPaintCanvasTool_{id(self)}_opacity_down'
             up_id = f'QtPaintCanvasTool_{id(self)}_opacity_up'
-            key_filter = HotkeyFilter.instance()
+            key_filter = image_viewer.hotkey_filter
 
             def _update_opacity_offset(offset: float) -> bool:
                 offset *= 0.02  # offsets are int-based, scale to float range
@@ -101,7 +100,7 @@ class QtPaintBrushTool(BrushTool):
             # Register slider hotkeys:
             down_id = f'QtPaintCanvasTool_{id(self)}_hardness_down'
             up_id = f'QtPaintCanvasTool_{id(self)}_hardness_up'
-            key_filter = HotkeyFilter.instance()
+            key_filter = image_viewer.hotkey_filter
 
             def _update_hardness_offset(offset: float) -> bool:
                 offset *= 0.02  # offsets are int-based, scale to float range

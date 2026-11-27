@@ -57,7 +57,7 @@ class MagicWandTool(BaseTool):
         super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, MAGIC_WAND_LABEL, MAGIC_WAND_TOOLTIP,
                          QIcon(ICON_PATH_MAGIC_WAND_TOOL))
         self._image_stack = image_stack
-        self._control_panel = MagicWandPanel(image_stack.selection_layer, self)
+        self._control_panel = MagicWandPanel(image_stack.selection_layer, self, image_viewer.hotkey_filter)
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._color = QColor()
 

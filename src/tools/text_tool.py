@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import top_layer_at_point
 from src.image.layers.layer import Layer
@@ -54,7 +53,7 @@ class TextTool(BaseTool):
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
-        self._control_panel = TextToolPanel(image_stack.undo_stack)
+        self._control_panel = TextToolPanel(image_stack.undo_stack, image_viewer.hotkey_filter)
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._placement_outline = PlacementOutline(QPointF(), QSizeF(), image_stack.undo_stack)
@@ -71,7 +70,7 @@ class TextTool(BaseTool):
         def _use_fixed_aspect_ratio(modifiers: Qt.KeyboardModifier) -> None:
             self._placement_outline.preserve_aspect_ratio = KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER,
                                                                                     held_modifiers=modifiers)
-        HotkeyFilter.instance().modifiers_changed.connect(_use_fixed_aspect_ratio)
+        image_viewer.hotkey_filter.modifiers_changed.connect(_use_fixed_aspect_ratio)
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

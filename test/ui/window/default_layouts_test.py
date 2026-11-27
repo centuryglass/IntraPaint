@@ -7,6 +7,7 @@ from unittest.mock import patch
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QLabel
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.window import default_layouts
 from src.ui.window.default_layouts import LAYOUT_1080P, LAYOUT_4K_TALL, LAYOUT_SMALL, select_default_layout_state
@@ -68,7 +69,7 @@ class DefaultLayoutWindowTest(IntraPaintTestCase):
         super().tearDown()
 
     def _new_window(self) -> MainWindow:
-        window = MainWindow(self.image_stack, AppStateTracker())
+        window = MainWindow(self.image_stack, AppStateTracker(), HotkeyFilter())
         self.windows.append(window)
         for dock in window.docks:
             if dock is not window.controlnet_dock:

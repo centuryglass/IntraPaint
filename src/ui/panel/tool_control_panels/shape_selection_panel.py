@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
@@ -42,8 +43,8 @@ class ShapeSelectionPanel(SelectionPanel):
 
     tool_mode_changed = Signal(str)
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
-        super().__init__(selection_layer, selection_tool)
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, hotkey_filter: HotkeyFilter) -> None:
+        super().__init__(selection_layer, selection_tool, hotkey_filter)
         # Segment values are the `ShapeMode` names, so they never change with translation:
         self._shape_control = SegmentedControl(
             [Segment(mode.name, mode.display_text(), ICON_PATH_RECT if mode == ShapeMode.RECTANGLE

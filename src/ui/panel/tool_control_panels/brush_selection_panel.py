@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.selection_mode_bar import modifier_keys_text
@@ -38,8 +39,8 @@ class BrushSelectionPanel(SelectionPanel):
     """Selection panel for the SelectionBrushTool class: Mode, a Brush section with the Size field, then
     Selection."""
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
-        super().__init__(selection_layer, selection_tool, modifiers=SelectionModifiers.BRUSH)
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, hotkey_filter: HotkeyFilter) -> None:
+        super().__init__(selection_layer, selection_tool, hotkey_filter, modifiers=SelectionModifiers.BRUSH)
         cache = Cache()
         key_config = KeyConfig()
         minimum, maximum, step = cache.get_range(Cache.SELECTION_BRUSH_SIZE)

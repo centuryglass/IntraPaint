@@ -5,6 +5,7 @@ import sys
 from PySide6.QtCore import QPoint, QSize
 from PySide6.QtWidgets import QApplication
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.button_weight import ButtonWeight, button_weight
 from src.ui.input_fields.geometry_block import FIELD_NAMES, HEIGHT, SCALE_X, SCALE_Y, WIDTH
@@ -24,7 +25,7 @@ class LayerTransformToolPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, UndoStack())
-        self.panel = LayerTransformToolPanel(self.image_stack)
+        self.panel = LayerTransformToolPanel(self.image_stack, HotkeyFilter())
         self.lock_changes: list[bool] = []
         self.panel.preserve_aspect_ratio_changed.connect(self.lock_changes.append)
 

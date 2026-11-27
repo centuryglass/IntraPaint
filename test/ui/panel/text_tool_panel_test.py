@@ -7,6 +7,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
+from src.hotkey_filter import HotkeyFilter
 from src.image.text_rect import (SCALE_MODE_BOUNDS_TO_TEXT, SCALE_MODE_NONE, SCALE_MODE_TEXT_TO_BOUNDS, TextRect,
                                  TextRectKeys)
 from src.ui.input_fields.segmented_control import DisplayMode
@@ -24,7 +25,7 @@ class TextToolPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         Cache().set(Cache.TEXT_TOOL_PARAMS, '')
-        self.panel = TextToolPanel(UndoStack())
+        self.panel = TextToolPanel(UndoStack(), HotkeyFilter())
 
     def _stored_scale_mode(self) -> str:
         return json.loads(Cache().get(Cache.TEXT_TOOL_PARAMS))[TextRectKeys.AUTO_SCALE_MODE]
@@ -54,7 +55,7 @@ class TextToolPanelTest(IntraPaintTestCase):
     def test_stored_box_fit_loads(self) -> None:
         """A new panel shows the box-fit choice stored by the last one."""
         self.panel.box_fit_control.set_value(SCALE_MODE_BOUNDS_TO_TEXT)
-        self.assertEqual(TextToolPanel(UndoStack()).box_fit_control.value(), SCALE_MODE_BOUNDS_TO_TEXT)
+        self.assertEqual(TextToolPanel(UndoStack(), HotkeyFilter()).box_fit_control.value(), SCALE_MODE_BOUNDS_TO_TEXT)
 
     def test_fit_box_resizes_the_box(self) -> None:
         """With Fit box, typing resizes the W and H fields to the text."""

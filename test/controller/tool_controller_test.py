@@ -85,7 +85,7 @@ class ModifierDelegationTest(ToolTestCase):
         self.tool_controller.active_tool_changed.connect(self.tool_changes.append)
 
     def _set_modifiers(self, modifiers: Qt.KeyboardModifier) -> None:
-        HotkeyFilter.instance().modifiers_changed.emit(modifiers)
+        HotkeyFilter().modifiers_changed.emit(modifiers)
 
     def test_modifier_activates_delegate_and_release_restores_tool(self) -> None:
         """Holding a registered modifier activates its delegate, and releasing it restores the original tool."""

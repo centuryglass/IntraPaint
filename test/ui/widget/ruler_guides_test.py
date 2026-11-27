@@ -7,6 +7,7 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.panel.image_panel import ImagePanel, MENU_ACTION_CLEAR_GUIDES, MENU_ACTION_LOCK_GUIDES
@@ -92,7 +93,7 @@ class GuidePanelTestCase(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
-        self.panel = ImagePanel(self.image_stack, include_rulers=True)
+        self.panel = ImagePanel(self.image_stack, HotkeyFilter(), include_rulers=True)
         self.panel.resize(PANEL_SIZE)
         self.panel.show()
         self.viewer = self.panel.image_viewer

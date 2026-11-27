@@ -127,16 +127,19 @@ class MainWindow(QMainWindow):
     full_screen_changed = Signal(bool)  # Emitted when the window enters or leaves full screen, however it happened.
     """Emitted when `can_restore_previous_options` changes."""
 
-    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker):
+    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker, hotkey_filter: HotkeyFilter):
         """Builds the window around the canvas, with empty docks in the first-run layout.
 
         image_stack : ImageStack
             Image layers being edited.
         app_state : AppStateTracker
             Enables the canvas and docks by application state. The window sets it while generated images are shown.
+        hotkey_filter : HotkeyFilter
+            Handles the canvas, dock and generated image selector keys.
         """
         super().__init__()
         self._app_state = app_state
+        self._hotkey_filter = hotkey_filter
         self._was_full_screen = False
         # Called on every close request; returning False keeps the window open. None closes without asking.
         self.confirm_close: Optional[Callable[[], bool]] = None
@@ -156,7 +159,7 @@ class MainWindow(QMainWindow):
             def _dbg_layout():
                 layout_debug(self)
                 return True
-            HotkeyFilter.instance().register_keybinding('Debug_layout_dump', _dbg_layout, QKeySequence('Alt+U'))
+            hotkey_filter.register_keybinding('Debug_layout_dump', _dbg_layout, QKeySequence('Alt+U'))
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack
@@ -173,7 +176,7 @@ class MainWindow(QMainWindow):
         self._previous_options_available = False
 
         # The central widget shows the canvas, or the generated image selector in its place:
-        self._image_panel = ImagePanel(image_stack, include_rulers=True, include_navigation_button=True)
+        self._image_panel = ImagePanel(image_stack, hotkey_filter, include_rulers=True, include_navigation_button=True)
         self._image_panel.setContentsMargins(1, 1, 1, 1)
         self._main_widget = self._image_panel
         self._central_widget = QStackedWidget(self)
@@ -212,17 +215,22 @@ class MainWindow(QMainWindow):
         self.setCorner(Qt.Corner.BottomLeftCorner, Qt.DockWidgetArea.BottomDockWidgetArea)
         self.setCorner(Qt.Corner.BottomRightCorner, Qt.DockWidgetArea.BottomDockWidgetArea)
         self._tools_dock = PanelDock(TOOLS_DOCK_TITLE, DockID.TOOLS, self, app_state,
-                                     QIcon(ICON_PATH_TOOLS_DOCK), KeyConfig.SELECT_TOOL_TAB)
+                                     QIcon(ICON_PATH_TOOLS_DOCK), KeyConfig.SELECT_TOOL_TAB,
+                                     hotkey_filter)
         self._generation_dock = PanelDock(GENERATION_DOCK_TITLE, DockID.GENERATION, self, app_state,
-                                          QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB)
+                                          QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB,
+                                          hotkey_filter)
         self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self, app_state,
-                                          QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB)
+                                          QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB,
+                                          hotkey_filter)
         self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, app_state,
-                                      QIcon(ICON_PATH_LAYERS_DOCK), KeyConfig.SHOW_LAYER_MENU_SHORTCUT)
+                                      QIcon(ICON_PATH_LAYERS_DOCK), KeyConfig.SHOW_LAYER_MENU_SHORTCUT,
+                                      hotkey_filter)
         self._color_dock = PanelDock(COLOR_DOCK_TITLE, DockID.COLOR, self, app_state,
                                      QIcon(ICON_PATH_COLOR_DOCK))
         self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self, app_state,
-                                          QIcon(ICON_PATH_NAVIGATION_DOCK), KeyConfig.NAVIGATION_WINDOW_SHORTCUT)
+                                          QIcon(ICON_PATH_NAVIGATION_DOCK), KeyConfig.NAVIGATION_WINDOW_SHORTCUT,
+                                          hotkey_filter)
         self._rails = DockRails(self, app_state)
         self._rail_drag = RailDrag(self, self._rails, self._rails.sync)
         for dock in self.docks:
@@ -509,6 +517,7 @@ class MainWindow(QMainWindow):
         if self._image_selector is None:
             self._image_selector = GeneratedImageSelector(self._image_stack,
                                                           self._generation_session,
+                                                          self._hotkey_filter,
                                                           held_weakly(partial(self.set_image_selector_visible, False)))
             self._image_selector.previous_options_available.connect(self._report_previous_options_available)
         return self._image_selector

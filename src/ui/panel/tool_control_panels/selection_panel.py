@@ -91,9 +91,10 @@ class SelectionPanel(FitToolPanel):
     host that calls `set_fit_space`, the panel plans for its own size when resized.
     """
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool,
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, hotkey_filter: HotkeyFilter,
                  modifiers: SelectionModifiers = SelectionModifiers.ADD_AND_SUBTRACT) -> None:
         super().__init__()
+        self._hotkey_filter = hotkey_filter
         self._selection_layer = selection_layer
         # Weak, since the tool owns the panel:
         self._selection_tool = ref(selection_tool)
@@ -104,7 +105,7 @@ class SelectionPanel(FitToolPanel):
         cache = Cache()
 
         # Mode section:
-        self._mode_bar = SelectionModeBar(self, modifiers)
+        self._mode_bar = SelectionModeBar(hotkey_filter, self, modifiers)
         self._hint_label = QLabel(self)
         self._hint_label.setWordWrap(True)
         self._mode_hint: Optional[str] = None
@@ -244,8 +245,9 @@ class SelectionPanel(FitToolPanel):
         if len(KeyConfig().get(config_key)) == 0:
             return
         binding_id = f'{type(self).__name__}_{id(self)}_{name}'
-        HotkeyFilter.instance().register_config_keybinding(binding_id, action, config_key)
-        self.destroyed.connect(lambda *_: HotkeyFilter.instance().remove_keybinding(binding_id))
+        hotkey_filter = self._hotkey_filter
+        hotkey_filter.register_config_keybinding(binding_id, action, config_key)
+        self.destroyed.connect(lambda *_: hotkey_filter.remove_keybinding(binding_id))
 
     def set_mode_hint(self, text: Optional[str]) -> None:
         """Replaces the line under the mode bar. None restores the default."""

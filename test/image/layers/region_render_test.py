@@ -8,6 +8,7 @@ from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QColor, QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -107,7 +108,7 @@ class DisplayedImageTest(RenderTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
 
     def assert_view_matches_render(self) -> None:
         """Flushes pending renders, then asserts the view shows the full render."""

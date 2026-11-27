@@ -6,6 +6,7 @@ from unittest.mock import patch
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QLabel
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.window import saved_layouts
 from src.ui.window.dock_state import read_dock_groups
@@ -87,7 +88,7 @@ class ApplyDockStateTest(IntraPaintTestCase):
         use_procedural_layout(self)
         test_size = QSize(64, 64)
         self.image_stack = ImageStack(test_size, test_size, test_size, test_size, UndoStack())
-        self.window = MainWindow(self.image_stack, AppStateTracker())
+        self.window = MainWindow(self.image_stack, AppStateTracker(), HotkeyFilter())
         for dock in (self.window.tools_dock, self.window.generation_dock, self.window.layers_dock,
                      self.window.color_dock, self.window.navigation_dock):
             dock.set_content(QLabel(dock.windowTitle()))
