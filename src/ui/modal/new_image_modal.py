@@ -6,10 +6,10 @@ color dialog.
 """
 from typing import Optional, cast
 
-from PySide6.QtCore import QRect, QRectF, QSize
+from PySide6.QtCore import QLocale, QRect, QRectF, QSize
 from PySide6.QtGui import QColor, QIcon, QPaintEvent, QPainter, Qt
-from PySide6.QtWidgets import QApplication, QButtonGroup, QDialog, QHBoxLayout, QPushButton, QToolButton, QVBoxLayout, \
-    QWidget
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QDialog, QHBoxLayout, QLabel, QPushButton, QToolButton,
+                               QVBoxLayout, QWidget)
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -22,7 +22,7 @@ from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.tool_button import PLATE_MARGIN, PLATE_SHADOW_OFFSET, draw_plate_for_state
 from src.util.shared_constants import APP_ICON_PATH
-from src.util.visual.image_utils import get_color_icon
+from src.util.visual.image_utils import get_color_icon, image_memory_bytes
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.new_image_modal'
@@ -36,6 +36,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 CREATE_IMAGE_TITLE = _tr('Create new image')
 CREATE_BUTTON_TEXT = _tr('Create')
 SIZE_SECTION_TITLE = _tr('Size')
+SIZE_TEXT = _tr('{width} x {height} px, {memory} per layer')
 PRESETS_SECTION_TITLE = _tr('Size presets')
 BACKGROUND_SECTION_TITLE = _tr('Background')
 
@@ -179,7 +180,15 @@ class NewImageModal(QDialog):
         self._cancel_button = self._footer.cancel_button
 
         self._layout = QVBoxLayout(self)
-        self._layout.addWidget(PanelSection(SIZE_SECTION_TITLE, self._geometry))
+        size_body = QWidget(self)
+        size_layout = QVBoxLayout(size_body)
+        size_layout.setContentsMargins(0, 0, 0, 0)
+        size_layout.addWidget(self._geometry)
+        self._size_label = QLabel(size_body)
+        size_layout.addWidget(self._size_label)
+        self._geometry.valueChanged.connect(self._update_size_label)
+        self._update_size_label()
+        self._layout.addWidget(PanelSection(SIZE_SECTION_TITLE, size_body))
         if len(self._preset_buttons) > 1:
             self._layout.addWidget(PanelSection(PRESETS_SECTION_TITLE, preset_body))
         else:
@@ -188,8 +197,16 @@ class NewImageModal(QDialog):
         self._layout.addStretch(1)
         self._layout.addWidget(self._footer)
 
+    def _update_size_label(self) -> None:
+        size = QSize(int(self._geometry.value(geometry_block.WIDTH)),
+                     int(self._geometry.value(geometry_block.HEIGHT)))
+        self._size_label.setText(SIZE_TEXT.format(
+            width=size.width(), height=size.height(),
+            memory=QLocale().formattedDataSize(image_memory_bytes(size))))
+
     def _apply_preset(self, size: QSize) -> None:
         self._geometry.set_values(w=size.width(), h=size.height())
+        self._update_size_label()
 
     def _select_swatch_for_color(self, color: QColor) -> None:
         if color == Qt.GlobalColor.transparent:

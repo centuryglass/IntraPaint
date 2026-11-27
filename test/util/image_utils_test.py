@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64, \
     image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, div_255, np_composite_with_mask, \
-    ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA, ARGB32_COLOR
+    ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA, ARGB32_COLOR, image_memory_bytes
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
 from test.base_test_case import IntraPaintTestCase
 
@@ -36,6 +36,12 @@ class TestImageUtils(IntraPaintTestCase):
             self.base64_rgb = rgb_text.read().strip('\n')
         with open(TEST_ARGB_IMAGE_PATH + '.base64.txt', 'r') as rgba_text:
             self.base64_rgba = rgba_text.read().strip('\n')
+
+    def test_image_memory_bytes(self) -> None:
+        """Per-layer byte estimates use four bytes per pixel and do not overflow 32 bits."""
+        for width, height, expected in ((1, 1, 4), (1920, 1080, 8294400), (30000, 30000, 3600000000)):
+            with self.subTest(width=width, height=height):
+                self.assertEqual(image_memory_bytes(QSize(width, height)), expected)
 
     def test_pil_image_to_qimage(self) -> None:
         """Test that PIL -> QImage conversion preserves image contents and handles invalid input correctly."""

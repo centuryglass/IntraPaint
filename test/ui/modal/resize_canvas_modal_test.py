@@ -1,5 +1,5 @@
 """Tests ResizeCanvasModal's size constraints, anchor grid and preview dragging."""
-from PySide6.QtCore import QPoint, QSize
+from PySide6.QtCore import QLocale, QPoint, QSize
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields import geometry_block
@@ -46,9 +46,11 @@ class ResizeCanvasModalTest(IntraPaintTestCase):
     def test_anchor_follows_size_changes(self) -> None:
         """A selected anchor keeps the content at that cell as the size changes."""
         modal = _modal()
+        self.assertIn(QLocale().formattedDataSize(32000), modal._size_label.text())  # pylint: disable=protected-access
         modal._anchor_grid.anchorSelected.emit(2, 2)  # pylint: disable=protected-access
         modal._geometry.field(geometry_block.WIDTH).set_value(180)  # pylint: disable=protected-access
         self.assertEqual(modal._offset(), QPoint(80, 0))  # pylint: disable=protected-access
+        self.assertIn(QLocale().formattedDataSize(57600), modal._size_label.text())  # pylint: disable=protected-access
 
     def test_preview_drag_moves_offset(self) -> None:
         """Dragging the preview sets the offset."""

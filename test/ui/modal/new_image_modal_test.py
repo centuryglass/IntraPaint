@@ -1,12 +1,13 @@
 """Tests NewImageModal."""
 from unittest.mock import patch
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QLocale, QSize
 from PySide6.QtGui import QColor
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller import color_controller
+from src.ui.input_fields import geometry_block
 from src.ui.modal.new_image_modal import NewImageModal, BACKGROUND_COLOR_OPTION_CUSTOM, \
     BACKGROUND_COLOR_OPTION_BLACK, BACKGROUND_COLOR_OPTION_WHITE, BACKGROUND_COLOR_OPTION_BACKGROUND
 from test.base_test_case import IntraPaintTestCase
@@ -60,8 +61,14 @@ class NewImageModalTest(IntraPaintTestCase):
         Cache().set(Cache.GENERATION_SIZE, QSize(768, 768))
         modal = NewImageModal(512, 512, QSize(300, 200), QSize(768, 768))
         self.assertEqual(len(modal._preset_buttons), 3)
+        self.assertIn(QLocale().formattedDataSize(1048576), modal._size_label.text())
         modal._preset_buttons[2].click()
         self.assertEqual(modal.new_size(), QSize(300, 200))
+        self.assertIn(QLocale().formattedDataSize(240000), modal._size_label.text())
+        modal._geometry.field(geometry_block.WIDTH).set_value(400)
+        self.assertEqual(modal.new_size(), QSize(400, 200))
+        self.assertIn('400 x 200 px', modal._size_label.text())
+        self.assertIn(QLocale().formattedDataSize(320000), modal._size_label.text())
         modal._preset_buttons[0].click()
         self.assertEqual(modal.new_size(), QSize(512, 512))
         self.assertEqual(len(NewImageModal(512, 512)._preset_buttons), 2)
