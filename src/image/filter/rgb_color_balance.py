@@ -9,7 +9,8 @@ from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_stack import ImageStack
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image
+from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image, ARGB32_RED, ARGB32_GREEN, \
+    ARGB32_BLUE, ARGB32_ALPHA
 from src.util.parameter import Parameter, TYPE_FLOAT
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -63,17 +64,17 @@ class RGBColorBalanceFilter(ImageFilter):
         """
         if alpha == 0:
             return create_transparent_image(image.size())
-        color_channel_multipliers = (blue, green, red)
+        color_channel_multipliers = ((ARGB32_RED, red), (ARGB32_GREEN, green), (ARGB32_BLUE, blue))
         final_image = image.copy()
         np_image = image_data_as_numpy_8bit(final_image)
-        visible = np_image[:, :, 3] > 0
+        visible = np_image[:, :, ARGB32_ALPHA] > 0
         pixels = np_image[visible].astype(np.float64)
-        old_alpha = pixels[:, 3]
+        old_alpha = pixels[:, ARGB32_ALPHA]
         new_alpha = np.clip(np.round(old_alpha * alpha), 0, 255)
-        for color_channel, factor in enumerate(color_channel_multipliers):
+        for color_channel, factor in color_channel_multipliers:
             unpremultiplied = np.clip(pixels[:, color_channel] * 255.0 / old_alpha * factor, 0, 255)
             pixels[:, color_channel] = np.round(unpremultiplied * new_alpha / 255.0)
-        pixels[:, 3] = new_alpha
+        pixels[:, ARGB32_ALPHA] = new_alpha
         np_image[visible] = pixels.astype(np.uint8)
         return final_image
 

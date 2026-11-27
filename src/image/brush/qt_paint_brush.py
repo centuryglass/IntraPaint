@@ -20,7 +20,8 @@ from src.image.brush.layer_brush import LayerBrush, draw_buffered_input
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.selection_layer import SelectionLayer
 from src.util.math_utils import clamp
-from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index, NpUInt8Array, NpAnyArray
+from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index, NpUInt8Array, NpAnyArray, \
+    ARGB32_ALPHA
 
 PAINT_BUFFER_DELAY_MS = 50
 INITIAL_EVENTS_PER_DRAW = 8
@@ -359,16 +360,16 @@ class QtPaintBrush(LayerBrush):
         self._input_event_paint_segment(new_input_painter, input_event)
 
         # Find the pixels this segment changes. Pixels outside the input mask are never changed.
-        changes = np_paint_buf[:, :, 3] > 0
+        changes = np_paint_buf[:, :, ARGB32_ALPHA] > 0
         if np_mask is not None:
-            changes &= np_mask[:, :, 3] > 0
+            changes &= np_mask[:, :, ARGB32_ALPHA] > 0
         if not np.any(changes):
             return
 
         # Below full opacity or hardness, keep this segment only where it has the highest alpha in the stroke so far,
         # as the module docstring describes. Where it wins, reset the layer pixel to its state before the stroke.
         if (input_event.color.alphaF() * input_event.opacity) < 1.0 or input_event.hardness < 1.0:
-            changes &= np_paint_buf[:, :, 3] >= np_stroke_buf[:, :, 3]
+            changes &= np_paint_buf[:, :, ARGB32_ALPHA] >= np_stroke_buf[:, :, ARGB32_ALPHA]
             np.copyto(_argb_pixels(np_image), _argb_pixels(np_prev_image), where=changes)
 
         # Clear unchanged pixels from the paint buffer, and add the changes to the stroke buffer:

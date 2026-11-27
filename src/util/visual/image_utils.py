@@ -30,16 +30,33 @@ temp_image_dir = ''
 # packages, decodes these by running them in Ghostscript, see pil_image_utils.EXCLUDED_PIL_FORMATS.
 EXCLUDED_QIMAGE_FORMATS = {'EPS', 'EPSF', 'EPSI'}
 
-# Channel indexes into the last axis of an image_data_as_numpy_8bit array, for ARGB32 and ARGB32_Premultiplied images.
-# Qt stores those pixels as native-endian 32-bit 0xAARRGGBB values, so their bytes are BGRA on little-endian systems
-# and ARGB on big-endian ones. ARGB32_COLOR slices out the three color channels in that byte order: BGR on
-# little-endian, RGB on big-endian. Code that needs a particular color order indexes each channel by name.
-if sys.byteorder == 'little':
-    ARGB32_BLUE, ARGB32_GREEN, ARGB32_RED, ARGB32_ALPHA = 0, 1, 2, 3
-    ARGB32_COLOR = slice(0, 3)
-else:
-    ARGB32_ALPHA, ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE = 0, 1, 2, 3
-    ARGB32_COLOR = slice(1, 4)
+def argb32_channel_indexes(byteorder: str) -> tuple[int, int, int, int, slice]:
+    """Returns the (red, green, blue, alpha) indexes and color slice of an ARGB32 pixel's bytes for a byte order.
+
+    Qt stores ARGB32 and ARGB32_Premultiplied pixels as native-endian 32-bit 0xAARRGGBB values, so their bytes are BGRA
+    on little-endian systems and ARGB on big-endian ones. The color slice selects the three color channels in that
+    byte order: BGR on little-endian, RGB on big-endian.
+    """
+    if byteorder == 'little':
+        return 2, 1, 0, 3, slice(0, 3)
+    if byteorder == 'big':
+        return 1, 2, 3, 0, slice(1, 4)
+    raise ValueError(f'Unknown byte order {byteorder}')
+
+
+# Channel indexes into the last axis of an image_data_as_numpy_8bit array, for ARGB32 and ARGB32_Premultiplied images,
+# on this system (see argb32_channel_indexes). Code that needs a particular color order indexes each channel by name,
+# or uses ARGB32_RGBA_ORDER.
+ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA, ARGB32_COLOR = argb32_channel_indexes(sys.byteorder)
+
+# The ARGB32 index of each RGBA channel. It is an array, since numpy reads a tuple index as one index per axis.
+# pixels[..., ARGB32_RGBA_ORDER] reads RGBA channels, pixels[..., ARGB32_RGBA_ORDER] = rgba writes them, and
+# ARGB32_RGBA_ORDER[:3] does the same for RGB.
+ARGB32_RGBA_ORDER = np.array((ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA), dtype=np.intp)
+
+# cv2.cvtColor codes between the three channels ARGB32_COLOR selects and HLS.
+ARGB32_COLOR_TO_HLS, ARGB32_HLS_TO_COLOR = ((cv2.COLOR_BGR2HLS, cv2.COLOR_HLS2BGR) if ARGB32_COLOR == slice(0, 3)
+                                            else (cv2.COLOR_RGB2HLS, cv2.COLOR_HLS2RGB))
 
 
 def read_qimage(file_path: str) -> QImage:

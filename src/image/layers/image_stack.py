@@ -31,7 +31,7 @@ from src.undo_stack import UndoStack, UndoStackRef
 from src.util.rich_text import escape_rich_text, rich_text_format
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
-    image_is_fully_transparent, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
+    image_is_fully_transparent, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, ARGB32_ALPHA, ARGB32_COLOR
 from src.util.visual.pil_image_utils import pil_image_to_qimage
 
 logger = logging.getLogger(__name__)
@@ -1096,17 +1096,17 @@ class ImageStack(QObject):
         np_base = image_data_as_numpy_8bit(base_render)
         np_combined = image_data_as_numpy_8bit(top_render)
         np_top = np_combined
-        identical_regions = np_base[:, :, 3] == np_combined[:, :, 3]
-        for c in range(3):
-            identical_regions = identical_regions & (np_base[:, :, c] == np_combined[:, :, c])
+        identical_regions = (np_base == np_combined).all(axis=2)
         np_combined[identical_regions, :] = 0
 
         # Attempt a reversed SourceOver composition to calculate color values for the final top layer in areas where
         # both top and base are partially transparent:
-        blended_px = (~identical_regions & (np_base[:, :, 3] < 255) & (np_base[:, :, 3] > 0)
-                      & (np_combined[:, :, 3] < 255) & (np_combined[:, :, 3] > 0))
-        alpha_combined = np_combined[:, :, 3] / 255.0
-        alpha_base = np_base[:, :, 3] / 255.0
+        base_alpha8 = np_base[:, :, ARGB32_ALPHA]
+        combined_alpha8 = np_combined[:, :, ARGB32_ALPHA]
+        blended_px = (~identical_regions & (base_alpha8 < 255) & (base_alpha8 > 0)
+                      & (combined_alpha8 < 255) & (combined_alpha8 > 0))
+        alpha_combined = combined_alpha8 / 255.0
+        alpha_base = base_alpha8 / 255.0
         alpha_top = alpha_combined - alpha_base
         alpha_top[blended_px] /= (1 - alpha_base[blended_px])
         alpha_top[blended_px] = np.clip(alpha_top[blended_px], .00001, 1.0)
@@ -1120,7 +1120,7 @@ class ImageStack(QObject):
         est_alpha = np.round(alpha_top[blended_px] * 255)
         comb_px = np_combined[blended_px].astype(np.float64)
         base_px = np_base[blended_px].astype(np.float64)
-        wide_search = base_px[:, 3] >= FLATTEN_NEAR_OPAQUE_ALPHA
+        wide_search = base_px[:, ARGB32_ALPHA] >= FLATTEN_NEAR_OPAQUE_ALPHA
         best_alpha = est_alpha
         best_color = np.zeros((est_alpha.shape[0], 3))
         best_error = np.full(est_alpha.shape, np.inf)
@@ -1130,17 +1130,20 @@ class ImageStack(QObject):
             candidates.extend(np.where(wide_search, alpha_value, est_alpha) for alpha_value in range(1, 256))
         for candidate_alpha in candidates:
             inv_alpha = 1 - candidate_alpha / 255.0
-            candidate_color = np.clip(np.round(comb_px[:, :3] - base_px[:, :3] * inv_alpha[:, None]),
+            candidate_color = np.clip(np.round(comb_px[:, ARGB32_COLOR]
+                                               - base_px[:, ARGB32_COLOR] * inv_alpha[:, None]),
                                       0, candidate_alpha[:, None])
-            recomposed = (np.column_stack([candidate_color, candidate_alpha])
-                          + np.round(base_px * inv_alpha[:, None]))
+            candidate_px = np.empty_like(comb_px)
+            candidate_px[:, ARGB32_COLOR] = candidate_color
+            candidate_px[:, ARGB32_ALPHA] = candidate_alpha
+            recomposed = candidate_px + np.round(base_px * inv_alpha[:, None])
             error = np.abs(recomposed - comb_px).max(axis=1)
             better = error < best_error
             best_error[better] = error[better]
             best_alpha = np.where(better, candidate_alpha, best_alpha)
             best_color[better] = candidate_color[better]
-        np_top[blended_px, :3] = best_color
-        np_top[blended_px, 3] = best_alpha
+        np_top[blended_px, ARGB32_COLOR] = best_color
+        np_top[blended_px, ARGB32_ALPHA] = best_alpha
 
         layer_offset = parent.bounds.topLeft()
         replacement_layer = ImageLayer(top_render, layer.name, self.undo_stack)
@@ -1325,7 +1328,7 @@ class ImageStack(QObject):
             painter.drawImage(QRect(QPoint(), base_layer.size), base_layer.image)
             if base_layer.alpha_locked:
                 painter.end()
-                locked_alpha = image_data_as_numpy_8bit_readonly(merged_image)[:, :, 3].copy()
+                locked_alpha = image_data_as_numpy_8bit_readonly(merged_image)[:, :, ARGB32_ALPHA].copy()
                 painter.begin(merged_image)
                 painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)
 
@@ -1346,7 +1349,7 @@ class ImageStack(QObject):
                 # Alpha is copied rather than composited: the base's alpha at its opacity inside its old bounds,
                 # transparent outside.
                 straight_image = merged_image.convertToFormat(QImage.Format.Format_ARGB32)
-                image_data_as_numpy_8bit(straight_image)[:, :, 3] = locked_alpha
+                image_data_as_numpy_8bit(straight_image)[:, :, ARGB32_ALPHA] = locked_alpha
                 merged_image = straight_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
 
             final_transform = QTransform.fromTranslate(-offset.x(), -offset.y()) * base_layer.transform

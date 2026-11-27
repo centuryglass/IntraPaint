@@ -23,7 +23,7 @@ from src.util.async_task import AsyncTask
 from src.util.parameter import Parameter
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_utils import get_transparency_tile_pixmap, image_content_bounds, image_data_as_numpy_8bit, \
-    numpy_bounds_index
+    numpy_bounds_index, ARGB32_ALPHA
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.filter.filter'
@@ -175,7 +175,7 @@ class ImageFilter:
             if masked_bounds != layer.bounds:
                 np_mask = numpy_bounds_index(np_mask, masked_bounds)
                 np_final = numpy_bounds_index(np_final, masked_bounds)
-            selected = np_mask[:, :, 3] > 0
+            selected = np_mask[:, :, ARGB32_ALPHA] > 0
             np_final[selected, :] = np_filtered[selected, :]
         else:
             filtered_image = self.get_filter()(layer_image, *filter_param_values)

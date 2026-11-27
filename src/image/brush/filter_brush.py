@@ -14,7 +14,7 @@ from PySide6.QtGui import QImage, QPainter
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_layer import ImageLayer
-from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index
+from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index, ARGB32_ALPHA
 
 # Edge length in pixels of the layer regions filtered as one unit. Smaller tiles filter less content that no segment
 # reaches, larger ones repeat less of the padding that radius filters read around each tile.
@@ -130,7 +130,7 @@ class FilterBrush(QtPaintBrush):
         np_filtered = numpy_bounds_index(image_data_as_numpy_8bit(self._filtered_image), bounds)
 
         # Use the brush stroke segment as a mask to select between filtered and original content:
-        np_stroke_mask = numpy_bounds_index(image_data_as_numpy_8bit(segment_image), bounds)[:, :, 3]
+        np_stroke_mask = numpy_bounds_index(image_data_as_numpy_8bit(segment_image), bounds)[:, :, ARGB32_ALPHA]
 
         # Where the brush stroke mask is 100% opaque, the filter completely overrides the source:
         stroke_alpha_max = np_stroke_mask == 255

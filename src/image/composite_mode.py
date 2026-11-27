@@ -16,7 +16,8 @@ from PySide6.QtWidgets import QApplication
 from src.util.shared_constants import INV_255
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image, NpUInt8Array, \
-    numpy_bounds_index, image_is_fully_transparent
+    numpy_bounds_index, image_is_fully_transparent, ARGB32_ALPHA, ARGB32_COLOR, ARGB32_COLOR_TO_HLS, \
+    ARGB32_HLS_TO_COLOR
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.composite_mode'
@@ -216,8 +217,8 @@ class CompositeMode(StrEnum):
         assert np_top.shape == np_base.shape
 
         # Calculate HSL values (as hls):
-        top_hls = cv2.cvtColor(np_top[:, :, :3], cv2.COLOR_BGR2HLS)
-        base_hls = cv2.cvtColor(np_base[:, :, :3], cv2.COLOR_BGR2HLS)
+        top_hls = cv2.cvtColor(np_top[:, :, ARGB32_COLOR], ARGB32_COLOR_TO_HLS)
+        base_hls = cv2.cvtColor(np_base[:, :, ARGB32_COLOR], ARGB32_COLOR_TO_HLS)
 
         # Apply blending operation, convert back to RGB:
         # NOTE: blending operations are all very simple - write a single component from one image over another, return
@@ -225,26 +226,25 @@ class CompositeMode(StrEnum):
         #       base_hls, whichever requires the least amount of copying. Altering the original doesn't really matter,
         #       since we're only using final_hls after this point.
         final_hls = blending_op(top_hls, base_hls)
-        blended_rgb = cv2.cvtColor(final_hls, cv2.COLOR_HLS2BGR)
+        blended_rgb = cv2.cvtColor(final_hls, ARGB32_HLS_TO_COLOR)
 
         # calculate final alpha, skip compositing wherever the top layer is transparent so the base stays exact:
-        alpha_top = np_top[:, :, 3] * INV_255 * opacity
-        alpha_base = np_base[:, :, 3] * INV_255
+        alpha_top = np_top[:, :, ARGB32_ALPHA] * INV_255 * opacity
+        alpha_base = np_base[:, :, ARGB32_ALPHA] * INV_255
         alpha_combined = np.clip(alpha_top + alpha_base * (1 - alpha_top), 0, 1)
         alpha_nonzero = (alpha_combined > 0) & (alpha_top > 0)
-        at = alpha_top[alpha_nonzero]
-        ab = alpha_base[alpha_nonzero]
-        ac = alpha_combined[alpha_nonzero]
+        at = alpha_top[alpha_nonzero, np.newaxis]
+        ab = alpha_base[alpha_nonzero, np.newaxis]
+        ac = alpha_combined[alpha_nonzero, np.newaxis]
 
-        # final compositing of RGB channels onto the base image:
-        for c in range(3):
-            np_base[alpha_nonzero, c] = np.rint(
-                    (blended_rgb[alpha_nonzero, c] * at
-                     + np_base[alpha_nonzero, c] * ab * (1 - at)) / ac
-            )
+        # final compositing of the color channels onto the base image, which blended_rgb holds in ARGB32_COLOR order:
+        np_base[alpha_nonzero, ARGB32_COLOR] = np.rint(
+                (blended_rgb[alpha_nonzero] * at
+                 + np_base[alpha_nonzero, ARGB32_COLOR] * ab * (1 - at)) / ac
+        )
 
         # Update alpha channel where the top layer contributes:
-        np_base[alpha_nonzero, 3] = np.rint(alpha_combined[alpha_nonzero] * 255)
+        np_base[alpha_nonzero, ARGB32_ALPHA] = np.rint(alpha_combined[alpha_nonzero] * 255)
 
         # Index areas in the base where alpha is 0 and top is not, directly copy the top layer into these areas. Note
         # that this is in parity with Krita, but *not* with GIMP.
