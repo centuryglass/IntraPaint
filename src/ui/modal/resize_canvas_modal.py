@@ -83,6 +83,7 @@ class ResizeCanvasModal(QDialog):
         self._anchor_grid.anchorSelected.connect(self._anchor_selected)
 
         self._size_label = QLabel(self)
+        self._size_label.setWordWrap(True)
         offset_hint = QLabel(OFFSET_HINT, self)
         offset_hint.setWordWrap(True)
 

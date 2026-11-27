@@ -12,14 +12,15 @@ MAX_SCREEN_FRACTION = 0.8
 
 
 class ControlsColumn(QScrollArea):
-    """A frameless vertical scroll area of fixed width around a dialog's controls."""
+    """A frameless fixed-width scroll area, with horizontal scrolling only when content needs it."""
 
     def __init__(self, controls: QWidget, width: int) -> None:
         super().__init__()
         self._column_width = width
         self.setWidgetResizable(True)
         self.setFrameShape(QScrollArea.Shape.NoFrame)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # A genuinely wide control must remain reachable without widening the dialog.
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setWidget(controls)
         self.setFixedWidth(width)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
