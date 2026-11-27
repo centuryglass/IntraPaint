@@ -16,6 +16,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.testing_panel import TestControlPanel
 from src.ui.window.main_window import MainWindow
+from src.util.application_state import AppStateTracker
 from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_TXT2IMG
 
 # The QCoreApplication.translate context for strings in this file
@@ -37,8 +38,8 @@ class TestGenerator(ImageGenerator):
 
     __test__ = False  # Prevent pytest from trying to collect this as a test class (its name matches Test*).
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
-        super().__init__(window, image_stack)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker) -> None:
+        super().__init__(window, image_stack, app_state)
         self._control_panel: Optional[TestControlPanel] = None
         self._test_image = QImage(f'{PROJECT_DIR}/resources/icons/app_icon.png').convertToFormat(
             QImage.Format.Format_ARGB32_Premultiplied)

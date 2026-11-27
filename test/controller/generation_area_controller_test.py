@@ -14,6 +14,7 @@ from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from src.util.generation_area_utils import RESOLUTION_RULE_MATCH_AREA, RESOLUTION_RULE_MATCH_AREA_UPSCALED, \
     RESOLUTION_RULE_MANUAL, FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER, FOLLOW_SELECTION_OFF
+from src.util.application_state import AppStateTracker
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 
@@ -32,7 +33,7 @@ class GenerationAreaControllerTest(IntraPaintTestCase):
         Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA_UPSCALED)
         AppConfig().set(AppConfig.GENERATION_RESOLUTION_MIN_SIDE, 512)
         Cache().set(Cache.GENERATION_SIZE, QSize(640, 640))
-        self.controller = GenerationAreaController(self.image_stack)
+        self.controller = GenerationAreaController(self.image_stack, AppStateTracker())
 
     def _set_area_size(self, size: QSize) -> None:
         self.image_stack.generation_area = QRect(self.image_stack.generation_area.topLeft(), size)
@@ -130,7 +131,7 @@ class FollowSelectionTest(IntraPaintTestCase):
         self.image_stack = ImageStack(IMAGE_SIZE, FOLLOW_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         self.image_stack.generation_area = FOLLOW_AREA
         self.selection_layer = self.image_stack.selection_layer
-        self.controller = GenerationAreaController(self.image_stack)
+        self.controller = GenerationAreaController(self.image_stack, AppStateTracker())
         self.controller.generation_area_visible = True
         self.controller.follow_selection()
         UndoStack().clear()

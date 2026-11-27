@@ -12,6 +12,7 @@ from src.ui.window import default_layouts
 from src.ui.window.default_layouts import LAYOUT_1080P, LAYOUT_4K_TALL, LAYOUT_SMALL, select_default_layout_state
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -67,7 +68,7 @@ class DefaultLayoutWindowTest(IntraPaintTestCase):
         super().tearDown()
 
     def _new_window(self) -> MainWindow:
-        window = MainWindow(self.image_stack)
+        window = MainWindow(self.image_stack, AppStateTracker())
         self.windows.append(window)
         for dock in window.docks:
             if dock is not window.controlnet_dock:

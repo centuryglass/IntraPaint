@@ -69,7 +69,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         # The capability check probes the POST-only route with a GET:
         backend.route('GET', Endpoints.INTERROGATE, FakeResponse({'detail': 'Method Not Allowed'}, status_code=405))
 
-        self.generator = SDWebUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        self.generator = SDWebUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         start_patch = mock.patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
         self.addCleanup(start_patch.stop)
@@ -193,7 +193,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.assertEqual(A1111Config().get(A1111Config.CLIP_STOP_AT_LAST_LAYERS), 2)
         self.assertEqual(Cache().get(Cache.CLIP_SKIP), 2)
         self.assertEqual(AppConfig().get(AppConfig.MASK_BLUR), 9)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)
         self.show_error_dialog.assert_not_called()
 
     def test_update_settings_without_webui_changes_sends_nothing(self) -> None:
@@ -212,7 +212,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.generator.update_settings({A1111Config.CLIP_STOP_AT_LAST_LAYERS: 2})
         self.show_error_dialog.assert_called_once()
         self.assertEqual(A1111Config().get(A1111Config.CLIP_STOP_AT_LAST_LAYERS), 1)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_NO_IMAGE)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_NO_IMAGE)
 
     def test_describe_sets_prompt_as_one_undo_step(self) -> None:
         """Describe sends the generation area with the configured model, and the caption replaces the prompt."""
@@ -224,7 +224,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         body = self.backend.posts()[0].arguments['body']
         self.assertEqual(body['model'], INTERROGATE_MODEL)
         self.assertEqual(Cache().get(Cache.PROMPT), CAPTION)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)
         self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assertEqual(Cache().get(Cache.PROMPT), old_prompt)
@@ -247,7 +247,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.show_error_dialog.assert_called_once()
         self.assertEqual(self.show_error_dialog.call_args.args[1], DESCRIBE_ERROR_TITLE)
         self.assertEqual(Cache().get(Cache.PROMPT), old_prompt)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)
 
     def test_describe_timeout_shows_error(self) -> None:
         """A describe request that times out shows the timeout message and returns to editing."""
@@ -259,7 +259,7 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.generator.describe()
         self.show_error_dialog.assert_called_once()
         self.assertEqual(str(self.show_error_dialog.call_args.args[2]), ERROR_MESSAGE_TIMEOUT)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)
 
     def test_lora_thumbnail(self) -> None:
         """A LoRA thumbnail is requested by the model path with a .png extension."""

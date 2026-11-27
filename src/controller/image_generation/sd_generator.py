@@ -234,10 +234,9 @@ class SDGenerator(ImageGenerator, ABC):
     """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
        support."""
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace, url_cache_key: str,
-                 scaling_mode_cache_key: str,
-                 show_extended_controlnet_options=False) -> None:
-        super().__init__(window, image_stack)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker, args: Namespace,
+                 url_cache_key: str, scaling_mode_cache_key: str, show_extended_controlnet_options=False) -> None:
+        super().__init__(window, image_stack, app_state)
         self._image_stack = image_stack
         self._server_url = args.server_url if args.server_url != '' else Cache().get(url_cache_key)
         self._url_cache_key = url_cache_key
@@ -342,7 +341,7 @@ class SDGenerator(ImageGenerator, ABC):
         """Cancels the job `_wait_for_job` is waiting on, if one is in progress. A job the backend hasn't started is
         dropped, and a running one is interrupted."""
         handle = self._active_handle
-        if AppStateTracker.app_state() == APP_STATE_LOADING and handle is not None:
+        if self._app_state.app_state() == APP_STATE_LOADING and handle is not None:
             try:
                 handle.cancel()
             except SDBackendError as err:
@@ -725,16 +724,16 @@ class SDGenerator(ImageGenerator, ABC):
                 self._window.set_loading_message(status_dict['progress'])
 
         def _handle_error(error: Exception) -> None:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
             show_error_dialog(self._window, ERROR_TITLE_PREPROCESSOR_PREVIEW_FAILED,
                               rich_text_format(ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED, err=error))
 
         def _load_preview(preview_image: QImage) -> None:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
             assert self._controlnet_panel is not None
             self._controlnet_panel.set_preview(preview_image)
 
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        self._app_state.set_app_state(APP_STATE_LOADING)
         preview_task = _AsyncPreviewTask(_get_preview)
         preview_task.status_signal.connect(_apply_status_update)
         preview_task.error_signal.connect(_handle_error)
@@ -778,7 +777,7 @@ class SDGenerator(ImageGenerator, ABC):
                 logger.error(f'unexpected error during upscale attempt: {err}')
                 error_signal.emit(err)
 
-        task = _UpscaleTask(_upscale, True)
+        task = _UpscaleTask(_upscale, self._app_state)
 
         def _apply_status_update(status_dict: dict) -> None:
             if 'progress' in status_dict:
@@ -842,7 +841,7 @@ class SDGenerator(ImageGenerator, ABC):
         loras = cache.get(Cache.LORA_MODELS).copy()
         if self._lora_images is None:
             self._lora_images = {}
-            AppStateTracker.set_app_state(APP_STATE_LOADING)
+            self._app_state.set_app_state(APP_STATE_LOADING)
 
             class _LoadingTask(AsyncTask):
                 status = Signal(str)
@@ -863,7 +862,7 @@ class SDGenerator(ImageGenerator, ABC):
             task = _LoadingTask(_load_and_open)
 
             def _resume_and_show() -> None:
-                AppStateTracker.set_app_state(APP_STATE_EDITING)
+                self._app_state.set_app_state(APP_STATE_EDITING)
                 assert self._lora_images is not None
                 assert self._window is not None
                 task.status.disconnect(self._window.set_loading_message)

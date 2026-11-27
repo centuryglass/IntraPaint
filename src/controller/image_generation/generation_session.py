@@ -62,9 +62,10 @@ class GenerationSession(QObject):
     stop_requested = Signal()
     """Emitted when `stop` asks the backend to cancel the running task."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
+    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker) -> None:
         super().__init__()
         self._image_stack = image_stack
+        self._app_state = app_state
         self._current: Optional[GeneratedImageBatch] = None
         self._previous: Optional[GeneratedImageBatch] = None
         self._previous_available = False
@@ -197,7 +198,7 @@ class GenerationSession(QObject):
         inpaint_task.finish_signal.connect(_finished)
 
         self.generation_started.emit(paste_mask)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        self._app_state.set_app_state(APP_STATE_LOADING)
         inpaint_task.start()
         return True
 
@@ -339,7 +340,7 @@ class GenerationSession(QObject):
         outcome = None
         if option_index != 0:
             outcome = self.apply(option_index, self._image_stack.active_layer, layer_name, True)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        self._app_state.set_app_state(APP_STATE_EDITING)
         return outcome
 
     def send_to_new_layer(self, option_index: int, layer_name: str) -> Layer:

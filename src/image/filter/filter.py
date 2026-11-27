@@ -4,6 +4,7 @@ Handles the process of opening modal windows to apply the filter and provides th
 function as a menu action.
 """
 import math
+from functools import partial
 from typing import Callable, Optional, Any
 
 from PySide6.QtCore import QPoint, QRect, QSize
@@ -17,7 +18,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
-from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.parameter import Parameter
 from src.util.shared_constants import PROJECT_DIR
@@ -77,14 +78,14 @@ class ImageFilter:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         return 0.0
 
-    def get_filter_modal(self) -> ImageFilterModal:
-        """Creates and returns a modal widget that can apply the filter to the edited image."""
+    def get_filter_modal(self, app_state: AppStateTracker) -> ImageFilterModal:
+        """Creates and returns a modal widget that applies the filter to the edited image, updating `app_state`."""
         self.selection_only = not self._image_stack.selection_layer.empty
         modal = ImageFilterModal(self.get_name(),
                                  self.get_modal_description(),
                                  self.get_parameters(),
                                  self.prepare_preview,
-                                 self.apply_filter,
+                                 partial(self.apply_filter, app_state=app_state),
                                  self.selection_only,
                                  self.active_layer_only,
                                  self.prepare_original_preview)
@@ -253,7 +254,7 @@ class ImageFilter:
             return preview_image
         return _render_preview
 
-    def apply_filter(self, filter_param_values: list[Any]) -> None:
+    def apply_filter(self, filter_param_values: list[Any], app_state: AppStateTracker) -> None:
         """
         Applies the filter to the image stack, running filter operations in another thread to prevent hanging.
 
@@ -261,6 +262,8 @@ class ImageFilter:
         ----------
             filter_param_values: list
                 Parameter values to use, fitting the definitions the filter provides through get_parameters.
+            app_state: AppStateTracker
+                Reads `APP_STATE_LOADING` while the filter runs, and `APP_STATE_EDITING` once it finishes.
         """
         updated_layer_images: dict[int, QImage] = {}
 
@@ -304,11 +307,11 @@ class ImageFilter:
             for layer_id, image in layer_images.items():
                 updated_layer_images[layer_id] = image
 
-        task = AsyncTask(_filter_images, True)
+        task = AsyncTask(_filter_images, app_state)
 
         # _finish must not reference task: the task's connection holds _finish, so that would leave a reference cycle.
         def _finish() -> None:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            app_state.set_app_state(APP_STATE_EDITING)
             if len(updated_layer_images) == 0:
                 return
             source_images: dict[int, QImage] = {}

@@ -168,7 +168,7 @@ class ImageIO:
     hands to a worker, which uses copies made beforehand.
     """
 
-    def __init__(self, window: QWidget, image_stack: ImageStack,
+    def __init__(self, window: QWidget, image_stack: ImageStack, app_state: AppStateTracker,
                  get_generator: Callable[[], Optional[ImageGenerator]]) -> None:
         """Creates the helper.
 
@@ -178,11 +178,14 @@ class ImageIO:
             Parent of every dialog, and the widget repainted around file dialogs.
         image_stack: ImageStack
             The image data to load into and save from.
+        app_state: AppStateTracker
+            Set to `APP_STATE_EDITING` once a load or restore finishes.
         get_generator: Callable[[], Optional[ImageGenerator]]
             Returns the active image generator, which decides whether saving offers to store generation metadata.
         """
         self._window = window
         self._image_stack = image_stack
+        self._app_state = app_state
         self._get_generator = get_generator
         self._metadata = ImageMetadata()
         self._pending_save: Optional[AsyncTask] = None
@@ -215,7 +218,7 @@ class ImageIO:
         """
         self.metadata = restored.metadata
         Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        self._app_state.set_app_state(APP_STATE_EDITING)
 
     @staticmethod
     def file_name() -> str:
@@ -542,7 +545,7 @@ class ImageIO:
             cache.set(Cache.LAST_FILE_PATH, file_path)
             add_recent_file(file_path)
             self._apply_loaded_parameters()
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
         except (UnidentifiedImageError, OSError) as err:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
@@ -588,7 +591,7 @@ class ImageIO:
             show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE,
                               rich_text_format(LOAD_LAYER_ERROR_MESSAGE, file_list=', '.join(errors)))
         if self._image_stack.has_image:
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._app_state.set_app_state(APP_STATE_EDITING)
 
     def _apply_loaded_parameters(self) -> None:
         """Applies the `LOAD_APPLIED_FIELDS` of the loaded image's A1111 parameters to the editor, if it has any."""

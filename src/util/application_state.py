@@ -34,7 +34,12 @@ APP_STATE_NOT_LOADING = [APP_STATE_INIT, APP_STATE_NO_IMAGE, APP_STATE_EDITING, 
 logger = logging.getLogger(__name__)
 
 class AppStateTracker(metaclass=AppService):
-    """Global service that tracks the current application state and sends signals on state change."""
+    """Global service that tracks the current application state and sends signals on state change.
+
+    `AppController` reads the `AppStateTracker()` accessor once, and every other class under `src/` that sets or
+    follows the state receives the instance. The image model holds no tracker: `AppController` sets the editing and
+    no-image states from `ImageStack.has_layers_changed`.
+    """
 
     def __init__(self) -> None:
 
@@ -45,55 +50,39 @@ class AppStateTracker(metaclass=AppService):
         self._app_state = APP_STATE_INIT
         self._connections: dict[QWidget | QAction, Any] = {}
 
-    @staticmethod
-    def set_app_state(new_state: str) -> None:
-        """Updates the current application state."""
-        if new_state == AppStateTracker.app_state():
-            return
-        AppStateTracker()._set_app_state(new_state)
-
-    @staticmethod
-    def app_state() -> str:
-        """Returns the current application state."""
-        return AppStateTracker()._app_state
-
-    @staticmethod
-    def set_enabled_states(widget: QWidget | QAction, valid_states: list[str]) -> None:
-        """Configures a widget or action to automatically enable or disable itself based on application state."""
-        assert isinstance(valid_states, list), f'Invalid state list {valid_states}'
-        state_tracker = AppStateTracker()
-        if widget in state_tracker._connections:
-            AppStateTracker.disconnect_from_state(widget)
-
-        def _change_enabled_status(app_state: str, connected_widget=widget, state_list=None) -> None:
-            assert connected_widget in AppStateTracker()._connections
-            if state_list is None:
-                state_list = valid_states
-            connected_widget.setEnabled(app_state in state_list)
-        state_tracker._connections[widget] = AppStateTracker.signal().connect(_change_enabled_status)
-        _change_enabled_status(AppStateTracker.app_state())
-
-    @staticmethod
-    def disconnect_from_state(widget: QWidget | QAction) -> None:
-        """Removes a widget or action that was previously connected to state change signals."""
-        state_tracker = AppStateTracker()
-        if widget in state_tracker._connections:
-            state_tracker.signal().disconnect(state_tracker._connections[widget])
-            del state_tracker._connections[widget]
-        assert widget not in AppStateTracker()._connections
-
-    @staticmethod
-    def signal() -> SignalInstance:
-        """Accesses the state change signal."""
-        return AppStateTracker()._state_changed
-
-    def _set_app_state(self, new_state: str) -> None:
+    def set_app_state(self, new_state: str) -> None:
+        """Updates the current application state, emitting `state_changed` if it changed."""
         if new_state not in APP_STATE_ALL:
             raise RuntimeError(f'Invalid application state {new_state}')
         if new_state != self._app_state:
             logger.info(f'State change: from {self._app_state} to {new_state}')
             self._app_state = new_state
             self._state_changed.emit(new_state)
+
+    def app_state(self) -> str:
+        """Returns the current application state."""
+        return self._app_state
+
+    def set_enabled_states(self, widget: QWidget | QAction, valid_states: list[str]) -> None:
+        """Configures a widget or action to automatically enable or disable itself based on application state."""
+        assert isinstance(valid_states, list), f'Invalid state list {valid_states}'
+        if widget in self._connections:
+            self.disconnect_from_state(widget)
+
+        def _change_enabled_status(app_state: str, connected_widget=widget, state_list=valid_states) -> None:
+            connected_widget.setEnabled(app_state in state_list)
+        self._connections[widget] = self._state_changed.connect(_change_enabled_status)
+        _change_enabled_status(self._app_state)
+
+    def disconnect_from_state(self, widget: QWidget | QAction) -> None:
+        """Removes a widget or action that was previously connected to state change signals."""
+        if widget in self._connections:
+            self._state_changed.disconnect(self._connections[widget])
+            del self._connections[widget]
+
+    def signal(self) -> SignalInstance:
+        """Accesses the state change signal."""
+        return self._state_changed
 
     def close(self) -> None:
         """Disconnects every widget, action and slot connected to state changes. `AppContext.close` calls this.

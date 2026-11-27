@@ -743,7 +743,7 @@ class DockRails(QObject):
         assert window is not None, 'The dock rails outlived its window'
         return window
 
-    def __init__(self, window: QMainWindow) -> None:
+    def __init__(self, window: QMainWindow, app_state: AppStateTracker) -> None:
         super().__init__(window)
         self._window_ref = ref(window)
         self._rails: dict[Qt.DockWidgetArea, DockRail] = {}
@@ -767,7 +767,7 @@ class DockRails(QObject):
         set_shortcut_tooltip(self._generate_button, GENERATE_BUTTON_TOOLTIP, KeyConfig.GENERATE_SHORTCUT)
         self._generate_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._generate_button.hide()
-        AppStateTracker.set_enabled_states(self._generate_button, [APP_STATE_EDITING])
+        app_state.set_enabled_states(self._generate_button, [APP_STATE_EDITING])
 
     @property
     def generate_button(self) -> QPushButton:

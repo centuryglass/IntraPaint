@@ -33,6 +33,7 @@ from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import (HYSTERESIS, FitContent, Orientation, cross_extent, field_width_cap,
                                      scroll_extent)
+from src.util.application_state import AppStateTracker
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -670,7 +671,7 @@ def stable_diffusion_panel(webui: bool) -> DockPanel:
     from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
     from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
     from src.ui.panel.generators.webui_advanced_controls import WebUIAdvancedControls
-    panel = StableDiffusionPanel(webui)
+    panel = StableDiffusionPanel(webui, AppStateTracker())
     panel.set_advanced_content(WebUIAdvancedControls() if webui else ComfyUIAdvancedControls())
     return panel
 
@@ -757,7 +758,7 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
         PanelScene('sd_webui_panel', lambda _c: stable_diffusion_panel(True)),
         PanelScene('sd_comfyui_panel', lambda _c: stable_diffusion_panel(False)),
-        PanelScene('glid_panel', lambda _c: GlidPanel()),
+        PanelScene('glid_panel', lambda _c: GlidPanel(AppStateTracker())),
         PanelScene('test_generator_panel', lambda _c: TestControlPanel()),
         PanelScene('controlnet_webui_panel', lambda _c: controlnet_panel(True, set_up_units=True)),
         PanelScene('controlnet_comfyui_panel', lambda _c: controlnet_panel(False)),

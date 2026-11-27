@@ -128,7 +128,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         backend.route('GET', ComfyEndpoints.OBJECT_INFO, OBJECT_INFO)
         backend.route('GET', f'{ComfyEndpoints.OBJECT_INFO}/{ULTIMATE_UPSCALE_NODE}', {ULTIMATE_UPSCALE_NODE: {}})
 
-        generator = SDComfyUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        generator = SDComfyUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         self.capture_generated_images(generator)
         self.generator = generator
         webservice = generator.get_webservice()
@@ -294,8 +294,8 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         assert webservice is not None
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
         handle = _CancelledWhileWaitingHandle(self.generator)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-        self.addCleanup(AppStateTracker.set_app_state, APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_LOADING)
+        self.addCleanup(AppStateTracker().set_app_state, APP_STATE_EDITING)
         with mock.patch.object(webservice, 'submit_txt2img', return_value=handle) as submit:
             self.run_generate()
         submit.assert_called_once()

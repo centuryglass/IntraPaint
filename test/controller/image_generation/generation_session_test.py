@@ -41,7 +41,7 @@ class GenerationSessionTest(IntraPaintTestCase):
         Cache().set(Cache.EDIT_SIZE, IMAGE_SIZE)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.session = GenerationSession(self.image_stack)
+        self.session = GenerationSession(self.image_stack, AppStateTracker())
         self.availability: list[bool] = []
         self.session.previous_options_available.connect(self.availability.append)
 
@@ -179,20 +179,20 @@ class GenerationSessionTest(IntraPaintTestCase):
         """Choosing a generated option writes it to the active layer and leaves the selection state."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)  # inpainting would clip the option by the empty selection
         self._begin_with_results()
-        AppStateTracker.set_app_state(APP_STATE_SELECTION)
+        AppStateTracker().set_app_state(APP_STATE_SELECTION)
         outcome = self.session.choose(1, 'Option 1')
         self.image_stack.flush_render()
         assert outcome is not None
         self.assertEqual(outcome.result, ApplyResult.APPLIED)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)
         self.assertEqual(self.image_stack.qimage_generation_area_content().pixelColor(5, 5), QColor(0, 255, 0))
 
     def test_choose_original_applies_nothing(self) -> None:
         """Choosing option zero leaves the image alone and still returns to editing."""
         self._begin_with_results()
-        AppStateTracker.set_app_state(APP_STATE_SELECTION)
+        AppStateTracker().set_app_state(APP_STATE_SELECTION)
         self.assertIsNone(self.session.choose(0, 'Original'))
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)
 
     def test_choose_reports_locked_layer_fallback(self) -> None:
         """A locked target layer sends the option to a new layer and the outcome says why."""
@@ -241,7 +241,7 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         cache.set(Cache.BATCH_SIZE, 2)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.session = GenerationSession(self.image_stack)
+        self.session = GenerationSession(self.image_stack, AppStateTracker())
         self.events: list[str] = []
         self.session.generation_started.connect(lambda _mask: self.events.append('started'))
         self.session.generation_finished.connect(lambda: self.events.append('finished'))
@@ -269,7 +269,7 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         self.assertTrue(self._run(_action))
         self.assertEqual(self.events, ['started', 'finished', 'image 0', 'ended'])
         self.assertFalse(self.session.generating)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_LOADING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_LOADING)
 
     def test_failure_is_reported_and_allows_a_new_run(self) -> None:
         """An exception from the action emits `generation_failed`, and the next request starts."""

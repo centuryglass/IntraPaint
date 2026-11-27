@@ -67,7 +67,7 @@ class SDComfyUIGeneratorBackendTest(SdGeneratorTestCase):
         backend.route('POST', ComfyEndpoints.PROMPT, {'prompt_id': 'prompt-0', 'number': 1, 'node_errors': {}})
         backend.route('POST', ComfyEndpoints.FREE, {})
 
-        generator = SDComfyUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
+        generator = SDComfyUIGenerator(None, self.image_stack, AppStateTracker(), self.server_args())  # type: ignore
         self.capture_generated_images(generator)
         self.generator = generator
         webservice = generator.get_webservice()
@@ -194,7 +194,7 @@ class SDComfyUIGeneratorBackendTest(SdGeneratorTestCase):
         handle = mock.MagicMock(spec=GenerationHandle)
         generator.cancel_generation()
         generator._active_handle = handle  # pylint: disable=protected-access
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
         generator.cancel_generation()
         handle.cancel.assert_not_called()
 
@@ -205,8 +205,8 @@ class SDComfyUIGeneratorBackendTest(SdGeneratorTestCase):
         handle.task_id = 'job'
         handle.cancel.side_effect = ServerError(500, 'no', ComfyEndpoints.INTERRUPT, 'POST')
         generator._active_handle = handle  # pylint: disable=protected-access
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-        self.addCleanup(AppStateTracker.set_app_state, APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_LOADING)
+        self.addCleanup(AppStateTracker().set_app_state, APP_STATE_EDITING)
         with self.assertLogs('src.controller.image_generation.sd_generator', 'ERROR'):
             generator.cancel_generation()
         handle.cancel.assert_called_once()

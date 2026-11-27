@@ -28,6 +28,7 @@ from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTR
     SavedControlNetUnit
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.async_task import AsyncTask
 from src.util.shared_text import UPSCALED_LAYER_NAME
 from test.base_test_case import IntraPaintTestCase, TEST_IMAGE_DIR, PROJECT_ROOT
@@ -76,8 +77,7 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.backend.start()
         self.addCleanup(self.backend.stop)
 
-        self.image_stack = ImageStack(QSize(600, 400), GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240),
-                                      UndoStack())
+        self.image_stack = ImageStack(QSize(600, 400), GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240), UndoStack())
         source_image = QImage(SOURCE_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         assert not source_image.isNull(), f'failed to load {SOURCE_IMAGE}'
         self.image_stack.create_layer('source', source_image)

@@ -21,6 +21,7 @@ from src.image.ora_extensions import (OraWriteContext, OraReadContext, DocumentE
                                       unregister_layer_loader, register_document_extension,
                                       unregister_document_extension)
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.async_task import AsyncTask
 from test.base_test_case import IntraPaintTestCase
 from test.image.layers.image_stack_state import select_rect
@@ -149,7 +150,7 @@ class NonDestructiveGateTest(IntraPaintTestCase):
 
         def _apply() -> None:
             with patch.object(AsyncTask, 'start', AsyncTask.run):
-                image_filter.apply_filter([])
+                image_filter.apply_filter([], AppStateTracker())
 
         self._assert_gated(_apply)
 

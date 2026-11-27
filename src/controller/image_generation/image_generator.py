@@ -13,6 +13,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
+from src.util.application_state import AppStateTracker
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.shared_text import PIL_SCALING_MODES
@@ -32,8 +33,8 @@ class ImageGenerator(MenuBuilder, ABC):
 
     # Used to emit additional information when anything goes wrong with an active generator.
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
-        super().__init__()
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker) -> None:
+        super().__init__(app_state)
         self._window = window
         self._image_stack = image_stack
 

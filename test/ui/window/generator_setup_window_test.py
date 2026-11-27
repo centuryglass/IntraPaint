@@ -10,6 +10,7 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -24,8 +25,8 @@ class GeneratorSetupWindowTest(IntraPaintTestCase):
         image_stack = ImageStack(size, size, size, size, UndoStack())
         main_window = MagicMock()
         self.window = GeneratorSetupWindow()
-        self.null_generator = NullGenerator(main_window, image_stack)
-        self.other_generator = TestGenerator(main_window, image_stack)
+        self.null_generator = NullGenerator(main_window, image_stack, AppStateTracker())
+        self.other_generator = TestGenerator(main_window, image_stack, AppStateTracker())
         self.window.add_generator(self.null_generator)
         self.window.add_generator(self.other_generator)
 

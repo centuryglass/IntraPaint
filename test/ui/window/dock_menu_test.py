@@ -13,6 +13,7 @@ from src.ui.window.dock_placement import DockEdge, SplitSide
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 from test.ui.window.procedural_layout import use_procedural_layout
 
@@ -31,7 +32,7 @@ class DockMenuTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         test_size = QSize(64, 64)
-        self.window = MainWindow(ImageStack(test_size, test_size, test_size, test_size, UndoStack()))
+        self.window = MainWindow(ImageStack(test_size, test_size, test_size, test_size, UndoStack()), AppStateTracker())
         for dock in self.window.docks:
             if dock is not self.window.controlnet_dock:
                 dock.set_content(QLabel(dock.windowTitle()))

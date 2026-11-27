@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QSizePolicy, QW
 
 from src.ui.layout.panel_fit import Orientation
 from src.ui.window.panel_dock import PanelDock
+from src.util.application_state import AppStateTracker
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import stable_diffusion_panel
 
@@ -34,8 +35,8 @@ class DockedPanelResizeTest(IntraPaintTestCase):
         canvas = QWidget()
         canvas.setMinimumSize(100, 100)
         self.window.setCentralWidget(canvas)
-        self.dock = PanelDock('Generation', 'generation', self.window)
-        self.below = PanelDock('Below', 'below', self.window)
+        self.dock = PanelDock('Generation', 'generation', self.window, AppStateTracker())
+        self.below = PanelDock('Below', 'below', self.window, AppStateTracker())
         for dock in (self.dock, self.below):
             self.window.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock, Qt.Orientation.Vertical)
         # Expanding like the panel, so the area splits its height as `resizeDocks` asks:

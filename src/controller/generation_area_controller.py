@@ -68,9 +68,10 @@ class GenerationAreaController(QObject):
     """Applies the resolution rule on generation area size changes, moves the area to follow selection edits, and
     handles the previous frame hotkey."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
+    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker) -> None:
         super().__init__()
         self._image_stack = image_stack
+        self._app_state = app_state
         self._area_size = image_stack.generation_area.size()
         self._writing_resolution = False
         # Whether the generation area is shown. The area only follows the selection while it is.
@@ -157,7 +158,7 @@ class GenerationAreaController(QObject):
         return True
 
     def _previous_frame_hotkey(self) -> bool:
-        if AppStateTracker.app_state() != APP_STATE_EDITING:
+        if self._app_state.app_state() != APP_STATE_EDITING:
             return False
         return self.select_previous_frame()
 

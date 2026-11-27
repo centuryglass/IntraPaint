@@ -99,7 +99,7 @@ class TestRecentFilesAndDrops(IntraPaintTestCase):
         self.assertEqual(self._drop([text_path, os.path.join(self.temp_dir.name, 'missing.png')]), [])
 
     def test_drop_without_image_loads_it(self) -> None:
-        AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
+        AppStateTracker().set_app_state(APP_STATE_NO_IMAGE)
         with self._without_image(), patch.object(self.controller, 'load_image') as mock_load:
             dropped = self._drop([self.red_path])
         self.assertEqual(dropped, [[self.red_path]])
@@ -114,4 +114,4 @@ class TestRecentFilesAndDrops(IntraPaintTestCase):
         self.assertEqual(dropped, [[self.blue_path]])
         mock_error.assert_not_called()
         self.assertEqual(len(stack.top_level_layers), layer_count + 1)
-        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(AppStateTracker().app_state(), APP_STATE_EDITING)

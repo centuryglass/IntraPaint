@@ -25,6 +25,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.async_task import AsyncTask
 from test.base_test_case import IntraPaintTestCase
 from test.image.brush.brush_test_case import brush_test_pattern
@@ -109,7 +110,7 @@ class FilterSelectionOnlyTest(IntraPaintTestCase):
     def _apply_filter(self) -> None:
         """Runs apply_filter with its background task on the calling thread."""
         with patch.object(AsyncTask, 'start', AsyncTask.run):
-            self.filter.apply_filter([])
+            self.filter.apply_filter([], AppStateTracker())
 
     def test_filter_changes_every_selected_region(self) -> None:
         """Each region of a multi-region selection is filtered, and unselected pixels are left alone."""
@@ -151,7 +152,7 @@ class MenuFilterTest(IntraPaintTestCase):
         background task runs on the calling thread.
         """
         UndoStack().clear()
-        modal = image_filter.get_filter_modal()
+        modal = image_filter.get_filter_modal(AppStateTracker())
         # pylint: disable-next=protected-access
         for field_widget, value in zip(modal._param_inputs, parameter_values, strict=True):
             field_widget.set_value(value)

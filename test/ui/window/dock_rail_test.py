@@ -38,7 +38,7 @@ class DockRailTest(IntraPaintTestCase):
         use_procedural_layout(self)
         size = QSize(64, 64)
         image_stack = ImageStack(size, size, size, size, UndoStack())
-        self.window = MainWindow(image_stack)
+        self.window = MainWindow(image_stack, AppStateTracker())
         self.window.tools_dock.set_content(QLabel('tools'))
         self.window.generation_dock.set_content(QLabel('generation'))
         self.tool_controller = ToolController(image_stack, self.window.image_panel.image_viewer, use_hotkeys=False)
@@ -231,7 +231,7 @@ class DockRailTest(IntraPaintTestCase):
         self.assertIn('<img', generate.toolTip(), 'the tooltip shows the key as a keycap')
         self.assertFalse(self.window.generation_dock.is_showing)
         self.assertFalse(generate.isHidden())
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
         emitted = []
         self.window.generate_signal.connect(lambda: emitted.append(True))
         generate.click()

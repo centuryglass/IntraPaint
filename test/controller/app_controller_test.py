@@ -21,7 +21,7 @@ from src.ui.window import saved_layouts
 from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING, APP_STATE_NO_IMAGE
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.display_size import get_screen_size
 from test.base_test_case import IntraPaintTestCase, delete_widgets_created_since, install_test_context
@@ -138,6 +138,16 @@ class TestAppController(IntraPaintTestCase):
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
         self.assertIsInstance(self.controller._generator, TestGenerator)
         self.assertTrue(self.controller._image_io.metadata.is_empty)
+
+    def test_app_state_follows_image_layers(self):
+        """Removing the image's last layer leaves no image to edit, and adding one moves back to editing."""
+        image_stack = self.controller._image_stack
+        image_stack.load_image(QImage(QSize(8, 8), QImage.Format.Format_ARGB32_Premultiplied))
+        self.assertEqual(APP_STATE_EDITING, AppStateTracker().app_state())
+        image_stack.remove_layer(image_stack.layer_stack.child_layers[0])
+        self.assertEqual(APP_STATE_NO_IMAGE, AppStateTracker().app_state())
+        image_stack.create_layer()
+        self.assertEqual(APP_STATE_EDITING, AppStateTracker().app_state())
 
     def test_context_pins_follow_generator(self):
         """Unloading the generator clears context pins and hides their menu action, and loading one restores it."""
@@ -387,7 +397,7 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.window = self.controller._window
         self.image_stack = self.controller._image_stack
         self.image_stack.load_image(self._image(QColor(10, 20, 30)))
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
 
     def _image(self, color: QColor) -> QImage:
         image = QImage(self.IMAGE_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
@@ -448,7 +458,7 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         """A stored batch does not make the action available in another application state."""
         self._complete_a_generation()
         self.window.set_image_selector_visible(False)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        AppStateTracker().set_app_state(APP_STATE_LOADING)
         self.assertFalse(self._action().isEnabled())
 
 

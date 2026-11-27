@@ -25,7 +25,7 @@ from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedCon
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
@@ -167,8 +167,10 @@ def _option_names(options: list[BackendOption]) -> list[str]:
 class SDComfyUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
-    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, Cache.COMFYUI_CACHED_SCALING_MODE)
+    def __init__(self, window: MainWindow, image_stack: ImageStack, app_state: AppStateTracker,
+                 args: Namespace) -> None:
+        super().__init__(window, image_stack, app_state, args, Cache.SD_COMFYUI_SERVER_URL,
+                         Cache.COMFYUI_CACHED_SCALING_MODE)
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
         # The job the worker thread is waiting on, which `cancel_generation` cancels from the main thread:
@@ -420,7 +422,7 @@ class SDComfyUIGenerator(SDGenerator):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = self._create_control_panel(StableDiffusionPanel(False),
+            self._control_panel = self._create_control_panel(StableDiffusionPanel(False, self._app_state),
                                                              ComfyUIAdvancedControls())
             self._control_panel.clear_memory_requested.connect(self.clear_comfyui_memory)
         return self._control_panel

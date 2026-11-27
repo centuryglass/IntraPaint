@@ -41,8 +41,8 @@ def _solid(size: QSize, color: QColor) -> QImage:
 class _ScriptedGenerator(TestGenerator):
     """Returns canned images, or raises a canned error, from `generate`."""
 
-    def __init__(self, window, image_stack: ImageStack) -> None:
-        super().__init__(window, image_stack)
+    def __init__(self, window, image_stack: ImageStack, app_state: AppStateTracker) -> None:
+        super().__init__(window, image_stack, app_state)
         self.results: list[QImage] = []
         self.error: Optional[BaseException] = None
         self.generate_calls: list[tuple[QImage, Optional[QImage]]] = []
@@ -78,8 +78,8 @@ class ImageGeneratorTest(IntraPaintTestCase):
         cache.set(Cache.BATCH_COUNT, BATCH_COUNT)
         cache.set(Cache.BATCH_SIZE, BATCH_SIZE)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
-        self.generator = _ScriptedGenerator(self.window, self.image_stack)
-        self.session = GenerationSession(self.image_stack)
+        self.generator = _ScriptedGenerator(self.window, self.image_stack, AppStateTracker())
+        self.session = GenerationSession(self.image_stack, AppStateTracker())
         self.window.generation_session = self.session
         self.started: list[Optional[QImage]] = []
         self.failures: list[BaseException] = []
@@ -221,7 +221,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
 
     def test_cache_generated_image_keeps_order_and_replaces(self) -> None:
         """Images are stored at their index, padding skipped slots with null images, and replaced on repeat."""
-        generator = TestGenerator(self.window, self.image_stack)
+        generator = TestGenerator(self.window, self.image_stack, AppStateTracker())
         first, second, replacement = (_solid(QSize(4, 4), QColor(color))
                                       for color in (Qt.GlobalColor.red, Qt.GlobalColor.green, Qt.GlobalColor.blue))
         with mock.patch('src.controller.image_generation.image_generator.QTimer.singleShot') as single_shot:
@@ -238,7 +238,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
 
     def test_load_generated_image_skips_null(self) -> None:
         """Only non-null cached images are delivered."""
-        generator = TestGenerator(self.window, self.image_stack)
+        generator = TestGenerator(self.window, self.image_stack, AppStateTracker())
         self.session._results = [QImage(), _solid(QSize(4, 4), QColor(Qt.GlobalColor.red))]  # pylint: disable=protected-access
         generator._load_generated_image_for_selection(0)  # pylint: disable=protected-access
         self.assertEqual(self.previews, {})
