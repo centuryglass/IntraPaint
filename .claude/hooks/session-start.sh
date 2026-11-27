@@ -7,8 +7,9 @@
 # requirements-dev.txt, and the compiled image_fill module. Python 3.13 matches CI's lint job, since
 # scripts/pylint_baseline.json is only valid for the Python version it was generated with.
 #
-# A new web session also fast-forwards its checkout to the newest origin/integration first (sync_new_web_session), and
-# a local session keeps whatever branch and commit it started on.
+# A new web session also fast-forwards its checkout to the newest origin/integration first (sync_new_web_session) and
+# moves the local integration branch there too (update_local_integration), so a branch cut from either is current. A
+# local session keeps whatever branch and commit it started on.
 set -euo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-.}"
@@ -58,8 +59,31 @@ sync_new_web_session() {
   return 0
 }
 
+# Moves the local integration branch to origin/integration when it isn't checked out, so `git checkout -b <name>
+# integration` starts from current code. The checked-out branch is sync_new_web_session's job. It moves only a branch
+# that origin/integration descends from. Best-effort: any failure leaves the branch as it is.
+update_local_integration() {
+  git fetch -q origin "+refs/heads/integration:refs/remotes/origin/integration" \
+    || { echo "git fetch of integration failed; the local integration branch may be behind." >&2; return 0; }
+  [ "$(git symbolic-ref -q --short HEAD || true)" = integration ] && return 0
+  if ! git show-ref --verify -q refs/heads/integration; then
+    git branch -q integration origin/integration || true
+    return 0
+  fi
+  if ! git merge-base --is-ancestor integration origin/integration; then
+    echo "Warning: the local integration branch has commits that origin/integration lacks; not updating it."
+    return 0
+  fi
+  [ "$(git rev-parse integration)" = "$(git rev-parse origin/integration)" ] && return 0
+  git branch -q -f integration origin/integration \
+    && echo "Moved the local integration branch to origin/integration ($(git log -1 --format='%h %s' integration))." \
+    || echo "Could not move the local integration branch; it may be behind origin/integration." >&2
+  return 0
+}
+
 if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] && [ "$hook_source" = startup ] && [ -z "${SESSION_START_SYNCED:-}" ]; then
   sync_new_web_session
+  update_local_integration
   # The fast-forward may have changed this script, so the rest of the start-up runs from the new copy.
   if [ "$checkout_moved" -eq 1 ]; then
     SESSION_START_SYNCED=1 exec "$0" </dev/null
