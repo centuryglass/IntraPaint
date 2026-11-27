@@ -19,7 +19,8 @@ import numpy as np
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage, QColor
 
-from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image
+from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image, ARGB32_RED, ARGB32_GREEN, \
+    ARGB32_BLUE, ARGB32_ALPHA, ARGB32_RGBA_ORDER
 
 @cython.nogil
 @cython.cfunc
@@ -49,13 +50,13 @@ def calculate_color_distance(l1: cython.float,
         alpha1: cython.uint
             Pre-converted LAB color alpha component (0 - 255)
         r: cython.uint
-            BGRA color red component (0 - 255).
+            Pixel color red component (0 - 255).
         g: cython.uint
-            BGRA color green component (0 - 255).
+            Pixel color green component (0 - 255).
         b: cython.uint
-            BGRA color blue component (0 - 255).
+            Pixel color blue component (0 - 255).
         alpha2: cython.uint
-            BGRA color alpha component (0 - 255).
+            Pixel color alpha component (0 - 255).
     Returns
     -------
         distance: float
@@ -157,7 +158,7 @@ def make_lab_mask(pixels: cython.uchar[:],
     Parameters
     ----------
         pixels: cython.uchar[:]
-            A 1-dimensional array of ARGB32 (b, g, r, a) image pixel values, range 0-255
+            A 1-dimensional array of ARGB32 image pixel values, range 0-255, with channels at the ARGB32_* offsets
         width: cython.long
             Width of the pixels parameter array
         height: cython.long
@@ -179,14 +180,19 @@ def make_lab_mask(pixels: cython.uchar[:],
     """
     mask = np.zeros(width * height, dtype=np.uint8)
     mask_view = cython.declare(cython.uchar[:], mask)
+    # Typed copies of the channel offsets, since the loop below can't read Python globals:
+    red_offset: cython.int = ARGB32_RED
+    green_offset: cython.int = ARGB32_GREEN
+    blue_offset: cython.int = ARGB32_BLUE
+    alpha_offset: cython.int = ARGB32_ALPHA
     with cython.nogil:
         i: cython.longlong
         for i in range(width * height):
             px_index: cython.long = i * 4
-            b: cython.uint = pixels[px_index]
-            g: cython.uint = pixels[px_index + 1]
-            r: cython.uint = pixels[px_index + 2]
-            a: cython.uint = pixels[px_index + 3]
+            b: cython.uint = pixels[px_index + blue_offset]
+            g: cython.uint = pixels[px_index + green_offset]
+            r: cython.uint = pixels[px_index + red_offset]
+            a: cython.uint = pixels[px_index + alpha_offset]
             dist = calculate_color_distance(target_l, target_a, target_b, target_alpha, r, g, b, a)
             if dist <= threshold:
                 mask_view[i] = 1
@@ -203,7 +209,7 @@ def fast_flood_fill(image: cython.uchar[:, :, :], width: cython.long, height: cy
      Parameters
     ----------
         image: cython.uchar[:, :, :]
-            A 2-dimensional array of ARGB32 (b, g, r, a) image pixel values, range 0-255
+            A 2-dimensional array of ARGB32 image pixel values, range 0-255, with channels at the ARGB32_* indexes
         width: cython.long
             image width
         height: cython.long
@@ -226,10 +232,14 @@ def fast_flood_fill(image: cython.uchar[:, :, :], width: cython.long, height: cy
     if not (0 <= seed_x < width and 0 <= seed_y < height):
         return mask
 
-    seed_color = image[seed_y, seed_x]
-    r: cython.uint = image[seed_y, seed_x, 2]
-    g: cython.uint = image[seed_y, seed_x, 1]
-    b: cython.uint = image[seed_y, seed_x, 0]
+    # Typed copies of the channel indexes, since the nogil loop below can't read Python globals:
+    red_index: cython.int = ARGB32_RED
+    green_index: cython.int = ARGB32_GREEN
+    blue_index: cython.int = ARGB32_BLUE
+    alpha_index: cython.int = ARGB32_ALPHA
+    r: cython.uint = image[seed_y, seed_x, red_index]
+    g: cython.uint = image[seed_y, seed_x, green_index]
+    b: cython.uint = image[seed_y, seed_x, blue_index]
 
     lab = cython.declare(cython.float[3])
     lab_ptr = cython.cast(cython.pointer[cython.float], cython.address(lab))
@@ -237,7 +247,7 @@ def fast_flood_fill(image: cython.uchar[:, :, :], width: cython.long, height: cy
     lab_l: cython.float = lab[0]
     lab_a: cython.float = lab[1]
     lab_b: cython.float = lab[2]
-    alpha: cython.uint = seed_color[3]
+    alpha: cython.uint = image[seed_y, seed_x, alpha_index]
 
     # Using a standard 4-connected flood fill to avoid horizontal artifacts
     max_stack_size: cython.longlong = width * height  # Safety limit
@@ -257,10 +267,10 @@ def fast_flood_fill(image: cython.uchar[:, :, :], width: cython.long, height: cy
 
             if mask_view[y, x]:  # Skip if already filled
                 continue
-            r_curr: cython.uint = image[y, x, 2]
-            g_curr: cython.uint = image[y, x, 1]
-            b_curr: cython.uint = image[y, x, 0]
-            a_curr: cython.uint = image[y, x, 3]
+            r_curr: cython.uint = image[y, x, red_index]
+            g_curr: cython.uint = image[y, x, green_index]
+            b_curr: cython.uint = image[y, x, blue_index]
+            a_curr: cython.uint = image[y, x, alpha_index]
             if (r_last == r_curr and g_last == g_curr and b_last == b_curr and a_last == a_curr) \
                     or calculate_color_distance(lab_l, lab_a, lab_b, alpha,
                                                 r_curr, g_curr, b_curr, a_curr) <= threshold:
@@ -317,8 +327,8 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
         result.fill(Qt.GlobalColor.transparent)
         mask_data = image_data_as_numpy_8bit(result)
 
-        # Set color for filled pixels
-        mask_data[filled_mask.astype(bool)] = [0, 0, 0, 255]
+        # Mark filled pixels opaque black:
+        mask_data[filled_mask.astype(bool), ARGB32_ALPHA] = 255
 
         return result
     # Modify original image directly
@@ -327,12 +337,10 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
         alpha_mult = color.alpha() / 255.0
     else:
         alpha_mult = 1.0
-    src_np_image[filled_mask.astype(bool)] = [
-        color.blue() * alpha_mult,
-        color.green() * alpha_mult,
-        color.red() * alpha_mult,
-        color.alpha()
-    ]
+    fill_pixel = np.empty(4)
+    fill_pixel[ARGB32_RGBA_ORDER] = (color.red() * alpha_mult, color.green() * alpha_mult, color.blue() * alpha_mult,
+                                     color.alpha())
+    src_np_image[filled_mask.astype(bool)] = fill_pixel
     return None
 
 
@@ -353,5 +361,5 @@ def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
 
     mask_image = create_transparent_image(image.size())
     np_mask_image = image_data_as_numpy_8bit(mask_image)
-    np_mask_image[mask.astype(bool), 3] = 255
+    np_mask_image[mask.astype(bool), ARGB32_ALPHA] = 255
     return mask_image

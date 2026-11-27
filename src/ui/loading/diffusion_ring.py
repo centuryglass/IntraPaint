@@ -13,7 +13,7 @@ from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainter, QImage
 
 from src.ui.loading.loading_design import LoadingDesign
-from src.util.visual.image_utils import image_data_as_numpy_8bit
+from src.util.visual.image_utils import image_data_as_numpy_8bit, ARGB32_ALPHA, ARGB32_COLOR
 
 DESIGN_NAME = 'Diffusion Ring'
 DEFAULT_DURATION_MS = 5000
@@ -74,9 +74,9 @@ class DiffusionRing(LoadingDesign):
                 raise ValueError(f'Diffusion ring images must be square and the same size, got {image.width()}x'
                                  f'{image.height()} with a {self._size}px first image')
             pixels = image_data_as_numpy_8bit(image.convertToFormat(QImage.Format.Format_ARGB32)).astype(np.float32)
-            self._colors.append(pixels[:, :, :3] / 127.5 - 1)
+            self._colors.append(pixels[:, :, ARGB32_COLOR] / 127.5 - 1)
             if len(self._colors) == 1:
-                self._alpha = pixels[:, :, 3] / 255
+                self._alpha = pixels[:, :, ARGB32_ALPHA] / 255
         self.image_names = list(image_names) if image_names is not None else [str(i) for i in range(len(images))]
         if len(self.image_names) != len(images):
             raise ValueError(f'Got {len(self.image_names)} image names for {len(images)} images')
@@ -145,14 +145,16 @@ class DiffusionRing(LoadingDesign):
         signal = signal_level(phase)
         step = int(phase * NOISE_STEPS) % NOISE_STEPS
         pixels = np.empty((self._size, self._size, 4), dtype=np.uint8)
-        for channel in range(3):
-            noise = (_hash_uniform(self._index, step, channel) + _hash_uniform(self._index, step, channel + 3)
-                     + _hash_uniform(self._index, step, channel + 6) - 1.5) * NOISE_SCALE
-            mixed = math.sqrt(signal) * self._colors[self._current][:, :, channel] + math.sqrt(1 - signal) * noise
+        # self._colors holds only the three ARGB32_COLOR channels: color_index indexes it, and channel indexes pixels.
+        for color_index, channel in enumerate(range(4)[ARGB32_COLOR]):
+            noise = (_hash_uniform(self._index, step, color_index) + _hash_uniform(self._index, step, color_index + 3)
+                     + _hash_uniform(self._index, step, color_index + 6) - 1.5) * NOISE_SCALE
+            mixed = (math.sqrt(signal) * self._colors[self._current][:, :, color_index]
+                     + math.sqrt(1 - signal) * noise)
             pixels[:, :, channel] = np.clip(np.rint((mixed + 1) * 127.5), 0, 255)
         alpha_jitter = 0.5 + 0.5 * _hash_uniform(self._index, step, 9)
         alpha = self._alpha * (signal + (1 - signal) * alpha_jitter)
-        pixels[:, :, 3] = np.clip(np.rint(alpha * 255), 0, 255)
+        pixels[:, :, ARGB32_ALPHA] = np.clip(np.rint(alpha * 255), 0, 255)
         self._frame = QImage(pixels.data, self._size, self._size, QImage.Format.Format_ARGB32).copy()
         self._frame_phase = phase
         return self._frame
