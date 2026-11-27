@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
@@ -36,7 +37,7 @@ class SelectionPanelTest(IntraPaintTestCase):
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024), UndoStack())
         self.selection_layer = self.image_stack.selection_layer
-        self.panel = SelectionPanel(self.selection_layer, MagicMock())
+        self.panel = SelectionPanel(self.selection_layer, MagicMock(), HotkeyFilter())
         self.button = self.panel._clear_pins_button  # pylint: disable=protected-access
 
     def test_shown_only_while_inpainting(self) -> None:
@@ -152,10 +153,10 @@ class SelectionPanelsTest(IntraPaintTestCase):
         self.tools = {name: MagicMock(is_active=False) for name in ('brush', 'fill', 'free', 'shape')}
         self.tools['shape'].get_activation_config_key.return_value = KeyConfig.SHAPE_SELECTION_TOOL_KEY
         self.panels = {
-            'brush': BrushSelectionPanel(self.layer, self.tools['brush']),
-            'fill': MagicWandPanel(self.layer, self.tools['fill']),
-            'free': FreeSelectionPanel(self.layer, self.tools['free']),
-            'shape': ShapeSelectionPanel(self.layer, self.tools['shape'])
+            'brush': BrushSelectionPanel(self.layer, self.tools['brush'], HotkeyFilter()),
+            'fill': MagicWandPanel(self.layer, self.tools['fill'], HotkeyFilter()),
+            'free': FreeSelectionPanel(self.layer, self.tools['free'], HotkeyFilter()),
+            'shape': ShapeSelectionPanel(self.layer, self.tools['shape'], HotkeyFilter())
         }
 
     def _press(self, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:

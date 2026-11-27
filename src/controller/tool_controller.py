@@ -11,7 +11,6 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.clone_stamp_tool import CloneStampTool
@@ -70,10 +69,12 @@ class ToolController(QObject):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, load_all_tools: bool = True,
                  use_hotkeys: bool = True):
-        """Installs itself as an event handler within an image viewer."""
+        """Installs itself as an event handler within an image viewer, and registers keys with the viewer's
+        `hotkey_filter`."""
         super().__init__()
         self._use_hotkeys = use_hotkeys
         self._image_viewer = image_viewer
+        self._hotkey_filter = image_viewer.hotkey_filter
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
         self._tool_modifier_delegates: dict[BaseTool, dict[Qt.KeyboardModifier, BaseTool]] = {}
@@ -83,7 +84,7 @@ class ToolController(QObject):
         self._context_scroll_remainder = 0
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
-        HotkeyFilter.instance().modifiers_changed.connect(self._handle_modifier_delegation)
+        self._hotkey_filter.modifiers_changed.connect(self._handle_modifier_delegation)
 
         if not load_all_tools:
             return
@@ -166,12 +167,12 @@ class ToolController(QObject):
             self._image_viewer.focusWidget()
             return True
         binding_id = f'{tool.label}_{id(self)}'
-        HotkeyFilter.instance().register_config_keybinding(binding_id, set_active, config_key)
+        self._hotkey_filter.register_config_keybinding(binding_id, set_active, config_key)
 
     def unregister_hotkeys(self, tool: BaseTool) -> None:
         """Disconnects tool hotkey bindings."""
         binding_id = f'{tool.label}_{id(self)}'
-        HotkeyFilter.instance().remove_keybinding(binding_id)
+        self._hotkey_filter.remove_keybinding(binding_id)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifier) -> None:

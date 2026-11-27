@@ -29,6 +29,10 @@ KeybindingAction: TypeAlias = Callable[[], bool] | Callable[[], None] | Callable
 class HotkeyFilter(QObject, metaclass=QObjectService):
     """Registers and handles window-level hotkeys.
 
+    `AppController` reads the `HotkeyFilter()` accessor once and passes the instance on. Image views take it in their
+    constructors and expose it as `ImageGraphicsView.hotkey_filter`, tools and `ToolController` read it from their
+    viewer, and tool panels receive it from their tool.
+
     The filter is installed on each window's QWindow when that window first takes focus, so it sees key presses
     before any widget does. A key event sent straight to a widget with `QApplication.sendEvent` never reaches a
     QWindow, so it skips every binding. To reach the bindings, send the key to the window's QWindow.
@@ -38,11 +42,6 @@ class HotkeyFilter(QObject, metaclass=QObjectService):
 
     # Called with each event source that isn't a QObject. Tests set this to fail the running test.
     stale_source_hook: Optional[Callable[[object], None]] = None
-
-    @staticmethod
-    def instance() -> 'HotkeyFilter':
-        """Returns the installed `AppContext`'s hotkey manager, the same instance `HotkeyFilter()` returns."""
-        return HotkeyFilter()
 
     @dataclass
     class KeyBinding:

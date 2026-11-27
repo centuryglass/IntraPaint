@@ -40,8 +40,9 @@ class ImageGraphicsView(QGraphicsView):
     # Emitted with the cursor's widget position whenever set_cursor_pos runs, or None when the cursor leaves.
     cursor_moved = Signal(object)
 
-    def __init__(self, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
+    def __init__(self, hotkey_filter: HotkeyFilter, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
         super().__init__(parent)
+        self._hotkey_filter = hotkey_filter
         # The view owns its scene: deleting the view deletes the scene and every item in it.
         self._scene = QGraphicsScene(self)
         self._content_size: QSize = QSize(0, 0)
@@ -102,8 +103,8 @@ class ImageGraphicsView(QGraphicsView):
                     return False
                 self.toggle_zoom()
                 return True
-            HotkeyFilter.instance().register_config_keybinding(f'ImageGraphicsView_{id(self)}_toggle_zoom',
-                                                               _toggle_zoom_if_visible, KeyConfig.ZOOM_TOGGLE)
+            hotkey_filter.register_config_keybinding(f'ImageGraphicsView_{id(self)}_toggle_zoom',
+                                                     _toggle_zoom_if_visible, KeyConfig.ZOOM_TOGGLE)
             for pan_key, scroll_key, scroll_more_key, offset in (
                     (KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, KeyConfig.MOVE_LEFT_MORE, (-1.0, 0.0)),
                     (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_RIGHT_MORE, (1.0, 0.0)),
@@ -118,7 +119,7 @@ class ImageGraphicsView(QGraphicsView):
                     self.offset = QPointF(self.offset.x() + x, self.offset.y() + y)
                     return True
                 binding_id = f'ImageGraphicsView_{id(self)}_{pan_key}'
-                HotkeyFilter.instance().register_config_keybinding(binding_id, _pan, pan_key)
+                hotkey_filter.register_config_keybinding(binding_id, _pan, pan_key)
 
                 # Bind to abstract content scrolling method:
                 for config_key, steps in ((scroll_key, 1), (scroll_more_key, MOVE_MORE_STEPS)):
@@ -127,7 +128,7 @@ class ImageGraphicsView(QGraphicsView):
                             return False
                         return self.scroll_content(x, y)
                     binding_id = f'ImageGraphicsView_{id(self)}_{config_key}'
-                    HotkeyFilter.instance().register_config_keybinding(binding_id, _scroll, config_key)
+                    hotkey_filter.register_config_keybinding(binding_id, _scroll, config_key)
 
             # Bind zoom keys:
             for config_key, multiplier in ((KeyConfig.ZOOM_IN, ZOOM_FACTOR), (KeyConfig.ZOOM_OUT, 1.0 / ZOOM_FACTOR)):
@@ -137,7 +138,7 @@ class ImageGraphicsView(QGraphicsView):
                     self._zoom_step(change)
                     return True
                 binding_id = f'ImageGraphicsView_{id(self)}_{config_key}'
-                HotkeyFilter.instance().register_config_keybinding(binding_id, _zoom, config_key)
+                hotkey_filter.register_config_keybinding(binding_id, _zoom, config_key)
 
 
     def _register_pan_key(self) -> None:
@@ -155,8 +156,14 @@ class ImageGraphicsView(QGraphicsView):
             view = view_ref()
             return view is not None and view.isVisible()
         binding_id = f'ImageGraphicsView_{id(self)}_pan_key'
-        HotkeyFilter.instance().register_held_key(binding_id, _set_held, KeyConfig.PAN_VIEW_KEY, _is_visible)
-        self.destroyed.connect(lambda: HotkeyFilter.instance().remove_keybinding(binding_id))
+        hotkey_filter = self._hotkey_filter
+        hotkey_filter.register_held_key(binding_id, _set_held, KeyConfig.PAN_VIEW_KEY, _is_visible)
+        self.destroyed.connect(lambda: hotkey_filter.remove_keybinding(binding_id))
+
+    @property
+    def hotkey_filter(self) -> HotkeyFilter:
+        """Returns the hotkey manager this view registers its keys with, which tools in the view also use."""
+        return self._hotkey_filter
 
     @property
     def mouse_navigation_enabled(self) -> bool:

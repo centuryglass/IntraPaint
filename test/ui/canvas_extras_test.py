@@ -6,6 +6,7 @@ from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QImage, QColor
 from PySide6.QtWidgets import QApplication, QGraphicsItem, QGraphicsRectItem, QGraphicsScene
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.generation_area_tool import GenerationAreaTool
@@ -104,7 +105,7 @@ class ImageViewerCanvasExtrasTest(IntraPaintTestCase):
         self.image_stack.create_layer(image_data=image)
         self.image_stack.generation_area = QRect(8, 8, 32, 32)
         self.image_stack.selection_layer.set_context_pins([QPoint(4, 4)])
-        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.extras = self.viewer.canvas_extras
 
     def _category_of(self, item: QGraphicsItem) -> CanvasExtraCategory:

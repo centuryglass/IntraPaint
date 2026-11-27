@@ -7,6 +7,7 @@ from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.image_viewer import ImageViewer
@@ -31,7 +32,7 @@ class ZoomToolTest(ToolTestCase):
         super().setUp()
         Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.image_stack.create_layer()
-        self.main_viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.main_viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.tool = self.activate_tool(ZoomTool(self.image_stack, self.main_viewer, self.image_viewer))
         self.selection_layer = self.image_stack.selection_layer
         UndoStack().clear()
@@ -92,7 +93,7 @@ class NavigationPanelTest(IntraPaintTestCase):
         Cache().set(Cache.IMAGE_GENERATION_AVAILABLE, True)
         self.image_stack = ImageStack(self.IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
         self.image_stack.create_layer()
-        self.main_viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.main_viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         self.main_viewer.resize(600, 400)
         self.main_viewer.show()
         self.panel = self._new_panel()
@@ -191,7 +192,7 @@ class NavigationWindowResizeTest(IntraPaintTestCase):
         """Resizing the window plans its canvas bar: Reset view shows its label when wide and its glyph when
         narrow."""
         image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048), UndoStack())
-        main_viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        main_viewer = ImageViewer(None, image_stack, HotkeyFilter(), use_keybindings=False)
         window = NavigationWindow(image_stack, main_viewer)
         window.show()
         try:

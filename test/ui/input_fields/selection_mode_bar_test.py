@@ -6,6 +6,7 @@ from shiboken6 import delete as sip_delete
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.ui.input_fields.selection_mode_bar import SelectionModeBar, MODE_ORDER
 from src.util.visual.selection_mode import SelectionMode, SelectionModifiers
 from test.base_test_case import IntraPaintTestCase
@@ -21,7 +22,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
     def test_config_connections_end_with_parent_deletion(self) -> None:
         """Deleting the bar's parent removes its config registrations."""
         parent = QWidget()
-        bar = SelectionModeBar(parent=parent)
+        bar = SelectionModeBar(HotkeyFilter(), parent=parent)
         self.assertIn(bar, Cache()._connected[Cache.SELECTION_MODE])
         self.assertIn(bar, KeyConfig()._connected[KeyConfig.SELECTION_ADD_MODIFIER])
         sip_delete(parent)
@@ -30,7 +31,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
 
     def test_segment_order_is_fixed(self) -> None:
         """The segments run Replace, Add, Subtract, Intersect."""
-        bar = SelectionModeBar()
+        bar = SelectionModeBar(HotkeyFilter())
         self.assertEqual([segment.value for segment in bar.segments],
                          [SelectionMode.REPLACE.value, SelectionMode.ADD.value, SelectionMode.SUBTRACT.value,
                           SelectionMode.INTERSECT.value])
@@ -38,7 +39,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
     def test_follows_and_sets_stored_mode(self) -> None:
         """The bar shows the stored mode and follows changes to it, and choosing a segment stores its mode."""
         Cache().set(Cache.SELECTION_MODE, SelectionMode.INTERSECT.value)
-        bar = SelectionModeBar()
+        bar = SelectionModeBar(HotkeyFilter())
         self.assertEqual(bar.value(), SelectionMode.INTERSECT.value)
         Cache().set(Cache.SELECTION_MODE, SelectionMode.SUBTRACT.value)
         self.assertEqual(bar.value(), SelectionMode.SUBTRACT.value)
@@ -49,7 +50,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
     def test_held_modifiers_hint_override(self) -> None:
         """Held selection modifiers hint the mode they select without storing it, until they are released."""
         Cache().set(Cache.SELECTION_MODE, SelectionMode.REPLACE.value)
-        bar = SelectionModeBar()
+        bar = SelectionModeBar(HotkeyFilter())
         for modifiers, mode in ((SHIFT, SelectionMode.ADD), (ALT, SelectionMode.SUBTRACT),
                                 (SHIFT | ALT, SelectionMode.INTERSECT)):
             bar.set_held_modifiers(modifiers)
@@ -60,7 +61,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
 
     def test_without_modifiers_ignores_held_keys(self) -> None:
         """With no modifier rule, held modifiers hint nothing, and tooltips name no keys."""
-        bar = SelectionModeBar(modifiers=SelectionModifiers.NONE)
+        bar = SelectionModeBar(HotkeyFilter(), modifiers=SelectionModifiers.NONE)
         bar.set_held_modifiers(ALT)
         self.assertIsNone(bar.hint_value())
         self.assertNotIn('hold', bar.segment_tooltip(2).lower())
@@ -69,7 +70,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
         """Under the brush rule only Subtract has a modifier, and Shift with Alt keeps the stored mode, since that
            press draws a fixed-angle line."""
         Cache().set(Cache.SELECTION_MODE, SelectionMode.REPLACE.value)
-        bar = SelectionModeBar(modifiers=SelectionModifiers.BRUSH)
+        bar = SelectionModeBar(HotkeyFilter(), modifiers=SelectionModifiers.BRUSH)
         bar.set_held_modifiers(ALT)
         self.assertEqual(bar.hint_value(), SelectionMode.SUBTRACT.value)
         for modifiers in (SHIFT, SHIFT | ALT):
@@ -80,7 +81,7 @@ class SelectionModeBarTest(IntraPaintTestCase):
 
     def test_tooltips_follow_keybindings(self) -> None:
         """Each tooltip names the modifiers that pick its mode, and drops them when they are unbound."""
-        bar = SelectionModeBar()
+        bar = SelectionModeBar(HotkeyFilter())
         self.assertIn('hold Alt', bar.segment_tooltip(2))
         self.assertIn('hold Shift+Alt', bar.segment_tooltip(3))
         KeyConfig().set(KeyConfig.SELECTION_SUBTRACT_MODIFIER, '')

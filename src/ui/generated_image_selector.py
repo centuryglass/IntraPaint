@@ -22,6 +22,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.apply_option import ApplyOutcome, ApplyResult
 from src.controller.image_generation.generation_session import GenerationSession
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.generated_option_view import CAPTION_HEIGHT, GeneratedOptionView, ImageOption, OverlayState
@@ -127,6 +128,7 @@ class GeneratedImageSelector(QWidget):
     def __init__(self,
                  image_stack: ImageStack,
                  session: GenerationSession,
+                 hotkey_filter: HotkeyFilter,
                  close_selector: Callable,
                  loading_designs: Optional[tuple[LoadingDesign, ...]] = None) -> None:
         """Builds the selector around a session.
@@ -194,7 +196,7 @@ class GeneratedImageSelector(QWidget):
         self._layout.addWidget(self._top_bar)
 
         # Setup main option view widget:
-        self._view = GeneratedOptionView()
+        self._view = GeneratedOptionView(hotkey_filter)
         self._view.set_options(self._option_items)
         self._view.setMouseTracking(True)
         self._view.installEventFilter(self)

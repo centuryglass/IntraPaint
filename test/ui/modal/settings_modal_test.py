@@ -201,7 +201,7 @@ class SettingsModalTest(IntraPaintTestCase):
     def test_recorder_records_keys_with_hotkey_bindings(self) -> None:
         """A focused key recorder records a key that has a `HotkeyFilter` binding, and the binding doesn't run."""
         ran: list[str] = []
-        hotkeys = HotkeyFilter.instance()
+        hotkeys = HotkeyFilter()
         hotkeys.register_config_keybinding('test_swap', lambda: ran.append('swap'), KeyConfig.SWAP_COLORS_SHORTCUT)
         hotkeys.register_held_key('test_pan', lambda held: ran.append('pan'), KeyConfig.PAN_VIEW_KEY)
         field = KeybindingField()

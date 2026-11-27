@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QMenu
 from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.test_generator import TestGenerator
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import CURRENT_CONTENT_LABEL, GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, \
     ORIGINAL_CONTENT_LABEL, SCROLL_DEBOUNCE_MS
@@ -57,7 +58,7 @@ class GeneratedImageSelectorViewTest(IntraPaintTestCase):
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack, AppStateTracker()),
-                                               lambda: None)
+                                               HotkeyFilter(), lambda: None)
         self.selector.resize(400, 300)
         self.selector._zoom_to_option(0, True)
 
@@ -144,7 +145,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
         self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack, AppStateTracker()),
-                                               lambda: None)
+                                               HotkeyFilter(), lambda: None)
         self.selector.resize(400, 300)
 
     def _fill_batch(self) -> None:
@@ -409,7 +410,7 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.window = MainWindow(self.image_stack, AppStateTracker())
+        self.window = MainWindow(self.image_stack, AppStateTracker(), HotkeyFilter())
         self.selector: GeneratedImageSelector = self.window._ensure_image_selector()
 
     def _run_completed_generation(self) -> None:
@@ -542,7 +543,7 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         cache.set(Cache.BATCH_SIZE, OPTION_COUNT)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(10, 20, 30)))
-        self.window = MainWindow(self.image_stack, AppStateTracker())
+        self.window = MainWindow(self.image_stack, AppStateTracker(), HotkeyFilter())
         self.generator = TestGenerator(self.window, self.image_stack, AppStateTracker())
         # Results reach the window through a main-thread timer, which these tests bypass:
         self.generator._cache_generated_image = self.window.generation_session.store_result  # type: ignore
@@ -625,7 +626,7 @@ class _RunScreenTestCase(IntraPaintTestCase):
         cache.set(Cache.BATCH_SIZE, self.BATCH)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         self.image_stack.load_image(_solid(QColor(10, 20, 30)))
-        self.window = MainWindow(self.image_stack, AppStateTracker())
+        self.window = MainWindow(self.image_stack, AppStateTracker(), HotkeyFilter())
         self.session = self.window.generation_session
         self.cancel_requests: list[bool] = []
         self.window.cancel_generation.connect(lambda: self.cancel_requests.append(True))
@@ -1068,7 +1069,8 @@ class GeneratedImageSelectorGridLayoutTest(IntraPaintTestCase):
         image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE, UndoStack())
         Cache().set(Cache.BATCH_SIZE, 1)
         Cache().set(Cache.BATCH_COUNT, option_count)
-        selector = GeneratedImageSelector(image_stack, GenerationSession(image_stack, AppStateTracker()), lambda: None)
+        selector = GeneratedImageSelector(image_stack, GenerationSession(image_stack, AppStateTracker()), HotkeyFilter(),
+                                          lambda: None)
         selector.resize(width, height)
         selector._layout.activate()
         selector._apply_ideal_image_arrangement()

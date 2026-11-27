@@ -207,12 +207,12 @@ class EyedropperToolTest(ToolTestCase):
         self.tool_controller.register_tool_delegate(fill_tool, self.eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self.activate_tool(fill_tool)
         initial_image = layer.image
-        HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.ControlModifier)
+        HotkeyFilter().modifiers_changed.emit(Qt.KeyboardModifier.ControlModifier)
         try:
             self.assertIs(self.tool_controller.active_tool, self.eyedropper_tool)
             self.mouse_drag([SAMPLE_POINT], modifiers=Qt.KeyboardModifier.ControlModifier)
         finally:
-            HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
+            HotkeyFilter().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
         self.assertIs(self.tool_controller.active_tool, fill_tool)
         self.assert_colors_equal(color_controller.foreground(), color)
         self.assert_images_equal(layer.image, initial_image)
@@ -228,12 +228,12 @@ class EyedropperToolTest(ToolTestCase):
         self.tool_controller.register_tool_delegate(fill_tool, self.eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self.activate_tool(fill_tool)
         initial_image = layer.image
-        HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.ControlModifier)
+        HotkeyFilter().modifiers_changed.emit(Qt.KeyboardModifier.ControlModifier)
         try:
             self.assertIs(self.tool_controller.active_tool, self.eyedropper_tool)
             self.mouse_drag([SAMPLE_POINT], Qt.MouseButton.RightButton, modifiers=Qt.KeyboardModifier.ControlModifier)
         finally:
-            HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
+            HotkeyFilter().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
         self.assertIs(self.tool_controller.active_tool, fill_tool)
         self.assert_colors_equal(color_controller.background(), color)
         self.assert_colors_equal(color_controller.foreground(), INITIAL_FOREGROUND)

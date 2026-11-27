@@ -6,6 +6,7 @@ from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_resize_mode import LayerResizeMode
@@ -57,7 +58,7 @@ class LayerGraphicsItemTest(IntraPaintTestCase):
         self.top = self.image_stack.create_layer('top', _noise_image(LAYER_SIZE, 1))
         self.top.transform = QTransform.fromTranslate(TILE_SIZE - 60, TILE_SIZE - 40)
         self.top.composition_mode = CompositeMode.MULTIPLY
-        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer = ImageViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         scene = self.viewer.scene()
         assert scene is not None
         items = [item for item in scene.items()
@@ -158,7 +159,7 @@ class OpaqueContentTest(IntraPaintTestCase):
         opaque.fill(Qt.GlobalColor.red)
         image_stack.load_image(opaque)
         image_stack.flush_render()
-        viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        viewer = ImageViewer(None, image_stack, HotkeyFilter(), use_keybindings=False)
         item = next(scene_item for scene_item in viewer.scene().items()
                     if isinstance(scene_item, LayerGraphicsItem) and scene_item.layer is image_stack.layer_stack)
         self.assertTrue(item.pixmap().hasAlphaChannel())

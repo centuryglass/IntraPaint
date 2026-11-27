@@ -5,6 +5,7 @@ from PySide6.QtCore import QPointF, QSize
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.widget.canvas_bar import CanvasBar, split_hint_pairs
@@ -36,7 +37,7 @@ class CanvasBarTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
-        self.panel = ImagePanel(self.image_stack, include_rulers=True, include_navigation_button=True)
+        self.panel = ImagePanel(self.image_stack, HotkeyFilter(), include_rulers=True, include_navigation_button=True)
         self.panel.resize(WIDE, PANEL_HEIGHT)
         self.panel.show()
         self.viewer = self.panel.image_viewer
@@ -215,7 +216,7 @@ class PlainCanvasBarTest(IntraPaintTestCase):
         """Without Rulers or the navigation button, the bar never shows "...", and its popover holds only the hints
         toggle."""
         image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
-        panel = ImagePanel(image_stack)
+        panel = ImagePanel(image_stack, HotkeyFilter(), HotkeyFilter())
         panel.show()
         try:
             bar = panel.control_bar

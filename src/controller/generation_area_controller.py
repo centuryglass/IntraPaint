@@ -68,7 +68,7 @@ class GenerationAreaController(QObject):
     """Applies the resolution rule on generation area size changes, moves the area to follow selection edits, and
     handles the previous frame hotkey."""
 
-    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker) -> None:
+    def __init__(self, image_stack: ImageStack, app_state: AppStateTracker, hotkey_filter: HotkeyFilter) -> None:
         super().__init__()
         self._image_stack = image_stack
         self._app_state = app_state
@@ -93,7 +93,6 @@ class GenerationAreaController(QObject):
         config = AppConfig()
         config.connect(self, AppConfig.GENERATION_RESOLUTION_MIN_SIDE, lambda _: self.apply_resolution_rule())
         config.connect(self, AppConfig.MAX_GENERATION_SIZE, lambda _: self.apply_resolution_rule())
-        hotkey_filter = HotkeyFilter.instance()
         hotkey_filter.remove_keybinding(PREVIOUS_FRAME_BINDING_ID)
         hotkey_filter.register_config_keybinding(PREVIOUS_FRAME_BINDING_ID, self._previous_frame_hotkey,
                                                  KeyConfig().PREVIOUS_GENERATION_FRAME_KEY)

@@ -63,7 +63,10 @@ class _NoTitleBar(QWidget):
 
 
 class PanelDock(QDockWidget):
-    """Hosts one panel, forwards orientation and size to it, and toggles it from a key."""
+    """Hosts one panel, forwards orientation and size to it, and toggles it from a key.
+
+    A dock with a `shortcut_config_key` registers it with `hotkey_filter`, which it then requires.
+    """
 
     _drop_rule_pauses = 0
 
@@ -80,8 +83,11 @@ class PanelDock(QDockWidget):
         return window
 
     def __init__(self, title: str, object_name: str, window: QMainWindow, app_state: AppStateTracker,
-                 icon: Optional[QIcon] = None, shortcut_config_key: Optional[str] = None) -> None:
+                 icon: Optional[QIcon] = None, shortcut_config_key: Optional[str] = None,
+                 hotkey_filter: Optional[HotkeyFilter] = None) -> None:
         super().__init__(title, window)
+        if shortcut_config_key is not None and hotkey_filter is None:
+            raise ValueError(f'PanelDock {object_name} has a shortcut key but no hotkey filter')
         self._app_state = app_state
         self._window_ref = ref(window)
         self.setObjectName(object_name)
@@ -116,8 +122,9 @@ class PanelDock(QDockWidget):
         self.topLevelChanged.connect(self._update_title_bar)
         self.toggleViewAction().triggered.connect(self._toggle_action_triggered)
         if shortcut_config_key is not None:
-            HotkeyFilter.instance().register_config_keybinding(f'PanelDock_{id(self)}_shortcut',
-                                                               self.toggle_from_key, shortcut_config_key)
+            assert hotkey_filter is not None
+            hotkey_filter.register_config_keybinding(f'PanelDock_{id(self)}_shortcut', self.toggle_from_key,
+                                                     shortcut_config_key)
 
     @staticmethod
     @contextmanager

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.controller.tool_controller import ToolController
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import MIN_OUTLINE_PIXEL_SIZE
@@ -39,8 +40,8 @@ class ToolTestCase(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, UndoStack())
-        self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False,
-                                      include_rulers=self.INCLUDE_RULERS)
+        self.image_panel = ImagePanel(self.image_stack, HotkeyFilter(), include_zoom_controls=False,
+                                      use_keybindings=False, include_rulers=self.INCLUDE_RULERS)
         self.image_viewer = self.image_panel.image_viewer
         self.image_panel.resize(self.IMAGE_SIZE.width() + VIEW_MARGIN * 2, self.IMAGE_SIZE.height() + VIEW_MARGIN * 2)
         self.image_panel.show()

@@ -8,6 +8,7 @@ from PySide6.QtGui import QMouseEvent, QWheelEvent
 from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.ui.widget.image_graphics_view import ImageGraphicsView, MAX_IMAGE_ZOOM, MIN_IMAGE_ZOOM, ZOOM_FACTOR
 from src.util.key_code_utils import get_key_with_modifiers
 from test.base_test_case import IntraPaintTestCase, press_key
@@ -30,7 +31,7 @@ class ImageGraphicsViewTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.view = ImageGraphicsView(use_keybindings=self.use_keybindings)
+        self.view = ImageGraphicsView(HotkeyFilter(), use_keybindings=self.use_keybindings)
         self.view.resize(VIEW_SIZE)
         self.view.content_size = CONTENT_SIZE
         self.view.show()
@@ -325,7 +326,7 @@ class UnsetContentSizeTest(IntraPaintTestCase):
 
     def test_show_and_resize_without_content_size(self) -> None:
         """The view tolerates having no content, and fits content set afterward."""
-        view = ImageGraphicsView(use_keybindings=False)
+        view = ImageGraphicsView(HotkeyFilter(), use_keybindings=False)
         view.resize(VIEW_SIZE)
         view.show()
         view.resize(VIEW_SIZE + QSize(20, 20))

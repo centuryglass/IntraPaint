@@ -65,7 +65,7 @@ class GradientSliderTest(IntraPaintTestCase):
         """A focused slider receives arrow keys even when an application hotkey is bound to them."""
         hotkey = MagicMock(return_value=True)
         binding_id = 'gradient_slider_test_left'
-        HotkeyFilter.instance().register_keybinding(binding_id, hotkey, QKeySequence(Qt.Key.Key_Left))
+        HotkeyFilter().register_keybinding(binding_id, hotkey, QKeySequence(Qt.Key.Key_Left))
         try:
             self.slider.show()
             self.slider.setFocus()
@@ -73,7 +73,7 @@ class GradientSliderTest(IntraPaintTestCase):
             with patch.object(QApplication, 'focusWidget', return_value=self.slider):
                 press_key(self.slider, Qt.Key.Key_Left)
         finally:
-            HotkeyFilter.instance().remove_keybinding(binding_id)
+            HotkeyFilter().remove_keybinding(binding_id)
         self.assertEqual(self.slider.value(), 49.0)
         hotkey.assert_not_called()
 

@@ -7,6 +7,7 @@ from PySide6.QtCore import QEvent, QPoint, QPointF, QSize, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.dock_rail import RailButton
 from src.ui.window.floating_title_bar import FloatingTitleBar
@@ -43,7 +44,7 @@ class RailDragTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         size = QSize(64, 64)
-        self.window = MainWindow(ImageStack(size, size, size, size, UndoStack()), AppStateTracker())
+        self.window = MainWindow(ImageStack(size, size, size, size, UndoStack()), AppStateTracker(), HotkeyFilter())
         for dock in self.window.docks:
             if dock is not self.window.controlnet_dock:
                 dock.set_content(QLabel(dock.windowTitle()))

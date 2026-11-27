@@ -46,7 +46,7 @@ class ShapeSelectionTool(ShapeDragTool):
         super().__init__(KeyConfig.SHAPE_SELECTION_TOOL_KEY, SHAPE_SELECTION_LABEL, SHAPE_SELECTION_TOOLTIP,
                          QIcon(ICON_PATH_SHAPE_SELECT_TOOL), image_viewer)
         self._image_stack = image_stack
-        self._control_panel = ShapeSelectionPanel(image_stack.selection_layer, self)
+        self._control_panel = ShapeSelectionPanel(image_stack.selection_layer, self, image_viewer.hotkey_filter)
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         # The fixed aspect and selection add modifiers share Shift by default, and the press reads it as add:
         self._selection_handler.aspect_modifier_needs_fresh_press = True

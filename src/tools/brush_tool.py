@@ -11,7 +11,6 @@ from PySide6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig, BRUSH_OPACITY_PRESETS
-from src.hotkey_filter import HotkeyFilter
 from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -134,14 +133,14 @@ class BrushTool(BaseTool):
                 return True
 
             binding_id = f'BrushTool_{id(self)}_{key}'
-            HotkeyFilter.instance().register_config_keybinding(binding_id, _size_change, key)
+            image_viewer.hotkey_filter.register_config_keybinding(binding_id, _size_change, key)
 
         def _cancel_size_drag() -> bool:
             return self.is_active and self.cancel_size_drag()
         # Bindings match exact modifiers, and the size drag modifier may still be held when Escape is pressed:
         for modifiers in _all_modifier_combinations():
-            HotkeyFilter.instance().register_keybinding(f'BrushTool_{id(self)}_cancel_size_drag', _cancel_size_drag,
-                                                        QKeySequence(Qt.Key.Key_Escape), modifiers)
+            image_viewer.hotkey_filter.register_keybinding(f'BrushTool_{id(self)}_cancel_size_drag', _cancel_size_drag,
+                                                           QKeySequence(Qt.Key.Key_Escape), modifiers)
 
         if enable_selection_restrictions:
             # Handle restricting changes to selection:
@@ -163,7 +162,7 @@ class BrushTool(BaseTool):
 
             image_stack.active_layer_changed.connect(self._active_layer_change_slot)
             self.layer = image_stack.active_layer
-        HotkeyFilter.instance().modifiers_changed.connect(self._modifier_change_slot)
+        image_viewer.hotkey_filter.modifiers_changed.connect(self._modifier_change_slot)
 
     @staticmethod
     def quick_options_hint() -> str:
@@ -378,8 +377,8 @@ class BrushTool(BaseTool):
             set_opacity(opacity)
             return True
         for config_key, preset_opacity in BRUSH_OPACITY_PRESETS.items():
-            HotkeyFilter.instance().register_config_keybinding(f'BrushTool_{id(self)}_{config_key}',
-                                                               lambda value=preset_opacity: _preset(value), config_key)
+            self._image_viewer.hotkey_filter.register_config_keybinding(
+                f'BrushTool_{id(self)}_{config_key}', lambda value=preset_opacity: _preset(value), config_key)
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""

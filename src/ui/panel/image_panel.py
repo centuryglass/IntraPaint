@@ -6,6 +6,7 @@ from PySide6.QtGui import QAction, QPalette
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QApplication, QGridLayout
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.guide_line_item import GuideLineItem
@@ -48,14 +49,15 @@ class ImagePanel(QWidget):
 
     navigation_window_requested = Signal()
 
-    def __init__(self, image_stack: ImageStack, include_zoom_controls: bool = True, use_keybindings=True,
+    def __init__(self, image_stack: ImageStack, hotkey_filter: HotkeyFilter, include_zoom_controls: bool = True,
+                 use_keybindings=True,
                  include_rulers: bool = False, include_navigation_button: bool = False) -> None:
         super().__init__()
         self._image_stack = image_stack
         self._showing_image_gen_controls = True
         self._layout = QVBoxLayout(self)
 
-        self._image_viewer = ImageViewer(None, image_stack, use_keybindings)
+        self._image_viewer = ImageViewer(None, image_stack, hotkey_filter, use_keybindings)
         self._horizontal_ruler: Optional[Ruler] = None
         self._vertical_ruler: Optional[Ruler] = None
         self._ruler_corner: Optional[QWidget] = None

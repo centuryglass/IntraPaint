@@ -6,6 +6,7 @@ from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QAction, QContextMenuEvent
 from PySide6.QtWidgets import QApplication, QLabel, QMenu, QTabBar
 
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.dock_menu import MENU_DOCK, MENU_FLOAT, MENU_HIDE_PANEL, MENU_MOVE_ALL_TO_EDGE, \
     MENU_MOVE_TO_EDGE, MENU_SPLIT_BESIDE, MENU_TAB_WITH, edge_title, group_label, side_title
@@ -32,7 +33,8 @@ class DockMenuTest(IntraPaintTestCase):
         self.addCleanup(screen_patch.stop)
         use_procedural_layout(self)
         test_size = QSize(64, 64)
-        self.window = MainWindow(ImageStack(test_size, test_size, test_size, test_size, UndoStack()), AppStateTracker())
+        self.window = MainWindow(ImageStack(test_size, test_size, test_size, test_size, UndoStack()), AppStateTracker(),
+                                 HotkeyFilter())
         for dock in self.window.docks:
             if dock is not self.window.controlnet_dock:
                 dock.set_content(QLabel(dock.windowTitle()))

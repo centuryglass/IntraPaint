@@ -200,7 +200,7 @@ class TextToolPanel(FitToolPanel):
     # Emitted after the controls show new values, for the section summaries:
     _values_shown = Signal()
 
-    def __init__(self, undo_stack: UndoStack, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, undo_stack: UndoStack, hotkey_filter: HotkeyFilter, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._undo_stack = UndoStackRef(undo_stack)
         self._text_rect = TextRect()
@@ -244,7 +244,7 @@ class TextToolPanel(FitToolPanel):
 
         def _key_predicate() -> bool:
             return self.isVisible() and self.isEnabled()
-        key_filter = HotkeyFilter.instance()
+        key_filter = hotkey_filter
         bind_step_keys(self._geometry, key_filter, KeyConfig, _key_predicate)
         for key, sign in ((KeyConfig.ROTATE_CCW_KEY, -1), (KeyConfig.ROTATE_CW_KEY, 1)):
             def _step_size(direction=sign) -> bool:

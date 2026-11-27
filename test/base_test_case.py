@@ -202,7 +202,7 @@ def press_key(widget: QWidget, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.
     window.winId()  # Creates the QWindow.
     handle = window.windowHandle()
     assert handle is not None
-    HotkeyFilter.instance().watch_window(handle)
+    HotkeyFilter().watch_window(handle)
     QApplication.sendEvent(handle, QKeyEvent(QEvent.Type.KeyPress, key, modifiers))
 
 

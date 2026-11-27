@@ -73,7 +73,7 @@ class SelectionModeBar(SegmentedControl):
     without changing the stored mode. Each segment's tooltip names the modifiers that pick it.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None,
+    def __init__(self, hotkey_filter: HotkeyFilter, parent: Optional[QWidget] = None,
                  modifiers: SelectionModifiers = SelectionModifiers.ADD_AND_SUBTRACT) -> None:
         super().__init__([Segment(mode.value, MODE_LABELS[mode], MODE_ICONS[mode]) for mode in MODE_ORDER],
                          DisplayMode.ICON, parent=parent)
@@ -87,7 +87,7 @@ class SelectionModeBar(SegmentedControl):
         if modifiers != SelectionModifiers.NONE:
             for config_key in _modifier_config_keys():
                 KeyConfig().connect(self, config_key, self._update_tooltips)
-            HotkeyFilter.instance().modifiers_changed.connect(self.set_held_modifiers)
+            hotkey_filter.modifiers_changed.connect(self.set_held_modifiers)
 
     @property
     def modifiers(self) -> SelectionModifiers:

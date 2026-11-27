@@ -185,7 +185,8 @@ class NavigationWindow(ImagePanel):
 
     def __init__(self, image_stack: ImageStack, main_image_view: ImageViewer, include_zoom_controls=True,
                  use_keybindings=False) -> None:
-        super().__init__(image_stack, include_zoom_controls=include_zoom_controls, use_keybindings=use_keybindings)
+        super().__init__(image_stack, main_image_view.hotkey_filter, include_zoom_controls=include_zoom_controls,
+                         use_keybindings=use_keybindings)
         self._main_image_viewer = main_image_view
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setWindowTitle(WINDOW_TITLE)

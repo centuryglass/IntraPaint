@@ -198,13 +198,13 @@ class IntraPaintTestCaseTest(unittest.TestCase):
                 _press_key_and_change_modifiers()
                 observed['outside_hotkey'] = outside_hotkey.call_count
                 observed['outside_listener'] = outside_listener.call_count
-                hotkey_filter = HotkeyFilter.instance()
+                hotkey_filter = HotkeyFilter()
                 filters['inside'] = hotkey_filter
                 hotkey_filter.register_keybinding('test.inside', inside_hotkey, QKeySequence(Qt.Key.Key_F12))
                 hotkey_filter.modifiers_changed.connect(inside_listener)
                 hotkey_filter.set_default_focus(widget)
 
-        filters['outside'] = HotkeyFilter.instance()
+        filters['outside'] = HotkeyFilter()
         filters['outside'].register_keybinding('test.outside', outside_hotkey, QKeySequence(Qt.Key.Key_F12))
         filters['outside'].modifiers_changed.connect(outside_listener)
         result = unittest.TestResult()

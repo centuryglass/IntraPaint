@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem, QStyleOptionGra
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.generated_image_batch import generation_area_size_image, full_size_image
+from src.hotkey_filter import HotkeyFilter
 from src.ui.ink_style import ink_colors
 from src.ui.loading.halftone_press import HalftonePress
 from src.ui.loading.loading_design import LoadingDesign, MESSAGE_ZONE
@@ -188,8 +189,8 @@ class GeneratedOptionView(ImageGraphicsView):
     zoom_toggled = Signal()
     content_scrolled = Signal(int, int)
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, hotkey_filter: HotkeyFilter) -> None:
+        super().__init__(hotkey_filter)
         self.content_size = self.size()
         self._options: list[ImageOption] = []
         self._overlay = OverlayState()

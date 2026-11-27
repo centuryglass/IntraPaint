@@ -32,7 +32,7 @@ class FreeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
     def tearDown(self) -> None:
         # Earlier tests' tools would otherwise keep their Enter and Escape bindings and claim later tests' keys
         # (#165):
-        hotkey_filter = HotkeyFilter.instance()
+        hotkey_filter = HotkeyFilter()
         hotkey_filter.remove_keybinding('FreeSelectionTool._close_on_enter')
         hotkey_filter.remove_keybinding(f'FreeSelectionTool_{id(self.tool)}_cancel_on_escape')
         hotkey_filter.remove_keybinding(f'SelectionPanel_{id(self.tool.get_control_panel())}_try_toggle')

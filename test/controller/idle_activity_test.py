@@ -82,7 +82,7 @@ def _app_timers_and_animations() -> tuple[list[QTimer], list[QAbstractAnimation]
     """
     timers: list[QTimer] = []
     animations: list[QAbstractAnimation] = []
-    long_lived: list[QObject] = HotkeyFilter.instance().findChildren(QObject)
+    long_lived: list[QObject] = HotkeyFilter().findChildren(QObject)
     found: dict[int, object] = {id(obj): obj for obj in gc.get_objects()}
     found.update({id(obj): obj for obj in long_lived})
     for obj in found.values():

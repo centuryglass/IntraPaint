@@ -6,6 +6,7 @@ from PySide6.QtGui import QColor, QPainter, QPalette
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.image_panel import GENERATION_AREA_RULER_LANE, SELECTION_RULER_LANE, RULER_HIGHLIGHT_LANES
@@ -63,7 +64,7 @@ class ImagePanelRulerTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, QSize(256, 256), QSize(8, 8), QSize(2048, 2048), UndoStack())
-        self.panel = ImagePanel(self.image_stack, include_rulers=True)
+        self.panel = ImagePanel(self.image_stack, HotkeyFilter(), include_rulers=True)
         self.panel.resize(PANEL_SIZE)
         self.panel.show()
         self.viewer = self.panel.image_viewer
@@ -92,7 +93,7 @@ class ImagePanelRulerTest(IntraPaintTestCase):
 
     def test_panels_have_no_rulers_by_default(self) -> None:
         """Rulers are opt-in, so the navigation window's panel has none."""
-        panel = ImagePanel(self.image_stack)
+        panel = ImagePanel(self.image_stack, HotkeyFilter(), HotkeyFilter())
         self.assertEqual(panel.rulers, (None, None))
 
     def test_rulers_match_view_mapping(self) -> None:
