@@ -1,11 +1,12 @@
 """Checks that every secondary window scene in `test/ui/window_capture.py` builds and renders at each of its sizes, so
 `scripts/capture_ui.py --windows` keeps working as the windows change."""
+import re
 import sys
 
 from PySide6.QtWidgets import QApplication
 
 from test.base_test_case import IntraPaintTestCase
-from test.ui.panel_capture import mock_app_controller
+from test.ui.panel_capture import find_layout_problems, mock_app_controller
 from test.ui.window_capture import capture_window, release_window, window_scenes
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -30,5 +31,26 @@ class WindowCaptureTest(IntraPaintTestCase):
                         image = capture_window(window, size)
                         self.assertFalse(image.isNull(), size_name)
                         self.assertGreater(image.width(), 0, size_name)
+                finally:
+                    release_window(window)
+
+
+    def test_preview_dialog_scenes_do_not_clip_controls_horizontally(self) -> None:
+        """At the advertised sizes, preview dialogs fit their controls without horizontal scrolling."""
+        for scene in window_scenes(self.controller):
+            if scene.name != 'resize_canvas' and not scene.name.startswith(('image_scale_', 'filter_')):
+                continue
+            with scene.context():
+                window = scene.build(self.controller)
+                try:
+                    for size_name, size in scene.sizes(window).items():
+                        with self.subTest(window=scene.name, size=size_name):
+                            capture_window(window, size)
+                            clipped = []
+                            for problem in find_layout_problems(window):
+                                match = re.match(r'clipped: .* shows (\d+)x\d+ of (\d+)x\d+$', problem)
+                                if match and int(match[1]) < int(match[2]):
+                                    clipped.append(problem)
+                            self.assertEqual(clipped, [])
                 finally:
                     release_window(window)

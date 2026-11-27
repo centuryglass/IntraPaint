@@ -1,8 +1,11 @@
 """Tests ResizeCanvasModal's size constraints, anchor grid and preview dragging."""
 from PySide6.QtCore import QPoint, QSize
+from PySide6.QtWidgets import QApplication, QLabel
 
+from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields import geometry_block
+from src.ui.modal.controls_column import ControlsColumn
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -24,6 +27,41 @@ class ResizeCanvasModalTest(IntraPaintTestCase):
         modal.resize(400, 400)
         self.assertEqual(modal.minimumSizeHint(), initial_minimum)
         self.assertEqual(modal.size(), QSize(400, 400).expandedTo(initial_minimum))
+
+    def test_maximum_size_label_does_not_clip_controls(self) -> None:
+        """The size label wraps instead of widening the side-by-side controls."""
+        modal = _modal()
+        try:
+            modal.resize(960, 600)
+            modal.show()
+            maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE)
+            modal._geometry.field(geometry_block.WIDTH).set_value(maximum.width())
+            modal._geometry.field(geometry_block.HEIGHT).set_value(maximum.height())
+            # Model a long localized label without changing the test runner's language.
+            modal._size_label.setText('Maximum canvas size 10000 x 10000 with a long translated size suffix')
+            QApplication.processEvents()
+            controls = modal._controls
+            self.assertLessEqual(controls.widget().minimumSizeHint().width(), controls.viewport().width())
+            self.assertEqual(controls.horizontalScrollBar().maximum(), 0)
+        finally:
+            modal.hide()
+
+    def test_controls_column_can_scroll_genuinely_wide_content(self) -> None:
+        """A control wider than the fixed column is reachable without widening the dialog."""
+        label = QLabel('A single wide control')
+        label.setMinimumWidth(500)
+        column = ControlsColumn(label, 350)
+        try:
+            column.resize(350, 150)
+            column.show()
+            QApplication.processEvents()
+            scrollbar = column.horizontalScrollBar()
+            self.assertTrue(scrollbar.isVisible())
+            self.assertGreater(scrollbar.maximum(), 0)
+            scrollbar.setValue(scrollbar.maximum())
+            self.assertEqual(label.geometry().right(), column.viewport().rect().right())
+        finally:
+            column.hide()
 
     def test_offset_fields_are_labelled_as_offsets(self) -> None:
         """The X and Y fields read as offsets, since they place the image within the new canvas."""

@@ -210,6 +210,7 @@ class ImageScaleModal(QDialog):
              Segment(UNIT_PCT, UNIT_PERCENT, tooltip=UNIT_PERCENT_TOOLTIP)], DisplayMode.LABEL, parent=self)
         self._unit_control.valueChanged.connect(self._unit_changed)
         self._size_label = QLabel(self)
+        self._size_label.setWordWrap(True)
         size_body = QWidget(self)
         size_layout = QVBoxLayout(size_body)
         size_layout.setContentsMargins(0, 0, 0, 0)
