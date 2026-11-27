@@ -33,6 +33,7 @@ from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.modal_utils import request_choice, show_error_dialog
 from src.util.layout import add_layout
 from src.util.shared_constants import APP_ICON_PATH
+from src.util.shared_text import join_display_list
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA
 
 logger = logging.getLogger(__name__)
@@ -170,10 +171,10 @@ def save_format_note(metadata: ImageMetadata, file_path: str) -> str:
     split = split_metadata(metadata, file_format)
     if len(split.dropped) == 0:
         return NOTE_ALL_KEPT.format(file_format=file_format)
-    dropped = ', '.join(_part_label(part) for part in split.dropped)
+    dropped = join_display_list(_part_label(part) for part in split.dropped)
     if len(split.kept) == 0:
         return NOTE_NONE_OF_IT_KEPT.format(file_format=file_format, dropped=dropped)
-    kept = ', '.join(_part_label(part) for part in split.kept)
+    kept = join_display_list(_part_label(part) for part in split.kept)
     return NOTE_KEPT_AND_DROPPED.format(file_format=file_format, kept=kept, dropped=dropped)
 
 

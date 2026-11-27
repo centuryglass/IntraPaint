@@ -8,6 +8,7 @@ from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.generators.stable_diffusion_panel import (AdvancedControls, LabeledRows, config_slider_field,
                                                             group_label, option_combo_box)
 from src.ui.input_fields.field_factory import create_control_widget
+from src.util.shared_text import join_display_list
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.comfyui_advanced_controls'
@@ -63,7 +64,7 @@ class ComfyUIAdvancedControls(AdvancedControls):
             parts.append(SUMMARY_INPAINTING_MODEL)
         if cache.get(Cache.COMFYUI_TILED_VAE):
             parts.append(SUMMARY_TILED_VAE.format(size=cache.get(Cache.COMFYUI_TILED_VAE_TILE_SIZE)))
-        return ', '.join(parts)
+        return join_display_list(parts)
 
     def change_signals(self) -> list:
         """Returns the signals of the controls that `summary` reads."""

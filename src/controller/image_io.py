@@ -38,6 +38,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.recent_files import add_recent_file
+from src.util.shared_text import join_display_list
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
     IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
@@ -149,7 +150,7 @@ def _other_metadata_loss(metadata: ImageMetadata, file_format: str, is_animation
     dropped = split_metadata(metadata, file_format, is_animation, frozenset({MetadataKind.PARAMETERS})).dropped
     if len(dropped) == 0:
         return None
-    labels = ', '.join(OTHER_METADATA_PART_LABELS[part.kind] for part in dropped)
+    labels = join_display_list(OTHER_METADATA_PART_LABELS[part.kind] for part in dropped)
     details = '\n'.join(OTHER_METADATA_DETAIL_LINE.format(
         part=OTHER_METADATA_PART_LABELS[part.kind], items=', '.join(part.details)) for part in dropped
                         if len(part.details) > 0)

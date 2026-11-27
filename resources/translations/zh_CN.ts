@@ -10949,6 +10949,12 @@ Click to pick, or press Esc to cancel</source>
     <name>util.shared_text</name>
     <message>
         <location filename="../../src/util/shared_text.py"/>
+        <source>, </source>
+        <comment>Separator between items in a display list</comment>
+        <translation>、</translation>
+    </message>
+    <message>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Generate</source>
         <translation>生成</translation>
     </message>

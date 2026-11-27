@@ -56,7 +56,7 @@ from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.section_popover import SectionPopover
 from src.util.layout import add_layout
-from src.util.shared_text import keys_tooltip
+from src.util.shared_text import join_display_list, keys_tooltip
 from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -453,7 +453,7 @@ class StrokeBlock(QWidget):
         self.section_toggled.emit()
 
     def _stroke_summary(self) -> str:
-        return ', '.join(f'{field.label()} {field.value_text()}' for field in self._fields.values())
+        return join_display_list(f'{field.label()} {field.value_text()}' for field in self._fields.values())
 
     def _arrange(self, arrangement: StrokeArrangement) -> None:
         # Adding the preview to a layout reparents it, which hides it until a queued call shows it again. Its
