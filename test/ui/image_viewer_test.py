@@ -356,7 +356,7 @@ class ImageViewerDropRoutingTest(IntraPaintTestCase):
     def test_claimed_drag_is_accepted_by_the_view(self) -> None:
         """A drag that `accepts_mime_data` claims is accepted at the view, which stops the
         drag's parent walk before it reaches the window."""
-        claiming = _DropClaimingViewer(None, self.image_stack, use_keybindings=False)
+        claiming = _DropClaimingViewer(None, self.image_stack, HotkeyFilter(), use_keybindings=False)
         window = QMainWindow()
         window.setCentralWidget(claiming)
         window.resize(300, 200)
