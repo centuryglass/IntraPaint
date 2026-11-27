@@ -12,7 +12,7 @@ import numpy as np
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
-from src.util.visual.image_utils import image_data_as_numpy_8bit
+from src.util.visual.image_utils import image_data_as_numpy_8bit, ARGB32_ALPHA
 
 # Distance, in standard deviations, past which a blurred hard edge is effectively gone.
 BLUR_EXTENT_SIGMAS = 2.5
@@ -47,8 +47,10 @@ def grow_mask(mask: QImage, reach_x: int, reach_y: int) -> QImage:
         return grown
     pixels = image_data_as_numpy_8bit(grown)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * max(reach_x, 0) + 1, 2 * max(reach_y, 0) + 1))
-    added = (cv2.dilate(np.ascontiguousarray(pixels[:, :, 3]), kernel) > 0) & (pixels[:, :, 3] == 0)
-    pixels[added] = (0, 0, 0, 255)
+    alpha = pixels[:, :, ARGB32_ALPHA]
+    added = (cv2.dilate(np.ascontiguousarray(alpha), kernel) > 0) & (alpha == 0)
+    pixels[added] = 0
+    pixels[added, ARGB32_ALPHA] = 255
     return grown
 
 
@@ -62,7 +64,7 @@ def blurred_mask_estimate(mask: QImage, mask_blur: float) -> QImage:
     if mask_blur <= 0 or estimate.isNull():
         return estimate
     pixels = image_data_as_numpy_8bit(estimate)
-    blurred = cv2.GaussianBlur(np.ascontiguousarray(pixels[:, :, 3]), (0, 0), mask_blur)
+    blurred = cv2.GaussianBlur(np.ascontiguousarray(pixels[:, :, ARGB32_ALPHA]), (0, 0), mask_blur)
     pixels[:, :, :] = 0
-    pixels[:, :, 3] = blurred
+    pixels[:, :, ARGB32_ALPHA] = blurred
     return estimate

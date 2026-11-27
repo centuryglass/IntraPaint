@@ -16,7 +16,7 @@ from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.shared_text import COLOR_PICK_HINT
-from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
+from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, ARGB32_ALPHA
 from src.util.visual.image_fill import flood_fill
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
@@ -127,7 +127,7 @@ class FillTool(BaseTool):
             color_pixel = QImage(1, 1, QImage.Format.Format_ARGB32_Premultiplied)
             color_pixel.fill(self._color)
             premultiplied_color = image_data_as_numpy_8bit(color_pixel)[0, 0].copy()
-            image_data_as_numpy_8bit(fill_layer)[np_mask[:, :, 3] > 0] = premultiplied_color
+            image_data_as_numpy_8bit(fill_layer)[np_mask[:, :, ARGB32_ALPHA] > 0] = premultiplied_color
             painter = QPainter(layer_image)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
             painter.drawImage(0, 0, fill_layer)

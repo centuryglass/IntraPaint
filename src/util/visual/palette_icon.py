@@ -19,7 +19,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.ui.ink_style import signal_color
 from src.util.visual.contrast_color import relative_luminance, LUMINANCE_THRESHOLD
-from src.util.visual.image_utils import image_data_as_numpy_8bit, rich_text_image_tag, temp_image_path
+from src.util.visual.image_utils import image_data_as_numpy_8bit, rich_text_image_tag, temp_image_path, \
+    ARGB32_RGBA_ORDER
 
 # Pixels at or above this HSV saturation keep their color. Less saturated pixels blend toward the recolored value,
 # so antialiased edges between neutral and colored areas stay smooth:
@@ -48,7 +49,7 @@ def recolor_neutral_pixels(image: QImage, black_color: QColor, white_color: QCol
     """
     recolored = image.convertToFormat(QImage.Format.Format_ARGB32)
     pixels = image_data_as_numpy_8bit(recolored)
-    rgb = pixels[..., 2::-1].astype(np.float32) / 255
+    rgb = pixels[..., ARGB32_RGBA_ORDER[:3]].astype(np.float32) / 255
     max_channel = rgb.max(axis=-1)
     min_channel = rgb.min(axis=-1)
     saturation = np.where(max_channel > 0, (max_channel - min_channel) / np.maximum(max_channel, 1e-6), 0.0)
@@ -61,7 +62,7 @@ def recolor_neutral_pixels(image: QImage, black_color: QColor, white_color: QCol
     white_rgb = np.array(white_color.getRgbF()[:3], dtype=np.float32)
     mapped = black_rgb + luminance * (white_rgb - black_rgb)
     result = neutral_weight * mapped + (1.0 - neutral_weight) * rgb
-    pixels[..., 2::-1] = np.round(np.clip(result, 0.0, 1.0) * 255).astype(np.uint8)
+    pixels[..., ARGB32_RGBA_ORDER[:3]] = np.round(np.clip(result, 0.0, 1.0) * 255).astype(np.uint8)
     return recolored
 
 

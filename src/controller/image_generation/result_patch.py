@@ -11,7 +11,7 @@ from typing import Optional
 import numpy as np
 from PySide6.QtGui import QImage
 
-from src.util.visual.image_utils import image_data_as_numpy_8bit
+from src.util.visual.image_utils import image_data_as_numpy_8bit, ARGB32_ALPHA, ARGB32_COLOR
 
 
 def _alpha_channel(image: Optional[QImage], size) -> np.ndarray:
@@ -19,7 +19,7 @@ def _alpha_channel(image: Optional[QImage], size) -> np.ndarray:
     if image is None or image.size() != size:
         return np.ones((size.height(), size.width()), dtype=np.float32)
     converted = image.convertToFormat(QImage.Format.Format_ARGB32)
-    return image_data_as_numpy_8bit(converted)[:, :, 3].astype(np.float32) / 255.0
+    return image_data_as_numpy_8bit(converted)[:, :, ARGB32_ALPHA].astype(np.float32) / 255.0
 
 
 def make_result_patch(result: QImage, sent: QImage, blend_estimate: Optional[QImage] = None,
@@ -41,8 +41,8 @@ def make_result_patch(result: QImage, sent: QImage, blend_estimate: Optional[QIm
     size = result.size()
     result_px = image_data_as_numpy_8bit(result.convertToFormat(QImage.Format.Format_ARGB32))
     sent_px = image_data_as_numpy_8bit(sent.convertToFormat(QImage.Format.Format_ARGB32))
-    result_rgb = result_px[:, :, :3].astype(np.float32) / 255.0
-    sent_rgb = sent_px[:, :, :3].astype(np.float32) / 255.0
+    result_rgb = result_px[:, :, ARGB32_COLOR].astype(np.float32) / 255.0
+    sent_rgb = sent_px[:, :, ARGB32_COLOR].astype(np.float32) / 255.0
     diff = result_rgb - sent_rgb
     with np.errstate(divide='ignore', invalid='ignore'):
         needed = np.where(diff > 0, diff / (1.0 - sent_rgb), -diff / sent_rgb)
@@ -57,7 +57,7 @@ def make_result_patch(result: QImage, sent: QImage, blend_estimate: Optional[QIm
     safe_alpha = np.where(alpha > 0, alpha, 1.0)[:, :, np.newaxis]
     color = np.where(alpha[:, :, np.newaxis] > 0, sent_rgb + diff / safe_alpha, result_rgb)
     patch = np.empty((size.height(), size.width(), 4), dtype=np.uint8)
-    patch[:, :, :3] = np.rint(color.clip(0.0, 1.0) * 255.0)
-    patch[:, :, 3] = alpha8
+    patch[:, :, ARGB32_COLOR] = np.rint(color.clip(0.0, 1.0) * 255.0)
+    patch[:, :, ARGB32_ALPHA] = alpha8
     straight = QImage(patch.data, size.width(), size.height(), QImage.Format.Format_ARGB32).copy()
     return straight.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
