@@ -12,12 +12,7 @@ from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.util.visual.image_utils import (NpAnyArray, image_data_as_numpy_8bit, numpy_intersect,
-                                         image_is_fully_transparent)
-
-RED = 0
-GREEN = 1
-BLUE = 2
-ALPHA = 3
+                                         image_is_fully_transparent, ARGB32_ALPHA, ARGB32_COLOR)
 
 
 class MyPaintSceneTile(QGraphicsItem):
@@ -200,8 +195,8 @@ class MyPaintSceneTile(QGraphicsItem):
         np_pixels = numpy_16bit_to_8bit(np_pixels)
 
         if self._lock_alpha:
-            np_image = np_image[:, :, 0:3]
-            np_pixels = np_pixels[:, :, 0:3]
+            np_image = np_image[:, :, ARGB32_COLOR]
+            np_pixels = np_pixels[:, :, ARGB32_COLOR]
 
         if color_correction:
             # Color conversion produces artifacts at tile edges if the data is copied directly.  Avoid this by
@@ -214,9 +209,9 @@ class MyPaintSceneTile(QGraphicsItem):
 
             for y in range(np_image.shape[0]):
                 for x in range(np_image.shape[1]):
-                    if np_mask is not None and np_mask[y, x, ALPHA] == 0:
+                    if np_mask is not None and np_mask[y, x, ARGB32_ALPHA] == 0:
                         continue
-                    if not self._lock_alpha and np_image[y, x, ALPHA] == 0:
+                    if not self._lock_alpha and np_image[y, x, ARGB32_ALPHA] == 0:
                         # Don't filter out changes to transparent pixels:
                         np_image[y, x] = np_pixels[y, x]
                         continue
@@ -225,7 +220,7 @@ class MyPaintSceneTile(QGraphicsItem):
                         np_image[y, x] = np_pixels[y, x]
         else:
             if np_mask is not None:
-                mask_index = np_mask[..., 3] != 0
+                mask_index = np_mask[..., ARGB32_ALPHA] != 0
                 np_image[mask_index] = np_pixels[mask_index]
             else:
                 np.copyto(np_image, np_pixels)

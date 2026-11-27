@@ -12,7 +12,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.mypaint.libmypaint import TilePixelBuffer, c_uint16_p
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.util.visual.image_utils import (NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, numpy_bounds_index,
-                                         NpUInt8Array)
+                                         NpUInt8Array, ARGB32_ALPHA)
 
 
 class MyPaintLayerTile:
@@ -87,7 +87,7 @@ class MyPaintLayerTile:
         else:
             np_mask = None
         if np_mask is not None:
-            change_mask = np_mask[..., 3] > 0
+            change_mask = np_mask[..., ARGB32_ALPHA] > 0
             np_image[change_mask] = np_pixels[change_mask]
         else:
             np.copyto(np_image, np_pixels)

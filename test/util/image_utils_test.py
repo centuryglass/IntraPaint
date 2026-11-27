@@ -5,6 +5,7 @@ import io
 import sys
 import weakref
 
+import cv2
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 from PySide6.QtCore import QSize, Qt
@@ -13,7 +14,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64, \
     image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, div_255, np_composite_with_mask, \
-    ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA, ARGB32_COLOR, image_memory_bytes
+    ARGB32_RED, ARGB32_GREEN, ARGB32_BLUE, ARGB32_ALPHA, ARGB32_COLOR, image_memory_bytes, \
+    argb32_channel_indexes, ARGB32_RGBA_ORDER, ARGB32_COLOR_TO_HLS, ARGB32_HLS_TO_COLOR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
 from test.base_test_case import IntraPaintTestCase
 
@@ -72,6 +74,33 @@ class TestImageUtils(IntraPaintTestCase):
         self.assertEqual(pixel[ARGB32_BLUE], 30)
         self.assertEqual(pixel[ARGB32_ALPHA], 40)
         self.assertEqual(sorted(pixel[ARGB32_COLOR].tolist()), [10, 20, 30])
+
+    def test_argb32_channel_indexes_for_each_byte_order(self) -> None:
+        """Test argb32_channel_indexes against a QImage's pixel words stored in little- and big-endian order."""
+        image = QImage(QSize(2, 2), QImage.Format.Format_ARGB32)
+        image.fill(QColor(10, 20, 30, 40))
+        words = image_data_as_numpy_8bit(image).view(np.uint32)[:, :, 0]
+        for byteorder, word_type in (('little', '<u4'), ('big', '>u4')):
+            with self.subTest(byteorder=byteorder):
+                pixel = words.astype(word_type).view(np.uint8).reshape(2, 2, 4)[0, 0]
+                red, green, blue, alpha, color = argb32_channel_indexes(byteorder)
+                self.assertEqual([pixel[red], pixel[green], pixel[blue], pixel[alpha]], [10, 20, 30, 40])
+                self.assertEqual(sorted(pixel[color].tolist()), [10, 20, 30])
+        with self.assertRaises(ValueError):
+            argb32_channel_indexes('middle')
+
+    def test_argb32_rgba_order_and_hls_codes(self) -> None:
+        """Test that ARGB32_RGBA_ORDER reads and writes RGBA channels, and that the HLS codes match RGB's."""
+        image = QImage(QSize(2, 2), QImage.Format.Format_ARGB32)
+        image.fill(QColor(10, 20, 30, 40))
+        pixels = image_data_as_numpy_8bit(image)
+        self.assertEqual(pixels[0, 0, ARGB32_RGBA_ORDER].tolist(), [10, 20, 30, 40])
+        pixels[..., ARGB32_RGBA_ORDER] = (50, 60, 70, 80)
+        self.assertEqual(image.pixelColor(1, 1).getRgb(), (50, 60, 70, 80))
+        rgb = np.ascontiguousarray(pixels[..., ARGB32_RGBA_ORDER[:3]])
+        hls = cv2.cvtColor(np.ascontiguousarray(pixels[..., ARGB32_COLOR]), ARGB32_COLOR_TO_HLS)
+        np.testing.assert_array_equal(hls, cv2.cvtColor(rgb, cv2.COLOR_RGB2HLS))
+        np.testing.assert_array_equal(cv2.cvtColor(hls, ARGB32_HLS_TO_COLOR), pixels[..., ARGB32_COLOR])
 
     def test_numpy_view_keeps_image_alive(self) -> None:
         """A numpy view of a QImage's pixels stays valid after the caller drops its QImage reference."""
