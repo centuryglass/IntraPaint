@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QWidget
 
 from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
+from src.controller.image_generation.result_patch import ResultLayers
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.settings_modal import SettingsModal
@@ -184,7 +185,11 @@ class ImageGenerator(MenuBuilder, ABC):
         """Shows the generated image at `index` once it arrives. Backends route extra results here by index."""
         self._session.deliver_result(index)
 
-    def _cache_generated_image(self, image: QImage, index: int) -> None:
-        self._session.store_result(image, index)
+    def _cache_generated_image(self, image: QImage, index: int, layers: Optional[ResultLayers] = None) -> None:
+        """Stores a generated image at `index` and shows it once it arrives. Safe on any thread.
+
+        Backends that report the unblended output and blend mask of an inpainting result pass them as `layers`.
+        """
+        self._session.store_result(image, index, layers)
         # Load in main thread:
         QTimer.singleShot(0, self._session, lambda: self._load_generated_image_for_selection(index))

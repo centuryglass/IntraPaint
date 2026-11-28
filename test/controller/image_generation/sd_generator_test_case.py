@@ -23,6 +23,7 @@ from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNe
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.result_patch import ResultLayers
 from src.controller.image_generation.sd_generator import SDGenerator
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit
@@ -105,6 +106,7 @@ class SdGeneratorTestCase(IntraPaintTestCase):
 
         self.status = StatusRecorder()
         self.generated_images: dict[int, QImage] = {}
+        self.generated_layers: dict[int, Optional[ResultLayers]] = {}
         self.generator: Optional[ImageGenerator] = None
 
     def clear_source_corner(self) -> None:
@@ -121,10 +123,12 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         return Namespace(server_url=FAKE_SERVER_URL)
 
     def capture_generated_images(self, generator: ImageGenerator) -> None:
-        """Records generated images on the test case, in place of loading them into the main window."""
+        """Records generated images and their `ResultLayers` on the test case, in place of loading them into the main
+        window."""
 
-        def _cache_generated_image(image: QImage, index: int) -> None:
+        def _cache_generated_image(image: QImage, index: int, layers: Optional[ResultLayers] = None) -> None:
             self.generated_images[index] = image
+            self.generated_layers[index] = layers
 
         generator._cache_generated_image = _cache_generated_image  # type: ignore # pylint: disable=protected-access
 

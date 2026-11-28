@@ -3,7 +3,7 @@ import logging
 from argparse import Namespace
 from typing import Optional, cast, Any
 
-from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
+from PySide6.QtCore import QSize, QRect, QPoint, Qt, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QWidget
 from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, \
@@ -13,7 +13,9 @@ from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
+from src.controller.image_generation.result_patch import ResultLayers
+from src.controller.image_generation.sd_adapters.image_adapter import pil_mask_to_qimage, pil_to_qimage, \
+    qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.image_generator import GENERATION_BACKDROP_COLOR
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
@@ -490,12 +492,24 @@ class SDComfyUIGenerator(SDGenerator):
                 if seed is None:
                     seed = result.seed
                 image_data = [pil_to_qimage(image) for image in result.images]
+                uncomposited: list[QImage] = []
+                masks: list[QImage] = []
+                if result.uncomposited_images is not None and result.compositing_masks is not None:
+                    uncomposited = [pil_to_qimage(image) for image in result.uncomposited_images]
+                    masks = [pil_mask_to_qimage(mask) for mask in result.compositing_masks]
                 # If context is limited, scale and pad images to make them match the gen. area size again.
                 if inpaint_inner_bounds.size() != gen_area.size() and original_source_image is not None:
                     image_data = self._restore_cropped_inpainting_images(original_source_image, inpaint_inner_bounds,
                                                                          image_data)
+                    uncomposited = self._restore_cropped_inpainting_images(original_source_image,
+                                                                           inpaint_inner_bounds, uncomposited)
+                    unmasked = QImage(original_source_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+                    unmasked.fill(Qt.GlobalColor.transparent)
+                    masks = self._restore_cropped_inpainting_images(unmasked, inpaint_inner_bounds, masks)
                 for i, response_image in enumerate(image_data):
-                    self._cache_generated_image(response_image, i + first_image_idx)
+                    layers = ResultLayers(uncomposited[i], masks[i]) if i < min(len(uncomposited), len(masks)) \
+                        else None
+                    self._cache_generated_image(response_image, i + first_image_idx, layers)
                 first_image_idx = first_image_idx + len(image_data)
             except BackendTimeoutError as err:
                 raise RuntimeError(ERROR_MESSAGE_TIMEOUT) from err

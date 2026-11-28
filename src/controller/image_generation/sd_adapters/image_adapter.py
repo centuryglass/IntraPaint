@@ -22,3 +22,12 @@ def pil_to_qimage(image: Image.Image) -> QImage:
     if qimage.format() != QImage.Format.Format_ARGB32_Premultiplied:
         qimage = qimage.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
     return qimage
+
+
+def pil_mask_to_qimage(mask: Image.Image) -> QImage:
+    """Returns a `Format_ARGB32_Premultiplied` copy of a PIL mask, with its luminance as alpha over black.
+
+    IntraPaint's masks keep their weight in alpha, while the library's are 'L' images, white where content changes.
+    """
+    black = Image.new('L', mask.size, 0)
+    return pil_to_qimage(Image.merge('RGBA', (black, black, black, mask.convert('L'))))

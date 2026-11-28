@@ -17,7 +17,7 @@ from src.config.cache import Cache
 from src.controller.image_generation.apply_option import apply_generated_image, ApplyOutcome, ApplyResult, \
     blocking_result, create_top_layer
 from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
-from src.controller.image_generation.result_patch import make_result_patch
+from src.controller.image_generation.result_patch import make_exact_result_patch, make_result_patch, ResultLayers
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
@@ -77,6 +77,8 @@ class GenerationSession(QObject):
         self._stopped = False
         self._failed = False
         self._results: list[QImage] = []
+        # The backend's unblended output and blend mask for results that have them, by result index:
+        self._result_layers: dict[int, ResultLayers] = {}
         # Patches for the results of the last task, by result index. See `make_result_patch`:
         self._patches: dict[int, QImage] = {}
         image_stack.size_changed.connect(self._on_image_stack_resized)
@@ -131,13 +133,15 @@ class GenerationSession(QObject):
 
         `action` passes each image it produces to `store_result` from the worker thread, then `deliver_result` on the
         main thread. In inpainting mode, `paste_mask` clips the previews shown and the options applied, and each
-        result becomes a patch over `image` (see `make_result_patch`, which explains `blend_estimate` and
-        `source_alpha`). Returns False without starting anything if a task is already running.
+        result becomes a patch over `image`. A result stored with `ResultLayers` uses `make_exact_result_patch`, and
+        any other uses `make_result_patch`, which explains `blend_estimate` and `source_alpha`. Returns False without
+        starting anything if a task is already running.
         """
         if self._generating:
             logger.error('Caught and ignored duplicate image generation request.')
             return False
         self._results.clear()
+        self._result_layers.clear()
         self._patches.clear()
         self._generating = True
         self._stopped = False
@@ -187,7 +191,12 @@ class GenerationSession(QObject):
                 if result.isNull() or idx >= expected_count:
                     continue
                 if preview_base is not None and clip_mask is not None and preview_base.size() == result.size():
-                    patch = make_result_patch(result, image, blend_estimate, source_alpha)
+                    layers = self._result_layers.get(idx)
+                    if layers is not None and layers.uncomposited.size() == image.size() \
+                            and layers.compositing_mask.size() == image.size():
+                        patch = make_exact_result_patch(layers, image, source_alpha)
+                    else:
+                        patch = make_result_patch(result, image, blend_estimate, source_alpha)
                     self._patches[idx] = patch
                     result = self._preview_with_patch(preview_base, patch, clip_mask)
                 self.image_ready.emit(result, idx)
@@ -216,8 +225,15 @@ class GenerationSession(QObject):
         painter.end()
         return preview
 
-    def store_result(self, image: QImage, index: int) -> None:
-        """Stores a generated image at `index`, padding skipped indices with null images. Safe on any thread."""
+    def store_result(self, image: QImage, index: int, layers: Optional[ResultLayers] = None) -> None:
+        """Stores a generated image at `index`, padding skipped indices with null images. Safe on any thread.
+
+        `layers` holds the backend's unblended output and blend mask for an inpainting result, when it reports them.
+        """
+        if layers is None:
+            self._result_layers.pop(index, None)
+        else:
+            self._result_layers[index] = layers
         while len(self._results) < index:
             self._results.append(QImage())
         if len(self._results) > index:

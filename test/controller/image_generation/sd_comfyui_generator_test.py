@@ -5,7 +5,8 @@ See sd_generator_test_case.py for how the snapshots work.
 from typing import Any, Optional
 from unittest import mock
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QColor
 from sd_backend_client import ParameterDef, ControlNetPreprocessor, PreprocessorParams, ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
     GenerationResult, GenerationStatus
 from sd_backend_client.api.comfyui_webservice import ComfyEndpoints, ComfyModelType
@@ -17,7 +18,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import FakeResponse, image_to_png_bytes
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, UPSCALE_SIZE, \
-    LORA_FILE, solid_image, CONTEXT_PIN
+    LORA_FILE, solid_image, CONTEXT_PIN, GENERATION_AREA, GENERATION_SIZE, SELECTION_BOUNDS
 
 CANNY_PREPROCESSOR = 'CannyEdgePreprocessor'
 TILE_PREPROCESSOR = 'TilePreprocessor'
@@ -212,10 +213,33 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
         self._generate_and_check('img2img')
 
+    def _assert_results_carry_layers(self) -> None:
+        """Checks that each result has the unblended output and a mask covering only the selected area, at the size of
+        the generation inputs."""
+        self.assertEqual(len(self.generated_layers), len(self.generated_images))
+        center = SELECTION_BOUNDS.center() - GENERATION_AREA.topLeft()
+        selected = QPoint(center.x() * GENERATION_SIZE.width() // GENERATION_AREA.width(),
+                          center.y() * GENERATION_SIZE.height() // GENERATION_AREA.height())
+        unselected = QPoint(10, 10)
+        for layers in self.generated_layers.values():
+            assert layers is not None
+            self.assertEqual(layers.uncomposited.size(), GENERATION_SIZE)
+            self.assertEqual(layers.compositing_mask.size(), GENERATION_SIZE)
+            self.assertEqual(layers.compositing_mask.pixelColor(selected).alpha(), 255)
+            self.assertEqual(layers.compositing_mask.pixelColor(unselected).alpha(), 0)
+            self.assertEqual(layers.uncomposited.pixelColor(selected), QColor(Qt.GlobalColor.blue))
+
     def test_inpaint(self) -> None:
         """Inpainting uploads the image and a blurred, inverted mask once, then reuses both."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._generate_and_check('inpaint')
+        self._assert_results_carry_layers()
+
+    def test_non_inpainting_results_have_no_layers(self) -> None:
+        """Results generated without a mask have nothing to build exact patches from."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
+        self.run_generate()
+        self.assertEqual(list(self.generated_layers.values()), [None] * 4)
 
     def test_inpaint_soft_inpainting(self) -> None:
         """Soft inpainting samples through the DifferentialDiffusion node, with the saved strength."""
@@ -235,6 +259,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
+        self._assert_results_carry_layers()
 
     def test_inpaint_full_res_context_pin(self) -> None:
         """A context pin stretches the uploaded context crop past the selection bounds."""

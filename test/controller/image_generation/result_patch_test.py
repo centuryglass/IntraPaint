@@ -1,4 +1,5 @@
-"""Tests `make_result_patch`: a patch drawn Normal over the sent image reproduces the result."""
+"""Tests `make_result_patch` and `make_exact_result_patch`: a patch drawn Normal over the sent image reproduces the
+result."""
 import sys
 
 import numpy as np
@@ -6,7 +7,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import QApplication
 
-from src.controller.image_generation.result_patch import make_result_patch
+from src.controller.image_generation.result_patch import make_exact_result_patch, make_result_patch, ResultLayers
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase
 
@@ -79,3 +80,45 @@ class ResultPatchTest(IntraPaintTestCase):
         """Images of different sizes can't be compared pixel for pixel."""
         with self.assertRaises(ValueError):
             make_result_patch(QImage(QSize(4, 4), QImage.Format.Format_ARGB32), _gradient(8))
+
+    @staticmethod
+    def _random_mask(seed: int) -> QImage:
+        rng = np.random.default_rng(seed)
+        pixels = np.zeros((SIZE.height(), SIZE.width(), 4), dtype=np.uint8)
+        pixels[:, :, 3] = rng.integers(0, 256, size=(SIZE.height(), SIZE.width()), dtype=np.uint8)
+        return QImage(pixels.data, SIZE.width(), SIZE.height(), QImage.Format.Format_ARGB32).copy() \
+            .convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+
+    def test_exact_patch_reproduces_the_blend(self) -> None:
+        """The exact patch over the sent image gives the unblended output blended in through the mask."""
+        sent, uncomposited, mask = _gradient(9), _gradient(10), self._random_mask(11)
+        patch = make_exact_result_patch(ResultLayers(uncomposited, mask), sent)
+        sent_px = image_data_as_numpy_8bit(sent).astype(float)
+        weight = image_data_as_numpy_8bit(mask)[:, :, 3:4].astype(float) / 255.0
+        expected = np.rint(sent_px + weight * (image_data_as_numpy_8bit(uncomposited).astype(float) - sent_px))
+        drawn = image_data_as_numpy_8bit(_drawn_over(sent, patch)).astype(float)
+        self.assertLessEqual(float(np.abs(drawn - expected).max()), 2)
+
+    def test_exact_patch_over_opaque_source_is_the_unblended_output(self) -> None:
+        """Over an opaque source, the patch alpha is the mask alpha and its color is the unblended output."""
+        sent, uncomposited = _gradient(12), _gradient(13)
+        patch = make_exact_result_patch(ResultLayers(uncomposited, _alpha_image(0.5)), sent, _alpha_image(1.0))
+        straight = image_data_as_numpy_8bit(patch.convertToFormat(QImage.Format.Format_ARGB32))
+        self.assertTrue((straight[:, :, 3] == 128).all())
+        expected = image_data_as_numpy_8bit(uncomposited.convertToFormat(QImage.Format.Format_ARGB32)).astype(int)
+        # Premultiplying at half alpha rounds each color channel:
+        self.assertLessEqual(int(np.abs(straight[:, :, :3].astype(int) - expected[:, :, :3]).max()), 2)
+
+    def test_exact_patch_drops_backdrop_over_transparent_source(self) -> None:
+        """Where the source was transparent, output that only repaints the backdrop leaves the patch transparent."""
+        sent = _gradient(14)
+        patch = make_exact_result_patch(ResultLayers(sent.copy(), _alpha_image(1.0)), sent, _alpha_image(0.0))
+        self.assertTrue((image_data_as_numpy_8bit(patch)[:, :, 3] == 0).all())
+
+    def test_exact_patch_size_mismatch_raises(self) -> None:
+        """Layers of a different size than the sent image can't be applied."""
+        small = QImage(QSize(4, 4), QImage.Format.Format_ARGB32_Premultiplied)
+        with self.assertRaises(ValueError):
+            make_exact_result_patch(ResultLayers(small, _alpha_image(1.0)), _gradient(15))
+        with self.assertRaises(ValueError):
+            make_exact_result_patch(ResultLayers(_gradient(16), small), _gradient(15))
