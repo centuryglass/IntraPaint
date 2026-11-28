@@ -131,7 +131,7 @@ def panel_position(rect: QRect | QRectF, transform: QTransform) -> QPointF:
        rectangle's local top-left corner.
 
     The corner is the same point the layer transform tool's panel shows with its origin snapped to the top-left
-    corner (TransformOutline.origin_scene_pos). For a flipped rectangle it is not the top-left of the bounding box.
+    corner (TransformState.origin_pos). For a flipped rectangle it is not the top-left of the bounding box.
     The text tool reads and writes position through this function and transform_at_panel_position.
     """
     return transform.map(QPointF(rect.topLeft()))
