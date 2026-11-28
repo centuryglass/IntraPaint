@@ -181,6 +181,34 @@ class LayerTransformToolTest(ToolTestCase):
         self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
         self.assertEqual(UndoStack().undo_count(), 1)
 
+    def test_handle_drag_is_one_undo_step(self) -> None:
+        """A corner handle drag adds one undo entry. An origin handle drag, which leaves the layer in place, adds none.
+           Both are drags from press to release."""
+        for handle_id, undo_count in ((BR_HANDLE_ID, 1), (ORIGIN_HANDLE_ID, 0)):
+            with self.subTest(handle_id):
+                UndoStack().clear()
+                start = self._handle_image_point(handle_id)
+                self.mouse_press(start)
+                self.mouse_move(start + QPoint(10, 5))
+                self.mouse_move(start + QPoint(30, 20))
+                self.assertTrue(self.tool._mouse_dragging)
+                self.mouse_release(start + QPoint(30, 20))
+                self.assertFalse(self.tool._mouse_dragging)
+                self.assertEqual(UndoStack().undo_count(), undo_count)
+
+    def test_corner_drag_uses_preview(self) -> None:
+        """While a corner handle is held, a preview item scales and the layer's transform stays as it was."""
+        original = self.layer.transform
+        start = self._handle_image_point(BR_HANDLE_ID)
+        self.mouse_press(start)
+        self.mouse_move(start + QPoint(50, 25))
+        self.assertEqual(self.layer.transform, original)
+        self.assertIsNotNone(self.tool._drag_preview)
+        self.mouse_release(start + QPoint(50, 25))
+        self.assertIsNone(self.tool._drag_preview)
+        self.assertNotEqual(self.layer.transform, original)
+        self.assertEqual(self.outline.transform(), self.layer.transform)
+
     def test_panel_field_drag_is_one_undo_step(self) -> None:
         """Scrub-dragging a panel field adds one undo entry, and undoing it restores the original transform."""
         original = self.layer.transform
