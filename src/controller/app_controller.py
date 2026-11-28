@@ -67,6 +67,8 @@ from src.controller.image_generation.sd_generator import MENU_GENERATION, STABLE
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME
+from src.controller.menu_requirements import met_requirements, SELECTION, UNLOCKED_LAYER, HAS_PREVIOUS_LAYER, \
+    HAS_NEXT_LAYER, NOT_LAYER_STACK, NOT_FLAT, LAYER_GROUP, NOT_LAYER_GROUP, NOT_TEXT_LAYER, PAINTABLE_LAYER
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
 from src.image.image_metadata import ImageMetadata
@@ -85,8 +87,6 @@ from src.image.layers.image_stack_utils import resize_image_stack_to_content, cr
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers import layer_selection_ops
-from src.image.layers.non_destructive_layer import NonDestructiveLayer
-from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
@@ -739,99 +739,11 @@ class AppController(MenuBuilder):
                 return True
             return app_state in data.valid_app_states
 
-        selection_is_empty = self._image_stack.selection_layer.empty
-        selection_methods: set[Callable[..., None]] = {
-            self.grow_selection,
-            self.shrink_selection,
-            self.crop_image_to_selection,
-            self.crop_layer_to_selection,
-            self.fill_with_foreground,
-            self.fill_with_background,
-            self.stroke_selection
-        }
-        # Methods that draw onto the active layer's pixels:
-        paint_methods: set[Callable[..., None]] = {
-            self.fill_with_foreground,
-            self.fill_with_background,
-            self.stroke_selection
-        }
-        unlocked_layer_methods: set[Callable[..., None]] = {
-            self.layer_mirror_horizontal,
-            self.layer_mirror_vertical,
-            self.layer_rotate_cw,
-            self.layer_rotate_ccw,
-            self.delete_layer,
-            self.merge_layer_down,
-            self.merge_group,
-            self.flatten_layer,
-            self.layer_to_image_size,
-            self.crop_layer_to_content,
-            self.crop_layer_to_selection,
-            self.fill_with_foreground,
-            self.fill_with_background,
-            self.stroke_selection
-        }
-        not_bottom_layer_methods: set[Callable[..., None]] = {
-            self.select_next_layer,
-            self.move_layer_down,
-            self.merge_layer_down
-        }
-        not_top_layer_methods: set[Callable[..., None]] = {
-            self.select_previous_layer,
-            self.move_layer_up,
-            self.move_layer_to_top
-        }
-        not_layer_stack_methods: set[Callable[..., None]] = {
-            self.select_previous_layer,
-            self.move_layer_up,
-            self.move_layer_down,
-            self.move_layer_to_top,
-            self.flatten_layer,
-            self.merge_group,
-            self.copy_layer,
-            self.delete_layer
-        }
-        not_flat_methods: set[Callable[..., None]] = {self.flatten_layer}
-        layer_group_only_methods: set[Callable[..., None]] = {self.merge_group}
-        not_layer_group_methods: set[Callable[..., None]] = {
-            self.merge_layer_down,
-            self.layer_to_image_size
-        }
-
-        not_text_layer_methods: set[Callable[..., None]] = {self.crop_layer_to_content}
-
-        managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
-                               | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods \
-                               | layer_group_only_methods | paint_methods
+        self.update_required_actions(met_requirements(self._image_stack), self._app_state.app_state())
 
         active_layer = self._image_stack.active_layer
-        is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \
-                       in (None, self._image_stack.layer_stack)
-        is_bottom_layer = active_layer != self._image_stack.layer_stack \
-                          and self._image_stack.next_layer(active_layer) is None
+        selection_is_empty = self._image_stack.selection_layer.empty
         is_locked = active_layer.locked or active_layer.parent_locked
-        for menu_method in managed_menu_methods:
-            action = self.get_action_for_method(menu_method)
-            assert action is not None
-            if not _test_state(menu_method):
-                action.setEnabled(False)
-                continue
-            action.setEnabled(True)
-            for method_set, disable_condition in ((selection_methods, selection_is_empty),
-                                                  (unlocked_layer_methods, is_locked),
-                                                  (not_bottom_layer_methods, is_bottom_layer),
-                                                  (not_top_layer_methods, is_top_layer),
-                                                  (not_layer_stack_methods,
-                                                   active_layer == self._image_stack.layer_stack),
-                                                  (not_flat_methods, self._image_stack.layer_is_flat(active_layer)),
-                                                  (not_layer_group_methods, isinstance(active_layer, LayerGroup)),
-                                                  (layer_group_only_methods, not isinstance(active_layer, LayerGroup)),
-                                                  (not_text_layer_methods, isinstance(active_layer, TextLayer)),
-                                                  (paint_methods, not isinstance(active_layer, (ImageLayer,
-                                                                                                NonDestructiveLayer)))):
-                if menu_method in method_set and disable_condition:
-                    action.setEnabled(False)
-                    break
 
         # Hide everything related to generation area if no generator is in use:
         generation_available = bool(Cache().get(Cache.IMAGE_GENERATION_AVAILABLE))
@@ -1134,17 +1046,19 @@ class AppController(MenuBuilder):
             self._image_stack.clear_selected()
 
     @menu_action(MENU_EDIT, 'fill_foreground_shortcut', 115, valid_app_states=[APP_STATE_EDITING],
-                 separator_before=True)
+                 separator_before=True, requires={SELECTION, UNLOCKED_LAYER, PAINTABLE_LAYER})
     def fill_with_foreground(self) -> None:
         """Fill the selected area of the active layer with the foreground color."""
         self._image_stack.fill_selected(color_controller.foreground())
 
-    @menu_action(MENU_EDIT, 'fill_background_shortcut', 116, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'fill_background_shortcut', 116, valid_app_states=[APP_STATE_EDITING],
+                 requires={SELECTION, UNLOCKED_LAYER, PAINTABLE_LAYER})
     def fill_with_background(self) -> None:
         """Fill the selected area of the active layer with the background color."""
         self._image_stack.fill_selected(color_controller.background())
 
-    @menu_action(MENU_EDIT, 'stroke_selection_shortcut', 117, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'stroke_selection_shortcut', 117, valid_app_states=[APP_STATE_EDITING],
+                 requires={SELECTION, UNLOCKED_LAYER, PAINTABLE_LAYER})
     def stroke_selection(self) -> None:
         """Draw a line along the selection outline on the active layer, with options from a popup modal."""
         stroke_modal = StrokeSelectionModal(self._window)
@@ -1348,7 +1262,8 @@ class AppController(MenuBuilder):
         """Rotate the whole image 180 degrees."""
         self._image_stack.rotate_image(180)
 
-    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 210, valid_app_states=[APP_STATE_EDITING], separator_before=True)
+    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 210, valid_app_states=[APP_STATE_EDITING], separator_before=True,
+                 requires={SELECTION})
     def crop_image_to_selection(self) -> None:
         """Crop the image to fit selected content."""
         crop_image_stack_to_selection(self._image_stack)
@@ -1452,13 +1367,13 @@ class AppController(MenuBuilder):
         layer_selection_ops.select_all_layers(self._image_stack)
 
     @menu_action(MENU_SELECT, 'grow_selection_shortcut', 320,
-                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True, requires={SELECTION})
     def grow_selection(self, num_pixels=1) -> None:
         """Expand the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
 
     @menu_action(MENU_SELECT, 'shrink_selection_shortcut', 321,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={SELECTION})
     def shrink_selection(self, num_pixels=1) -> None:
         """Contract the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
@@ -1480,13 +1395,14 @@ class AppController(MenuBuilder):
             panel.start_rename()
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_previous_layer_shortcut', 420,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION],
+                 requires={HAS_PREVIOUS_LAYER, NOT_LAYER_STACK})
     def select_previous_layer(self) -> None:
         """Select the layer above the current active layer."""
         self._image_stack.offset_active_selection(-1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_next_layer_shortcut', 421,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], requires={HAS_NEXT_LAYER})
     def select_next_layer(self) -> None:
         """Select the layer below the current active layer."""
         self._image_stack.offset_active_selection(1)
@@ -1504,19 +1420,20 @@ class AppController(MenuBuilder):
         layer_selection_ops.extend_layer_selection(self._image_stack, 1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_up_shortcut', 424,
-                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True,
+                 requires={HAS_PREVIOUS_LAYER, NOT_LAYER_STACK})
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
         self._image_stack.move_layer_by_offset(-1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_down_shortcut', 425,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={HAS_NEXT_LAYER, NOT_LAYER_STACK})
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
         self._image_stack.move_layer_by_offset(1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_to_top_shortcut', 426,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={HAS_PREVIOUS_LAYER, NOT_LAYER_STACK})
     def move_layer_to_top(self) -> None:
         """Move the active layer to the top of the layer stack."""
         self._image_stack.move_layer(self._image_stack.active_layer, self._image_stack.layer_stack, 0)
@@ -1535,25 +1452,25 @@ class AppController(MenuBuilder):
             transform_group.remove_all()
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={UNLOCKED_LAYER})
     def layer_mirror_horizontal(self) -> None:
         """Flip the active layer horizontally."""
         self._transform_active_layer(lambda layer: layer.flip_horizontal())
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={UNLOCKED_LAYER})
     def layer_mirror_vertical(self) -> None:
         """Flip the active layer vertically."""
         self._transform_active_layer(lambda layer: layer.flip_vertical())
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={UNLOCKED_LAYER})
     def layer_rotate_cw(self) -> None:
         """Rotate the active layer 90 degrees clockwise."""
         self._transform_active_layer(lambda layer: layer.rotate(90))
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={UNLOCKED_LAYER})
     def layer_rotate_ccw(self) -> None:
         """Rotate the active layer 90 degrees counter-clockwise."""
         self._transform_active_layer(lambda layer: layer.rotate(-90))
@@ -1577,23 +1494,26 @@ class AppController(MenuBuilder):
         layer_selection_ops.group_selected_layers(self._image_stack)
 
     @menu_action(MENU_LAYER, 'copy_layer_shortcut', 402,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], requires={NOT_LAYER_STACK})
     def copy_layer(self) -> None:
         """Duplicate the selected layers."""
         layer_selection_ops.duplicate_selected_layers(self._image_stack)
 
-    @menu_action(MENU_LAYER, 'delete_layer_shortcut', 403, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'delete_layer_shortcut', 403, valid_app_states=[APP_STATE_EDITING],
+                 requires={UNLOCKED_LAYER, NOT_LAYER_STACK})
     def delete_layer(self) -> None:
         """Delete the selected layers."""
         layer_selection_ops.delete_selected_layers(self._image_stack)
 
     @menu_action(MENU_LAYER, 'merge_layer_down_shortcut', 440,
-                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True,
+                 requires={UNLOCKED_LAYER, HAS_NEXT_LAYER, NOT_LAYER_GROUP})
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
 
-    @menu_action(MENU_LAYER, 'merge_group_shortcut', 441, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_group_shortcut', 441, valid_app_states=[APP_STATE_EDITING],
+                 requires={UNLOCKED_LAYER, NOT_LAYER_STACK, LAYER_GROUP})
     def merge_group(self) -> None:
         """Merge the active layer group into a single image layer."""
         self._image_stack.merge_group()
@@ -1603,24 +1523,27 @@ class AppController(MenuBuilder):
         """Merge all visible layers into a single image layer."""
         self._image_stack.merge_all_visible()
 
-    @menu_action(MENU_LAYER, 'flatten_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'flatten_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING],
+                 requires={UNLOCKED_LAYER, NOT_LAYER_STACK, NOT_FLAT})
     def flatten_layer(self) -> None:
         """Simplifies the active layer."""
         self._image_stack.flatten_layer()
 
     @menu_action(MENU_LAYER, 'layer_to_image_size_shortcut', 450,
-                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True,
+                 requires={UNLOCKED_LAYER, NOT_LAYER_GROUP})
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYER, 'crop_layer_to_selection_shortcut', 451, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'crop_layer_to_selection_shortcut', 451, valid_app_states=[APP_STATE_EDITING],
+                 requires={SELECTION, UNLOCKED_LAYER})
     def crop_layer_to_selection(self) -> None:
         """Crop the active layer to fit overlapping selection bounds."""
         crop_layer_to_selection(self._image_stack)
 
     @menu_action(MENU_LAYER, 'crop_to_content_shortcut', 452,
-                 valid_app_states=[APP_STATE_EDITING])
+                 valid_app_states=[APP_STATE_EDITING], requires={UNLOCKED_LAYER, NOT_TEXT_LAYER})
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
         layer = self._image_stack.active_layer

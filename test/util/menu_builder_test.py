@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import QMainWindow
 
 from src.config.key_config import KeyConfig
-from src.util.application_state import AppStateTracker
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.menu_builder import MenuBuilder, menu_action
 from test.base_test_case import IntraPaintTestCase
 
@@ -89,3 +89,57 @@ class MenuBuilderTest(IntraPaintTestCase):
         self.assertIs(builder.get_action_for_method(builder.first), action)
         builder.build_menus()
         self.assertEqual(len(builder.menu_actions(MENU)), 5)
+
+
+class _RequiringBuilder(MenuBuilder):
+    @menu_action(MENU, 'undo_shortcut', 0, valid_app_states=[APP_STATE_EDITING], requires={'a', 'b'})
+    def requiring(self) -> None:
+        """Needs both requirements and the editing state."""
+
+    @menu_action(MENU, 'redo_shortcut', 1, requires={'a'})
+    def any_state(self) -> None:
+        """Needs one requirement, in any state."""
+
+    @menu_action(MENU, 'cut_shortcut', 2, valid_app_states=[APP_STATE_EDITING])
+    def unmanaged(self) -> None:
+        """Declares no requirements."""
+
+
+class UpdateRequiredActionsTest(IntraPaintTestCase):
+    """Tests MenuBuilder.update_required_actions."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._window = QMainWindow()
+        self._builder = _RequiringBuilder(AppStateTracker())
+        self._builder.menu_window = self._window
+        self._builder.build_menus()
+
+    def test_enabled_when_requirements_met_in_valid_state(self) -> None:
+        """An action is enabled when every requirement is met and the app state is valid."""
+        self._builder.update_required_actions({'a', 'b', 'c'}, APP_STATE_EDITING)
+        self.assertTrue(self._builder.get_action_for_method(self._builder.requiring).isEnabled())
+        self.assertTrue(self._builder.get_action_for_method(self._builder.any_state).isEnabled())
+
+    def test_disabled_when_a_requirement_is_unmet(self) -> None:
+        """An action is disabled when any one of its requirements is missing."""
+        self._builder.update_required_actions({'a', 'b'}, APP_STATE_EDITING)
+        self._builder.update_required_actions({'a'}, APP_STATE_EDITING)
+        self.assertFalse(self._builder.get_action_for_method(self._builder.requiring).isEnabled())
+        self.assertTrue(self._builder.get_action_for_method(self._builder.any_state).isEnabled())
+        self._builder.update_required_actions(set(), APP_STATE_EDITING)
+        self.assertFalse(self._builder.get_action_for_method(self._builder.any_state).isEnabled())
+
+    def test_disabled_in_invalid_state(self) -> None:
+        """An action is disabled outside its valid app states even when its requirements are met."""
+        self._builder.update_required_actions({'a', 'b'}, APP_STATE_LOADING)
+        self.assertFalse(self._builder.get_action_for_method(self._builder.requiring).isEnabled())
+        self.assertTrue(self._builder.get_action_for_method(self._builder.any_state).isEnabled())
+
+    def test_actions_without_requirements_untouched(self) -> None:
+        """An action without `requires` keeps whatever enabled state it had."""
+        action = self._builder.get_action_for_method(self._builder.unmanaged)
+        for enabled in (False, True):
+            action.setEnabled(enabled)
+            self._builder.update_required_actions(set(), APP_STATE_LOADING)
+            self.assertEqual(action.isEnabled(), enabled)
