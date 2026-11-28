@@ -5735,12 +5735,12 @@ Choose "No" to open only the first frame.</source>
     <message>
         <location filename="../../src/controller/tool_controller.py"/>
         <source>Failed to load libmypaint brush library files</source>
-        <translation type="unfinished"></translation>
+        <translation>无法加载 libmypaint 画笔库文件</translation>
     </message>
     <message>
         <location filename="../../src/controller/tool_controller.py"/>
         <source>The brush tool will not be available unless this is fixed.</source>
-        <translation type="unfinished"></translation>
+        <translation>在修复此问题之前，画笔工具将不可用。</translation>
     </message>
 </context>
 <context>
@@ -6346,22 +6346,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/base_tool.py"/>
         <source>{pan_key}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</source>
-        <translation type="unfinished"></translation>
+        <translation>{pan_key}+{left_mouse_icon} 或 {middle_mouse_icon} 拖动：平移视图</translation>
     </message>
     <message>
         <location filename="../../src/tools/base_tool.py"/>
         <source>{middle_mouse_icon}, drag: pan view</source>
-        <translation type="unfinished"></translation>
+        <translation>{middle_mouse_icon} 拖动：平移视图</translation>
     </message>
     <message>
         <location filename="../../src/tools/base_tool.py"/>
         <source>{v_scroll_icon}: zoom</source>
-        <translation type="unfinished"></translation>
+        <translation>{v_scroll_icon}：缩放</translation>
     </message>
     <message>
         <location filename="../../src/tools/base_tool.py"/>
         <source>{modifier_or_modifiers}: Fixed aspect ratio</source>
-        <translation type="unfinished"></translation>
+        <translation>{modifier_or_modifiers}：固定宽高比</translation>
     </message>
 </context>
 <context>
@@ -6369,37 +6369,37 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/brush_tool.py"/>
         <source>{modifier_or_modifiers}+{left_mouse_icon}: draw line</source>
-        <translation type="unfinished"></translation>
+        <translation>{modifier_or_modifiers}+{left_mouse_icon}：绘制直线</translation>
     </message>
     <message>
         <location filename="../../src/tools/brush_tool.py"/>
         <source>{modifier_or_modifiers}: fixed angle</source>
-        <translation type="unfinished"></translation>
+        <translation>{modifier_or_modifiers}：固定角度</translation>
     </message>
     <message>
         <location filename="../../src/tools/brush_tool.py"/>
         <source>{modifier_or_modifiers}+{right_mouse_icon} drag: brush size</source>
-        <translation type="unfinished"></translation>
+        <translation>{modifier_or_modifiers}+{right_mouse_icon} 拖动：画笔大小</translation>
     </message>
     <message>
         <location filename="../../src/tools/brush_tool.py"/>
         <source>{right_mouse_icon}: quick options</source>
-        <translation type="unfinished"></translation>
+        <translation>{right_mouse_icon}：快捷选项</translation>
     </message>
     <message>
         <location filename="../../src/tools/mypaint_brush_tool.py"/>
         <source>Brush</source>
-        <translation type="unfinished"></translation>
+        <translation>画笔</translation>
     </message>
     <message>
         <location filename="../../src/tools/mypaint_brush_tool.py"/>
         <source>Paint into the image</source>
-        <translation type="unfinished"></translation>
+        <translation>在图像上绘画</translation>
     </message>
     <message>
         <location filename="../../src/tools/mypaint_brush_tool.py"/>
         <source>{left_mouse_icon}: draw</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：绘制</translation>
     </message>
 </context>
 <context>
@@ -6407,32 +6407,32 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
         <source>Clone stamp</source>
-        <translation type="unfinished"></translation>
+        <translation>仿制图章</translation>
     </message>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
         <source>Copy image content from one area to another</source>
-        <translation type="unfinished"></translation>
+        <translation>将图像内容从一个区域复制到另一个区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
         <source>{right_mouse_icon}: set source - {left_mouse_icon}: draw</source>
-        <translation type="unfinished"></translation>
+        <translation>{right_mouse_icon}：设置源 - {left_mouse_icon}：绘制</translation>
     </message>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
         <source>Offset:</source>
-        <translation type="unfinished"></translation>
+        <translation>偏移：</translation>
     </message>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
         <source>Position:</source>
-        <translation type="unfinished"></translation>
+        <translation>位置：</translation>
     </message>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
         <source>Update selection only</source>
-        <translation type="unfinished"></translation>
+        <translation>仅更新选区</translation>
     </message>
 </context>
 <context>
@@ -6440,7 +6440,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/context_pin_dragger.py"/>
         <source>{right_mouse_icon}: add, move or remove context pin</source>
-        <translation type="unfinished"></translation>
+        <translation>{right_mouse_icon}：添加、移动或删除周边范围锚点</translation>
     </message>
 </context>
 <context>
@@ -6448,17 +6448,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/draw_tool.py"/>
         <source>Draw</source>
-        <translation type="unfinished"></translation>
+        <translation>绘图</translation>
     </message>
     <message>
         <location filename="../../src/tools/draw_tool.py"/>
         <source>Draw into the image</source>
-        <translation type="unfinished"></translation>
+        <translation>在图像上绘制</translation>
     </message>
     <message>
         <location filename="../../src/tools/draw_tool.py"/>
         <source>{left_mouse_icon}: draw</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：绘制</translation>
     </message>
 </context>
 <context>
@@ -6466,17 +6466,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/eraser_tool.py"/>
         <source>Erase</source>
-        <translation type="unfinished"></translation>
+        <translation>橡皮擦</translation>
     </message>
     <message>
         <location filename="../../src/tools/eraser_tool.py"/>
         <source>Erase image layer content</source>
-        <translation type="unfinished"></translation>
+        <translation>擦除图像图层内容</translation>
     </message>
     <message>
         <location filename="../../src/tools/eraser_tool.py"/>
         <source>{left_mouse_icon}: erase</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：擦除</translation>
     </message>
 </context>
 <context>
@@ -6484,17 +6484,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
         <source>Color picker</source>
-        <translation type="unfinished"></translation>
+        <translation>取色器</translation>
     </message>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
         <source>Select a brush or background color</source>
-        <translation type="unfinished"></translation>
+        <translation>选取画笔颜色或背景色</translation>
     </message>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
         <source>{left_mouse_icon}: pick color - {right_mouse_icon}: pick background color - </source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：取色 - {right_mouse_icon}：取背景色 - </translation>
     </message>
 </context>
 <context>
@@ -6502,17 +6502,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/fill_tool.py"/>
         <source>Color fill</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色填充</translation>
     </message>
     <message>
         <location filename="../../src/tools/fill_tool.py"/>
         <source>Fill areas with solid colors</source>
-        <translation type="unfinished"></translation>
+        <translation>用纯色填充区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/fill_tool.py"/>
         <source>{left_mouse_icon}: fill</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：填充</translation>
     </message>
 </context>
 <context>
@@ -6520,17 +6520,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/filter_tool.py"/>
         <source>Filter brush</source>
-        <translation type="unfinished"></translation>
+        <translation>滤镜画笔</translation>
     </message>
     <message>
         <location filename="../../src/tools/filter_tool.py"/>
         <source>Draw to apply an image filter</source>
-        <translation type="unfinished"></translation>
+        <translation>绘制以应用图像滤镜</translation>
     </message>
     <message>
         <location filename="../../src/tools/filter_tool.py"/>
         <source>{left_mouse_icon}: filter</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：应用滤镜</translation>
     </message>
 </context>
 <context>
@@ -6538,27 +6538,27 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
         <source>Generation area</source>
-        <translation type="unfinished"></translation>
+        <translation>生成区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
         <source>Select an image region for AI image generation</source>
-        <translation type="unfinished"></translation>
+        <translation>选择用于 AI 图像生成的图像区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
         <source>{left_mouse_icon}: move area - {right_mouse_icon}: resize area</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：移动区域 - {right_mouse_icon}：调整区域大小</translation>
     </message>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
         <source>{left_mouse_icon}: move area, or drag a handle to resize - {right_mouse_icon}: resize area</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：移动区域，或拖动控制点调整大小 - {right_mouse_icon}：调整区域大小</translation>
     </message>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
         <source>{modifier_or_modifiers}: free aspect ratio on corner handles, fixed aspect ratio with {right_mouse_icon}</source>
-        <translation type="unfinished"></translation>
+        <translation>{modifier_or_modifiers}：拖动角控制点时不固定宽高比，用 {right_mouse_icon} 调整时固定宽高比</translation>
     </message>
 </context>
 <context>
@@ -6566,17 +6566,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/free_selection_tool.py"/>
         <source>Free selection</source>
-        <translation type="unfinished"></translation>
+        <translation>自由选区</translation>
     </message>
     <message>
         <location filename="../../src/tools/free_selection_tool.py"/>
         <source>Select or deselect polygonal areas</source>
-        <translation type="unfinished"></translation>
+        <translation>选择或取消选择多边形区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/free_selection_tool.py"/>
         <source>{left_mouse_icon}: add or move point&lt;br/&gt;{enter_key} or {left_mouse_icon}+first point: finish selection&lt;br/&gt;{escape_key}: cancel selection</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：添加或移动点&lt;br/&gt;{enter_key} 或 {left_mouse_icon}+第一个点：完成选区&lt;br/&gt;{escape_key}：取消选区</translation>
     </message>
 </context>
 <context>
@@ -6584,17 +6584,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
         <source>Transform layers</source>
-        <translation type="unfinished"></translation>
+        <translation>变换图层</translation>
     </message>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
         <source>Move, scale, or rotate the active layer.</source>
-        <translation type="unfinished"></translation>
+        <translation>移动、缩放或旋转当前图层。</translation>
     </message>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
         <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer&lt;br/&gt;{right_mouse_icon}: choose from layers under cursor</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：选择图层&lt;br/&gt;{left_mouse_icon} 拖动：移动图层&lt;br/&gt;{right_mouse_icon}：从光标下的图层中选择</translation>
     </message>
 </context>
 <context>
@@ -6602,17 +6602,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/magic_wand_tool.py"/>
         <source>Magic wand</source>
-        <translation type="unfinished"></translation>
+        <translation>魔棒</translation>
     </message>
     <message>
         <location filename="../../src/tools/magic_wand_tool.py"/>
         <source>Select areas of similar color</source>
-        <translation type="unfinished"></translation>
+        <translation>选择颜色相近的区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/magic_wand_tool.py"/>
         <source>{left_mouse_icon}: select</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：选择</translation>
     </message>
 </context>
 <context>
@@ -6620,17 +6620,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/selection_brush_tool.py"/>
         <source>Selection brush</source>
-        <translation type="unfinished"></translation>
+        <translation>选区画笔</translation>
     </message>
     <message>
         <location filename="../../src/tools/selection_brush_tool.py"/>
         <source>Draw to select areas for editing or inpainting.</source>
-        <translation type="unfinished"></translation>
+        <translation>绘制以选择要编辑或局部重绘的区域。</translation>
     </message>
     <message>
         <location filename="../../src/tools/selection_brush_tool.py"/>
         <source>{left_mouse_icon}: select</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：选择</translation>
     </message>
 </context>
 <context>
@@ -6638,17 +6638,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/shape_selection_tool.py"/>
         <source>Rectangle/Ellipse selection</source>
-        <translation type="unfinished"></translation>
+        <translation>矩形/椭圆选区</translation>
     </message>
     <message>
         <location filename="../../src/tools/shape_selection_tool.py"/>
         <source>Select or deselect rectangles or ellipses</source>
-        <translation type="unfinished"></translation>
+        <translation>选择或取消选择矩形或椭圆区域</translation>
     </message>
     <message>
         <location filename="../../src/tools/shape_selection_tool.py"/>
         <source>{left_mouse_icon}, drag: select</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon} 拖动：选择</translation>
     </message>
 </context>
 <context>
@@ -6656,17 +6656,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/shape_tool.py"/>
         <source>Draw shapes</source>
-        <translation type="unfinished"></translation>
+        <translation>绘制形状</translation>
     </message>
     <message>
         <location filename="../../src/tools/shape_tool.py"/>
         <source>Create rectangles, ellipses, and other polygons</source>
-        <translation type="unfinished"></translation>
+        <translation>创建矩形、椭圆和其他多边形</translation>
     </message>
     <message>
         <location filename="../../src/tools/shape_tool.py"/>
         <source>{left_mouse_icon}, drag: draw shape</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon} 拖动：绘制形状</translation>
     </message>
 </context>
 <context>
@@ -6674,17 +6674,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/smudge_tool.py"/>
         <source>Smudge</source>
-        <translation type="unfinished"></translation>
+        <translation>涂抹</translation>
     </message>
     <message>
         <location filename="../../src/tools/smudge_tool.py"/>
         <source>Smudge image content</source>
-        <translation type="unfinished"></translation>
+        <translation>涂抹图像内容</translation>
     </message>
     <message>
         <location filename="../../src/tools/smudge_tool.py"/>
         <source>{left_mouse_icon}: smudge</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：涂抹</translation>
     </message>
 </context>
 <context>
@@ -6692,17 +6692,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/tools/text_tool.py"/>
         <source>Text</source>
-        <translation type="unfinished"></translation>
+        <translation>文字</translation>
     </message>
     <message>
         <location filename="../../src/tools/text_tool.py"/>
         <source>Add text to a text layer</source>
-        <translation type="unfinished"></translation>
+        <translation>向文字图层添加文字</translation>
     </message>
     <message>
         <location filename="../../src/tools/text_tool.py"/>
         <source>{left_mouse_icon}: select text layer&lt;br/&gt;{left_mouse_icon}, drag: create new layer or move active</source>
-        <translation type="unfinished"></translation>
+        <translation>{left_mouse_icon}：选择文字图层&lt;br/&gt;{left_mouse_icon} 拖动：创建新图层或移动当前图层</translation>
     </message>
 </context>
 <context>
@@ -9514,27 +9514,27 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
         <source>Deselect</source>
-        <translation type="unfinished"></translation>
+        <translation>取消选择</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
         <source>Brush</source>
-        <translation type="unfinished"></translation>
+        <translation>画笔</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
         <source>Hold {keys} to subtract.</source>
-        <translation type="unfinished"></translation>
+        <translation>按住 {keys} 减去。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
         <source>{keys} draws a straight line.</source>
-        <translation type="unfinished"></translation>
+        <translation>按住 {keys} 绘制直线。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
         <source>Right-click adds a context pin.</source>
-        <translation type="unfinished"></translation>
+        <translation>右键单击可添加周边范围锚点。</translation>
     </message>
 </context>
 <context>
@@ -9542,27 +9542,27 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
         <source>Source</source>
-        <translation type="unfinished"></translation>
+        <translation>源</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
         <source>Offset X</source>
-        <translation type="unfinished"></translation>
+        <translation>偏移 X</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
         <source>Offset Y</source>
-        <translation type="unfinished"></translation>
+        <translation>偏移 Y</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
         <source>Source X</source>
-        <translation type="unfinished"></translation>
+        <translation>源 X</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
         <source>Source Y</source>
-        <translation type="unfinished"></translation>
+        <translation>源 Y</translation>
     </message>
 </context>
 <context>
@@ -9570,7 +9570,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/eraser_tool_panel.py"/>
         <source>Size</source>
-        <translation type="unfinished"></translation>
+        <translation>大小</translation>
     </message>
 </context>
 <context>
@@ -9578,22 +9578,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
         <source>Paint</source>
-        <translation type="unfinished"></translation>
+        <translation>颜料</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
         <source>Region</source>
-        <translation type="unfinished"></translation>
+        <translation>区域</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
         <source>How closely a color must match the clicked color to be filled. 0 fills only exact matches. Shared with the magic wand.</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色与所点击的颜色需要多接近才会被填充。0 表示只填充完全相同的颜色。与魔棒共用。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
         <source>Fill based on the whole image instead of just the active layer. Shared with the magic wand.</source>
-        <translation type="unfinished"></translation>
+        <translation>根据整个图像而不仅是当前图层进行填充。与魔棒共用。</translation>
     </message>
 </context>
 <context>
@@ -9606,12 +9606,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py"/>
         <source>Strength</source>
-        <translation type="unfinished"></translation>
+        <translation>强度</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py"/>
         <source>How strongly the filter is applied where you paint</source>
-        <translation type="unfinished"></translation>
+        <translation>在绘制处应用滤镜的强度</translation>
     </message>
 </context>
 <context>
@@ -9619,12 +9619,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/free_selection_panel.py"/>
         <source>Free selection</source>
-        <translation type="unfinished"></translation>
+        <translation>自由选区</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/free_selection_panel.py"/>
         <source>Click adds a point. Enter closes the shape and applies it.</source>
-        <translation type="unfinished"></translation>
+        <translation>单击添加一个点。按 Enter 闭合形状并应用。</translation>
     </message>
 </context>
 <context>
@@ -9632,37 +9632,37 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Revert</source>
-        <translation type="unfinished"></translation>
+        <translation>还原</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Restore the transform this layer had when you selected it</source>
-        <translation type="unfinished"></translation>
+        <translation>恢复此图层在被选中时的变换</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Clear transform</source>
-        <translation type="unfinished"></translation>
+        <translation>清除变换</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Remove all movement, scaling and rotation from this layer</source>
-        <translation type="unfinished"></translation>
+        <translation>移除此图层的所有移动、缩放和旋转</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Image</source>
-        <translation type="unfinished"></translation>
+        <translation>图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Layer</source>
-        <translation type="unfinished"></translation>
+        <translation>图层</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>This layer has a perspective transform, which this tool can't edit. Revert and Clear transform still work.</source>
-        <translation type="unfinished"></translation>
+        <translation>此图层带有透视变换，此工具无法编辑。“还原”和“清除变换”仍然可用。</translation>
     </message>
 </context>
 <context>
@@ -9670,7 +9670,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/magic_wand_panel.py"/>
         <source>Fill area</source>
-        <translation type="unfinished"></translation>
+        <translation>填充区域</translation>
     </message>
 </context>
 <context>
@@ -9678,27 +9678,27 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
         <source>Size</source>
-        <translation type="unfinished"></translation>
+        <translation>大小</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
         <source>Brush</source>
-        <translation type="unfinished"></translation>
+        <translation>画笔</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
         <source>Brush dynamics</source>
-        <translation type="unfinished"></translation>
+        <translation>画笔动态</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
         <source>Opacity and hardness come from the brush file.</source>
-        <translation type="unfinished"></translation>
+        <translation>不透明度和硬度由画笔文件决定。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
         <source>{brush}. {hint}</source>
-        <translation type="unfinished"></translation>
+        <translation>{brush}。{hint}</translation>
     </message>
 </context>
 <context>
@@ -9706,22 +9706,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>模式</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Mode: {mode}</source>
-        <translation type="unfinished"></translation>
+        <translation>模式：{mode}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Selection</source>
-        <translation type="unfinished"></translation>
+        <translation>选区</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Select all</source>
-        <translation type="unfinished"></translation>
+        <translation>全选</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
@@ -9731,62 +9731,62 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Clear pins</source>
-        <translation type="unfinished"></translation>
+        <translation>清除锚点</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>{description} ({shortcut})</source>
-        <translation type="unfinished"></translation>
+        <translation>{description}（{shortcut}）</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Select the whole image</source>
-        <translation type="unfinished"></translation>
+        <translation>选择整个图像</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Clear the selection</source>
-        <translation type="unfinished"></translation>
+        <translation>清除选区</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Remove all context pins. Right-click in the image with any selection tool to add, move or remove pins.</source>
-        <translation type="unfinished"></translation>
+        <translation>移除所有周边范围锚点。使用任意选区工具在图像中右键单击，可添加、移动或删除锚点。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Hold {add_keys} to add, {subtract_keys} to subtract.</source>
-        <translation type="unfinished"></translation>
+        <translation>按住 {add_keys} 添加，按住 {subtract_keys} 减去。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Hold {subtract_keys} to subtract.</source>
-        <translation type="unfinished"></translation>
+        <translation>按住 {subtract_keys} 减去。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Position: {x}, {y}</source>
-        <translation type="unfinished"></translation>
+        <translation>位置：{x}, {y}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Size: {width} x {height}</source>
-        <translation type="unfinished"></translation>
+        <translation>大小：{width} x {height}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>-</source>
-        <translation type="unfinished"></translation>
+        <translation>-</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>{width} x {height} at {x}, {y}</source>
-        <translation type="unfinished"></translation>
+        <translation>{width} x {height}，位于 {x}, {y}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
         <source>Nothing selected</source>
-        <translation type="unfinished"></translation>
+        <translation>未选择任何内容</translation>
     </message>
 </context>
 <context>
@@ -9794,17 +9794,17 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py"/>
         <source>Shape</source>
-        <translation type="unfinished"></translation>
+        <translation>形状</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py"/>
         <source>Fixed 1:1 ratio</source>
-        <translation type="unfinished"></translation>
+        <translation>固定 1:1 比例</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py"/>
         <source>{description} Hold {keys} to fix the ratio for a single drag.</source>
-        <translation type="unfinished"></translation>
+        <translation>{description}按住 {keys} 可在单次拖动中固定比例。</translation>
     </message>
 </context>
 <context>
@@ -9812,7 +9812,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Shape</source>
-        <translation type="unfinished"></translation>
+        <translation>形状</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
@@ -9827,82 +9827,82 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Vertices</source>
-        <translation type="unfinished"></translation>
+        <translation>顶点</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Inner radius</source>
-        <translation type="unfinished"></translation>
+        <translation>内半径</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Width</source>
-        <translation type="unfinished"></translation>
+        <translation>宽度</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Color</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Dash</source>
-        <translation type="unfinished"></translation>
+        <translation>虚线</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Join</source>
-        <translation type="unfinished"></translation>
+        <translation>接合</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>none</source>
-        <translation type="unfinished"></translation>
+        <translation>无</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source> px</source>
-        <translation type="unfinished"></translation>
+        <translation> px</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>Dash and gap lengths in px, in pairs</source>
-        <translation type="unfinished"></translation>
+        <translation>虚线和间隔的长度（px），成对填写</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>{width} {style}</source>
-        <translation type="unfinished"></translation>
+        <translation>{width} {style}</translation>
     </message>
     <message numerus="yes">
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>{shape}, %n point(s)</source>
-        <translation type="unfinished"><numerusform></numerusform></translation>
+        <translation><numerusform>{shape}，%n 个角</numerusform></translation>
     </message>
     <message numerus="yes">
         <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
         <source>{shape}, %n vertex/vertices</source>
-        <translation type="unfinished"><numerusform></numerusform></translation>
+        <translation><numerusform>{shape}，%n 个顶点</numerusform></translation>
     </message>
     <message>
         <location filename="../../src/util/visual/shape_mode.py"/>
         <source>Ellipse</source>
-        <translation type="unfinished"></translation>
+        <translation>椭圆</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/shape_mode.py"/>
         <source>Rectangle</source>
-        <translation type="unfinished"></translation>
+        <translation>矩形</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/shape_mode.py"/>
         <source>Polygon</source>
-        <translation type="unfinished"></translation>
+        <translation>多边形</translation>
     </message>
     <message>
         <location filename="../../src/util/visual/shape_mode.py"/>
         <source>Star</source>
-        <translation type="unfinished"></translation>
+        <translation>星形</translation>
     </message>
 </context>
 <context>
@@ -9910,12 +9910,12 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/smudge_tool_panel.py"/>
         <source>Strength</source>
-        <translation type="unfinished"></translation>
+        <translation>强度</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/smudge_tool_panel.py"/>
         <source>How far the smudge carries color</source>
-        <translation type="unfinished"></translation>
+        <translation>涂抹带动颜色的距离</translation>
     </message>
 </context>
 <context>
@@ -9923,7 +9923,7 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
         <source>Only inside selection</source>
-        <translation type="unfinished"></translation>
+        <translation>仅在选区内</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
@@ -9933,22 +9933,22 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
         <source>Color and options</source>
-        <translation type="unfinished"></translation>
+        <translation>颜色和选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
         <source>Options</source>
-        <translation type="unfinished"></translation>
+        <translation>选项</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
         <source> px</source>
-        <translation type="unfinished"></translation>
+        <translation> px</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
         <source>%</source>
-        <translation type="unfinished"></translation>
+        <translation>%</translation>
     </message>
 </context>
 <context>
@@ -9956,268 +9956,270 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Enter text</source>
-        <translation type="unfinished"></translation>
+        <translation>输入文字</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Font</source>
-        <translation type="unfinished"></translation>
+        <translation>字体</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Style</source>
-        <translation type="unfinished"></translation>
+        <translation>样式</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Position and size</source>
-        <translation type="unfinished"></translation>
+        <translation>位置和大小</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Advanced</source>
-        <translation type="unfinished"></translation>
+        <translation>高级</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>预览</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Type to filter fonts</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>glossary: not "Filter" - the verb, narrowing the font list as the user types, which the glossary's context notes render as 筛选.</translatorcomment>
+        <translation>输入以筛选字体</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Font family</source>
-        <translation type="unfinished"></translation>
+        <translation>字体系列</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Size</source>
-        <translation type="unfinished"></translation>
+        <translation>字号</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Font size</source>
-        <translation type="unfinished"></translation>
+        <translation>字号</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>px</source>
-        <translation type="unfinished"></translation>
+        <translation>px</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>pt</source>
-        <translation type="unfinished"></translation>
+        <translation>pt</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Font size in pixels</source>
-        <translation type="unfinished"></translation>
+        <translation>以像素为单位的字号</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Font size in points</source>
-        <translation type="unfinished"></translation>
+        <translation>以磅为单位的字号</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source> px</source>
-        <translation type="unfinished"></translation>
+        <translation> px</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source> pt</source>
-        <translation type="unfinished"></translation>
+        <translation> pt</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>{family}, {size}</source>
-        <translation type="unfinished"></translation>
+        <translation>{family}，{size}</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>粗体</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>斜体</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>下划线</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Strikethrough</source>
-        <translation type="unfinished"></translation>
+        <translation>删除线</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Overline</source>
-        <translation type="unfinished"></translation>
+        <translation>上划线</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fixed pitch</source>
-        <translation type="unfinished"></translation>
+        <translation>等宽</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Kerning</source>
-        <translation type="unfinished"></translation>
+        <translation>字距调整</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Align left</source>
-        <translation type="unfinished"></translation>
+        <translation>左对齐</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Align center</source>
-        <translation type="unfinished"></translation>
+        <translation>居中对齐</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Align right</source>
-        <translation type="unfinished"></translation>
+        <translation>右对齐</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Text</source>
-        <translation type="unfinished"></translation>
+        <translation>文字</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Background</source>
-        <translation type="unfinished"></translation>
+        <translation>背景</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Same as brush color</source>
-        <translation type="unfinished"></translation>
+        <translation>与画笔颜色相同</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Text color. It is the same color the brush uses.</source>
-        <translation type="unfinished"></translation>
+        <translation>文字颜色，与画笔使用的颜色相同。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Background color, drawn behind the text while "Fill behind text" is on</source>
-        <translation type="unfinished"></translation>
+        <translation>背景色，开启“填充文字背景”时绘制在文字后面</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Use background color</source>
-        <translation type="unfinished"></translation>
+        <translation>使用背景色</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Set the text box fill color to the current background color</source>
-        <translation type="unfinished"></translation>
+        <translation>将文字框的填充颜色设为当前背景色</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fill behind text</source>
-        <translation type="unfinished"></translation>
+        <translation>填充文字背景</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fill the text box with the background color</source>
-        <translation type="unfinished"></translation>
+        <translation>用背景色填充文字框</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Box fit</source>
-        <translation type="unfinished"></translation>
+        <translation>适应方式</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Free</source>
-        <translation type="unfinished"></translation>
+        <translation>自由</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fit font</source>
-        <translation type="unfinished"></translation>
+        <translation>适应字号</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fit box</source>
-        <translation type="unfinished"></translation>
+        <translation>适应框</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Free: the font size and the box size are set separately</source>
-        <translation type="unfinished"></translation>
+        <translation>自由：字号和框的大小分别设置</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fit font: the font size changes to fit the text in the box</source>
-        <translation type="unfinished"></translation>
+        <translation>适应字号：字号随文字变化，使文字适应框</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Fit box: the box resizes to fit the text</source>
-        <translation type="unfinished"></translation>
+        <translation>适应框：框调整大小以适应文字</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Overflows</source>
-        <translation type="unfinished"></translation>
+        <translation>溢出</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>The text is larger than its box, so part of it is cut off. Enlarge the box, or pick Fit font or Fit box.</source>
-        <translation type="unfinished"></translation>
+        <translation>文字大于其框，部分文字被截断。请放大框，或选择“适应字号”或“适应框”。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Stretch</source>
-        <translation type="unfinished"></translation>
+        <translation>拉伸</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Stretches the font horizontally, as a percentage of its normal width</source>
-        <translation type="unfinished"></translation>
+        <translation>水平拉伸字体，以正常宽度的百分比表示</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Stretch is unavailable for bitmap fonts, which cannot be stretched</source>
-        <translation type="unfinished"></translation>
+        <translation>位图字体无法拉伸，因此“拉伸”不可用</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>auto</source>
-        <translation type="unfinished"></translation>
+        <translation>自动</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>%</source>
-        <translation type="unfinished"></translation>
+        <translation>%</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Outline = text box.
 Turns red when the text does not fit.</source>
-        <translation type="unfinished"></translation>
+        <translation>轮廓 = 文字框。
+文字放不下时变为红色。</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>fits box</source>
-        <translation type="unfinished"></translation>
+        <translation>未溢出</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>overflows</source>
-        <translation type="unfinished"></translation>
+        <translation>溢出</translation>
     </message>
 </context>
 <context>
@@ -10225,12 +10227,12 @@ Turns red when the text does not fit.</source>
     <message>
         <location filename="../../src/ui/panel/tool_panel.py"/>
         <source>Key bindings...</source>
-        <translation type="unfinished"></translation>
+        <translation>快捷键...</translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_panel.py"/>
         <source>Pressure curve...</source>
-        <translation type="unfinished"></translation>
+        <translation>笔压曲线...</translation>
     </message>
 </context>
 <context>
