@@ -41,6 +41,8 @@ class FreeSelectionTool(BaseTool):
     """Select or deselect polygonal areas."""
 
     TOOL_GROUP = ToolGroup.SELECTION
+    # Selection tools also drag context pins, which are generation area markers:
+    CANVAS_EXTRAS = frozenset({CanvasExtraCategory.SELECTION, CanvasExtraCategory.GENERATION_AREA})
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.FREE_SELECTION_TOOL_KEY, FREE_SELECTION_LABEL, FREE_SELECTION_TOOLTIP,

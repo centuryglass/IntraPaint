@@ -1032,7 +1032,7 @@
         "description": "Show or hide the active tool control hints below the image.",
         "type": "list",
         "default": [
-            "Ctrl+Alt+H"
+            "Ctrl+Alt+Shift+H"
         ],
         "saved": true
     },
@@ -1041,6 +1041,17 @@
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
         "description": "Show or hide the selection overlay fill. The selection outline stays visible.",
+        "type": "list",
+        "default": [
+            "Ctrl+Alt+H"
+        ],
+        "saved": true
+    },
+    "hide_canvas_extras_shortcut": {
+        "label": "Hide canvas extras",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Hide the selection, generation area, guides and other markers drawn over the image. The active tool's markers still show while the cursor is over the image.",
         "type": "list",
         "default": [
             "Ctrl+H"

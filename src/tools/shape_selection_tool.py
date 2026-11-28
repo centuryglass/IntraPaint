@@ -12,6 +12,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
 from src.tools.shape_drag_tool import ShapeDragTool
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -41,6 +42,8 @@ class ShapeSelectionTool(ShapeDragTool):
     """Select or deselect rectangular or ellipsoid areas."""
 
     TOOL_GROUP = ToolGroup.SELECTION
+    # Selection tools also drag context pins, which are generation area markers:
+    CANVAS_EXTRAS = frozenset({CanvasExtraCategory.SELECTION, CanvasExtraCategory.GENERATION_AREA})
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.SHAPE_SELECTION_TOOL_KEY, SHAPE_SELECTION_LABEL, SHAPE_SELECTION_TOOLTIP,

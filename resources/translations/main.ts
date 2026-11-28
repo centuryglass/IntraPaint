@@ -3329,6 +3329,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Hide canvas extras</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Hide the selection, generation area, guides and other markers drawn over the image. The active tool's markers still show while the cursor is over the image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Reset panel layout</source>
         <translation type="unfinished"></translation>
     </message>
@@ -9751,6 +9761,21 @@ Turns red when the text does not fit.</source>
     <message>
         <location filename="../../src/ui/widget/canvas_bar.py"/>
         <source>When hidden, only the selection outline is drawn</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Hide extras</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Hide canvas extras</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Markers the active tool uses still show while the cursor is over the image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

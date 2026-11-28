@@ -19,6 +19,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.shared_constants import DEBUG_CURSOR_ENV_VAR
 from src.util.shared_text import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED,
@@ -105,6 +106,9 @@ class BaseTool(QObject):
 
     # The tool panel groups buttons by this, keeping the order tools were added within a group:
     TOOL_GROUP = ToolGroup.PAINT
+    # Canvas extras categories that stay shown in hide mode while this tool is active, besides those every tool gets
+    # from `canvas_extras`:
+    CANVAS_EXTRAS: frozenset[CanvasExtraCategory] = frozenset()
 
     def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon,
                  enable_selection_restrictions: bool = True) -> None:
@@ -182,6 +186,14 @@ class BaseTool(QObject):
             self._saved_cursor = None
         if self.is_active:
             self.cursor_change.emit()
+
+    def canvas_extras(self) -> frozenset[CanvasExtraCategory]:
+        """Returns the canvas extras categories this tool needs shown in hide mode: `CANVAS_EXTRAS`, `TOOL`, and
+        `SELECTION` while `Cache.PAINT_SELECTION_ONLY` limits this tool to the selection."""
+        categories = {*self.CANVAS_EXTRAS, CanvasExtraCategory.TOOL}
+        if self._enable_selection_restrictions and Cache().get(Cache.PAINT_SELECTION_ONLY):
+            categories.add(CanvasExtraCategory.SELECTION)
+        return frozenset(categories)
 
     @property
     def is_active(self) -> bool:

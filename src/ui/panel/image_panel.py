@@ -130,8 +130,10 @@ class ImagePanel(QWidget):
         self._ruler_corner.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._ruler_corner.addActions(self._ruler_menu_actions)
         self._handle_strips = (
-            GuideHandleStrip(self._image_viewer, Qt.Orientation.Horizontal, guides, grid_widget),
-            GuideHandleStrip(self._image_viewer, Qt.Orientation.Vertical, guides, grid_widget))
+            GuideHandleStrip(self._image_viewer, Qt.Orientation.Horizontal, guides, grid_widget,
+                             self._image_viewer.canvas_extras),
+            GuideHandleStrip(self._image_viewer, Qt.Orientation.Vertical, guides, grid_widget,
+                             self._image_viewer.canvas_extras))
         for strip in self._handle_strips:
             # Hide rulers and the highlight toggle don't apply while the rulers are hidden:
             strip.menu_actions = [lock_action, clear_action]

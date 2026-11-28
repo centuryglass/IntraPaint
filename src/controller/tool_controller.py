@@ -85,6 +85,8 @@ class ToolController(QObject):
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
         self._hotkey_filter.modifiers_changed.connect(self._handle_modifier_delegation)
+        self.active_tool_changed.connect(self._update_canvas_extras)
+        Cache().connect(self, Cache.PAINT_SELECTION_ONLY, self._update_canvas_extras)
 
         if not load_all_tools:
             return
@@ -191,6 +193,11 @@ class ToolController(QObject):
         if source_tool not in self._tool_modifier_delegates:
             self._tool_modifier_delegates[source_tool] = {}
         self._tool_modifier_delegates[source_tool][modifiers] = delegate_tool
+
+    def _update_canvas_extras(self, _unused: object = None) -> None:
+        """Tells the viewer's canvas extras which categories the active tool needs."""
+        tool = self.active_tool
+        self._image_viewer.canvas_extras.tool_categories = frozenset() if tool is None else tool.canvas_extras()
 
     def _handle_modifier_delegation(self, modifiers: Qt.KeyboardModifier) -> None:
         """Check for changes in held key modifiers, and handle tool delegation."""

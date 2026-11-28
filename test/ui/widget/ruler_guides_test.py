@@ -16,6 +16,7 @@ from src.ui.widget.ruler import Ruler
 from src.ui.widget.ruler_guides import RulerGuides
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
+from test.ui.canvas_extras_helpers import hide_category
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -337,6 +338,18 @@ class GuideHandleStripTest(GuidePanelTestCase):
         AppConfig().set(AppConfig.SHOW_RULERS, True)
         self.assertFalse(self.top_strip.isVisible())
         self.assertFalse(self.left_strip.isVisible())
+
+    def test_strips_hide_with_guides_category(self) -> None:
+        """Strips hide while canvas extras hide the guides category, and return when it shows."""
+        self.guides.add(HORIZONTAL, 100)
+        self.guides.add(VERTICAL, 100)
+        extras = self.viewer.canvas_extras
+        hide_category(extras, self.viewer, CanvasExtraCategory.GUIDES)
+        self.assertFalse(self.top_strip.isVisible())
+        self.assertFalse(self.left_strip.isVisible())
+        extras.hide_mode = False
+        self.assertTrue(self.top_strip.isVisible())
+        self.assertTrue(self.left_strip.isVisible())
 
     def test_strip_hidden_without_handles(self) -> None:
         """A strip with no handles in view is hidden, so it never covers the view."""

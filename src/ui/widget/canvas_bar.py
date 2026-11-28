@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel, QPu
                                QWidget)
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.image_viewer import ImageViewer
@@ -51,6 +52,9 @@ RULERS_DESCRIPTION = _tr('Right-click for ruler highlight options')
 SELECTION_OVERLAY_LABEL = _tr('Selection overlay')
 SELECTION_OVERLAY_TOOLTIP = _tr('Show selection overlay')
 SELECTION_OVERLAY_DESCRIPTION = _tr('When hidden, only the selection outline is drawn')
+HIDE_EXTRAS_LABEL = _tr('Hide extras')
+HIDE_EXTRAS_TOOLTIP = _tr('Hide canvas extras')
+HIDE_EXTRAS_DESCRIPTION = _tr('Markers the active tool uses still show while the cursor is over the image')
 NAVIGATION_TOOLTIP = _tr('Navigation window')
 HINTS_TOOLTIP = _tr('Controls for this tool')
 MORE_TOOLTIP = _tr('More view options')
@@ -88,6 +92,10 @@ def _set_app_config(key: str, value: bool) -> None:
     AppConfig().set(key, value)
 
 
+def _set_cache(key: str, value: bool) -> None:
+    Cache().set(key, value)
+
+
 class ZoomField(SliderField):
     """A slider field for the view scale, shown as a percentage, with a fill and steps that follow the scale
     logarithmically, so each step and each pixel dragged zooms by the same factor."""
@@ -118,8 +126,9 @@ class CanvasBar(QWidget):
     image_viewer: ImageViewer
         The viewer the zoom and reset controls act on.
     include_rulers: bool
-        Whether to show the Rulers toggle, which follows `AppConfig.SHOW_RULERS`, and the Selection overlay toggle,
-        which follows `AppConfig.SHOW_SELECTION_OVERLAY`.
+        Whether to show the Rulers toggle, which follows `AppConfig.SHOW_RULERS`, the Selection overlay toggle,
+        which follows `AppConfig.SHOW_SELECTION_OVERLAY`, and the Hide extras toggle, which follows
+        `Cache.HIDE_CANVAS_EXTRAS`.
     include_navigation: bool
         Whether to show the navigation window button, which emits `navigation_requested`.
     ruler_actions: Optional[list[QAction]]
@@ -163,6 +172,7 @@ class CanvasBar(QWidget):
 
         self._rulers_button: Optional[QPushButton] = None
         self._overlay_button: Optional[QPushButton] = None
+        self._extras_button: Optional[QPushButton] = None
         if include_rulers:
             self._rulers_button = QPushButton(RULERS_LABEL)
             self._rulers_button.setCheckable(True)
@@ -187,6 +197,17 @@ class CanvasBar(QWidget):
             self._overlay_button.toggled.connect(partial(_set_app_config, AppConfig.SHOW_SELECTION_OVERLAY))
             AppConfig().connect(self, AppConfig.SHOW_SELECTION_OVERLAY, self._overlay_shown_changed)
             row_layout.addWidget(self._overlay_button)
+
+            self._extras_button = QPushButton(HIDE_EXTRAS_LABEL)
+            self._extras_button.setCheckable(True)
+            self._extras_button.setChecked(Cache().get(Cache.HIDE_CANVAS_EXTRAS))
+            set_button_weight(self._extras_button, ButtonWeight.FLAT)
+            set_shortcut_tooltip(self._extras_button, HIDE_EXTRAS_TOOLTIP, KeyConfig.HIDE_CANVAS_EXTRAS_SHORTCUT,
+                                 HIDE_EXTRAS_DESCRIPTION)
+            assert isinstance(self._extras_button.toggled, SignalInstance)
+            self._extras_button.toggled.connect(partial(_set_cache, Cache.HIDE_CANVAS_EXTRAS))
+            Cache().connect(self, Cache.HIDE_CANVAS_EXTRAS, self._extras_hidden_changed)
+            row_layout.addWidget(self._extras_button)
 
         self._navigation_button: Optional[QToolButton] = None
         if include_navigation:
@@ -292,6 +313,10 @@ class CanvasBar(QWidget):
         if self._overlay_button is not None:
             self._overlay_button.setChecked(shown)
 
+    def _extras_hidden_changed(self, hidden: bool) -> None:
+        if self._extras_button is not None:
+            self._extras_button.setChecked(hidden)
+
     def _hints_shown_changed(self, shown: bool) -> None:
         self.removeAction(self._show_hint_action if shown else self._hide_hint_action)
         self.addAction(self._hide_hint_action if shown else self._show_hint_action)
@@ -362,15 +387,20 @@ class CanvasBar(QWidget):
         content = QWidget()
         layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 0, 0, 0)
-        config = AppConfig()
+        app_config = AppConfig()
         options = [(HINTS_LABEL, AppConfig.SHOW_TOOL_CONTROL_HINTS)]
         if self._rulers_button is not None:
             options = [(SELECTION_OVERLAY_LABEL, AppConfig.SHOW_SELECTION_OVERLAY),
                        (RULERS_LABEL, AppConfig.SHOW_RULERS),
                        (RULER_HIGHLIGHTS_LABEL, AppConfig.SHOW_RULER_HIGHLIGHTS), *options]
+        if self._extras_button is not None:
+            extras_box = QCheckBox(HIDE_EXTRAS_TOOLTIP, content)
+            extras_box.setChecked(Cache().get(Cache.HIDE_CANVAS_EXTRAS))
+            extras_box.toggled.connect(partial(_set_cache, Cache.HIDE_CANVAS_EXTRAS))
+            layout.addWidget(extras_box)
         for label, key in options:
             check_box = QCheckBox(label, content)
-            check_box.setChecked(config.get(key))
+            check_box.setChecked(app_config.get(key))
             check_box.toggled.connect(partial(_set_app_config, key))
             layout.addWidget(check_box)
         if self._navigation_button is not None:
@@ -406,7 +436,7 @@ class CanvasBar(QWidget):
         for index, label in enumerate(self._hint_labels):
             label.setVisible(index < shown_hints)
         self._hint_button.setVisible(hints_on and shown_hints < len(self._hint_pairs))
-        for toggle in (self._overlay_button, self._rulers_button, self._navigation_button):
+        for toggle in (self._extras_button, self._overlay_button, self._rulers_button, self._navigation_button):
             if toggle is not None:
                 toggle.setVisible(toggles_shown)
         self._more_button.setVisible(not toggles_shown and (self._rulers_button is not None

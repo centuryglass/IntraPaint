@@ -15,6 +15,7 @@ from src.tools.base_tool import ToolGroup
 from src.tools.brush_tool import BrushTool
 from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
 from src.ui.brush_crosshair import CrosshairVariant
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -42,6 +43,8 @@ class SelectionBrushTool(BrushTool):
     """Selects image content for image generation or editing."""
 
     TOOL_GROUP = ToolGroup.SELECTION
+    # Selection tools also drag context pins, which are generation area markers:
+    CANVAS_EXTRAS = frozenset({CanvasExtraCategory.SELECTION, CanvasExtraCategory.GENERATION_AREA})
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         brush = QtPaintBrush(None)

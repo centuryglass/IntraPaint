@@ -1,13 +1,17 @@
-"""Tests that CanvasExtras hides marker categories without changing their items' own visibility, and that ImageViewer
-and the editing tools register their markers in the expected categories and stacking order."""
+"""Tests that CanvasExtras hides marker categories without changing their items' own visibility, that hide mode follows
+the cursor and the active tool, and that ImageViewer and the editing tools register their markers in the expected
+categories and stacking order."""
 import sys
 
 from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QImage, QColor
-from PySide6.QtWidgets import QApplication, QGraphicsItem, QGraphicsRectItem, QGraphicsScene
+from PySide6.QtWidgets import QApplication, QGraphicsItem, QGraphicsRectItem, QGraphicsScene, QWidget
+
+from src.config.cache import Cache
 
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
+from src.tools.draw_tool import DrawTool
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
@@ -17,6 +21,7 @@ from src.ui.graphics_items.context_pin_item import ContextPinItem
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
+from test.ui.canvas_extras_helpers import hide_category, move_cursor_over
 from test.tools.tool_test_case import ToolTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -30,7 +35,10 @@ class CanvasExtrasTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.scene = QGraphicsScene()
-        self.extras = CanvasExtras(self.scene)
+        self.view = QWidget()
+        self.extras = CanvasExtras(self.scene, self.view)
+        self.changes: list[tuple[CanvasExtraCategory, bool]] = []
+        self.extras.shown_changed.connect(lambda category, shown: self.changes.append((category, shown)))
 
     def tearDown(self) -> None:
         self.scene.clear()
@@ -64,7 +72,7 @@ class CanvasExtrasTest(IntraPaintTestCase):
         """Hiding a category hides its items and leaves other categories alone."""
         selection_item = self._add_item(CanvasExtraCategory.SELECTION)
         tool_item = self._add_item(CanvasExtraCategory.TOOL)
-        self.extras.set_shown(CanvasExtraCategory.SELECTION, False)
+        hide_category(self.extras, self.view, CanvasExtraCategory.SELECTION)
         self.assertFalse(self.extras.is_shown(CanvasExtraCategory.SELECTION))
         self.assertFalse(selection_item.isVisible())
         self.assertTrue(tool_item.isVisible())
@@ -75,15 +83,67 @@ class CanvasExtrasTest(IntraPaintTestCase):
         hidden_item = self._add_item(CanvasExtraCategory.GENERATION_AREA, visible=False)
         shown_while_hidden = self._add_item(CanvasExtraCategory.GENERATION_AREA, visible=False)
         hidden_while_hidden = self._add_item(CanvasExtraCategory.GENERATION_AREA)
-        self.extras.set_shown(CanvasExtraCategory.GENERATION_AREA, False)
+        hide_category(self.extras, self.view, CanvasExtraCategory.GENERATION_AREA)
         shown_while_hidden.setVisible(True)
         hidden_while_hidden.setVisible(False)
         self.assertFalse(shown_while_hidden.isVisible())
-        self.extras.set_shown(CanvasExtraCategory.GENERATION_AREA, True)
+        self.extras.hide_mode = False
         self.assertTrue(shown_item.isVisible())
         self.assertFalse(hidden_item.isVisible())
         self.assertTrue(shown_while_hidden.isVisible())
         self.assertFalse(hidden_while_hidden.isVisible())
+
+    def test_hide_mode_hides_every_category_outside_the_view(self) -> None:
+        """In hide mode with the cursor outside the view, every category hides, needed or not."""
+        self.extras.tool_categories = {CanvasExtraCategory.TOOL}
+        self.extras.hide_mode = True
+        for category in CanvasExtraCategory:
+            with self.subTest(category=category):
+                self.assertFalse(self.extras.is_shown(category))
+
+    def test_hide_mode_shows_needed_categories_under_the_cursor(self) -> None:
+        """In hide mode, the tool's categories show while the cursor is over the view and hide when it leaves."""
+        needed = {CanvasExtraCategory.TOOL, CanvasExtraCategory.SELECTION}
+        self.extras.tool_categories = needed
+        self.extras.hide_mode = True
+        move_cursor_over(self.view, True)
+        self.assertTrue(self.extras.cursor_over_view)
+        for category in CanvasExtraCategory:
+            with self.subTest(category=category):
+                self.assertEqual(self.extras.is_shown(category), category in needed)
+        move_cursor_over(self.view, False)
+        self.assertFalse(any(self.extras.is_shown(category) for category in CanvasExtraCategory))
+
+    def test_tool_change_updates_shown_categories(self) -> None:
+        """Changing the needed categories in hide mode shows and hides categories to match."""
+        move_cursor_over(self.view, True)
+        self.extras.tool_categories = {CanvasExtraCategory.SELECTION}
+        self.extras.hide_mode = True
+        self.extras.tool_categories = {CanvasExtraCategory.GENERATION_AREA}
+        self.assertFalse(self.extras.is_shown(CanvasExtraCategory.SELECTION))
+        self.assertTrue(self.extras.is_shown(CanvasExtraCategory.GENERATION_AREA))
+
+    def test_hide_mode_off_shows_everything(self) -> None:
+        """Without hide mode, every category shows wherever the cursor is."""
+        self.extras.tool_categories = set()
+        for category in CanvasExtraCategory:
+            with self.subTest(category=category):
+                self.assertTrue(self.extras.is_shown(category))
+
+    def test_shown_changed_reports_each_change(self) -> None:
+        """`shown_changed` fires once for each category whose visibility changes, and not for unchanged ones."""
+        move_cursor_over(self.view, True)
+        self.extras.tool_categories = {CanvasExtraCategory.TOOL}
+        self.assertEqual(self.changes, [])
+        self.extras.hide_mode = True
+        self.assertCountEqual(self.changes, [(category, False) for category in CanvasExtraCategory
+                                             if category != CanvasExtraCategory.TOOL])
+        self.changes.clear()
+        move_cursor_over(self.view, False)
+        self.assertEqual(self.changes, [(CanvasExtraCategory.TOOL, False)])
+        self.changes.clear()
+        self.extras.hide_mode = False
+        self.assertCountEqual(self.changes, [(category, True) for category in CanvasExtraCategory])
 
     def test_removed_item_leaves_its_container(self) -> None:
         """Removing a registered item from the scene also removes it from its category's container."""
@@ -157,7 +217,7 @@ class ImageViewerCanvasExtrasTest(IntraPaintTestCase):
     def test_generation_area_stays_enabled_while_hidden(self) -> None:
         """Hiding the generation area category leaves the generation area enabled, so following it keeps working."""
         self.viewer.follow_generation_area = True
-        self.extras.set_shown(CanvasExtraCategory.GENERATION_AREA, False)
+        hide_category(self.extras, self.viewer, CanvasExtraCategory.GENERATION_AREA)
         self.assertFalse(self.viewer._generation_area_outline.isVisible())
         self.assertTrue(self.viewer.follow_generation_area)
         self.viewer.set_generation_area_visible(False)
@@ -168,9 +228,9 @@ class ImageViewerCanvasExtrasTest(IntraPaintTestCase):
         outline = self.viewer._generation_area_outline
         outline.animated = True
         self.assertTrue(outline._animation_timer.isActive())
-        self.extras.set_shown(CanvasExtraCategory.GENERATION_AREA, False)
+        hide_category(self.extras, self.viewer, CanvasExtraCategory.GENERATION_AREA)
         self.assertFalse(outline._animation_timer.isActive())
-        self.extras.set_shown(CanvasExtraCategory.GENERATION_AREA, True)
+        self.extras.hide_mode = False
         self.assertTrue(outline._animation_timer.isActive())
 
 
@@ -205,3 +265,39 @@ class ToolCanvasExtrasTest(ToolTestCase):
         guides_z = extras.container(CanvasExtraCategory.GUIDES).zValue()
         self.assertGreater(guides_z, extras.container(CanvasExtraCategory.GENERATION_AREA).zValue())
         self.assertLess(guides_z, extras.container(CanvasExtraCategory.TOOL).zValue())
+
+    def test_tool_categories(self) -> None:
+        """Each tool needs its own markers, selection tools the selection and context pins, and the generation area
+        tool the generation area."""
+        tool = CanvasExtraCategory.TOOL
+        expected = {
+            GenerationAreaTool(self.image_stack, self.image_viewer): {tool, CanvasExtraCategory.GENERATION_AREA},
+            FreeSelectionTool(self.image_stack, self.image_viewer): {tool, CanvasExtraCategory.SELECTION,
+                                                                     CanvasExtraCategory.GENERATION_AREA},
+            TextTool(self.image_stack, self.image_viewer): {tool},
+            LayerTransformTool(self.image_stack, self.image_viewer): {tool},
+        }
+        for item_tool, categories in expected.items():
+            with self.subTest(tool=type(item_tool).__name__):
+                self.assertEqual(item_tool.canvas_extras(), categories)
+
+    def test_paint_selection_only_adds_selection(self) -> None:
+        """A tool limited to the selection by `Cache.PAINT_SELECTION_ONLY` needs the selection while it is on."""
+        tool = DrawTool(self.image_stack, self.image_viewer)
+        Cache().set(Cache.PAINT_SELECTION_ONLY, True)
+        self.assertIn(CanvasExtraCategory.SELECTION, tool.canvas_extras())
+        Cache().set(Cache.PAINT_SELECTION_ONLY, False)
+        self.assertNotIn(CanvasExtraCategory.SELECTION, tool.canvas_extras())
+
+    def test_tool_controller_feeds_active_tool_categories(self) -> None:
+        """The tool controller passes the active tool's categories to the viewer, and updates them when
+        `Cache.PAINT_SELECTION_ONLY` changes."""
+        extras = self.image_viewer.canvas_extras
+        generation_area_tool = GenerationAreaTool(self.image_stack, self.image_viewer)
+        self.tool_controller.active_tool = generation_area_tool
+        self.assertEqual(extras.tool_categories, generation_area_tool.canvas_extras())
+        draw_tool = DrawTool(self.image_stack, self.image_viewer)
+        self.tool_controller.active_tool = draw_tool
+        self.assertEqual(extras.tool_categories, {CanvasExtraCategory.TOOL})
+        Cache().set(Cache.PAINT_SELECTION_ONLY, True)
+        self.assertIn(CanvasExtraCategory.SELECTION, extras.tool_categories)

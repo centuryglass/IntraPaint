@@ -8,13 +8,16 @@ A registered item's z-value orders it only among its category's items. `CATEGORY
 sits against the rest of the scene. Items that are never registered (layers, the brush outline, the crosshair, alerts,
 toasts and tool previews) keep their scene z-values.
 
+Hide mode hides every category except those the active tool needs, and those only while the cursor is over the
+view. A widget that draws extras outside the scene follows `CanvasExtras.shown_changed` for its category.
+
 Hazard: a registered item's `isVisible()` is False while its category is hidden. Code that asks whether its own item
 is shown, as opposed to drawn right now, reads `isVisibleTo(item.parentItem())` or keeps its own flag.
 """
 from enum import Enum
-from typing import Optional
+from typing import Iterable, Optional
 
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QEvent, QObject, QRectF, Signal
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget
 
@@ -57,16 +60,31 @@ class _ExtrasContainer(QGraphicsItem):
         """Draws nothing."""
 
 
-class CanvasExtras:
-    """Holds one container item per `CanvasExtraCategory` in a scene, and shows or hides each category's markers."""
+class CanvasExtras(QObject):
+    """Holds one container item per `CanvasExtraCategory` in a scene, and shows or hides each category's markers.
 
-    def __init__(self, scene: QGraphicsScene) -> None:
+    Every category shows while `hide_mode` is off. While it is on, a category shows only if it is in
+    `tool_categories` and the cursor is over the watched view. Qt delivers a view's leave event only once every mouse
+    button is released, so a drag that leaves the view keeps its category shown until it ends.
+
+    `shown_changed` fires with a category and whether it now shows, each time that changes.
+    """
+
+    shown_changed = Signal(object, bool)  # CanvasExtraCategory, shown
+
+    def __init__(self, scene: QGraphicsScene, view: Optional[QWidget] = None) -> None:
+        super().__init__()
         self._containers: dict[CanvasExtraCategory, _ExtrasContainer] = {}
+        self._hide_mode = False
+        self._tool_categories: frozenset[CanvasExtraCategory] = frozenset()
+        self._cursor_over_view = False
         for category in CanvasExtraCategory:
             container = _ExtrasContainer()
             container.setZValue(CATEGORY_Z_VALUES[category])
             scene.addItem(container)
             self._containers[category] = container
+        if view is not None:
+            view.installEventFilter(self)
 
     def register(self, item: QGraphicsItem, category: CanvasExtraCategory) -> None:
         """Moves an item into a category's container, adding it to the scene if needed. The item keeps its own
@@ -81,6 +99,41 @@ class CanvasExtras:
         """Returns whether a category's markers may draw."""
         return self._containers[category].isVisible()
 
-    def set_shown(self, category: CanvasExtraCategory, shown: bool) -> None:
-        """Shows or hides every marker in a category. Hidden markers return to their own visibility when shown."""
-        self._containers[category].setVisible(shown)
+    @property
+    def hide_mode(self) -> bool:
+        """Returns whether categories the active tool doesn't need are hidden."""
+        return self._hide_mode
+
+    @hide_mode.setter
+    def hide_mode(self, hide_mode: bool) -> None:
+        self._hide_mode = hide_mode
+        self._update_containers()
+
+    @property
+    def tool_categories(self) -> frozenset[CanvasExtraCategory]:
+        """Returns the categories that stay shown in hide mode while the cursor is over the view."""
+        return self._tool_categories
+
+    @tool_categories.setter
+    def tool_categories(self, categories: Iterable[CanvasExtraCategory]) -> None:
+        self._tool_categories = frozenset(categories)
+        self._update_containers()
+
+    @property
+    def cursor_over_view(self) -> bool:
+        """Returns whether the cursor is over the watched view, as of its last enter or leave event."""
+        return self._cursor_over_view
+
+    def eventFilter(self, _watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name  # Qt override
+        """Tracks whether the cursor is over the view. Never consumes the event."""
+        if event.type() in (QEvent.Type.Enter, QEvent.Type.Leave):
+            self._cursor_over_view = event.type() == QEvent.Type.Enter
+            self._update_containers()
+        return False
+
+    def _update_containers(self) -> None:
+        for category, container in self._containers.items():
+            shown = not self._hide_mode or (self._cursor_over_view and category in self._tool_categories)
+            if shown != container.isVisible():
+                container.setVisible(shown)
+                self.shown_changed.emit(category, shown)
