@@ -246,6 +246,19 @@ class LayerTransformToolTest(ToolTestCase):
                 self.assertAlmostEqual(abs(transform.determinant()), 1.5, places=4)
                 self.assert_panel_matches_state()
 
+    def test_panel_size_keeps_flip(self) -> None:
+        """Typing a width or height for a flipped layer resizes it and leaves it flipped."""
+        for label, flip, field_name, size in (('horizontal', self.layer.flip_horizontal, WIDTH, LAYER_WIDTH * 1.5),
+                                              ('vertical', self.layer.flip_vertical, HEIGHT, LAYER_HEIGHT * 1.5)):
+            with self.subTest(label):
+                self.layer.set_transform(QTransform.fromTranslate(LAYER_OFFSET.x(), LAYER_OFFSET.y()))
+                flip()
+                self.panel.geometry_block.field(field_name).set_value(size)
+                transform = self.layer.transform
+                self.assertLess(transform.determinant(), 0.0)
+                self.assertAlmostEqual(abs(transform.determinant()), 1.5, places=4)
+                self.assert_panel_matches_outline()
+
     def test_panel_scale_keeps_center(self) -> None:
         """Setting a scale in the panel scales about the transformation origin, which starts at the layer center."""
         center = self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2))

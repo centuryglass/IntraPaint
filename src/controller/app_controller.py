@@ -1554,6 +1554,12 @@ class AppController(MenuBuilder):
         """Create a new layer group above the active layer."""
         self._image_stack.create_layer_group()
 
+    @menu_action(MENU_LAYER, 'group_layers_shortcut', 404,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+    def group_selected_layers(self) -> None:
+        """Move the selected layers into a new layer group."""
+        layer_selection_ops.group_selected_layers(self._image_stack)
+
     @menu_action(MENU_LAYER, 'copy_layer_shortcut', 402,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:

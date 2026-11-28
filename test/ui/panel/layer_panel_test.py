@@ -1099,7 +1099,8 @@ class LayerPanelTest(IntraPaintTestCase):
         self._click(self.inner_top, button=Qt.MouseButton.RightButton)
         self.assertEqual(['inner_top', 'bottom'], self.selected_names())
         menu = self.row(self.inner_top).build_menu()
-        self.assertEqual(['Duplicate 2 layers', 'Select contents of selected layers', 'Delete 2 layers'],
+        self.assertEqual(['Duplicate 2 layers', 'Group selected layers', 'Select contents of selected layers',
+                          'Delete 2 layers'],
                          [action.text() for action in menu.actions() if not action.isSeparator()])
         self._click(self.nested, button=Qt.MouseButton.RightButton)
         self.assertEqual(['nested'], self.selected_names())

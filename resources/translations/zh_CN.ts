@@ -3646,6 +3646,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Group selected layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the selected layers into a new layer group.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Duplicate layer</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4471,17 +4481,17 @@
     <message>
         <location filename="../../src/controller/image_generation/null_generator.py"/>
         <source>No image generator</source>
-        <translation type="unfinished"></translation>
+        <translation>无图像生成器</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/null_generator.py"/>
         <source>&lt;p&gt;IntraPaint does not need an image generator to function.  If you don't want to set up an image generator, you can still use it like any other image editor.</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;p&gt;IntraPaint 不需要图像生成器也能使用。如果不想设置图像生成器，仍可以像其他图像编辑器一样使用它。</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/null_generator.py"/>
         <source>This option has no setup requirements.</source>
-        <translation type="unfinished"></translation>
+        <translation>此选项无需任何设置。</translation>
     </message>
 </context>
 <context>
@@ -4489,32 +4499,32 @@
     <message>
         <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
         <source>Waiting, position {queue_number} in queue.</source>
-        <translation type="unfinished"></translation>
+        <translation>等待中，排在队列第 {queue_number} 位。</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
         <source>Waiting...</source>
-        <translation type="unfinished"></translation>
+        <translation>等待中...</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
         <source>Generating...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在生成...</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
         <source>Batch {batch_num} of {num_batches}:</source>
-        <translation type="unfinished"></translation>
+        <translation>第 {batch_num}/{num_batches} 批：</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
         <source>ETA: {minutes}:{seconds}</source>
-        <translation type="unfinished"></translation>
+        <translation>预计剩余 {minutes}:{seconds}</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
         <source>ETA: {seconds}s</source>
-        <translation type="unfinished"></translation>
+        <translation>预计剩余 {seconds} 秒</translation>
     </message>
 </context>
 <context>
@@ -4522,12 +4532,12 @@
     <message>
         <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
         <source>Stable Diffusion ComfyUI API</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion ComfyUI API</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
         <source>&lt;h2&gt;Stable Diffusion: via ComfyUI API&lt;/h2&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;h2&gt;Stable Diffusion：通过 ComfyUI API&lt;/h2&gt;</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
@@ -4535,7 +4545,7 @@
 &lt;h3&gt;About ComfyUI&lt;/h3&gt;
 &lt;p&gt;
     &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; is a popular Stable Diffusion interface with complex and powerful
-    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    node-based controls. When ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
     sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
      server.
 &lt;/p&gt;
@@ -4545,17 +4555,36 @@
     browser at &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;.
 &lt;/p&gt;
 </source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;h3&gt;关于 ComfyUI&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; 是一款流行的 Stable Diffusion 界面，提供复杂而强大的基于节点的控制方式。ComfyUI
+    运行时，IntraPaint 可以通过向 ComfyUI 发送请求来使用 Stable Diffusion 图像生成。ComfyUI
+    可以与 IntraPaint 运行在同一台电脑上，也可以远程运行在另一台服务器上。
+
+&lt;/p&gt;
+&lt;p&gt;
+    连接后，IntraPaint 会在&lt;b&gt;图像生成&lt;/b&gt;面板和&lt;b&gt;设置窗口&lt;/b&gt;的 Stable Diffusion 类别中提供 ComfyUI
+    的控制选项。也可以直接在网页浏览器中通过 &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;
+    访问 ComfyUI 自己的界面。
+&lt;/p&gt;
+</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
         <source>
 &lt;h1&gt;Stable Diffusion ComfyUI Generator Setup&lt;/h1&gt;
 &lt;p&gt;
-    To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
+    To use the Stable Diffusion ComfyUI generator, you will need to download at least one Stable Diffusion model file, 
     install ComfyUI, and start it.  This guide will explain each of those steps.
 &lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>glossary: not "Steps" - the steps of this setup guide, not sampling steps.</translatorcomment>
+        <translation>
+&lt;h1&gt;Stable Diffusion ComfyUI 生成器设置&lt;/h1&gt;
+&lt;p&gt;
+    要使用 Stable Diffusion ComfyUI 生成器，需要下载至少一个 Stable Diffusion 模型文件、安装
+    ComfyUI，然后启动它。本指南将逐一说明这些步骤。
+&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
@@ -4574,7 +4603,21 @@
     of helpful extra resources, and supports Windows, macOS and Linux.  This method also lets you easily install and use
     Stable Diffusion WebUI, the other Stable Diffusion client that IntraPaint can use.
 &lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;hr/&gt;
+&lt;h2&gt;安装 ComfyUI：可选方法&lt;/h2&gt;
+&lt;p&gt;
+    安装 ComfyUI 有几种不同的方法。推荐使用
+    &lt;a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix"&gt;Stability Matrix&lt;/a&gt;，为完整起见，这里也介绍其他方法。
+
+&lt;/p&gt;
+&lt;hr/&gt;
+&lt;h2&gt;方法 1：Stability Matrix&lt;/h2&gt;
+&lt;p&gt;
+    推荐通过 Stability Matrix 安装。这是最简单的方法，提供许多实用的额外资源，并支持
+    Windows、macOS 和 Linux。使用这种方法还可以轻松安装并使用
+    Stable Diffusion WebUI，即 IntraPaint 可以使用的另一个 Stable Diffusion 客户端。
+&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
@@ -4628,7 +4671,101 @@
     probably help you find a solution.
 &lt;/p&gt;
 </source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;hr/&gt;
+&lt;h2&gt;方法 2：预打包的 Windows 版本&lt;/h2&gt;
+&lt;p&gt;
+    如果使用 Windows，并且不需要 Stability Matrix 的额外功能，可以从 GitHub 下载预打包的
+    ComfyUI 版本。
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        在 &lt;a href=
+        "https://github.com/comfyanonymous/ComfyUI/releases"&gt;ComfyUI GitHub 发布页面&lt;/a&gt;中找到最新版本，下载其中的 &lt;b&gt;ComfyUI_windows_portable_nvidia.7z&lt;/b&gt;。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        将下载的压缩包解压到一个新文件夹中。如果使用的不是 Windows 11，可能需要先安装
+        &lt;a href="https://www.7-zip.org"&gt;7-Zip&lt;/a&gt; 才能解压这些压缩文件。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        如果还没有找到至少一个 Stable Diffusion 模型文件，现在就去找。将它复制到
+        ComfyUI 文件夹下的 &lt;b&gt;ComfyUI\models\checkpoints&lt;/b&gt; 中。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        运行 ComfyUI 文件夹中的 &lt;b&gt;run_nvidia_gpu.bat&lt;/b&gt; 文件以启动 Stable Diffusion。终端窗口会打开，并在
+        ComfyUI 初始化时显示启动信息。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        当终端窗口中出现&lt;b&gt;“To see the GUI go to: http://127.0.0.1:8188”&lt;/b&gt;时，Stable Diffusion
+        就可以使用了。回到 IntraPaint，点击下方的“激活”按钮即可连接到 Stable Diffusion。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        以后，这些步骤中只需重复一步：运行 &lt;b&gt;run_nvidia_gpu.bat&lt;/b&gt;
+        并等待它启动完成。如果在启动 IntraPaint 之前完成这一步，IntraPaint 会在启动时自动连接到
+        ComfyUI 图像生成器。
+    &lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr/&gt;
+&lt;h3&gt;方法 3：直接在 Python 中运行&lt;/h3&gt;
+&lt;p&gt;
+    这种方法比前两种需要多得多的技术知识，但灵活性最高，占用的存储空间也最少。只有在以前搭建过
+    Python 虚拟环境并排查过 Python
+    依赖问题，或者有兴趣自学这些内容时，才推荐使用这种方法。
+
+&lt;/p&gt;
+&lt;p&gt;
+    由于不推荐这种方法，IntraPaint 不提供完整指南。
+    &lt;a href="https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#manual-install-windows-linux"&gt;
+    ComfyUI 的手动安装说明&lt;/a&gt;可以帮助入门。如果遇到问题，在 &lt;a href="https://github.com/comfyanonymous/ComfyUI/issues"&gt;ComfyUI Issues 页面&lt;/a&gt;中搜索，通常能找到解决方法。
+
+
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+        <source>
+&lt;h3&gt;About ComfyUI&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; is a popular Stable Diffusion interface with complex and powerful
+    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
+     server.
+&lt;/p&gt;
+&lt;p&gt;
+    When connected, IntraPaint provides controls for ComfyUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
+    window&lt;/b&gt; under the Stable Diffusion category. You can also access ComfyUI's interface directly through a web 
+    browser at &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;.
+&lt;/p&gt;
+</source>
+        <translation type="vanished">
+&lt;h3&gt;关于 ComfyUI&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; 是一款流行的 Stable Diffusion 界面，提供复杂而强大的基于节点的控制方式。ComfyUI
+    运行时，IntraPaint 可以通过向 ComfyUI 发送请求来使用 Stable Diffusion 图像生成。ComfyUI
+    可以与 IntraPaint 运行在同一台电脑上，也可以远程运行在另一台服务器上。
+
+&lt;/p&gt;
+&lt;p&gt;
+    连接后，IntraPaint 会在&lt;b&gt;图像生成&lt;/b&gt;面板和&lt;b&gt;设置窗口&lt;/b&gt;的 Stable Diffusion 类别中提供 ComfyUI
+    的控制选项。也可以直接在网页浏览器中通过 &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;
+    访问 ComfyUI 自己的界面。
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+        <source>
+&lt;h1&gt;Stable Diffusion ComfyUI Generator Setup&lt;/h1&gt;
+&lt;p&gt;
+    To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
+    install ComfyUI, and start it.  This guide will explain each of those steps.
+&lt;/p&gt;</source>
+        <translatorcomment>glossary: not "Steps" - the steps of this setup guide, not sampling steps.</translatorcomment>
+        <translation type="vanished">
+&lt;h1&gt;Stable Diffusion ComfyUI 生成器设置&lt;/h1&gt;
+&lt;p&gt;
+    要使用 Stable Diffusion ComfyUI 生成器，需要下载至少一个 Stable Diffusion 模型文件、安装
+    ComfyUI，然后启动它。本指南将逐一说明这些步骤。
+&lt;/p&gt;</translation>
     </message>
 </context>
 <context>
@@ -4663,10 +4800,222 @@
     &lt;/li&gt;
 &lt;/ul&gt;
 </source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;p&gt;
+    Stable Diffusion 于 2022 年 8 月发布，至今仍是用途最广、最实用的免费图像生成模型。
+&lt;/p&gt;
+&lt;h2&gt;生成器的能力与限制：&lt;/h2&gt;
+&lt;ul&gt;
+    &lt;li&gt;只需 4GB 显存，使用 SDXL 模型时需要 8GB。&lt;/li&gt;
+    &lt;li&gt;针对 512x512 的理想分辨率调校（SDXL 为 1024x1024）。&lt;/li&gt;
+    &lt;li&gt;
+     由于重新训练相对容易，有大量免费的&lt;b&gt;微调变体模型&lt;/b&gt;可供使用。
+
+    &lt;/li&gt;
+    &lt;li&gt;
+        可以通过&lt;b&gt;重绘幅度&lt;/b&gt;选项精确控制 AI 修改图像的强度。
+    &lt;/li&gt;
+    &lt;li&gt;
+        可以使用 &lt;b&gt;LoRA&lt;/b&gt;，一种为新风格和新主题提供支持的小型扩展模型。
+    &lt;/li&gt;
+    &lt;li&gt;
+        支持正面和负面提示词：用圆括号 ()
+        括起的提示词部分会获得更多关注，用方括号 [] 括起的部分则会减少关注。
+    &lt;/li&gt;
+    &lt;li&gt;
+        支持 &lt;b&gt;ControlNet&lt;/b&gt;
+        模型，可以用深度图、现有图像的线条、姿态分析等任意约束来引导图像生成。
+    &lt;/li&gt;
+&lt;/ul&gt;
+</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>
+&lt;h3&gt;Stability Matrix installation and setup&lt;/h3&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Download the appropriate version of Stability Matrix for your system:
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 &gt;Windows 10, 11
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 &gt;macOS, Apple Silicon
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                &gt;Linux AppImage
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
+        you to select a package to install. Choose &lt;b&gt;"{generator_package}"&lt;/b&gt;, and wait for installation to finish.
+        From here, Stability Matrix will go to the &lt;img src='{packages_icon}'/&gt;
+        &lt;b&gt;Packages&lt;/b&gt; tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
+        packages.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you've already downloaded Stable Diffusion or ControlNet models, go to the 
+         &lt;img src='{checkpoints_icon}'/&gt;&lt;b&gt;Checkpoint Manager&lt;/b&gt; tab on the left.
+         Click the "&lt;big&gt;⋯&lt;/big&gt;" menu button on the upper right, and choose "Models Folder", and it will open the 
+         folder you need in the system file manager.  Copy Stable Diffusion models into the "StableDiffusion"
+         subfolder, and copy any ControlNet models to the "ControlNet" subfolder.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you haven't downloaded any Stable Diffusion models yet, you can do that in Stability Matrix.
+        Go to the &lt;img src='{models_icon}'/&gt;&lt;b&gt;Model Browser&lt;/b&gt; tab to find and
+        download a Stable Diffusion model file.&lt;br/&gt;
+    &lt;/li&gt;
+    {post_install_generator_setup}
+    &lt;li&gt;
+        On the &lt;img src='{packages_icon}'/&gt;&lt;b&gt;Packages&lt;/b&gt; tab, click the
+        &lt;b&gt;Launch&lt;/b&gt; button under &lt;b&gt;"{generator_package}"&lt;/b&gt;.  A log screen will open up, showing the status of the
+        package as it starts up.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once the &lt;b&gt;"Open Web UI"&lt;/b&gt; button appears at the top of the window, Stable Diffusion is ready to use.  Back
+        in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. &lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        In the future, the only steps you'll need to repeat from this list are launching Stability Matrix and clicking
+        the "Launch" button. If you do this before launching IntraPaint, it will automatically connect to this image
+        generator on startup.
+    &lt;/li&gt;
+&lt;/ol&gt;
+</source>
+        <translatorcomment>glossary: not "Steps" - the steps of this setup guide, not sampling steps.</translatorcomment>
+        <translation>
+&lt;h3&gt;Stability Matrix 的安装与设置&lt;/h3&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        根据系统下载对应版本的 Stability Matrix：
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 &gt;Windows 10, 11
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 &gt;macOS, Apple Silicon
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                &gt;Linux AppImage
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        解压并运行下载的文件。首次启动时，程序会要求选择数据目录，并选择要安装的软件包。请选择&lt;b&gt;“{generator_package}”&lt;/b&gt;，然后等待安装完成。之后
+        Stability Matrix 会转到 &lt;img src='{packages_icon}'/&gt;
+        &lt;b&gt;Packages&lt;/b&gt; 选项卡，可以在这里配置或启动 WebUI，或安装其他 Stable Diffusion
+        软件包。
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        如果已经下载了 Stable Diffusion 或 ControlNet 模型，请转到左侧的
+         &lt;img src='{checkpoints_icon}'/&gt;&lt;b&gt;Checkpoint Manager&lt;/b&gt; 选项卡。点击右上角的“&lt;big&gt;⋯&lt;/big&gt;”菜单按钮，选择“Models Folder”，系统文件管理器中就会打开所需的文件夹。将 Stable Diffusion 模型复制到“StableDiffusion”子文件夹，将 ControlNet 模型复制到“ControlNet”子文件夹。
+
+
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        如果还没有下载任何 Stable Diffusion 模型，可以在 Stability Matrix
+        中下载。转到 &lt;img src='{models_icon}'/&gt;&lt;b&gt;Model Browser&lt;/b&gt; 选项卡，查找并下载 Stable Diffusion
+        模型文件。&lt;br/&gt;
+    &lt;/li&gt;
+    {post_install_generator_setup}
+    &lt;li&gt;
+        在 &lt;img src='{packages_icon}'/&gt;&lt;b&gt;Packages&lt;/b&gt; 选项卡中，点击&lt;b&gt;“{generator_package}”&lt;/b&gt;下方的
+        &lt;b&gt;Launch&lt;/b&gt; 按钮。日志界面会打开，显示软件包启动时的状态。
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        当窗口顶部出现&lt;b&gt;“Open Web UI”&lt;/b&gt;按钮时，Stable Diffusion 就可以使用了。回到
+        IntraPaint，点击下方的“激活”按钮即可连接到 Stable Diffusion。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        以后，这些步骤中只需重复两步：启动 Stability Matrix
+        并点击“Launch”按钮。如果在启动 IntraPaint
+        之前完成这些操作，IntraPaint 会在启动时自动连接到此图像生成器。
+    &lt;/li&gt;
+&lt;/ol&gt;
+</translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>
+&lt;h2&gt;Getting Stable Diffusion Model Files&lt;/h2&gt;
+&lt;p&gt;
+    To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called
+    checkpoints), contain the data structures that Stable Diffusion uses to create images.  A huge variety of
+    fine-tuned models are available on sites like &lt;a href="https://civitai.com/"&gt;CivitAI&lt;/a&gt; and
+    &lt;a href="https://huggingface.co/"&gt;Hugging Face&lt;/a&gt;, each with its own strengths and weaknesses.
+&lt;/p&gt;
+&lt;p&gt;
+    If you want to use Stable Diffusion with ControlNet, you will also need to download ControlNet model files.
+    Each ControlNet model provides a new way to control image generation. The official ControlNet models for use with
+    Stable Diffusion 1.5 model variants can be downloaded from
+    &lt;a href="https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main"&gt;this page on Hugging
+    Face&lt;/a&gt;. More options, including ones with support for Stable Diffusion XL, are linked on the 
+    Stable Diffusion WebUI ControlNet extension 
+    &lt;a href="https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models"&gt;
+    GitHub wiki&lt;/a&gt;.
+&lt;/p&gt;
+</source>
+        <translation>
+&lt;h2&gt;获取 Stable Diffusion 模型文件&lt;/h2&gt;
+&lt;p&gt;
+    要使用 Stable Diffusion，至少需要一个 Stable Diffusion 模型文件。这些文件（也称为
+    checkpoint）包含 Stable Diffusion 用来生成图像的数据结构。在
+    &lt;a href="https://civitai.com/"&gt;CivitAI&lt;/a&gt; 和
+    &lt;a href="https://huggingface.co/"&gt;Hugging Face&lt;/a&gt; 等网站上可以找到大量微调模型，各有优缺点。
+&lt;/p&gt;
+&lt;p&gt;
+    如果要将 Stable Diffusion 与 ControlNet 一起使用，还需要下载 ControlNet 模型文件。每个
+    ControlNet 模型都提供一种控制图像生成的新方式。适用于 Stable Diffusion 1.5 系列模型的官方
+    ControlNet 模型可以从
+    &lt;a href="https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main"&gt;Hugging Face
+    上的这个页面&lt;/a&gt;下载。更多选择（包括支持 Stable Diffusion XL 的模型）列在
+    Stable Diffusion WebUI ControlNet 扩展的
+    &lt;a href="https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models"&gt;
+    GitHub wiki&lt;/a&gt; 上。
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>ControlNet preview failed</source>
+        <translation>ControlNet 预览失败</translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>Loading ControlNet preprocessor preview failed: {err}</source>
+        <translation>加载 ControlNet 预处理器预览失败：{err}</translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>&amp;Generation</source>
+        <translation>生成(&amp;G)</translation>
+    </message>
+    <message>
         <source>
 &lt;h3&gt;Stability Matrix installation and setup&lt;/h3&gt;
 &lt;ol&gt;
@@ -4730,45 +5079,70 @@
     &lt;/li&gt;
 &lt;/ol&gt;
 </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/sd_generator.py"/>
-        <source>
-&lt;h2&gt;Getting Stable Diffusion Model Files&lt;/h2&gt;
-&lt;p&gt;
-    To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called
-    checkpoints), contain the data structures that Stable Diffusion uses to create images.  A huge variety of
-    fine-tuned models are available on sites like &lt;a href="https://civitai.com/"&gt;CivitAI&lt;/a&gt; and
-    &lt;a href="https://huggingface.co/"&gt;Hugging Face&lt;/a&gt;, each with its own strengths and weaknesses.
-&lt;/p&gt;
-&lt;p&gt;
-    If you want to use Stable Diffusion with ControlNet, you will also need to download ControlNet model files.
-    Each ControlNet model provides a new way to control image generation. The official ControlNet models for use with
-    Stable Diffusion 1.5 model variants can be downloaded from
-    &lt;a href="https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main"&gt;this page on Hugging
-    Face&lt;/a&gt;. More options, including ones with support for Stable Diffusion XL, are linked on the 
-    Stable Diffusion WebUI ControlNet extension 
-    &lt;a href="https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models"&gt;
-    GitHub wiki&lt;/a&gt;.
-&lt;/p&gt;
-</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/sd_generator.py"/>
-        <source>ControlNet preview failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/sd_generator.py"/>
-        <source>Loading ControlNet preprocessor preview failed: {err}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/sd_generator.py"/>
-        <source>&amp;Generation</source>
-        <translation>生成(&amp;G)</translation>
+        <translatorcomment>glossary: not "Steps" - the steps of this setup guide, not sampling steps.</translatorcomment>
+        <translation type="vanished">
+&lt;h3&gt;Stability Matrix 的安装与设置&lt;/h3&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        根据系统下载对应版本的 Stability Matrix：
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 &gt;Windows 10, 11
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 &gt;macOS, Apple Silicon
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                &gt;Linux AppImage
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        解压并运行下载的文件。首次启动时，程序会要求选择数据目录，并选择要安装的软件包。请选择&lt;b&gt;“{generator_package}”&lt;/b&gt;，然后等待安装完成。之后
+        Stability Matrix 会转到 &lt;img src='{packages_icon}'/&gt;
+        &lt;b&gt;Packages&lt;/b&gt; 选项卡，可以在这里配置或启动 WebUI，或安装其他 Stable Diffusion
+        软件包。
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        如果已经下载了 Stable Diffusion 或 ControlNet 模型，请转到左侧的
+         &lt;img src='{checkpoints_icon}'/&gt;&lt;b&gt;Checkpoint Manager&lt;/b&gt; 选项卡。点击右上角的“&lt;big&gt;⋯&lt;/big&gt;”菜单按钮，选择“Models Folder”，系统文件管理器中就会打开所需的文件夹。将 Stable Diffusion 模型复制到“StableDiffusion”子文件夹，将 ControlNet 模型复制到“ControlNet”子文件夹。
+
+
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        如果还没有下载任何 Stable Diffusion 模型，可以在 Stability Matrix
+        中下载。转到 &lt;img src='{models_icon}'/&gt;&lt;b&gt;Model Browser&lt;/b&gt; 选项卡，查找并下载 Stable Diffusion
+        模型文件。&lt;br/&gt;
+    &lt;/li&gt;
+    {post_install_generator_setup}
+    &lt;li&gt;
+        在 &lt;img src='{packages_icon}'/&gt;&lt;b&gt;Packages&lt;/b&gt; 选项卡中，点击&lt;b&gt;“{generator_package}”&lt;/b&gt;下方的
+        &lt;b&gt;Launch&lt;/b&gt; 按钮。日志界面会打开，显示软件包启动时的状态。
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        当窗口顶部出现&lt;b&gt;“Open Web UI”&lt;/b&gt;按钮时，Stable Diffusion 就可以使用了。回到
+        IntraPaint，点击下方的“激活”按钮即可连接到 Stable Diffusion。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        以后，这些步骤中只需重复两步：启动 Stability Matrix
+        并点击“Launch”按钮。如果在启动 IntraPaint
+        之前完成这些操作，IntraPaint 会在启动时自动连接到此图像生成器。
+    &lt;/li&gt;
+&lt;/ol&gt;
+</translation>
     </message>
 </context>
 <context>
@@ -4776,12 +5150,12 @@
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
         <source>Stable Diffusion WebUI API</source>
-        <translation type="unfinished"></translation>
+        <translation>Stable Diffusion WebUI API</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
         <source>&lt;h2&gt;Stable Diffusion: via WebUI API&lt;/h2&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;h2&gt;Stable Diffusion：通过 WebUI API&lt;/h2&gt;</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
@@ -4809,11 +5183,38 @@
 &lt;h3&gt;About Stable Diffusion WebUI reForge&lt;/h3&gt;
 &lt;p&gt;
     &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
-    Stable Diffusion WebUI re Forge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
+    Stable Diffusion WebUI reForge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
     WebUI Forge without any of the compatibility issues. &lt;b&gt;This is the recommended version to use with IntraPaint&lt;/b&gt;.
 &lt;/p&gt;
 </source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;h3&gt;关于 Stable Diffusion WebUI&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui"&gt;
+    Stable Diffusion WebUI&lt;/a&gt; 是最早用于运行 Stable Diffusion 的界面之一。WebUI
+    运行且配置正确时，IntraPaint 可以通过向 WebUI 发送请求来使用 Stable Diffusion 图像生成。WebUI
+    可以与 IntraPaint 运行在同一台电脑上，也可以远程运行在另一台服务器上。
+&lt;/p&gt;
+&lt;p&gt;
+    连接后，IntraPaint 会在&lt;b&gt;图像生成&lt;/b&gt;面板和&lt;b&gt;设置窗口&lt;/b&gt;的 Stable Diffusion 类别中提供 WebUI
+    的控制选项。WebUI 运行时，也可以直接在网页浏览器中通过 &lt;a href="http://localhost:7860/"&gt;localhost:7860&lt;/a&gt;
+    访问 WebUI 自己的界面。
+&lt;/p&gt;
+&lt;h3&gt;关于 Stable Diffusion WebUI Forge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge"&gt;
+    Stable Diffusion WebUI Forge&lt;/a&gt; 是原版 Stable Diffusion WebUI
+    的一个流行变体，大幅提升了图像生成的速度和效率。它还加入了大量会导致兼容性问题的实验性功能。IntraPaint 对 WebUI
+    Forge 提供部分支持，但 ControlNet 无法在较新版本中使用。
+
+&lt;/p&gt;
+&lt;h3&gt;关于 Stable Diffusion WebUI reForge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
+    Stable Diffusion WebUI reForge&lt;/a&gt; 是 WebUI 的第三个版本，具备 WebUI
+    Forge 的性能改进，同时没有任何兼容性问题。&lt;b&gt;这是推荐与 IntraPaint 搭配使用的版本&lt;/b&gt;。
+&lt;/p&gt;
+</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
@@ -4849,7 +5250,22 @@
     original WebUI and the Forge version easily, or even install ComfyUI if you want to try IntraPaint's
     Stable Diffusion ComfyUI image generator.
 &lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;hr/&gt;
+&lt;h2&gt;安装 Stable Diffusion WebUI：可选方法&lt;/h2&gt;
+&lt;p&gt;
+    安装 WebUI 有几种不同的方法。推荐使用
+    &lt;a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix"&gt;Stability Matrix&lt;/a&gt;，为完整起见，这里也介绍其他方法。
+
+&lt;/p&gt;
+&lt;hr/&gt;
+&lt;h2&gt;方法 1：Stability Matrix&lt;/h2&gt;
+&lt;p&gt;
+    推荐通过 Stability Matrix 安装。这是最简单的方法，提供许多实用的额外资源，并支持
+    Windows、macOS 和 Linux。使用这种方法还可以轻松地在原版 WebUI
+    和 Forge 版本之间切换；如果想试用 IntraPaint 的
+    Stable Diffusion ComfyUI 图像生成器，甚至还可以安装 ComfyUI。
+&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
@@ -4936,12 +5352,71 @@
     probably help you find a solution.
 &lt;/p&gt;
 </source>
-        <translation type="unfinished"></translation>
+        <translation>
+&lt;hr/&gt;
+&lt;h2&gt;方法 2：WebUI Forge 一键安装包&lt;/h2&gt;
+&lt;p&gt;
+    Stable Diffusion WebUI Forge 提供了一个&lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z"&gt;
+    Windows 一键安装包&lt;/a&gt;，可以用它轻松安装 WebUI。这种方法只适用于
+    Windows，并且需要多做一些文件管理，但如果不需要 Stability Matrix
+    的额外功能，它仍是不错的选择。
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        下载最后一个稳定版本的&lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z"&gt;
+        Forge 安装包&lt;/a&gt;。&lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge"&gt;
+        WebUI Forge README&lt;/a&gt; 中还列出了其他几种可以尝试的选项，但较新的版本可能会导致兼容性问题。
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        将下载的压缩包解压到一个新文件夹中。如果使用的不是 Windows 11，可能需要先安装
+        &lt;a href="https://www.7-zip.org"&gt;7-Zip&lt;/a&gt; 才能解压这些压缩文件。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        在新的 WebUI-Forge 文件夹中，用文本编辑器打开 &lt;b&gt;webui\webui-user.bat&lt;/b&gt; 文件。找到文件开头附近的“&lt;b&gt;set COMMANDLINE_ARGS=&lt;/b&gt;”这一行，将其改为“&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;”。保存并关闭文件。只有这样，WebUI
+        才会接受来自 IntraPaint
+        的图像生成请求。
+&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        如果还没有找到至少一个 Stable Diffusion 模型文件，现在就去找。将它复制到
+        WebUI-Forge 文件夹下的 &lt;b&gt;webui\models\Stable-diffusion&lt;/b&gt; 中。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        运行 WebUI-Forge 文件夹中的 &lt;b&gt;run.bat&lt;/b&gt; 文件以启动 Stable Diffusion。终端窗口会打开，并在
+        WebUI 初始化时显示启动信息。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        当终端窗口中出现&lt;b&gt;“Running on local URL:  http://0.0.0.0:7860”&lt;/b&gt;时，Stable Diffusion
+        就可以使用了。回到 IntraPaint，点击下方的“激活”按钮即可连接到 Stable Diffusion。&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        以后，这些步骤中只需重复一步：运行 &lt;b&gt;run.bat&lt;/b&gt;
+        并等待它启动完成。如果在启动 IntraPaint 之前完成这一步，IntraPaint 会在启动时自动连接到
+        WebUI-Forge 图像生成器。
+    &lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr/&gt;
+&lt;h3&gt;方法 3：直接在 Python 中运行&lt;/h3&gt;
+&lt;p&gt;
+    这种方法比前两种需要多得多的技术知识，但灵活性最高，占用的存储空间也最少。只有在以前搭建过
+    Python 虚拟环境并排查过 Python
+    依赖问题，或者有兴趣自学这些内容时，才推荐使用这种方法。
+
+&lt;/p&gt;
+&lt;p&gt;
+    由于不推荐这种方法，IntraPaint 不提供完整指南。
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#automatic-installation-on-windows"&gt;
+    Stable Diffusion WebUI 安装说明&lt;/a&gt;可以帮助入门。如果遇到问题，在 &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues"&gt;WebUI Issues 页面&lt;/a&gt;中搜索，通常能找到解决方法。
+
+
+&lt;/p&gt;
+</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
         <source>Updating prompt styles failed</source>
-        <translation type="unfinished"></translation>
+        <translation>更新风格模板失败</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
@@ -4951,7 +5426,7 @@
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
         <source>Failed to save Stable Diffusion settings</source>
-        <translation type="unfinished"></translation>
+        <translation>无法保存 Stable Diffusion 设置</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
@@ -4961,7 +5436,65 @@
     <message>
         <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
         <source>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>与 Stable Diffusion WebUI 图像生成器的连接已断开。对生成器提供的设置所做的更改未能保存。</translation>
+    </message>
+    <message>
+        <source>
+&lt;h3&gt;About the Stable Diffusion WebUI&lt;/h3&gt;
+&lt;p&gt;
+    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui"&gt;
+    Stable Diffusion WebUI&lt;/a&gt; is one of the first interfaces created for using Stable Diffusion. When the WebUI is
+    running and configured correctly, IntraPaint can access Stable Diffusion image generation by sending requests to
+    the WebUI. You can run the WebUI on the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;
+&lt;p&gt;
+    When connected, IntraPaint provides controls for the WebUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
+    window&lt;/b&gt; under the Stable Diffusion category. When running, you can also access the WebUI's own interface
+    directly through your web browser at &lt;a href="http://localhost:7860/"&gt;localhost:7860&lt;/a&gt;.
+&lt;/p&gt;
+&lt;h3&gt;About Stable Diffusion WebUI Forge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge"&gt;
+    Stable Diffusion WebUI Forge&lt;/a&gt; is a popular variant of the original Stable Diffusion WebUI, that adds significant
+    improvements to image generation speed and efficiency. It also adds a large number of experimental features that 
+    cause compatibility issues. IntraPaint provides some support for WebUI Forge, but ControlNet will not work with
+    recent versions.
+&lt;/p&gt;
+&lt;h3&gt;About Stable Diffusion WebUI reForge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
+    Stable Diffusion WebUI re Forge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
+    WebUI Forge without any of the compatibility issues. &lt;b&gt;This is the recommended version to use with IntraPaint&lt;/b&gt;.
+&lt;/p&gt;
+</source>
+        <translation type="vanished">
+&lt;h3&gt;关于 Stable Diffusion WebUI&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui"&gt;
+    Stable Diffusion WebUI&lt;/a&gt; 是最早用于运行 Stable Diffusion 的界面之一。WebUI
+    运行且配置正确时，IntraPaint 可以通过向 WebUI 发送请求来使用 Stable Diffusion 图像生成。WebUI
+    可以与 IntraPaint 运行在同一台电脑上，也可以远程运行在另一台服务器上。
+&lt;/p&gt;
+&lt;p&gt;
+    连接后，IntraPaint 会在&lt;b&gt;图像生成&lt;/b&gt;面板和&lt;b&gt;设置窗口&lt;/b&gt;的 Stable Diffusion 类别中提供 WebUI
+    的控制选项。WebUI 运行时，也可以直接在网页浏览器中通过 &lt;a href="http://localhost:7860/"&gt;localhost:7860&lt;/a&gt;
+    访问 WebUI 自己的界面。
+&lt;/p&gt;
+&lt;h3&gt;关于 Stable Diffusion WebUI Forge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge"&gt;
+    Stable Diffusion WebUI Forge&lt;/a&gt; 是原版 Stable Diffusion WebUI
+    的一个流行变体，大幅提升了图像生成的速度和效率。它还加入了大量会导致兼容性问题的实验性功能。IntraPaint 对 WebUI
+    Forge 提供部分支持，但 ControlNet 无法在较新版本中使用。
+
+&lt;/p&gt;
+&lt;h3&gt;关于 Stable Diffusion WebUI reForge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
+    Stable Diffusion WebUI reForge&lt;/a&gt; 是 WebUI 的第三个版本，具备 WebUI
+    Forge 的性能改进，同时没有任何兼容性问题。&lt;b&gt;这是推荐与 IntraPaint 搭配使用的版本&lt;/b&gt;。
+&lt;/p&gt;
+</translation>
     </message>
 </context>
 <context>
@@ -4969,17 +5502,17 @@
     <message>
         <location filename="../../src/controller/image_generation/test_generator.py"/>
         <source>Test/development image generator</source>
-        <translation type="unfinished"></translation>
+        <translation>测试/开发用图像生成器</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/test_generator.py"/>
         <source>Mock image generator, for testing and development</source>
-        <translation type="unfinished"></translation>
+        <translation>模拟图像生成器，用于测试和开发</translation>
     </message>
     <message>
         <location filename="../../src/controller/image_generation/test_generator.py"/>
         <source>No setup required.</source>
-        <translation type="unfinished"></translation>
+        <translation>无需设置。</translation>
     </message>
 </context>
 <context>
@@ -7150,32 +7683,32 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Enter image generation server credentials:</source>
-        <translation type="unfinished"></translation>
+        <translation>输入图像生成服务器的登录凭据：</translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Username:</source>
-        <translation type="unfinished"></translation>
+        <translation>用户名：</translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Password:</source>
-        <translation type="unfinished"></translation>
+        <translation>密码：</translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Log in</source>
-        <translation type="unfinished"></translation>
+        <translation>登录</translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Username and password cannot be empty.</source>
-        <translation type="unfinished"></translation>
+        <translation>用户名和密码不能为空。</translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Unknown error, try again.</source>
-        <translation type="unfinished"></translation>
+        <translation>未知错误，请重试。</translation>
     </message>
 </context>
 <context>
@@ -8462,6 +8995,11 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
         <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Group selected layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10242,57 +10780,58 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>Image Generator Selection</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>glossary: not "Selection" - choosing a generator, not an image selection.</translatorcomment>
+        <translation>选择图像生成器</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>Activate</source>
-        <translation type="unfinished"></translation>
+        <translation>激活</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>&lt;h1&gt;Image generator status:&lt;/h1&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;h1&gt;图像生成器状态：&lt;/h1&gt;</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>This image generator is active.</source>
-        <translation type="unfinished"></translation>
+        <translation>此图像生成器已激活。</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>This image generator is available, click "Activate" to attempt to use it.</source>
-        <translation type="unfinished"></translation>
+        <translation>此图像生成器可用，点击“激活”尝试使用它。</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>This image generator is not available: {error_reason}</source>
-        <translation type="unfinished"></translation>
+        <translation>此图像生成器不可用：{error_reason}</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>Unknown error encountered, please report this on the &lt;a href="https://github.com/centuryglass/IntraPaint/issues"&gt;GitHub issues page&lt;/a&gt;.</source>
-        <translation type="unfinished"></translation>
+        <translation>遇到未知错误，请在 &lt;a href="https://github.com/centuryglass/IntraPaint/issues"&gt;GitHub Issues 页面&lt;/a&gt;报告此问题。</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;h1&gt;可选生成器：&lt;/h1&gt;</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;u&gt;预览：{generator_name}&lt;/u&gt;</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>Description</source>
-        <translation type="unfinished"></translation>
+        <translation>说明</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/generator_setup_window.py"/>
         <source>Setup Guide</source>
-        <translation type="unfinished"></translation>
+        <translation>设置指南</translation>
     </message>
 </context>
 <context>

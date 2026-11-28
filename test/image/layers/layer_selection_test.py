@@ -5,7 +5,7 @@ from PySide6.QtCore import QPoint, QSize
 
 from src.image.layers import layer_selection_ops
 from src.image.layers.layer_selection_ops import delete_selected_layers, duplicate_selected_layers, \
-    extend_layer_selection, move_selected_layers, select_all_layers
+    extend_layer_selection, group_selected_layers, move_selected_layers, select_all_layers
 from src.undo_stack import UndoStack
 from test.image.layers.image_stack_state import ImageStackOpTestCase
 
@@ -122,6 +122,48 @@ class LayerSelectionTest(ImageStackOpTestCase):
         self.assertEqual(['top copy', 'top', 'group copy', 'group', 'bottom'],
                          [layer.name for layer in self.stack.child_layers])
         self.assertEqual(2, self.stack.child_layers[2].count)
+
+    # Group:
+
+    def test_group_layers_from_one_parent(self) -> None:
+        """The group takes the topmost layer's place, holds the layers in order, and is the only selected layer."""
+        self.image_stack.select_layers([self.top, self.bottom], self.top)
+        self.assert_undo_redo(lambda: group_selected_layers(self.image_stack))
+        new_group = self.stack.child_layers[0]
+        self.assertEqual(['top', 'bottom'], [layer.name for layer in new_group.child_layers])
+        self.assertEqual([new_group, self.group], self.stack.child_layers)
+        self.assert_selection([new_group], new_group)
+
+    def test_group_layers_from_different_parents(self) -> None:
+        """Layers from different groups all move in, and the group lands in the topmost layer's parent."""
+        self.image_stack.select_layers([self.inner_b, self.bottom, self.inner_a], self.inner_a)
+        self.assert_undo_redo(lambda: group_selected_layers(self.image_stack))
+        new_group = self.group.child_layers[0]
+        self.assertEqual(['inner a', 'inner b', 'bottom'], [layer.name for layer in new_group.child_layers])
+        self.assertEqual([self.top, self.group], self.stack.child_layers)
+        self.assert_selection([new_group], new_group)
+
+    def test_group_one_layer_wraps_it(self) -> None:
+        """With one layer selected, the layer goes into a new group in its place."""
+        group_selected_layers(self.image_stack)
+        new_group = self.stack.child_layers[0]
+        self.assertEqual([self.top], new_group.child_layers)
+        self.assert_selection([new_group], new_group)
+
+    def test_group_ignores_layers_inside_selected_groups(self) -> None:
+        """A group selected with a layer inside it is wrapped whole, once."""
+        self.image_stack.select_layers([self.group, self.inner_a], self.inner_a)
+        group_selected_layers(self.image_stack)
+        new_group = self.stack.child_layers[1]
+        self.assertEqual([self.group], new_group.child_layers)
+        self.assertEqual(2, self.group.count)
+
+    def test_undo_group_restores_selection(self) -> None:
+        """Undo restores the selection and active layer the command acted on."""
+        self.image_stack.select_layers([self.top, self.inner_b, self.bottom], self.inner_b)
+        group_selected_layers(self.image_stack)
+        UndoStack().undo()
+        self.assert_selection([self.top, self.inner_b, self.bottom], self.inner_b)
 
     # Delete:
 

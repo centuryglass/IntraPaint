@@ -123,7 +123,7 @@ INSTALLATION_STABILITY_MATRIX = _tr("""
     <li>
         Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
         you to select a package to install. Choose <b>"{generator_package}"</b>, and wait for installation to finish.
-        From here, Stability-Matrix will go to the <img src='{packages_icon}'/>
+        From here, Stability Matrix will go to the <img src='{packages_icon}'/>
         <b>Packages</b> tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
         packages.<br/>
     </li>
