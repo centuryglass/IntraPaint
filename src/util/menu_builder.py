@@ -31,7 +31,8 @@ def _key_sequences(bindings: list[str]) -> list[QKeySequence]:
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 valid_app_states: Optional[list[str]] = None,
                 condition_check: Optional[Callable[[Any], bool]] = None,
-                separator_before: bool = False) -> Callable[[GenericFn], GenericFn]:
+                separator_before: bool = False,
+                requires: Optional[set[str]] = None) -> Callable[[GenericFn], GenericFn]:
     """Decorator used to associate a class method with a menu item and optionally disable it when busy.
 
     Parameters
@@ -50,6 +51,9 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
     separator_before: bool, default=False
         If true, a separator is placed above this item when it is first added, unless it is the first item in its
         menu. Mark the first item of each group, and the separator follows that item through reordering.
+    requires: set of str, optional
+        Requirement names the owner must report as met before the action is enabled, through
+        `MenuBuilder.update_required_actions`. The names are opaque here; the owner defines what each one means.
     """
 
     def _decorator(func):
@@ -64,7 +68,8 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 num_positional_params += 1
             args = args[:num_positional_params]
             return func(*args, **kwargs)
-        menu_data = MenuData(menu_name, config_key, priority, valid_app_states, condition_check, separator_before)
+        menu_data = MenuData(menu_name, config_key, priority, valid_app_states, condition_check, separator_before,
+                             frozenset(requires) if requires is not None else frozenset())
         setattr(_wrapper, IS_MENU_ACTION_ATTR, True)
         setattr(_wrapper, MENU_DATA_ATTR, menu_data)
         return _wrapper
@@ -274,6 +279,21 @@ class MenuBuilder:
             action_name = KeyConfig().get_label(menu_data.config_key)
             self.remove_menu_action(menu_data.menu_name, action_name)
 
+    def update_required_actions(self, met: set[str], app_state: str) -> None:
+        """Enables each action with a non-empty `requires` only if all of its requirements are in `met` and
+        `app_state` is one of its valid states, and disables it otherwise.
+
+        Actions without `requires` are left to `AppStateTracker`. Missing actions are skipped.
+        """
+        for menu_data, _ in self._get_action_definitions():
+            if not menu_data.requires:
+                continue
+            action = self._find_action(menu_data.menu_name, KeyConfig().get_label(menu_data.config_key))
+            if action is None:
+                continue
+            state_valid = menu_data.valid_app_states is None or app_state in menu_data.valid_app_states
+            action.setEnabled(state_valid and menu_data.requires <= met)
+
     def get_action_for_method(self, method: Callable[..., None]) -> QAction:
         """Returns the menu action defined by a method, or None if that action isn't present."""
         assert self._menu_window is not None, 'Assign a window before finding menus'
@@ -379,10 +399,12 @@ class MenuData:
                  priority: int,
                  valid_app_states: Optional[list[str]],
                  condition_check: Optional[Callable[[Any], bool]],
-                 separator_before: bool = False):
+                 separator_before: bool = False,
+                 requires: frozenset[str] = frozenset()):
         self.menu_name = menu_name
         self.config_key = config_key
         self.priority = priority
         self.valid_app_states = valid_app_states
         self.condition_check = condition_check
         self.separator_before = separator_before
+        self.requires = requires
