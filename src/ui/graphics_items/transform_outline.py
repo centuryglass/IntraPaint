@@ -52,7 +52,9 @@ class TransformOutline(QGraphicsObject):
       rotate.
     - An origin handle drag sends `origin_dragged` with the origin's new point in untransformed coordinates, snapped
       to the rectangle's corners, edge midpoints and center, and clamped to the rectangle.
-    Double-clicking switches `mode` between scale and rotate.
+    Double-clicking switches `mode` between scale and rotate. Presses, moves and releases on a handle reach the
+    outline's own mouse handlers, which pass them to the handle, so every drag is one undo gesture between
+    `drag_started` and `drag_finished`.
     """
 
     moved = Signal(float, float)
@@ -153,7 +155,7 @@ class TransformOutline(QGraphicsObject):
             distance = (click_pos - handle_pos).manhattanLength()
             if distance < handle.rect().width() * 2:
                 handle.setSelected(True)
-                handle.mousePressEvent(event)
+                handle.press(event)
                 return
         super().mousePressEvent(event)
         self.setSelected(True)
@@ -169,7 +171,7 @@ class TransformOutline(QGraphicsObject):
         super().mouseMoveEvent(event)
         for handle in self._handles.values():
             if handle.isSelected():
-                handle.mouseMoveEvent(event)
+                handle.move(event)
                 return
         change = QPointF(event.scenePos() - event.lastScenePos())
         if change != QPointF():
@@ -181,7 +183,7 @@ class TransformOutline(QGraphicsObject):
         super().mouseReleaseEvent(event)
         for handle in self._handles.values():
             if handle.isSelected():
-                handle.mouseReleaseEvent(event)
+                handle.release(event)
         self.setSelected(False)
         self.drag_finished.emit()
         self._undo_stack().end_gesture()
@@ -273,9 +275,37 @@ class _Handle(TransformHandle):
         super().__init__(parent, handle_id, base_angle, handle_id != ORIGIN_HANDLE_ID)
         self.dragged.connect(parent.move_transformation_handle)
 
-    def _get_parent_transform_params(self) -> tuple[float, float, float]:
+    def _outline(self) -> TransformOutline:
         parent = self.parentItem()
         assert isinstance(parent, TransformOutline)
+        return parent
+
+    def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
+        """Passes the press to the outline, which starts the drag gesture and picks the handle to drag."""
+        self._outline().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
+        """Passes the move to the outline, which drags the picked handle."""
+        self._outline().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
+        """Passes the release to the outline, which ends the drag gesture."""
+        self._outline().mouseReleaseEvent(event)
+
+    def press(self, event: QGraphicsSceneMouseEvent) -> None:
+        """Starts dragging this handle, for the outline."""
+        super().mousePressEvent(event)
+
+    def move(self, event: QGraphicsSceneMouseEvent) -> None:
+        """Drags this handle, for the outline."""
+        super().mouseMoveEvent(event)
+
+    def release(self, event: QGraphicsSceneMouseEvent) -> None:
+        """Finishes dragging this handle, for the outline."""
+        super().mouseReleaseEvent(event)
+
+    def _get_parent_transform_params(self) -> tuple[float, float, float]:
+        parent = self._outline()
         state = parent.state
         if state is None:
             return 1.0, 1.0, 0.0
