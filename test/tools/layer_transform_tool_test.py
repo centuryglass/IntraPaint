@@ -402,6 +402,28 @@ class LayerTransformToolTest(ToolTestCase):
         UndoStack().undo()
         self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0 - LAYER_WIDTH / 2, LAYER_OFFSET.y()))
 
+    def test_group_revert_after_move(self) -> None:
+        """Revert restores a layer group's transform from when it was selected, after the group was moved."""
+        group = self.image_stack.create_layer_group('group')
+        self.image_stack.move_layer(self.layer, group, 0)
+        self.image_stack.active_layer = group
+        original = self.layer.transform
+        self.panel.geometry_block.field(X).set_value(40.3)
+        self.assertNotEqual(self.layer.transform, original)
+        self.panel.revert_button.click()
+        self.assertEqual(self.layer.transform, original)
+        self.assert_panel_matches_outline()
+
+    def test_revert_after_layer_size_change(self) -> None:
+        """Revert restores the transform from when the layer was selected, after the layer changed size."""
+        original = self.layer.transform
+        self.panel.geometry_block.field(X).set_value(40.0)
+        bigger_image = QImage(LAYER_WIDTH * 2, LAYER_HEIGHT * 2, QImage.Format.Format_ARGB32_Premultiplied)
+        bigger_image.fill(Qt.GlobalColor.red)
+        self.layer.image = bigger_image
+        self.panel.revert_button.click()
+        self.assertEqual(self.layer.transform, original)
+
     def test_group_transform_ends_with_selection(self) -> None:
         """Transforming a layer group moves its layers, and once another layer is active, a layer added to the group
         keeps its own transform."""

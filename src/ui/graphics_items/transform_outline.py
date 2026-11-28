@@ -13,7 +13,7 @@ from src.undo_stack import UndoStack, UndoStackRef
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked
-from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, panel_position
+from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
                                                   get_scene_item_bounds_of_view_rect, get_view,
@@ -195,11 +195,6 @@ class TransformOutline(QGraphicsObject):
         offset = pos - self.origin_scene_pos
         if offset != QPointF():
             self.setTransform(self.transform() * QTransform.fromTranslate(offset.x(), offset.y()))
-
-    @property
-    def bounding_box_top_left(self) -> QPointF:
-        """The top-left of the transformed rectangle's scene bounding box, from panel_position."""
-        return panel_position(self.rect(), self.transform())
 
     @property
     def width(self) -> float:

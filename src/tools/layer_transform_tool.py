@@ -225,8 +225,8 @@ class LayerTransformTool(BaseTool):
     def _reload_scene_item(self, keep_relative_origin: bool = False):
         """Reset all transformations and reload properties from the layer.
 
-        The transformation origin returns to the layer center, unless keep_relative_origin is set for a reload of the
-        same layer."""
+        A reload of a newly selected layer moves the transformation origin to the layer center and records the
+        transform Revert restores. keep_relative_origin marks a reload of the same layer, which keeps both."""
         layer = self._layer
 
         # Reset transform outline:
@@ -243,11 +243,12 @@ class LayerTransformTool(BaseTool):
                 self._control_panel.set_preview_transform(QTransform())
                 self._transform_outline.setVisible(False)
             else:
-                self._initial_transform = layer.transform
+                if not keep_relative_origin:
+                    self._initial_transform = layer.transform
                 self._control_panel.set_preview_bounds(layer.bounds)
                 self._transform_outline.setVisible(layer.shown and not layer.size.isEmpty())
-                self._control_panel.set_preview_transform(self._initial_transform)
-                self._transform_outline.setTransform(self._initial_transform)
+                self._control_panel.set_preview_transform(layer.transform)
+                self._transform_outline.setTransform(layer.transform)
                 # Resetting the outline unlocks its ratio, and the lock follows the transform just loaded:
                 self._transform_outline.preserve_aspect_ratio = \
                     self._control_panel.geometry_block.effective_ratio_locked()
@@ -271,10 +272,8 @@ class LayerTransformTool(BaseTool):
         self.set_layer(active_layer)
 
     def _update_transform_group_bounds(self, bounds: QRect) -> None:
-        top_left = self._transform_outline.bounding_box_top_left
-        preview_bounds = QRect(round(top_left.x()), round(top_left.y()),
-                               round(self._transform_outline.width), round(self._transform_outline.height))
-        if preview_bounds != bounds:
+        """Reloads the outline when a layer group's untransformed bounds no longer match the outline's rectangle."""
+        if QRectF(bounds) != self._transform_outline.rect():
             self._reload_scene_item(keep_relative_origin=True)
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
