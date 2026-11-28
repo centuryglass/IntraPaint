@@ -4528,7 +4528,7 @@
 &lt;h3&gt;About ComfyUI&lt;/h3&gt;
 &lt;p&gt;
     &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; is a popular Stable Diffusion interface with complex and powerful
-    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    node-based controls. When ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
     sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
      server.
 &lt;/p&gt;
@@ -4545,7 +4545,7 @@
         <source>
 &lt;h1&gt;Stable Diffusion ComfyUI Generator Setup&lt;/h1&gt;
 &lt;p&gt;
-    To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
+    To use the Stable Diffusion ComfyUI generator, you will need to download at least one Stable Diffusion model file, 
     install ComfyUI, and start it.  This guide will explain each of those steps.
 &lt;/p&gt;</source>
         <translation type="unfinished"></translation>
@@ -4690,7 +4690,7 @@
     &lt;li&gt;
         Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
         you to select a package to install. Choose &lt;b&gt;"{generator_package}"&lt;/b&gt;, and wait for installation to finish.
-        From here, Stability-Matrix will go to the &lt;img src='{packages_icon}'/&gt;
+        From here, Stability Matrix will go to the &lt;img src='{packages_icon}'/&gt;
         &lt;b&gt;Packages&lt;/b&gt; tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
         packages.&lt;br/&gt;
     &lt;/li&gt;
@@ -4802,7 +4802,7 @@
 &lt;h3&gt;About Stable Diffusion WebUI reForge&lt;/h3&gt;
 &lt;p&gt;
     &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
-    Stable Diffusion WebUI re Forge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
+    Stable Diffusion WebUI reForge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
     WebUI Forge without any of the compatibility issues. &lt;b&gt;This is the recommended version to use with IntraPaint&lt;/b&gt;.
 &lt;/p&gt;
 </source>

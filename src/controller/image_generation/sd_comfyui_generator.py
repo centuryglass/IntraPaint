@@ -51,7 +51,7 @@ SD_COMFYUI_GENERATOR_DESCRIPTION_COMFYUI = _tr("""
 <h3>About ComfyUI</h3>
 <p>
     <a href="https://www.comfy.org/">ComfyUI</a> is a popular Stable Diffusion interface with complex and powerful
-    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    node-based controls. When ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
     sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
      server.
 </p>
@@ -68,7 +68,7 @@ SD_COMFYUI_GENERATOR_DESCRIPTION = (f'{SD_COMFYUI_GENERATOR_DESCRIPTION_HEADER}\
 SD_COMFYUI_GENERATOR_SETUP_OPTIONS = _tr("""
 <h1>Stable Diffusion ComfyUI Generator Setup</h1>
 <p>
-    To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
+    To use the Stable Diffusion ComfyUI generator, you will need to download at least one Stable Diffusion model file, 
     install ComfyUI, and start it.  This guide will explain each of those steps.
 </p>""") + GETTING_SD_MODELS + _tr("""
 <hr/>
