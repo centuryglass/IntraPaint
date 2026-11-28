@@ -127,10 +127,11 @@ class BrushDynamicsWidget(QWidget):
             limit_field_width(field)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         layout.addWidget(self._setting_combo)
         layout.addWidget(self._description)
         layout.addWidget(self._field)
+        # The stretch keeps items at the top. A layout alignment would cap the description at the field cap's width.
+        layout.addStretch()
         self._setting_combo.currentIndexChanged.connect(lambda _: self._show_setting())
         self._field.valueChanged.connect(self._apply_value)
         default_index = self._setting_combo.findText(DEFAULT_SETTING, Qt.MatchFlag.MatchFixedString)
@@ -141,10 +142,7 @@ class BrushDynamicsWidget(QWidget):
     def set_planned_width(self, width: Optional[int]) -> None:
         """Measures the description's height for the width the widget will be laid out at, or at its current width with
         None."""
-        layout = self.layout()
-        # The top-aligned layout stops at its own maximum width, which is narrower than the widget can be (#964):
-        self._description.set_planned_width(None if width is None or layout is None
-                                            else min(width, layout.maximumSize().width()))
+        self._description.set_planned_width(width)
 
     @property
     def setting_combo(self) -> QComboBox:
