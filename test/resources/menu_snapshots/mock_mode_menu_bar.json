@@ -138,7 +138,7 @@
       "Rulers [checkable]",
       "Tool control hints [checkable]",
       "Selection overlay [checkable]",
-      "Hide canvas extras [checkable]",
+      "Canvas extras [checkable]",
       "Full screen [checkable]"
     ],
     "&Window": [

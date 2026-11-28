@@ -283,10 +283,10 @@ Actions that change how the image is shown, without changing the image.
 - **Tool control hints** (Ctrl+Alt+Shift+H): A checkable entry that shows or hides the active tool's control hints below the image.
 - **Selection overlay** (Ctrl+Alt+H): A checkable entry that shows or hides the fill over selected content. The selection
   outline stays visible and keeps its animation if outline animation is on.
-- **Hide canvas extras** (Ctrl+H): A checkable entry that hides the markers drawn over the image: the selection, the
-  generation area, guides, the image and layer outlines, and tool handles. While the cursor is over the image, the
-  markers the active tool works with still show. The brush cursor, crosshair and alerts stay visible. It turns off
-  again each time IntraPaint starts.
+- **Canvas extras** (Ctrl+H): A checkable entry that shows or hides the markers drawn over the image: the selection,
+  the generation area, guides, the image and layer outlines, and tool handles. While they are hidden and the cursor is
+  over the image, the markers the active tool works with still show. The brush cursor, crosshair and alerts stay
+  visible. Extras show again each time IntraPaint starts.
 - **Rulers** (Ctrl+R): A checkable entry that shows or hides the rulers beside the image.
 - **Full screen** (F11): A checkable entry that switches the main window between full screen and its previous size.
   Escape does not leave full screen, since tools use it.

@@ -304,7 +304,7 @@ class AppController(MenuBuilder):
         self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
         self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
         self._make_menu_action_checkable(self.toggle_selection_overlay, AppConfig.SHOW_SELECTION_OVERLAY)
-        self._make_menu_action_checkable(self.toggle_canvas_extras, Cache.HIDE_CANVAS_EXTRAS, Cache())
+        self._make_menu_action_checkable(self.toggle_canvas_extras, Cache.SHOW_CANVAS_EXTRAS, Cache())
         full_screen_action = self.get_action_for_method(self.toggle_full_screen)
         full_screen_action.setCheckable(True)
         full_screen_action.setChecked(self._window.isFullScreen())
@@ -408,8 +408,8 @@ class AppController(MenuBuilder):
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
-        Cache().connect(self, Cache.HIDE_CANVAS_EXTRAS, self._set_canvas_extras_hidden)
-        self._set_canvas_extras_hidden(Cache().get(Cache.HIDE_CANVAS_EXTRAS))
+        Cache().connect(self, Cache.SHOW_CANVAS_EXTRAS, self._set_canvas_extras_shown)
+        self._set_canvas_extras_shown(Cache().get(Cache.SHOW_CANVAS_EXTRAS))
         self._tool_panel = ToolPanel()
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
         self._generation_area_tool.control_panel.edit_resolution_requested.connect(self.edit_generation_resolution)
@@ -1132,14 +1132,15 @@ class AppController(MenuBuilder):
         config = AppConfig()
         config.set(AppConfig.SHOW_SELECTION_OVERLAY, not config.get(AppConfig.SHOW_SELECTION_OVERLAY))
 
-    @menu_action(MENU_VIEW, 'hide_canvas_extras_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_VIEW, 'toggle_canvas_extras_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
     def toggle_canvas_extras(self) -> None:
-        """Hide or show the markers drawn over the image, except the active tool's while the cursor is over it."""
+        """Show or hide the markers drawn over the image. While hidden, the active tool's still show while the cursor is
+        over the image."""
         cache = Cache()
-        cache.set(Cache.HIDE_CANVAS_EXTRAS, not cache.get(Cache.HIDE_CANVAS_EXTRAS))
+        cache.set(Cache.SHOW_CANVAS_EXTRAS, not cache.get(Cache.SHOW_CANVAS_EXTRAS))
 
-    def _set_canvas_extras_hidden(self, hidden: bool) -> None:
-        self._image_viewer.canvas_extras.hide_mode = hidden
+    def _set_canvas_extras_shown(self, shown: bool) -> None:
+        self._image_viewer.canvas_extras.hide_mode = not shown
 
     @menu_action(MENU_VIEW, 'toggle_full_screen_shortcut', 204,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
