@@ -13,7 +13,7 @@ from typing import Any
 from unittest.mock import patch
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QCheckBox, QLabel
 from shiboken6 import delete
 
 from src.config import application_config
@@ -181,17 +181,20 @@ class ConfigTest(IntraPaintTestCase):
         config = self._config()
         for key, new_value in CHANGED_VALUES.items():
             with self.subTest(key=key):
-                no_arg_calls: list[None] = []
-                one_arg_calls: list[Any] = []
-                two_arg_calls: list[tuple[Any, Any]] = []
-                config.connect('no_arg', key, lambda: no_arg_calls.append(None))
-                config.connect('one_arg', key, one_arg_calls.append)
-                config.connect('two_arg', key, lambda value, inner_key: two_arg_calls.append((value, inner_key)))
+                calls: list[Any] = []
+                config.connect(self, key, calls.append)
                 config.set(key, new_value, save_change=False)
                 self.assertEqual(config.get(key), new_value)
-                self.assertEqual(no_arg_calls, [None])
-                self.assertEqual(one_arg_calls, [new_value])
-                self.assertEqual(two_arg_calls, [(new_value, None)])
+                self.assertEqual(calls, [new_value])
+
+    def test_connect_accepts_qt_methods(self) -> None:
+        """`connect` takes a Qt built-in method as the callback, and `set` calls it with the new value."""
+        config = self._config()
+        checkbox = QCheckBox()
+        checkbox.setChecked(config.get(BOOL_KEY))
+        config.connect(checkbox, BOOL_KEY, checkbox.setChecked)
+        config.set(BOOL_KEY, not config.get(BOOL_KEY), save_change=False)
+        self.assertEqual(checkbox.isChecked(), config.get(BOOL_KEY))
 
     def test_set_unchanged_value_skips_callbacks(self) -> None:
         """Setting the value a key already holds doesn't call its callbacks."""
@@ -414,27 +417,21 @@ class ConfigTest(IntraPaintTestCase):
                     config._remove_connection(connection)  # pylint: disable=protected-access
                 self.assertNotIn(owner, config._connected[STR_KEY])  # pylint: disable=protected-access
 
-    def test_inner_key(self) -> None:
-        """`set` with an inner key changes one entry of a dict value, and only callbacks for that entry run."""
+    def test_get_inner_key(self) -> None:
+        """`get` with an inner key reads one entry of a dict value, returning None for a missing entry, and raises
+        TypeError for a value that is neither a dict nor a range."""
         config = self._config()
-        inner_calls: list[Any] = []
-        other_calls: list[Any] = []
-        config.connect('inner', DICT_KEY, inner_calls.append, inner_key='inner')
-        config.connect('other', DICT_KEY, other_calls.append, inner_key='other')
-        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
-        self.assertEqual(config.get(DICT_KEY, 'inner'), 7)
+        self.assertEqual(config.get(DICT_KEY, 'inner'), DEFAULT_VALUES[DICT_KEY]['inner'])
         self.assertIsNone(config.get(DICT_KEY, 'missing'))
-        self.assertEqual(inner_calls, [7])
-        self.assertEqual(other_calls, [])
         with self.assertRaises(TypeError):
-            config.set(STR_KEY, 'x', save_change=False, inner_key='inner')
+            config.get(STR_KEY, 'inner')
 
     def test_missing_key_raises_key_error(self) -> None:
         """Every method that takes a key raises KeyError for a key the config doesn't define."""
         config = self._config()
         for name, call in (('get', lambda: config.get('missing')),
                            ('set', lambda: config.set('missing', 1, save_change=False)),
-                           ('connect', lambda: config.connect(self, 'missing', lambda: None)),
+                           ('connect', lambda: config.connect(self, 'missing', lambda _: None)),
                            ('disconnect', lambda: config.disconnect(self, 'missing')),
                            ('get_label', lambda: config.get_label('missing')),
                            ('get_data_type', lambda: config.get_data_type('missing')),
@@ -739,7 +736,7 @@ class ConfigTest(IntraPaintTestCase):
         """`Config.set` off the main thread raises RuntimeError, leaving the value alone and running no callbacks."""
         config = self._config()
         callback_threads: list[threading.Thread] = []
-        config.connect(self, STR_KEY, lambda: callback_threads.append(threading.current_thread()))
+        config.connect(self, STR_KEY, lambda _: callback_threads.append(threading.current_thread()))
         original = config.get(STR_KEY)
         errors: list[BaseException] = []
 

@@ -13,7 +13,6 @@ import logging
 import os
 import tempfile
 import weakref
-from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable
 
@@ -64,8 +63,7 @@ def _definition_tr_context(definition_path: str) -> str:
 
 class _KeyNotifier(QObject):
     """Emits one config key's change signals. Lives on the thread that constructed the `Config`."""
-    # (new value, inner key or None)
-    value_changed = Signal(object, object)
+    value_changed = Signal(object)
     options_changed = Signal(list)
 
 
@@ -77,7 +75,7 @@ class _ConfigConnection(QObject):
     `QObject`, its `destroyed` signal removes the connection.
     """
 
-    def __init__(self, config: 'Config', key: str, owner: Any, callback: Callable[..., None],
+    def __init__(self, config: 'Config', key: str, owner: Any, callback: Callable[[Any], None],
                  options: bool) -> None:
         super().__init__()
         self._config = weakref.ref(config)  # A strong reference would cycle with the config's registry.
@@ -97,13 +95,13 @@ class _ConfigConnection(QObject):
                     connection.on_owner_destroyed()
             self.destroyed_handler = _owner_destroyed
 
-    @Slot(object, object)
-    def on_value_changed(self, value: Any, inner_key: Optional[str]) -> None:
+    @Slot(object)
+    def on_value_changed(self, value: Any) -> None:
         """Runs the callback unless a callback that ran earlier for this change has since changed the value again."""
         config = self._config()
-        if config is None or config.get(self.key, inner_key) != value:
+        if config is None or config.get(self.key) != value:
             return
-        self._callback(value, inner_key)
+        self._callback(value)
 
     @Slot(list)
     def on_options_changed(self, options: ParamTypeList) -> None:
@@ -125,8 +123,7 @@ class Config:
     KeyError
         When any function with the `key` parameter is called with an unknown key.
     TypeError
-        When a function with the optional `inner_key` parameter is used with a non-empty `inner_key` and a `key`
-        that doesn't contain a dict value.
+        When `get` is called with an `inner_key` and a `key` whose value is neither a dict nor a numeric range.
     RuntimeError
         If a function that interacts with lists of accepted value options is called on a value that doesn't have
         a fixed list of acceptable options.
@@ -423,8 +420,7 @@ class Config:
             key: str,
             value: Any,
             save_change: bool = True,
-            add_missing_options: bool = False,
-            inner_key: Optional[str] = None) -> None:
+            add_missing_options: bool = False) -> None:
         """Updates a saved value. Must be called on the main thread.
 
         Callbacks and the save timer run on the calling thread, and callbacks update widgets. Worker code stages the
@@ -438,19 +434,15 @@ class Config:
         key : str
             A key tracked by this config file.
         value : int or float or str or bool or list or dict or QSize or None
-            The new value to assign to the key. Unless inner_key is not None, this must have the same type as the
-            previous value. An int key whose range exceeds a C int also accepts decimal text, which it stores as an
-            int (`Parameter.accepts_int_text`).
+            The new value to assign to the key. This must have the same type as the previous value. An int key whose
+            range exceeds a C int also accepts decimal text, which it stores as an int (`Parameter.accepts_int_text`).
         save_change: bool, default=True
             If true, save the change to the underlying JSON file. Otherwise, the change will be saved the next time
             any value is set with save_change=True
         add_missing_options: bool, default=False
             If the key is associated with a list of valid options and this is true, value will be added to the list
             of options if not already present. Otherwise, RuntimeError is raised if value is not within the list
-        inner_key: str, optional
-            If not None, assume the value at `key` is a dict and attempt to set the value within it at `inner_key`. If
-            the value is a dict but does not contain `inner_key`, instead return None
-       
+
         Raises
         ------
         TypeError
@@ -466,9 +458,9 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         # Update existing value:
         with self._lock:
-            value_changed = self._entries[key].set_value(value, add_missing_options, inner_key)
+            value_changed = self._entries[key].set_value(value, add_missing_options)
             # The entry can store a converted value, such as a seed spinbox's text as an int:
-            new_value = self._entries[key].get_value(inner_key)
+            new_value = self._entries[key].get_value()
         if not value_changed:
             return
         # Schedule save to JSON file:
@@ -477,7 +469,7 @@ class Config:
                 if not self._save_timer.isActive():
                     self._save_timer.start()
         # Delivered synchronously: set() runs on the main thread, where the connections live.
-        self._notifiers[key].value_changed.emit(new_value, inner_key)
+        self._notifiers[key].value_changed.emit(new_value)
 
     def save_pending_changes(self) -> None:
         """Writes changes `set` scheduled to the JSON file immediately.
@@ -492,8 +484,7 @@ class Config:
     def connect(self,
                 connected_object: Any,
                 key: str,
-                on_change_fn: Callable[..., None],
-                inner_key: Optional[str] = None) -> None:
+                on_change_fn: Callable[[Any], None]) -> None:
         """
         Registers a callback function that should run when a particular key is changed.
 
@@ -504,35 +495,13 @@ class Config:
             connected_object: a second connect with the same object and key replaces the first.
         key: str
             A key tracked by this config file.
-        on_change_fn: function(new_value), function(new_value, inner_key)
-            The function to run when the value changes. It must be a Python function or method: `inspect.signature`
-            reads its argument count, and before Python 3.13 it raises ValueError for Qt's built-in methods, such as
-            `QAbstractButton.setChecked`.
-        inner_key: str, optional
-            If not None, assume the value at `key` is a dict and ensure on_change_fn only runs when `inner_key`
-            changes within the value.
+        on_change_fn: function(new_value)
+            The function to run when the value changes, called with the new value. Any callable that takes one
+            argument works, including Qt's built-in methods such as `QAbstractButton.setChecked`.
         """
         if key not in self._connected:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        num_args = len(signature(on_change_fn).parameters)
-        if num_args > 2:
-            raise RuntimeError(f'callback function connected to {key} value takes {num_args} '
-                               'parameters, expected 0-2')
-
-        def deliver(value: Any, changed_inner_key: Optional[str]) -> None:
-            """Adapts the callback's argument count to the signal's (value, inner_key)."""
-            if inner_key is not None:
-                if changed_inner_key == inner_key:
-                    on_change_fn(value)
-            elif num_args == 2:
-                on_change_fn(value, changed_inner_key)
-            elif changed_inner_key is None:
-                if num_args == 1:
-                    on_change_fn(value)
-                else:
-                    on_change_fn()
-
-        self._add_connection(connected_object, key, deliver, False)
+        self._add_connection(connected_object, key, on_change_fn, False)
 
     def connect_to_option_changes(self,
                                   connected_object: Any,
@@ -548,8 +517,8 @@ class Config:
             connected_object.
         key: str
             A key tracked by this config file.
-        on_change_fn: function(new_options), function(new_value, inner_key)
-            The function to run when the option list changes.
+        on_change_fn: function(new_options)
+            The function to run when the option list changes, called with a copy of the new option list.
         """
         if key not in self._option_connected:
             raise KeyError(INVALID_OPTION_KEY_ERROR.format(key=key))
@@ -578,7 +547,7 @@ class Config:
     def _add_connection(self,
                         owner: Any,
                         key: str,
-                        callback: Callable[..., None],
+                        callback: Callable[[Any], None],
                         options: bool) -> None:
         """Connects `callback` to a key's value or option signal, replacing the owner's earlier connection."""
         registry = self._option_connected if options else self._connected

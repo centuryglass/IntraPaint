@@ -2255,11 +2255,6 @@
     <name>config.config_entry</name>
     <message>
         <location filename="../../src/config/config_entry.py"/>
-        <source>Tried to set "{key}.{inner_key}" to value "{value}", but {key} is type "{type_name}"</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/config/config_entry.py"/>
         <source>Tried to read {key}.{inner_key} from type {type_name}</source>
         <translation type="unfinished"></translation>
     </message>
