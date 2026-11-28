@@ -1,24 +1,19 @@
-"""Provides controls for transforming a graphics item."""
-import math
+"""Draws the layer transform tool's outline and handles, and turns mouse input on them into edit intents."""
 from typing import Optional, Iterable
 
-from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, Signal, QSizeF
-from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath, QImage
+from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, Signal
+from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject
 
+from src.tools.layer_transform_state import TransformState
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
 from src.undo_stack import UndoStack, UndoStackRef
-from src.util.math_utils import clamp, avoiding_zero
-from src.util.shared_constants import MIN_NONZERO
-from src.util.signals_blocked import signals_blocked
-from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
+from src.util.math_utils import clamp
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
-                                                  get_scene_item_bounds_of_view_rect, get_view,
-                                                  get_scene_bounds_of_scene_item_rect)
-from src.util.visual.image_utils import create_transparent_image
+                                                  get_scene_item_bounds_of_view_rect, get_view)
 
 MIN_SCENE_DIM = 5
 
@@ -29,315 +24,114 @@ TL_HANDLE_ID = 'top left'
 TR_HANDLE_ID = 'top right'
 BL_HANDLE_ID = 'bottom left'
 BR_HANDLE_ID = 'bottom right'
+CORNER_HANDLE_IDS = (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID)
 
 LINE_COLOR = Qt.GlobalColor.black
 LINE_WIDTH = 3
 
 
-class TransformOutline(QGraphicsObject):
-    """Translate, rotate, and/or scale a graphics item via mouse input or properties.
+def corner_point(rect: QRectF, handle_id: str) -> QPointF:
+    """Returns the corner of rect that a corner handle sits on."""
+    corners = {
+        TL_HANDLE_ID: rect.topLeft,
+        TR_HANDLE_ID: rect.topRight,
+        BL_HANDLE_ID: rect.bottomLeft,
+        BR_HANDLE_ID: rect.bottomRight
+    }
+    assert handle_id in corners, f'Invalid corner ID {handle_id}'
+    return corners[handle_id]()
 
-    To use:
-    -------
-    - Pass in initial scene bounds on construction.
-    - Create the manipulated item as a child of the TransformOutline, placed on the same bounds.
-    - Add to a QGraphicsView.
-    - Adjust the origin of future transformations by dragging the center transformation handle, or by setting the
-      transformation_origin property.
-    - Translate by dragging the outline anywhere other than the transformation handles, or by assigning values to the
-      x, y, or offset properties.
-    - Scale by dragging the corner handles, or by assigning values to the width, height, or scale properties.
-    - Rotate by double-clicking then dragging corner handles, or by assigning to the rotation property.
-    - Connect to transform_changed to get transformation changes, or export the final transformation as an image via
-      the render method.
+
+class TransformOutline(QGraphicsObject):
+    """A view of the transform tool's `TransformState`: a rectangle with corner handles and an origin handle.
+
+    The outline changes nothing itself. `set_state` draws a state, and mouse input becomes intents that its owner
+    turns into a new state:
+    - A drag anywhere off the handles sends `moved` with each step's scene delta.
+    - A corner handle drag sends `handle_dragged` with the cursor's scene position. The owner reads `mode` to scale or
+      rotate.
+    - An origin handle drag sends `origin_dragged` with the origin's new point in untransformed coordinates, snapped
+      to the rectangle's corners, edge midpoints and center, and clamped to the rectangle.
+    Double-clicking switches `mode` between scale and rotate.
     """
 
-    transform_changed = Signal(QTransform)
+    moved = Signal(float, float)
+    handle_dragged = Signal(str, QPointF)
+    origin_dragged = Signal(QPointF)
     # Emitted when a mouse drag on the outline or its handles starts and ends. drag_finished is emitted before the
     # undo gesture closes, so changes made in response join the drag's undo entry.
     drag_started = Signal()
     drag_finished = Signal()
-    pos_changed = Signal(float, float)
-    scale_changed = Signal(float, float)
-    angle_changed = Signal(float)
 
-    # Signal specifically meant for using TransformOutline for rectangle positioning within a transformed layer:
-    # Emitted rectangle factors in transform scale and offset, but ignores rotation.
-    transformed_rect_changed = Signal(QRectF)
-
-    def __init__(self, initial_bounds: QRectF, undo_stack: UndoStack, allow_rotate=True, include_origin_handle=True,
-                 fixed_scale=False) -> None:
+    def __init__(self, undo_stack: UndoStack) -> None:
         super().__init__()
         self._undo_stack = UndoStackRef(undo_stack)
-
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-        self._allow_rotate = allow_rotate
         self._handles: dict[str, _Handle] = {}
-        self._relative_origin = QPointF(0.5, 0.5)
-        self._rect = QRectF(initial_bounds.normalized())
-        self._origin = self._rect.center()
-        self._x_offset = 0.0
-        self._y_offset = 0.0
-        self._x_scale = 0.0
-        self._y_scale = 0.0
-        self._skew = 0.0
-        self._degrees = 0.0
+        self._rect = QRectF()
+        self._origin = QPointF()
+        self._state: Optional[TransformState] = None
         self._pen = QPen(LINE_COLOR, LINE_WIDTH)
         self._pen.setCosmetic(True)
-        self._preserve_aspect_ratio = False
-        self._fixed_scale = fixed_scale
-        self._fixed_ratio = 1.0
         self._mode = TRANSFORM_MODE_SCALE
-
-        for handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID, ORIGIN_HANDLE_ID):
-            if not include_origin_handle and handle_id == ORIGIN_HANDLE_ID:
-                continue
+        for handle_id in (*CORNER_HANDLE_IDS, ORIGIN_HANDLE_ID):
             self._handles[handle_id] = _Handle(self, handle_id)
         self._handles[ORIGIN_HANDLE_ID].drawn_angle = 45
-        self.transformation_origin = self.rect().center()
         self._update_handles()
 
-    def reset(self, new_initial_bounds: QRectF, keep_relative_origin: bool = False) -> None:
-        """Reset the outline with a new initial rectangle, sending no signals.
-
-        The transformation origin moves to the new rectangle's center, unless keep_relative_origin is set, in which
-        case it keeps its position relative to the rectangle's bounds."""
-        with signals_blocked(self):
-            self._rect = QRectF(new_initial_bounds.normalized())
-            self._x_offset = 0.0
-            self._y_offset = 0.0
-            self._x_scale = 0.0
-            self._y_scale = 0.0
-            self._skew = 0.0
-            self._degrees = 0.0
-            self._preserve_aspect_ratio = False
-            if not keep_relative_origin:
-                self._relative_origin = QPointF(0.5, 0.5)
-            self.transformation_origin = self._origin_from_relative()
-            self._update_handles()
+    @property
+    def state(self) -> Optional[TransformState]:
+        """The state last drawn, or None while the outline shows a transform the fields can't express."""
+        return self._state
 
     @property
-    def transformed_scene_bounds(self) -> QRectF:
-        """Returns the bounds of the outline within the scene after all transformations have been applied."""
-        return get_scene_bounds_of_scene_item_rect(self._rect, self)
+    def mode(self) -> str:
+        """Whether corner drags scale or rotate: TRANSFORM_MODE_SCALE or TRANSFORM_MODE_ROTATE."""
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode: str) -> None:
+        self._mode = mode
+        for handle in self._handles.values():
+            handle.set_mode_icon(mode)
+
+    @property
+    def transformation_origin(self) -> QPointF:
+        """The origin handle's position in untransformed coordinates."""
+        return QPointF(self._origin)
+
+    def set_state(self, state: TransformState) -> None:
+        """Draws a state."""
+        self._state = state
+        self._show(state.rect, state.matrix(), state.origin_local)
+
+    def show_uneditable(self, rect: QRectF, matrix: QTransform) -> None:
+        """Draws a rectangle under a transform the fields can't express, such as perspective. The owner disables the
+           outline, so it takes no input."""
+        self._state = None
+        self._show(rect, matrix, QRectF(rect).center())
+
+    def _show(self, rect: QRectF, matrix: QTransform, origin: QPointF) -> None:
+        if rect != self._rect:
+            self.prepareGeometryChange()
+            self._rect = QRectF(rect)
+        self._origin = QPointF(origin)
+        super().setTransform(matrix, False)
+        self._update_handles()
+
+    def setTransform(self, matrix: QTransform, combine: bool = False) -> None:
+        """Block direct transform changes: `set_state` makes them."""
+        raise RuntimeError('Use set_state to change the TransformOutline transform.')
 
     def setTransformations(self, transformations: Iterable[QGraphicsTransform]) -> None:
         """Block alternate graphics transformations, they aren't useful here, and they'll break other calculations."""
         raise RuntimeError('Do not use setTransformations with TransformOutline.')
-
-    def _set_transform_by_parameters(self, dx: float, dy: float, sx: float, sy: float, skew: float, angle: float,
-                                     precalculated_matrix: Optional[QTransform] = None):
-        """Applies transform parameters taken about transformation_origin, the frame extract_transform_parameters
-           uses in setTransform."""
-        scale_changed = sx != self._x_scale or sy != self._y_scale
-        angle_changed = angle != self._degrees
-        self._x_offset = dx
-        self._y_offset = dy
-        self._x_scale = sx
-        self._y_scale = sy
-        self._skew = skew
-        self._degrees = angle
-        origin_before = self.origin_scene_pos
-        if precalculated_matrix is None:
-            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, skew, angle,
-                                                                self.transformation_origin)
-        super().setTransform(precalculated_matrix, False)
-
-        origin_after = self.origin_scene_pos
-        offset_changed = origin_before != origin_after
-        if offset_changed or scale_changed or angle_changed:
-            self.transform_changed.emit(self.transform())
-        if offset_changed:
-            self.pos_changed.emit(origin_after.x(), origin_after.y())
-        if scale_changed:
-            self.scale_changed.emit(sx, sy)
-        if angle_changed:
-            self.angle_changed.emit(angle)
-        if offset_changed or scale_changed:
-            scene_pos = self.mapToScene(self._rect.topLeft())
-            assert isinstance(scene_pos, QPointF)
-            transformed_rect = QRectF(scene_pos,
-                                      QSizeF(abs(sx) * self._rect.width(), abs(sy) * self._rect.height()))
-            self.transformed_rect_changed.emit(transformed_rect)
-
-    def setTransform(self, matrix: QTransform, combine: bool = False) -> None:
-        """Update listeners when transformations change."""
-        if combine:
-            matrix = self.transform() * matrix
-        self._set_transform_by_parameters(*extract_transform_parameters(matrix, self.transformation_origin), matrix)
 
     def setZValue(self, z: float) -> None:
         """Ensure handle z-values stay in sync with the outline."""
         super().setZValue(z)
         for handle in self._handles.values():
             handle.setZValue(z - 2)
-
-    @property
-    def preserve_aspect_ratio(self) -> bool:
-        """Returns whether all transformations preserve the original aspect ratio provided through setRect."""
-        return self._preserve_aspect_ratio
-
-    @preserve_aspect_ratio.setter
-    def preserve_aspect_ratio(self, should_preserve: bool) -> None:
-        self._preserve_aspect_ratio = should_preserve
-        if should_preserve:
-            x_scale, y_scale = self._x_scale, self._y_scale
-            self._fixed_ratio = abs(x_scale / y_scale)
-
-    @property
-    def origin_scene_pos(self) -> QPointF:
-        """The transformation origin's position in the scene, as shown in the panel's X/Y fields."""
-        return self.mapToScene(self.transformation_origin)
-
-    @origin_scene_pos.setter
-    def origin_scene_pos(self, pos: QPointF) -> None:
-        """Move the layer so the transformation origin lands on pos, without changing rotation or scale."""
-        offset = pos - self.origin_scene_pos
-        if offset != QPointF():
-            self.setTransform(self.transform() * QTransform.fromTranslate(offset.x(), offset.y()))
-
-    @property
-    def width(self) -> float:
-        """The full width within the scene, ignoring rotations. Setting it keeps the sign of the x-scale, so a flip
-           stays."""
-        return abs(self.rect().width() * self._x_scale)
-
-    @width.setter
-    def width(self, new_width) -> None:
-        y_scale = self._y_scale
-        x_scale = math.copysign(new_width / self.rect().width(), self._x_scale)
-        if x_scale == 0:
-            x_scale = math.copysign(MIN_NONZERO, x_scale)
-        if self._preserve_aspect_ratio:
-            y_scale = math.copysign(x_scale / self._fixed_ratio, y_scale)
-        matrix = combine_transform_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._skew,
-                                              self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
-
-    @property
-    def height(self) -> float:
-        """The full height within the scene, ignoring rotations. Setting it keeps the sign of the y-scale, so a flip
-           stays."""
-        return abs(self.rect().height() * self._y_scale)
-
-    @height.setter
-    def height(self, new_height: float) -> None:
-        x_scale = self._x_scale
-        y_scale = math.copysign(new_height / self.rect().height(), self._y_scale)
-        if y_scale == 0:
-            y_scale = math.copysign(MIN_NONZERO, y_scale)
-        if self._preserve_aspect_ratio:
-            x_scale = math.copysign(y_scale * self._fixed_ratio, x_scale)
-        matrix = combine_transform_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._skew,
-                                              self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
-
-    @property
-    def offset(self) -> QPointF:
-        """Gets the offset from the origin before rotation and scaling."""
-        return QPointF(self._x_offset, self._y_offset)
-
-    @offset.setter
-    def offset(self, new_offset: QPointF) -> None:
-        matrix = combine_transform_parameters(new_offset.x(), new_offset.y(), self._x_scale, self._y_scale,
-                                              self._skew, self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
-
-    @property
-    def transform_scale(self) -> tuple[float, float]:
-        """Get the width and height scale factors."""
-        return self._x_scale, self._y_scale
-
-    @transform_scale.setter
-    def transform_scale(self, scale_factors: tuple[float, float]) -> None:
-        x_scale, y_scale = scale_factors
-        if self._preserve_aspect_ratio:
-            prev_x, prev_y = self.transform_scale
-            x_change = x_scale - prev_x
-            y_change = y_scale - prev_y
-            if abs(x_change) >= abs(y_change):
-                y_scale = math.copysign(x_scale / self._fixed_ratio, y_scale)
-            else:
-                x_scale = math.copysign(y_scale * self._fixed_ratio, x_scale)
-        if -MIN_NONZERO <= x_scale <= MIN_NONZERO:
-            x_scale = math.copysign(MIN_NONZERO, x_scale)
-        if -MIN_NONZERO <= y_scale <= MIN_NONZERO:
-            y_scale = math.copysign(MIN_NONZERO, y_scale)
-        self._set_transform_by_parameters(self._x_offset, self._y_offset, x_scale, y_scale, self._skew, self._degrees)
-
-    @property
-    def rotation_angle(self) -> float:
-        """Gets the rotation in degrees."""
-        return self._degrees
-
-    @rotation_angle.setter
-    def rotation_angle(self, angle: float) -> None:
-        self._set_transform_by_parameters(self._x_offset, self._y_offset, self._x_scale, self._y_scale, self._skew,
-                                          angle)
-
-    @property
-    def transformation_origin(self) -> QPointF:
-        """Return the transformation origin point in local coordinates."""
-        return self._origin
-
-    @transformation_origin.setter
-    def transformation_origin(self, pos: QPointF) -> None:
-        """Move the transformation origin to a new point within the outline bounds."""
-        bounds = self.rect()
-        pos.setX(clamp(pos.x(), bounds.x(), bounds.right()))
-        pos.setY(clamp(pos.y(), bounds.y(), bounds.bottom()))
-        if bounds.width() != 0 and bounds.height() != 0:
-            self._relative_origin = QPointF((pos.x() - bounds.x()) / bounds.width(),
-                                            (pos.y() - bounds.y()) / bounds.height())
-        if pos != self._origin:
-            if ORIGIN_HANDLE_ID in self._handles:
-                scene_pos_before = self.origin_scene_pos
-                origin_handle = self._handles[ORIGIN_HANDLE_ID]
-                origin_handle.move_rect_center(pos)
-                self._origin = pos
-                # The layer stays put, so only the origin's scene position changes:
-                scene_pos_after = self.origin_scene_pos
-                if scene_pos_before != scene_pos_after:
-                    self.pos_changed.emit(scene_pos_after.x(), scene_pos_after.y())
-            self.setTransform(self.transform())
-
-    def render(self) -> QImage:
-        """Render all externally added child items to an image, with transformations included."""
-        scene = self.scene()
-        if scene is None:
-            raise RuntimeError('TransformOutline cannot render without being in a scene.')
-
-        # Find descendants, excluding handles:
-        children = set()
-        add_children: list[QGraphicsItem] = [self]
-        while len(add_children) > 0:
-            item = add_children.pop()
-            for child in item.childItems():
-                if isinstance(child, _Handle):
-                    continue
-                children.add(child)
-                add_children.append(child)
-
-        # Temporarily hide everything else in the scene:
-        opacity_map: dict[QGraphicsItem, float] = {}
-        for item in scene.items():
-            if item not in children:
-                opacity_map[item] = item.opacity()
-                item.setOpacity(0.0)
-        scene.update()
-
-        # Create image and render:
-        bounds = self.mapRectToScene(self.rect())
-        image = create_transparent_image(bounds.size().toSize())
-        painter = QPainter(image)
-        scene.render(painter, QRectF(QPointF(), bounds.size()), bounds)
-        painter.end()
-
-        # Restore previous scene item visibility:
-        for scene_item, opacity in opacity_map.items():
-            scene_item.setOpacity(opacity)
-        scene.update()
-        return image
 
     def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Start dragging the layer on a left press, and ignore other buttons.
@@ -365,19 +159,12 @@ class TransformOutline(QGraphicsObject):
         self.setSelected(True)
 
     def mouseDoubleClickEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
-        """Change drag mode on double-click, if enabled."""
+        """Switch corner drags between scaling and rotating."""
         assert event is not None
-        if not self._allow_rotate:
-            return
-        if self._mode == TRANSFORM_MODE_SCALE:
-            self._mode = TRANSFORM_MODE_ROTATE
-        else:
-            self._mode = TRANSFORM_MODE_SCALE
-        for handle in self._handles.values():
-            handle.set_mode_icon(self._mode)
+        self.mode = TRANSFORM_MODE_ROTATE if self._mode == TRANSFORM_MODE_SCALE else TRANSFORM_MODE_SCALE
 
     def mouseMoveEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
-        """Translate the layer, following the cursor."""
+        """Send a move intent following the cursor, or pass the event to a dragged handle."""
         assert event is not None
         super().mouseMoveEvent(event)
         for handle in self._handles.values():
@@ -385,7 +172,8 @@ class TransformOutline(QGraphicsObject):
                 handle.mouseMoveEvent(event)
                 return
         change = QPointF(event.scenePos() - event.lastScenePos())
-        self.offset = change + self.offset
+        if change != QPointF():
+            self.moved.emit(change.x(), change.y())
 
     def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Stop dragging the layer."""
@@ -399,21 +187,24 @@ class TransformOutline(QGraphicsObject):
         self._undo_stack().end_gesture()
 
     def move_transformation_handle(self, handle_id: str, pos: QPointF) -> None:
-        """Perform required changes whenever one of the handles moves."""
+        """Sends the intent for a handle dragged to a scene position."""
         assert handle_id in self._handles, str(self._handles)
-        pos = self.mapFromScene(pos)
-        assert isinstance(pos, QPointF)
         if handle_id == ORIGIN_HANDLE_ID:
-            self.transformation_origin = self._snapped_origin(pos)
-        elif handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID):
-            self.move_corner(handle_id, pos)
+            local_pos = self.mapFromScene(pos)
+            assert isinstance(local_pos, QPointF)
+            local_pos = self._snapped_origin(local_pos)
+            rect = self._rect
+            self.origin_dragged.emit(QPointF(clamp(local_pos.x(), rect.left(), rect.right()),
+                                             clamp(local_pos.y(), rect.top(), rect.bottom())))
+        elif handle_id in CORNER_HANDLE_IDS:
+            self.handle_dragged.emit(handle_id, QPointF(pos))
         else:
             raise RuntimeError(f'Invalid handle id {handle_id}')
 
     def _snapped_origin(self, pos: QPointF) -> QPointF:
         """Returns the nearest of the four corners, four edge midpoints and the center if it is within
            ORIGIN_SNAP_DISTANCE view pixels of pos (in local coordinates), otherwise pos."""
-        rect = self.rect()
+        rect = self._rect
         cursor = map_scene_item_point_to_view_point(pos, self)
         best = pos
         best_distance = float(ORIGIN_SNAP_DISTANCE)
@@ -424,89 +215,6 @@ class TransformOutline(QGraphicsObject):
                 if distance <= best_distance:
                     best, best_distance = target, distance
         return best
-
-    def move_corner(self, corner_id: str, corner_pos: QPointF, _=None) -> None:
-        """Move one of the corners, leaving the position of the opposite corner unchanged. If enabled, also
-           preserve aspect ratio."""
-        initial_rect = self.rect()
-
-        if self._mode == TRANSFORM_MODE_SCALE:
-            # Move the dragged corner, keeping the opposite corner fixed:
-            final_rect = QRectF(initial_rect)
-            adjustment_params = {
-                TL_HANDLE_ID: (final_rect.setTopLeft, final_rect.bottomRight),
-                TR_HANDLE_ID: (final_rect.setTopRight, final_rect.bottomLeft),
-                BL_HANDLE_ID: (final_rect.setBottomLeft, final_rect.topRight),
-                BR_HANDLE_ID: (final_rect.setBottomRight, final_rect.topLeft)
-            }
-            assert corner_id in adjustment_params, f'Invalid corner ID {corner_id}'
-            move_corner, get_fixed_corner = adjustment_params[corner_id]
-            move_corner(corner_pos)
-
-            if abs(final_rect.width()) < MIN_NONZERO:
-                final_rect.setWidth(MIN_NONZERO)
-            if abs(final_rect.height()) < MIN_NONZERO:
-                final_rect.setHeight(MIN_NONZERO)
-            x_scale = final_rect.width() / initial_rect.width()
-            y_scale = final_rect.height() / initial_rect.height()
-            current_x_scale, current_y_scale = self.transform_scale
-
-            if self._fixed_scale:
-                offset = final_rect.topLeft() - initial_rect.topLeft()
-                self.setRect(final_rect.normalized())
-                if offset != QPointF():
-                    transform = self.transform() * QTransform.fromTranslate(offset.x(), offset.y())
-                    self.setTransform(transform)
-                else:
-                    scene_pos = self.mapToScene(self._rect.topLeft())
-                    assert isinstance(scene_pos, QPointF)
-                    transformed_rect = QRectF(scene_pos,
-                                              QSizeF(abs(current_x_scale) * self._rect.width(),
-                                                     abs(current_y_scale) * self._rect.height()))
-                    self.transformed_rect_changed.emit(transformed_rect)
-                return
-
-            final_x_scale = x_scale * current_x_scale
-            final_y_scale = y_scale * current_y_scale
-            if self._preserve_aspect_ratio:
-                if abs(final_x_scale) * self._fixed_ratio != abs(final_y_scale):
-                    if abs(final_x_scale) < abs(final_y_scale):
-                        x_scale = math.copysign(x_scale * final_y_scale / final_x_scale * self._fixed_ratio, x_scale)
-                    else:
-                        y_scale = math.copysign(y_scale * final_x_scale / final_y_scale / self._fixed_ratio, y_scale)
-            origin = get_fixed_corner()
-
-            def _scale_change_avoiding_minimums(scale_change: float, current_scale: float, final_scale: float) -> float:
-                if abs(final_scale) >= MIN_NONZERO:
-                    return scale_change
-                return MIN_NONZERO / current_scale
-            x_scale = _scale_change_avoiding_minimums(x_scale, current_x_scale, final_x_scale)
-            y_scale = _scale_change_avoiding_minimums(y_scale, current_y_scale, final_y_scale)
-            if x_scale != 1.0 or y_scale != 1.0:
-                scale = self.transform()
-                scale.translate(origin.x(), origin.y())
-                scale.scale(x_scale, y_scale)
-                scale.translate(-origin.x(), -origin.y())
-                self.setTransform(scale)
-        elif self._mode == TRANSFORM_MODE_ROTATE:
-            # Rotate the rectangle so that the dragged corner is as close as possible to corner_pos. Angles are
-            # measured in the scene: scaling and flipping change local angles, but rotation is applied after them.
-            corners = {
-                TL_HANDLE_ID: initial_rect.topLeft(),
-                TR_HANDLE_ID: initial_rect.topRight(),
-                BL_HANDLE_ID: initial_rect.bottomLeft(),
-                BR_HANDLE_ID: initial_rect.bottomRight()
-            }
-            corner_start = self.mapToScene(corners[corner_id])
-            origin = self.mapToScene(self.transformation_origin)
-            target = self.mapToScene(corner_pos)
-            assert isinstance(corner_start, QPointF) and isinstance(origin, QPointF) and isinstance(target, QPointF)
-            init_vector = corner_start - origin
-            target_vector = target - origin
-            init_angle = math.degrees(math.atan2(init_vector.y(), init_vector.x()))
-            final_angle = math.degrees(math.atan2(target_vector.y(), target_vector.x()))
-            angle_offset = final_angle - init_angle
-            self.rotation_angle = self.rotation_angle + angle_offset
 
     def paint(self,
               painter: Optional[QPainter],
@@ -540,31 +248,13 @@ class TransformOutline(QGraphicsObject):
 
     def rect(self) -> QRectF:
         """Return the transformed area's original bounds."""
-        return self._rect
-
-    def setRect(self, rect: QRectF) -> None:
-        """Set the transformed area's original bounds."""
-        self.prepareGeometryChange()
-        rect.setWidth(avoiding_zero(rect.width()))
-        rect.setHeight(avoiding_zero(rect.height()))
-        self._rect = QRectF(rect)
-        self._origin = self._origin_from_relative()
-        self._update_handles()
-
-    def _origin_from_relative(self) -> QPointF:
-        """Returns the point within the rectangle at the transformation origin's relative position."""
-        rect = self._rect
-        return QPointF(rect.x() + rect.width() * self._relative_origin.x(),
-                       rect.y() + rect.height() * self._relative_origin.y())
+        return QRectF(self._rect)
 
     def _update_handles(self) -> None:
-        """Keep the corners and origin positioned and sized correctly as the rectangle transforms."""
-        bounds = self.rect()
-        for handle_id, point in ((TL_HANDLE_ID, bounds.topLeft()), (TR_HANDLE_ID, bounds.topRight()),
-                                 (BL_HANDLE_ID, bounds.bottomLeft()), (BR_HANDLE_ID, bounds.bottomRight())):
-            self._handles[handle_id].move_rect_center(point)
-        if ORIGIN_HANDLE_ID in self._handles:
-            self._handles[ORIGIN_HANDLE_ID].move_rect_center(self._origin_from_relative())
+        """Keep the corners and origin positioned on the rectangle."""
+        for handle_id in CORNER_HANDLE_IDS:
+            self._handles[handle_id].move_rect_center(corner_point(self._rect, handle_id))
+        self._handles[ORIGIN_HANDLE_ID].move_rect_center(self._origin)
 
 
 class _Handle(TransformHandle):
@@ -586,5 +276,7 @@ class _Handle(TransformHandle):
     def _get_parent_transform_params(self) -> tuple[float, float, float]:
         parent = self.parentItem()
         assert isinstance(parent, TransformOutline)
-        x_scale, y_scale = parent.transform_scale
-        return x_scale, y_scale, parent.rotation_angle
+        state = parent.state
+        if state is None:
+            return 1.0, 1.0, 0.0
+        return state.x_scale, state.y_scale, state.rotation

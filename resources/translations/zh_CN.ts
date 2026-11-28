@@ -9121,6 +9121,11 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Layer</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>This layer has a perspective transform, which this tool can't edit. Revert and Clear transform still work.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.tool_control_panels.magic_wand_panel</name>

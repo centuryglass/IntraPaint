@@ -237,7 +237,7 @@ class TextToolTest(ToolTestCase):
                 self.activate_tool(self.tool)
                 text_tool_position = self.panel.offset
                 transform_tool = self._activate_transform_tool()
-                transform_tool._transform_outline.transformation_origin = QPointF(layer.bounds.topLeft())
+                transform_tool.set_transformation_origin(QPointF(layer.bounds.topLeft()))
                 panel = transform_tool._control_panel
                 self.assertEqual(text_tool_position, QPointF(panel.x_position, panel.y_position).toPoint())
 
@@ -262,6 +262,6 @@ class TextToolTest(ToolTestCase):
         self.assertEqual((layer.transform.m11(), layer.transform.m12(), layer.transform.m21(),
                           layer.transform.m22()), rotation)
         transform_tool = self._activate_transform_tool()
-        transform_tool._transform_outline.transformation_origin = QPointF(layer.bounds.topLeft())
+        transform_tool.set_transformation_origin(QPointF(layer.bounds.topLeft()))
         panel = transform_tool._control_panel
         self.assertEqual(QPointF(panel.x_position, panel.y_position), QPointF(30, 40))
