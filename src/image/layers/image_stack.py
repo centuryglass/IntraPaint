@@ -29,7 +29,8 @@ from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack, UndoStackRef
 from src.util.rich_text import escape_rich_text, rich_text_format
-from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
+from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, \
+    transform_needs_smooth_sampling
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly, ARGB32_ALPHA, ARGB32_COLOR
 from src.util.visual.pil_image_utils import pil_image_to_qimage
@@ -578,12 +579,11 @@ class ImageStack(QObject):
                         layer.set_transform(layer.transform * translate)
                         if layer.locked or layer.parent_locked:
                             continue
-                        layer_params = extract_transform_parameters(layer.transform)
-                        if (layer_params.rotation % 90.0) != 0 or layer_params.skew != 0.0:
-                            # Expanding a layer that is skewed or rotated by a non-right angle either softens its edge
-                            # pixels or bakes in its transformation, so it keeps its bounds.
+                        if transform_needs_smooth_sampling(layer.transform):
+                            # Expanding a smoothly sampled layer either softens its edge pixels or bakes in its
+                            # transformation, so it keeps its bounds.
                             expand_bounds = False
-                            # Flatten the transformation when a corner would be cropped:
+                            # Flatten the transformation when the cropped canvas would cut off part of the layer:
                             if should_crop_layers:
                                 layer_transform_poly = layer.transform.map(QRectF(layer.bounds))
                                 assert isinstance(layer_transform_poly, QPolygonF)

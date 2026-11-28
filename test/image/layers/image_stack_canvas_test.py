@@ -169,6 +169,16 @@ class ResizeCanvasTest(ImageStackOpTestCase):
         self.assertEqual(QSize(10, 10), rotated.size)
         self.assertEqual(rotation * QTransform.fromTranslate(EXPAND_OFFSET.x(), EXPAND_OFFSET.y()), rotated.transform)
 
+    def test_expand_fractionally_scaled_layer(self) -> None:
+        """RESIZE_ALL leaves a layer at a fractional scale at its size and scale, moving it with the canvas."""
+        scaled = self.add_layer('scaled', 3, QSize(10, 10))
+        scale = QTransform.fromScale(1.5, 1.5) * QTransform.fromTranslate(5, 3)
+        scaled.set_transform(scale)
+        self.image_stack.move_layer(scaled, self.image_stack.layer_stack, 0)
+        self._expanded(LayerResizeMode.RESIZE_ALL)
+        self.assertEqual(QSize(10, 10), scaled.size)
+        self.assertEqual(scale * QTransform.fromTranslate(EXPAND_OFFSET.x(), EXPAND_OFFSET.y()), scaled.transform)
+
     def _assert_expand_keeps_skewed_layer(self, mode: LayerResizeMode) -> None:
         """Expands the canvas over an unrotated, skewed layer whose bounds fill the canvas, and checks that it keeps
         its size and skew, moving with the canvas."""
