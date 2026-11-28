@@ -5,7 +5,7 @@ import os
 from PIL import Image
 from PySide6.QtGui import QImage, QColor
 
-from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil, pil_to_qimage
+from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil, pil_mask_to_qimage, pil_to_qimage
 from test.base_test_case import IntraPaintTestCase, TEST_IMAGE_DIR
 
 # Image with partially transparent pixels, used as its own golden image: a lossless round trip must reproduce it.
@@ -54,3 +54,13 @@ class ImageAdapterTest(IntraPaintTestCase):
             converted = pil_to_qimage(Image.new(mode, (1, 1), color))
             self.assertEqual(converted.format(), QImage.Format.Format_ARGB32_Premultiplied, mode)
             self.assertEqual(converted.pixelColor(0, 0), expected, mode)
+
+    def test_mask_luminance_becomes_alpha(self) -> None:
+        """An 'L' mask converts to black with its luminance as alpha."""
+        mask = Image.new('L', (3, 2), 0)
+        mask.putpixel((1, 0), 128)
+        mask.putpixel((2, 1), 255)
+        qimage = pil_mask_to_qimage(mask)
+        self.assertEqual(qimage.format(), QImage.Format.Format_ARGB32_Premultiplied)
+        self.assertEqual([qimage.pixelColor(x, y).alpha() for x, y in ((0, 0), (1, 0), (2, 1))], [0, 128, 255])
+        self.assertEqual(qimage.pixelColor(2, 1), QColor(0, 0, 0))

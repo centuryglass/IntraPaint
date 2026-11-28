@@ -115,6 +115,8 @@ def build_comfy_params(edit_mode: str, source_image: Optional[QImage] = None, ma
     params.clip_skip = cache.get(Cache.CLIP_SKIP)
     model_config = cache.get(Cache.COMFYUI_MODEL_CONFIG)
     params.sd_model_config = None if model_config in ('', COMFYUI_MODEL_CONFIG_AUTO) else model_config
+    # Results then carry the unblended output and blend mask that `make_exact_result_patch` builds patches from:
+    params.return_uncomposited = edit_mode == EDIT_MODE_INPAINT
     return params
 
 

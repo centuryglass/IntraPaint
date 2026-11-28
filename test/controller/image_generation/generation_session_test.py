@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.cache import Cache
 from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
 from src.controller.image_generation.generation_session import GenerationSession
+from src.controller.image_generation.result_patch import ResultLayers
 from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.apply_option import ApplyResult
 from src.image.composite_mode import CompositeMode
@@ -346,3 +347,26 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         self.assertEqual(patch.size(), IMAGE_SIZE)
         self.assertEqual(self.session.current.edit_image(1).pixelColor(5, 5), patch.pixelColor(5, 5))
 
+    def _patch_for(self, sent: QImage, result: QImage, layers: ResultLayers) -> QImage:
+        """Generates one inpainting result stored with `layers`, and returns the patch the session made for it."""
+        self.session.generate(lambda *_args: self.session.store_result(result, 0, layers),
+                              sent, _solid(QColor(0, 0, 0)), _solid(QColor(0, 0, 0)))
+        return self.session._patches[0]  # pylint: disable=protected-access
+
+    def test_inpaint_results_with_layers_use_the_exact_patch(self) -> None:
+        """A result stored with `ResultLayers` becomes the unblended output at the mask's alpha, whatever the blended
+        result holds."""
+        sent = _solid(QColor(200, 10, 10))
+        layers = ResultLayers(_solid(QColor(0, 255, 0)), _solid(QColor(0, 0, 0, 128)))
+        patch = self._patch_for(sent, sent.copy(), layers)
+        self.assertEqual(patch.pixelColor(5, 5).alpha(), 128)
+        self.assertEqual(patch.pixelColor(5, 5).green(), 255)
+
+    def test_inpaint_results_with_mismatched_layers_are_estimated(self) -> None:
+        """Layers that don't match the sent image's size are ignored, and the patch comes from the blended result."""
+        sent = _solid(QColor(200, 10, 10))
+        small = QSize(8, 8)
+        uncomposited = QImage(small, QImage.Format.Format_ARGB32_Premultiplied)
+        uncomposited.fill(QColor(0, 255, 0))
+        patch = self._patch_for(sent, sent.copy(), ResultLayers(uncomposited, uncomposited.copy()))
+        self.assertEqual(patch.pixelColor(5, 5).alpha(), 0)

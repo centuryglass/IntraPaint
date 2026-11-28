@@ -85,6 +85,12 @@ class ParamsAdapterTest(IntraPaintTestCase):
         self.assertEqual(params.mask.getpixel((0, 0)), (255, 255, 255, 255))
         self.assertEqual(params.denoising_strength, 0.6)
         self.assertEqual(params.mask_blur, 4)
+        self.assertTrue(params.return_uncomposited, 'results carry the layers exact patches are built from')
+
+    def test_comfy_uncomposited_only_for_inpainting(self) -> None:
+        """Requests without a mask don't ask for uncomposited output."""
+        self.assertFalse(build_comfy_params(EDIT_MODE_TXT2IMG).return_uncomposited)
+        self.assertFalse(build_comfy_params(EDIT_MODE_IMG2IMG, self.source).return_uncomposited)
 
     def test_missing_images_raise(self) -> None:
         """Img2img needs a source image, and inpainting also needs a mask."""

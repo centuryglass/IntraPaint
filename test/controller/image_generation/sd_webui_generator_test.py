@@ -127,6 +127,8 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         """Inpainting sends the init image and a grayscale mask, with the inpainting options."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._generate_and_check('inpaint')
+        # The WebUI blends on the server, so its results keep the estimating path:
+        self.assertEqual(list(self.generated_layers.values()), [None] * len(self.generated_images))
 
     def test_inpaint_soft_inpainting(self) -> None:
         """Soft inpainting adds the WebUI script's arguments, with saved values replacing the script defaults."""
