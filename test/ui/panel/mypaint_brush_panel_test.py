@@ -392,6 +392,17 @@ class MyPaintBrushToolPanelTest(IntraPaintTestCase):
         self.assertGreaterEqual(label.height(), label.heightForWidth(label.width()))
         self.panel.hide()
 
+    def test_dynamics_description_spans_the_section(self) -> None:
+        """In a side panel wider than the field cap, the description is as wide as the section."""
+        self.panel.resize(700, 1400)
+        self.panel.set_fit_space(Orientation.SIDE, QSize(700, 1400))
+        self.panel.show()
+        settle_layouts(self.panel)
+        dynamics = self.panel.dynamics
+        self.assertEqual(dynamics.description_label.width(), dynamics.width())
+        self.assertLess(dynamics.value_field.width(), dynamics.width())
+        self.panel.hide()
+
     def test_compact_strip_chip_keeps_the_whole_name(self) -> None:
         """Beside the favorites in a strip, the chip is never narrower than its whole brush name."""
         Cache().set(BRUSH_KEY, os.path.relpath(CHARCOAL_PATH, PROJECT_DIR))
