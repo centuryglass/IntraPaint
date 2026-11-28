@@ -188,15 +188,27 @@ def transform_scale(transformation: QTransform) -> tuple[float, float]:
     return scale_x, scale_y
 
 
-def transform_needs_smooth_sampling(transformation: QTransform) -> bool:
-    """Returns whether layers drawn through a transformation are sampled smoothly.
+# How far a linear matrix entry may sit from a whole number and still count as one in
+# transform_needs_smooth_sampling. It absorbs the float residue that composing rotations leaves, while moving no pixel
+# by more than 0.01 px across a 10000 px layer.
+PIXEL_GRID_TOLERANCE = 1e-6
 
-    Smooth sampling applies to scales that aren't whole numbers and rotations that aren't multiples of 90 degrees. It
+
+def transform_needs_smooth_sampling(transformation: QTransform) -> bool:
+    """Returns whether layers drawn through a transformation are sampled smoothly, rather than pixel-exact.
+
+    A transformation draws pixel-exact when its linear part maps the pixel grid onto itself: it is axis-aligned, or
+    turned by a right angle, and every entry of m11, m12, m21 and m22 is a whole number, within PIXEL_GRID_TOLERANCE.
+    That covers flips and uneven whole-number scales. Every other scale, rotation or skew is sampled smoothly, which
     blends neighboring source pixels, so a changed pixel can affect image pixels one past its mapped bounds.
+    Translation is ignored.
     """
-    s_x, s_y = transform_scale(transformation)
-    angle = rotation_angle(transformation)
-    return (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0
+    entries = (transformation.m11(), transformation.m12(), transformation.m21(), transformation.m22())
+    if any(abs(entry - round(entry)) > PIXEL_GRID_TOLERANCE for entry in entries):
+        return True
+    m11, m12, m21, m22 = (round(entry) for entry in entries)
+    axis_aligned = (m12 == 0 and m21 == 0) or (m11 == 0 and m22 == 0)
+    return not axis_aligned or m11 * m22 - m12 * m21 == 0
 
 
 class TransformParameters(NamedTuple):

@@ -9,7 +9,7 @@ from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, transform_str, \
-    transforms_approx_equal, panel_position, transform_at_panel_position
+    transforms_approx_equal, panel_position, transform_at_panel_position, transform_needs_smooth_sampling
 from src.util.math_utils import convert_degrees
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -148,3 +148,32 @@ class TestGeometryUtils(unittest.TestCase):
         for m_source, m_moved in ((source.m11(), moved.m11()), (source.m12(), moved.m12()),
                                   (source.m21(), moved.m21()), (source.m22(), moved.m22())):
             self.assertEqual(m_source, m_moved)
+
+    def test_transform_needs_smooth_sampling(self):
+        """Only axis-aligned or right-angle matrices with whole-number entries draw pixel-exact."""
+        cases = [
+            ('identity', QTransform(), False),
+            ('fractional translation', QTransform.fromTranslate(0.5, 3.25), False),
+            ('uniform whole scale', QTransform.fromScale(2, 2), False),
+            ('uneven whole scale', QTransform.fromScale(2, 1), False),
+            ('rotate 90', QTransform().rotate(90), False),
+            ('rotate 180', QTransform().rotate(180), False),
+            ('rotate 270', QTransform().rotate(270), False),
+            ('uneven whole scale, rotate 90', QTransform.fromScale(2, 1) * QTransform().rotate(90), False),
+            ('flip horizontal', QTransform.fromScale(-1, 1), False),
+            ('flip vertical', QTransform.fromScale(1, -1), False),
+            ('flip, rotate 90', QTransform.fromScale(-1, 1) * QTransform().rotate(90), False),
+            # Both leave m11 and m22 about 2e-16 from zero.
+            ('rotate 450', QTransform().rotate(450), False),
+            ('rotate 45 twice', QTransform().rotate(45) * QTransform().rotate(45), False),
+            ('fractional scale', QTransform.fromScale(1.5, 1), True),
+            ('rotate 30', QTransform().rotate(30), True),
+            ('rotate 0.01', QTransform().rotate(0.01), True),
+            ('fractional shear', QTransform().shear(0.5, 0), True),
+            ('whole shear', QTransform().shear(1, 0), True),
+            ('whole skew with uneven scale', QTransform(1, 0, 3, 4, 0, 0), True),
+            ('uneven scale, rotate -18.435', QTransform.fromScale(1, 2) * QTransform().rotate(-18.435), True),
+        ]
+        for label, transform, expected in cases:
+            with self.subTest(label):
+                self.assertEqual(expected, transform_needs_smooth_sampling(transform))

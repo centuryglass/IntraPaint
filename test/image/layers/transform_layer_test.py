@@ -155,6 +155,30 @@ class TransformLayerTest(IntraPaintTestCase):
         self.assertEqual(rendered.pixelColor(25, 25), QColor(Qt.GlobalColor.red))
         self.assertEqual(rendered.pixelColor(25, 75), QColor(Qt.GlobalColor.blue))
 
+    def test_render_uneven_whole_scale_keeps_source_colors(self) -> None:
+        """A checkerboard layer at an uneven whole-number scale renders and flattens without blending."""
+        checkerboard = QImage(QSize(4, 4), QImage.Format.Format_ARGB32_Premultiplied)
+        for y in range(4):
+            for x in range(4):
+                checkerboard.setPixelColor(x, y, QColor(Qt.GlobalColor.black if (x + y) % 2 == 0
+                                                        else Qt.GlobalColor.white))
+        self.layer.image = checkerboard
+        source_colors = {QColor(Qt.GlobalColor.black).rgba(), QColor(Qt.GlobalColor.white).rgba()}
+        for label, transform in (('uneven scale', QTransform.fromScale(2, 1)),
+                                 ('uneven scale, rotate 90', QTransform.fromScale(2, 1) * QTransform().rotate(90)
+                                  * QTransform.fromTranslate(4, 0))):
+            with self.subTest(label):
+                self.layer.set_transform(transform)
+                rendered = QImage(QSize(8, 8), QImage.Format.Format_ARGB32_Premultiplied)
+                rendered.fill(Qt.GlobalColor.transparent)
+                self.layer.render(rendered)
+                flattened, _ = self.layer.transformed_image()
+                for image in (rendered, flattened):
+                    bounds = self.layer.transformed_bounds if image is rendered else flattened.rect()
+                    colors = {image.pixel(x, y) for x in range(bounds.left(), bounds.right() + 1)
+                              for y in range(bounds.top(), bounds.bottom() + 1)}
+                    self.assertEqual(source_colors, colors)
+
     # Menu rotate and flip:
 
     def test_rotate_about_center(self) -> None:
