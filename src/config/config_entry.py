@@ -21,8 +21,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-INVALID_INNER_KEY_TYPE_ERROR = _tr('Tried to set "{key}.{inner_key}" to value "{value}", but {key} is type'
-                                   ' "{type_name}"')
 INVALID_INNER_KEY_ERROR = _tr('Tried to read {key}.{inner_key} from type {type_name}')
 MISSING_OPTION_LIST_ERROR = _tr('Config value "{key}" does not have an associated options list')
 UNEXPECTED_TYPE_ERROR = _tr('unexpected type:')
@@ -129,19 +127,8 @@ class ConfigEntry(Parameter):
 
     def set_value(self,
                   value: Any,
-                  add_missing_options: bool = False,
-                  inner_key: Optional[str] = None) -> bool:
-        """Updates the value or one of its properties, returning whether the value changed."""
-        # Handle inner key changes:
-        if inner_key is not None:
-            if isinstance(self._value, dict):
-                prev_value = None if inner_key not in self._value else self._value[inner_key]
-                value_changed = prev_value != value
-                self._value[inner_key] = value
-                return value_changed
-            raise TypeError(INVALID_INNER_KEY_TYPE_ERROR.format(key=self._key, inner_key=inner_key, value=value,
-                                                                type_name=self.type_name))
-
+                  add_missing_options: bool = False) -> bool:
+        """Updates the value, returning whether it changed."""
         # Handle changes to values with predefined options lists:
         if self.options is not None and value not in self.options and add_missing_options:
             valid_options = self.options

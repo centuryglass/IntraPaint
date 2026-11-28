@@ -115,6 +115,7 @@ class TestAppController(IntraPaintTestCase):
         self.controller._apply_saved_layout('bad')
         self.controller._apply_saved_layout('missing')
         self.assertEqual(mock_error_dialog.call_count, 2)
+        mock_error_dialog.reset_mock()  # Its recorded calls hold the window (test/qt_cycles.py).
 
     def test_alt_window_bounds_fit_screen(self):
         """A window whose size hint exceeds the screen opens at the screen size, not its hint."""
@@ -380,6 +381,9 @@ class TestAppController(IntraPaintTestCase):
         self.controller.new_image()
         mock_choice.assert_called_once()
         self.assertEqual(self.controller._image_stack.size, QSize(32, 24))
+        # Their recorded calls hold the window (test/qt_cycles.py):
+        mock_choice.reset_mock()
+        mock_modal.reset_mock()
 
 
 class TestRestorePreviousChoicesAction(IntraPaintTestCase):
