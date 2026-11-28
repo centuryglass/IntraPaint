@@ -152,6 +152,39 @@ class ImageViewerSurroundTest(IntraPaintTestCase):
         painter.end()
         self.assertEqual(ink_colors().canvas_surround.name(), image.pixelColor(0, 0).name())
 
+    def test_tiles_stay_inside_image(self) -> None:
+        """The transparency tiles cover the image and stop at its edge, so none show around it while the image
+        outline is hidden."""
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        viewer = ImageViewer(None, image_stack, HotkeyFilter(), use_keybindings=False)
+        viewer.resize(128, 128)
+        viewer.show()
+        viewer.reset_scale()
+        hide_category(viewer.canvas_extras, viewer, CanvasExtraCategory.CANVAS)
+        viewport = viewer.viewport()
+        assert viewport is not None
+        image = QImage(viewport.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(0)
+        painter = QPainter(image)
+        viewer.drawBackground(painter, QRectF(image.rect()))
+        painter.end()
+        # The view pixels the image covers run from its top left corner up to, but not including, its bottom right:
+        top_left = viewer.mapFromScene(QPointF(0, 0))
+        bottom_right = viewer.mapFromScene(QPointF(64, 64))
+        surround = ink_colors().canvas_surround.name()
+        middle_x = (top_left.x() + bottom_right.x()) // 2
+        middle_y = (top_left.y() + bottom_right.y()) // 2
+        outside = [(top_left.x() - 1, middle_y), (bottom_right.x(), middle_y),
+                   (middle_x, top_left.y() - 1), (middle_x, bottom_right.y())]
+        for x, y in outside:
+            with self.subTest(outside=(x, y)):
+                self.assertEqual(surround, image.pixelColor(x, y).name())
+        inside = [(top_left.x(), middle_y), (bottom_right.x() - 1, middle_y),
+                  (middle_x, top_left.y()), (middle_x, bottom_right.y() - 1)]
+        for x, y in inside:
+            with self.subTest(inside=(x, y)):
+                self.assertNotEqual(surround, image.pixelColor(x, y).name())
+
     def test_surround_shows_through_image_border_veil(self) -> None:
         """Drawing the image border veil over the filled background gives the theme's surround color."""
         surround = ink_colors().canvas_surround

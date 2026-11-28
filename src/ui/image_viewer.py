@@ -267,8 +267,10 @@ class ImageViewer(ImageGraphicsView):
                 painter.fillRect(rect, colors.canvas_surround)
         painter.save()
         painter.setTransform(QTransform())
-        content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),
-                                                            self._image_outline).toAlignedRect()
+        # The outline's bounding rect also covers the outline drawn outside the image, so the image's own bounds are
+        # used to keep the tiles inside the image:
+        content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.outlined_region,
+                                                            self._image_outline).toRect()
         tile_size = TRANSPARENCY_PATTERN_TILE_DIM
         tile_pattern_fill(painter, content_bounds, tile_size, Qt.GlobalColor.lightGray, Qt.GlobalColor.darkGray)
         painter.restore()
