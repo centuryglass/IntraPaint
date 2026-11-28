@@ -52,6 +52,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
 5. [Layer menu](#layer-menu)
    - [New layer (Ctrl+Shift+N)](#new-layer-ctrlshiftn)
    - [New layer group (Ctrl+Shift+G)](#new-layer-group-ctrlshiftg)
+   - [Group selected layers (Ctrl+G)](#group-selected-layers-ctrlg)
    - [Duplicate layer (Ctrl+J)](#duplicate-layer-ctrlj)
    - [Delete layer (Shift+Delete)](#delete-layer-shiftdelete)
    - [Rename layer (F2)](#rename-layer-f2)
@@ -426,6 +427,10 @@ Creates a new image layer.  If the active layer is an unlocked layer group, the 
 ### New layer group (Ctrl+Shift+G)
 
 Creates a new layer group.  If the active layer is an unlocked layer group, the new group will be placed within that group at the top. Otherwise, the new group will be placed directly above the active layer.
+
+### Group selected layers (Ctrl+G)
+
+Moves the selected layers into a new layer group, placed where the topmost selected layer was. The layers keep their order, even if they came from different groups, and the new group becomes the only selected layer. With one layer selected, this wraps that layer in a group. If any selected layer is inside a locked group, nothing is grouped.
 
 ### Duplicate layer (Ctrl+J)
 

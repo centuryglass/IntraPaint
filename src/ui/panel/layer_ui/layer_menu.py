@@ -16,7 +16,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import crop_layer_to_selection
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
-from src.image.layers.layer_selection_ops import delete_selected_layers, duplicate_selected_layers
+from src.image.layers.layer_selection_ops import (delete_selected_layers, duplicate_selected_layers,
+                                                     group_selected_layers)
 from src.image.layers.transform_layer import TransformLayer
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.palette_icon import palette_icon
@@ -35,6 +36,7 @@ MENU_OPTION_MOVE_DOWN = _tr('Move down')
 MENU_OPTION_MOVE_TO_TOP = _tr('Move to top')
 MENU_OPTION_DUPLICATE = _tr('Duplicate')
 MENU_OPTION_DELETE = _tr('Delete')
+MENU_OPTION_GROUP_SELECTED = _tr('Group selected layers')
 MENU_OPTION_MERGE_DOWN = _tr('Merge down')
 MENU_OPTION_MERGE_GROUP = _tr('Merge group')
 MENU_OPTION_MERGE_ALL_VISIBLE = _tr('Merge all visible')
@@ -88,8 +90,8 @@ def delete_layers_text(count: int) -> str:
 
 
 def build_selection_menu(image_stack: ImageStack) -> QMenu:
-    """Returns the context menu for a multi-selection: duplicate, select contents and delete, each acting on every
-    selected layer."""
+    """Returns the context menu for a multi-selection: duplicate, group, select contents and delete, each acting on
+    every selected layer."""
     menu = QMenu()
     count = image_stack.selected_layer_count
     menu.setTitle(_tr('%n layer(s)', None, count))
@@ -101,6 +103,12 @@ def build_selection_menu(image_stack: ImageStack) -> QMenu:
     duplicate.triggered.connect(lambda: duplicate_selected_layers(image_stack))
     _add_key_hint(duplicate, 'copy_layer_shortcut')
     duplicate.setIcon(palette_icon(ICON_PATH_DUPLICATE))
+
+    group = menu.addAction(MENU_OPTION_GROUP_SELECTED)
+    assert group is not None
+    group.triggered.connect(lambda: group_selected_layers(image_stack))
+    group.setEnabled(editable)
+    _add_key_hint(group, 'group_layers_shortcut')
 
     menu.addSeparator()
     select_content = menu.addAction(MENU_OPTION_SELECT_CONTENT_MULTIPLE)

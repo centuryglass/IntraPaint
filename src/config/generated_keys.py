@@ -298,6 +298,7 @@ class KeyConfigKeys:
     GENERATE_SHORTCUT: Final = 'generate_shortcut'
     GENERATION_AREA_TOOL_KEY: Final = 'generation_area_tool_key'
     GENERATOR_SELECT_SHORTCUT: Final = 'generator_select_shortcut'
+    GROUP_LAYERS_SHORTCUT: Final = 'group_layers_shortcut'
     GROW_SELECTION_SHORTCUT: Final = 'grow_selection_shortcut'
     HELP_INDEX_SHORTCUT: Final = 'help_index_shortcut'
     IMAGE_FLIP_HORIZONTAL_SHORTCUT: Final = 'image_flip_horizontal_shortcut'

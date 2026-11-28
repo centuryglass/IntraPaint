@@ -1,4 +1,4 @@
-"""Commands that act on every selected layer: duplicate, delete, move, and selection changes.
+"""Commands that act on every selected layer: duplicate, delete, group, move, and selection changes.
 
 The selection is `ImageStack.selected_layers`. Each bulk command acts on `ImageStack.effective_selected_layers` and is
 one undo step. Undoing it restores the selection it acted on, although changing the selection is not an undo step by
@@ -47,6 +47,31 @@ def duplicate_selected_layers(image_stack: ImageStack) -> None:
             assert copy is not layer
             copies.append(copy)
         _apply_selection(image_stack, copies, copies[0], action_type)
+
+
+def group_selected_layers(image_stack: ImageStack) -> Optional[LayerGroup]:
+    """Moves the selected layers into a new group, which becomes the only selected layer and is active.
+
+    The group takes the place of the topmost selected layer, in that layer's parent. The layers keep their order,
+    whatever groups they came from. Changes nothing, and returns None, if a layer can't move.
+    """
+    layers = image_stack.effective_selected_layers()
+    if image_stack.layer_stack in layers:
+        return None
+    if not all(image_stack.validate_layer_showing_errors(layer, allow_lock=True) for layer in layers):
+        return None
+    parent = layers[0].layer_parent
+    assert isinstance(parent, LayerGroup)
+    index = parent.get_layer_index(layers[0])
+    assert index is not None
+    action_type = 'layer_selection_ops.group_selected_layers'
+    with image_stack.undo_stack.combining_actions(action_type):
+        _restore_selection_on_undo(image_stack, action_type)
+        group = image_stack.create_layer_group(layer_parent=parent, layer_index=index)
+        for layer in layers:
+            image_stack.move_layer(layer, group, group.count)
+        _apply_selection(image_stack, [group], group, action_type)
+    return group
 
 
 def _next_unselected(image_stack: ImageStack, layer: Layer, removed: list[Layer], below: bool) -> Optional[Layer]:
