@@ -260,7 +260,10 @@ Editing tools driven by canvas input: brushes, selection, shapes, text, fill, tr
 - `src/tools/filter_tool.py`: Use brush strokes to apply image filters.
 - `src/tools/free_selection_tool.py`: Select or deselect polygonal areas.
 - `src/tools/generation_area_tool.py`: An image editing tool that moves the selected editing region.
-- `src/tools/layer_transform_tool.py`: An image editing tool that moves the selected editing region.
+- `src/tools/layer_transform_state.py`: The layer transform tool's state: one immutable value that holds a layer's
+  transform as editable fields.
+- `src/tools/layer_transform_tool.py`: An image editing tool that moves, scales and rotates the active layer, through
+  one TransformState.
 - `src/tools/magic_wand_tool.py`: Fill areas within an image.
 - `src/tools/mypaint_brush_tool.py`: Implements brush controls using a MyPaint surface.
 - `src/tools/qt_paint_brush_tool.py`: Base implementation for BrushTool classes that use a QtPaintBrush.
@@ -330,7 +333,8 @@ QGraphicsItem subclasses drawn on the canvas: outlines, handles, pins, markers a
 - `src/ui/graphics_items/toast_message.py`: A graphics item that briefly displays a message, then removes itself from
   the scene.
 - `src/ui/graphics_items/transform_handle.py`: Draggable GraphicsItem used to reposition scene elements.
-- `src/ui/graphics_items/transform_outline.py`: Provides controls for transforming a graphics item.
+- `src/ui/graphics_items/transform_outline.py`: Draws the layer transform tool's outline and handles, and turns mouse
+  input on them into edit intents.
 - `src/ui/graphics_items/viewport_highlight.py`: Shows another view's visible region within a scene: everything outside
   it dims, and it gets an accent outline.
 

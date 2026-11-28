@@ -2,14 +2,16 @@
 
 The geometry block includes its Scale and Angle rows, and the preview shows the layer over the image.
 
-The panel is a view over the transform tool's outline. It emits a signal per field the user changes, and the tool sets
-the fields back with the panel's properties, which emit nothing.
+The panel is a view over the transform tool's state. It emits a signal per field the user changes, and the tool sets
+the fields back through the geometry block, without signals.
 
 - The geometry block shows at every size. Its ratio lock is "Keep aspect ratio", and links W:H and Scale X:Scale Y.
   Holding the fixed-aspect modifier locks it temporarily without changing the stored setting.
   `preserve_aspect_ratio_changed` carries whether either one locks the ratio, which the tool's outline also follows.
 - Revert restores the transform the layer had when the tool selected it. Clear transform removes the transform, in
   the danger weight and apart from Revert.
+- `set_transform_editable(False)` disables the fields and shows a banner above them, for a layer whose transform the
+  fields can't express. Revert and Clear transform stay enabled.
 - The preview shows the layer over the image bounds, with a legend. It is decorative: it hides where it doesn't fit,
   and takes spare space up to `PREVIEW_MAX_SIZE`.
 
@@ -35,6 +37,7 @@ from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y,
                                                 bind_step_keys)
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
+from src.ui.widget.disabled_banner import DisabledBanner
 from src.undo_stack import UndoStackRef
 from src.util.layout import add_layout, clear_grid
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
@@ -55,6 +58,8 @@ CLEAR_BUTTON_TEXT = _tr('Clear transform')
 CLEAR_BUTTON_TOOLTIP = _tr('Remove all movement, scaling and rotation from this layer')
 LEGEND_IMAGE = _tr('Image')
 LEGEND_LAYER = _tr('Layer')
+PERSPECTIVE_MESSAGE = _tr('This layer has a perspective transform, which this tool can\'t edit. Revert and Clear '
+                          'transform still work.')
 
 SECTION_SPACING = 10
 PREVIEW_MIN_SIZE = QSize(120, 90)
@@ -65,6 +70,9 @@ IMAGE_BOUNDS_ALPHA = 0.3
 LAYER_OUTLINE_WIDTH = 3
 
 UNDO_GESTURE = 'LayerTransformToolPanel.drag'
+
+# The banner's grid row, above everything else in either orientation:
+BANNER_ROW = 0
 
 # The planned items, in placement order:
 GEOMETRY_ITEM = FitItem(REQUIRED, 2)
@@ -132,6 +140,9 @@ class LayerTransformToolPanel(FitToolPanel):
         self._clear_button.setToolTip(CLEAR_BUTTON_TOOLTIP)
         set_button_weight(self._clear_button, ButtonWeight.DANGER)
         self._clear_button.clicked.connect(self.clear_signal)
+        self._banner = DisabledBanner(PERSPECTIVE_MESSAGE, parent=self)
+        self._banner.hide()
+        self._transform_editable = True
         self._actions = QWidget(self)
         self._actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._actions)
         self._actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -187,6 +198,20 @@ class LayerTransformToolPanel(FitToolPanel):
     def geometry_block(self) -> GeometryBlock:
         """The position, size, scale and angle fields."""
         return self._geometry
+
+    @property
+    def banner(self) -> DisabledBanner:
+        """The banner shown while the layer's transform can't be edited with the fields."""
+        return self._banner
+
+    def set_transform_editable(self, editable: bool) -> None:
+        """Enables the geometry fields, or disables them and shows the banner."""
+        if editable == self._transform_editable:
+            return
+        self._transform_editable = editable
+        self._geometry.setEnabled(editable)
+        self._banner.setVisible(not editable)
+        self._refit()
 
     @property
     def revert_button(self) -> QPushButton:
@@ -309,25 +334,27 @@ class LayerTransformToolPanel(FitToolPanel):
         self._geometry.set_horizontal(strip and geometry_form == HORIZONTAL)
         self._arrange_actions(beside)
         grid = self._grid
-        clear_grid(grid, (self._geometry, self._actions, self._preview_box))
+        clear_grid(grid, (self._banner, self._geometry, self._actions, self._preview_box))
         top = Qt.AlignmentFlag.AlignTop
-        grid.addWidget(self._geometry, 0, 0, top)
+        row = BANNER_ROW + 1
+        grid.addWidget(self._geometry, row, 0, top)
         if strip:
             if beside:
-                grid.addWidget(self._actions, 0, 1, 2, 1)
+                grid.addWidget(self._actions, row, 1, 2, 1)
             else:
-                grid.addWidget(self._actions, 1, 0, top)
+                grid.addWidget(self._actions, row + 1, 0, top)
             used_columns = 2 if beside else 1
             if preview:
-                grid.addWidget(self._preview_box, 0, used_columns, 2, 1)
+                grid.addWidget(self._preview_box, row, used_columns, 2, 1)
                 used_columns += 1
-            grid.setRowStretch(1, 1)
+            grid.setRowStretch(row + 1, 1)
         else:
-            grid.addWidget(self._actions, 1, 0, top)
+            grid.addWidget(self._actions, row + 1, 0, top)
             if preview:
-                grid.addWidget(self._preview_box, 2, 0)
-            grid.setRowStretch(2 if preview else 3, 1)
+                grid.addWidget(self._preview_box, row + 2, 0)
+            grid.setRowStretch(row + 2 if preview else row + 3, 1)
             used_columns = 1
+        grid.addWidget(self._banner, BANNER_ROW, 0, 1, used_columns)
         # Spare width goes to the fields and the preview, up to their caps, and not to a column of buttons:
         for column in range(used_columns):
             grid.setColumnStretch(column, 0 if beside and column == 1 else 1)
