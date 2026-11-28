@@ -203,13 +203,14 @@ class TransformOutline(QGraphicsObject):
 
     @property
     def width(self) -> float:
-        """The full width within the scene, ignoring rotations."""
+        """The full width within the scene, ignoring rotations. Setting it keeps the sign of the x-scale, so a flip
+           stays."""
         return abs(self.rect().width() * self._x_scale)
 
     @width.setter
     def width(self, new_width) -> None:
         y_scale = self._y_scale
-        x_scale = new_width / self.rect().width()
+        x_scale = math.copysign(new_width / self.rect().width(), self._x_scale)
         if x_scale == 0:
             x_scale = math.copysign(MIN_NONZERO, x_scale)
         if self._preserve_aspect_ratio:
@@ -220,13 +221,14 @@ class TransformOutline(QGraphicsObject):
 
     @property
     def height(self) -> float:
-        """The full height within the scene, ignoring rotations."""
+        """The full height within the scene, ignoring rotations. Setting it keeps the sign of the y-scale, so a flip
+           stays."""
         return abs(self.rect().height() * self._y_scale)
 
     @height.setter
     def height(self, new_height: float) -> None:
         x_scale = self._x_scale
-        y_scale = new_height / self.rect().height()
+        y_scale = math.copysign(new_height / self.rect().height(), self._y_scale)
         if y_scale == 0:
             y_scale = math.copysign(MIN_NONZERO, y_scale)
         if self._preserve_aspect_ratio:
