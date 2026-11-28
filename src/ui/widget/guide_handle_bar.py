@@ -15,6 +15,7 @@ from PySide6.QtCore import Qt, QEvent, QObject, QPoint, QPointF, QRect, Signal
 from PySide6.QtGui import QAction, QContextMenuEvent, QMouseEvent, QPainter, QColor, QPaintEvent, QPalette, QRegion
 from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
+from src.ui.canvas_extras import CanvasExtraCategory, CanvasExtras
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.ui.widget.ruler_guides import RulerGuides
 
@@ -347,13 +348,17 @@ class GuideHandleStrip(GuideHandleBar):
     The strip lays itself over the viewport's top edge (horizontal) or left edge (vertical), with each handle flush
     against that edge. It must be a sibling of the view or one of its ancestors' children, raised above the view.
     A mask limits it to the handles' hit areas, so presses anywhere else reach the view and its tools. It shows only
-    while `shown` is set and a handle is in view.
+    while `shown` is set, a handle is in view, and the `GUIDES` category of `canvas_extras` (if given) is shown.
     """
 
     def __init__(self, view: ImageGraphicsView, orientation: Qt.Orientation, guides: RulerGuides,
-                 parent: Optional[QWidget] = None) -> None:
+                 parent: Optional[QWidget] = None, canvas_extras: Optional[CanvasExtras] = None) -> None:
         super().__init__(view, orientation, guides, parent)
         self._shown = False
+        self._guides_category_shown = True
+        if canvas_extras is not None:
+            self._guides_category_shown = canvas_extras.is_shown(CanvasExtraCategory.GUIDES)
+            canvas_extras.shown_changed.connect(self._canvas_extras_shown_changed)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
         self.hide()
         view.installEventFilter(self)
@@ -383,6 +388,11 @@ class GuideHandleStrip(GuideHandleBar):
         if shown != self._shown:
             self._shown = shown
             self._update_geometry()
+
+    def _canvas_extras_shown_changed(self, category: CanvasExtraCategory, shown: bool) -> None:
+        if category == CanvasExtraCategory.GUIDES:
+            self._guides_category_shown = shown
+            self._update_mask()
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name  # Qt override
         """Follows the viewport's geometry.
@@ -433,7 +443,7 @@ class GuideHandleStrip(GuideHandleBar):
             return
         region = self.handle_region()
         # An empty mask would remove masking, so the strip hides instead:
-        if not self._shown or region.isEmpty():
+        if not self._shown or not self._guides_category_shown or region.isEmpty():
             self.hide()
             return
         self.setMask(region)

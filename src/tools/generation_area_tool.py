@@ -69,6 +69,7 @@ class GenerationAreaTool(BaseTool):
     """
 
     TOOL_GROUP = ToolGroup.GENERATION
+    CANVAS_EXTRAS = frozenset({CanvasExtraCategory.GENERATION_AREA})
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, show_handles: bool = True) -> None:
         super().__init__(KeyConfig.GENERATION_AREA_TOOL_KEY, GENERATION_AREA_LABEL, GENERATION_AREA_TOOLTIP,

@@ -34,6 +34,7 @@
 6. **View options**: When the window is too narrow for all of these, the ones that don't fit move into a **More** menu.
    - **Rulers**: Shows or hides the rulers around the image viewport.
    - **Selection overlay**: Shows or hides the selection's stripes. While hidden, only the selection outline is drawn.
+   - **Hide extras** (Ctrl+H): Hides the markers drawn over the image, such as the selection, the generation area, guides and the image outline, for a clean view of the image. While the cursor is over the image, markers the active tool works with still show, such as the selection for a selection tool. The brush cursor stays visible. Hidden extras show again the next time IntraPaint starts.
    - **Navigation button**: Opens the [Navigation panel](./menu_options.md#navigation-panel-ctrlaltw).
    - **Zoom**: Shows and sets how zoomed-in the image viewport is. At 100%, the image is shown at actual size. Drag the field or use the **-** and **+** buttons to zoom out or in.
    - **Reset view**: Restores the default position and scale, centering and showing the entire image. It is only enabled while the view isn't already at the default.

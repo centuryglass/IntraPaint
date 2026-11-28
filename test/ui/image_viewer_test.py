@@ -20,6 +20,7 @@ from src.ui.ink_style import ink_colors
 from src.undo_stack import UndoStack
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from test.base_test_case import IntraPaintTestCase
+from test.ui.canvas_extras_helpers import hide_category
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -138,6 +139,18 @@ class ImageViewerSurroundTest(IntraPaintTestCase):
         surround = ink_colors().canvas_surround
         self.assertEqual(color_under_overlay(surround, QColor(IMAGE_BORDER_COLOR), IMAGE_BORDER_OPACITY).name(),
                          image.pixelColor(0, 0).name())
+
+    def test_background_plain_surround_while_veil_hidden(self) -> None:
+        """While canvas extras hide the image border veil, the background fills with the plain canvas surround."""
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64), UndoStack())
+        viewer = ImageViewer(None, image_stack, HotkeyFilter(), use_keybindings=False)
+        hide_category(viewer.canvas_extras, viewer, CanvasExtraCategory.CANVAS)
+        image = QImage(QSize(32, 32), QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(0)
+        painter = QPainter(image)
+        viewer.drawBackground(painter, QRectF(0, 0, 32, 32))
+        painter.end()
+        self.assertEqual(ink_colors().canvas_surround.name(), image.pixelColor(0, 0).name())
 
     def test_surround_shows_through_image_border_veil(self) -> None:
         """Drawing the image border veil over the filled background gives the theme's surround color."""
@@ -263,9 +276,9 @@ class ImageViewerOutsideHatchingTest(IntraPaintTestCase):
         """Hiding the canvas category hides the hatching."""
         self._move_layer(QTransform.fromTranslate(32, 0))
         self.assertTrue(self.hatching.isVisible())
-        self.viewer.canvas_extras.set_shown(CanvasExtraCategory.CANVAS, False)
+        hide_category(self.viewer.canvas_extras, self.viewer, CanvasExtraCategory.CANVAS)
         self.assertFalse(self.hatching.isVisible())
-        self.viewer.canvas_extras.set_shown(CanvasExtraCategory.CANVAS, True)
+        self.viewer.canvas_extras.hide_mode = False
         self.assertTrue(self.hatching.isVisible())
 
     def test_cleared_when_the_last_layer_is_removed(self) -> None:

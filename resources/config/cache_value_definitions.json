@@ -208,6 +208,15 @@
         "saved": true,
         "translate": false
     },
+    "hide_canvas_extras": {
+        "label": "Hide canvas extras",
+        "category": "Cache",
+        "description": "Hide markers drawn over the image, except the active tool's while the cursor is over the image.",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
     "paint_selection_only": {
         "label": "Paint selection only",
         "category": "Cache",

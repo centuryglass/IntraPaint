@@ -50,6 +50,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.config import Config
 from src.config.key_config import KeyConfig
 from src.controller import color_controller
 from src.controller.autosave_controller import AutosaveController
@@ -303,6 +304,7 @@ class AppController(MenuBuilder):
         self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
         self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
         self._make_menu_action_checkable(self.toggle_selection_overlay, AppConfig.SHOW_SELECTION_OVERLAY)
+        self._make_menu_action_checkable(self.toggle_canvas_extras, Cache.HIDE_CANVAS_EXTRAS, Cache())
         full_screen_action = self.get_action_for_method(self.toggle_full_screen)
         full_screen_action.setCheckable(True)
         full_screen_action.setChecked(self._window.isFullScreen())
@@ -406,6 +408,8 @@ class AppController(MenuBuilder):
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
+        Cache().connect(self, Cache.HIDE_CANVAS_EXTRAS, self._set_canvas_extras_hidden)
+        self._set_canvas_extras_hidden(Cache().get(Cache.HIDE_CANVAS_EXTRAS))
         self._tool_panel = ToolPanel()
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
         self._generation_area_tool.control_panel.edit_resolution_requested.connect(self.edit_generation_resolution)
@@ -955,10 +959,13 @@ class AppController(MenuBuilder):
         """Open one or more images as layers."""
         self._image_io.load_layers()
 
-    def _make_menu_action_checkable(self, method: Callable[..., None], config_key: str) -> None:
-        """Shows a boolean AppConfig value as the checked state of the menu action that toggles it."""
+    def _make_menu_action_checkable(self, method: Callable[..., None], config_key: str,
+                                    config: Optional[Config] = None) -> None:
+        """Shows a boolean config value as the checked state of the menu action that toggles it. The value comes from
+        `AppConfig` unless another config is given."""
         action = self.get_action_for_method(method)
-        config = AppConfig()
+        if config is None:
+            config = AppConfig()
         action.setCheckable(True)
         action.setChecked(config.get(config_key))
         config.connect(action, config_key, action.setChecked)
@@ -1211,7 +1218,16 @@ class AppController(MenuBuilder):
         config = AppConfig()
         config.set(AppConfig.SHOW_SELECTION_OVERLAY, not config.get(AppConfig.SHOW_SELECTION_OVERLAY))
 
-    @menu_action(MENU_VIEW, 'toggle_full_screen_shortcut', 203,
+    @menu_action(MENU_VIEW, 'hide_canvas_extras_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
+    def toggle_canvas_extras(self) -> None:
+        """Hide or show the markers drawn over the image, except the active tool's while the cursor is over it."""
+        cache = Cache()
+        cache.set(Cache.HIDE_CANVAS_EXTRAS, not cache.get(Cache.HIDE_CANVAS_EXTRAS))
+
+    def _set_canvas_extras_hidden(self, hidden: bool) -> None:
+        self._image_viewer.canvas_extras.hide_mode = hidden
+
+    @menu_action(MENU_VIEW, 'toggle_full_screen_shortcut', 204,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def toggle_full_screen(self) -> None:
         """Switch the main window between full screen and its previous size, keeping a maximized state."""

@@ -12,6 +12,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger, context_pin_control_hint
+from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.magic_wand_panel import MagicWandPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -52,6 +53,8 @@ class MagicWandTool(BaseTool):
     """Lets the user select image areas with solid colors."""
 
     TOOL_GROUP = ToolGroup.SELECTION
+    # Selection tools also drag context pins, which are generation area markers:
+    CANVAS_EXTRAS = frozenset({CanvasExtraCategory.SELECTION, CanvasExtraCategory.GENERATION_AREA})
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, MAGIC_WAND_LABEL, MAGIC_WAND_TOOLTIP,

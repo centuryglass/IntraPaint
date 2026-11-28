@@ -280,9 +280,13 @@ Actions that change how the image is shown, without changing the image.
 - **Actual size (100%)** (Ctrl+1 or Ctrl+Alt+0): Show the image at its actual size.
 - **Fit image in window** (Ctrl+0): Fit the whole image in the view and center it.
 - **Zoom to generation area** (Alt+Shift+Z): Center the view on the generation area. Does nothing while the generation area is hidden.
-- **Tool control hints** (Ctrl+Alt+H): A checkable entry that shows or hides the active tool's control hints below the image.
-- **Selection overlay** (Ctrl+H): A checkable entry that shows or hides the fill over selected content. The selection
+- **Tool control hints** (Ctrl+Alt+Shift+H): A checkable entry that shows or hides the active tool's control hints below the image.
+- **Selection overlay** (Ctrl+Alt+H): A checkable entry that shows or hides the fill over selected content. The selection
   outline stays visible and keeps its animation if outline animation is on.
+- **Hide canvas extras** (Ctrl+H): A checkable entry that hides the markers drawn over the image: the selection, the
+  generation area, guides, the image and layer outlines, and tool handles. While the cursor is over the image, the
+  markers the active tool works with still show. The brush cursor, crosshair and alerts stay visible. It turns off
+  again each time IntraPaint starts.
 - **Rulers** (Ctrl+R): A checkable entry that shows or hides the rulers beside the image.
 - **Full screen** (F11): A checkable entry that switches the main window between full screen and its previous size.
   Escape does not leave full screen, since tools use it.

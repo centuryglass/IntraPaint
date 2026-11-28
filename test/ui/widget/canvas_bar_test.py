@@ -5,6 +5,7 @@ from PySide6.QtCore import QPointF, QSize
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
@@ -184,16 +185,29 @@ class CanvasBarTest(IntraPaintTestCase):
         AppConfig().set(AppConfig.SHOW_SELECTION_OVERLAY, True)
         self.assertTrue(overlay.isChecked())
 
+    def test_hide_extras_toggle_follows_cache(self) -> None:
+        """The Hide extras toggle is checked while canvas extras are hidden, and toggling it hides or shows them."""
+        extras_button = self.bar._extras_button  # pylint: disable=protected-access
+        assert extras_button is not None
+        self.assertFalse(extras_button.isChecked())
+        extras_button.setChecked(True)
+        self.assertTrue(Cache().get(Cache.HIDE_CANVAS_EXTRAS))
+        Cache().set(Cache.HIDE_CANVAS_EXTRAS, False)
+        self.assertFalse(extras_button.isChecked())
+
     def test_more_popover_toggles_options(self) -> None:
-        """The "..." popover's check boxes set the selection overlay, rulers, ruler highlights and control hints."""
+        """The "..." popover's check boxes set hidden canvas extras, the selection overlay, rulers, ruler highlights
+        and control hints."""
         content = self.bar.more_popover_content()
         check_boxes = content.findChildren(QCheckBox)
-        keys = (AppConfig.SHOW_SELECTION_OVERLAY, AppConfig.SHOW_RULERS, AppConfig.SHOW_RULER_HIGHLIGHTS, AppConfig.SHOW_TOOL_CONTROL_HINTS)
-        self.assertEqual(len(check_boxes), len(keys))
-        for check_box, key in zip(check_boxes, keys):
-            self.assertEqual(check_box.isChecked(), AppConfig().get(key))
+        options = ((Cache(), Cache.HIDE_CANVAS_EXTRAS), (AppConfig(), AppConfig.SHOW_SELECTION_OVERLAY),
+                   (AppConfig(), AppConfig.SHOW_RULERS), (AppConfig(), AppConfig.SHOW_RULER_HIGHLIGHTS),
+                   (AppConfig(), AppConfig.SHOW_TOOL_CONTROL_HINTS))
+        self.assertEqual(len(check_boxes), len(options))
+        for check_box, (config, key) in zip(check_boxes, options):
+            self.assertEqual(check_box.isChecked(), config.get(key))
             check_box.setChecked(not check_box.isChecked())
-            self.assertEqual(check_box.isChecked(), AppConfig().get(key))
+            self.assertEqual(check_box.isChecked(), config.get(key))
         content.deleteLater()
 
     def test_hint_popover_lists_every_pair(self) -> None:

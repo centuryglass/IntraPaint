@@ -103,7 +103,8 @@ class ImageViewer(ImageGraphicsView):
         self._hidden: set[int] = set()
         scene = self.scene()
         assert scene is not None
-        self._canvas_extras = CanvasExtras(scene)
+        self._canvas_extras = CanvasExtras(scene, self)
+        self._canvas_extras.shown_changed.connect(self._canvas_extras_shown_changed)
         self._selection_poly_outline = SelectionOutline(self)
         self._canvas_extras.register(self._selection_poly_outline, CanvasExtraCategory.SELECTION)
 
@@ -200,6 +201,13 @@ class ImageViewer(ImageGraphicsView):
         registers it here."""
         return self._canvas_extras
 
+    def _canvas_extras_shown_changed(self, category: CanvasExtraCategory, _shown: bool) -> None:
+        if category == CanvasExtraCategory.CANVAS:
+            self.resetCachedContent()
+            viewport = self.viewport()
+            if viewport is not None:
+                viewport.update()
+
     def set_generation_area_visible(self, visible: bool) -> None:
         """Set whether the generation area will be visible as an outline within the view."""
         self._generation_area_shown = visible
@@ -245,13 +253,18 @@ class ImageViewer(ImageGraphicsView):
         return QSize()
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
-        """Fill the area around the image with a color that shows as the theme's canvas surround once the image border
-        veil covers it, then draw the background as a fixed size tiling image."""
+        """Fill the area around the image with the theme's canvas surround, then draw the background as a fixed size
+        tiling image. While the image border veil shows, the fill is the color that looks like the surround under it.
+
+        The background is cached, so anything that shows or hides the `CANVAS` category resets the cache."""
         assert painter is not None
         colors = ink_colors()
         if colors is not None:
-            painter.fillRect(rect, color_under_overlay(colors.canvas_surround, QColor(IMAGE_BORDER_COLOR),
-                                                       IMAGE_BORDER_OPACITY))
+            if self._canvas_extras.is_shown(CanvasExtraCategory.CANVAS):
+                painter.fillRect(rect, color_under_overlay(colors.canvas_surround, QColor(IMAGE_BORDER_COLOR),
+                                                           IMAGE_BORDER_OPACITY))
+            else:
+                painter.fillRect(rect, colors.canvas_surround)
         painter.save()
         painter.setTransform(QTransform())
         content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),
