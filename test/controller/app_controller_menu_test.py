@@ -150,6 +150,9 @@ class TestAppControllerMenus(IntraPaintTestCase):
         for expected in (APP_VERSION, LICENSE_LINK, ISSUES_LINK):
             self.assertIn(expected, text)
         about_qt.assert_called_once()
+        # Their recorded calls hold the window (test/qt_cycles.py):
+        about.reset_mock()
+        about_qt.reset_mock()
 
     def test_flatten_follows_active_layer_opacity(self):
         """Layer > Flatten is enabled while the active image layer's opacity is below 100%, and disabled at 100%."""
