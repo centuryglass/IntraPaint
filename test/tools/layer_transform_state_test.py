@@ -4,7 +4,7 @@ import unittest
 from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QTransform
 
-from src.tools.layer_transform_state import TransformState
+from src.tools.layer_transform_state import MAX_SKEW, TransformState
 from src.util.visual.geometry_utils import combine_transform_parameters
 from test.base_test_case import IntraPaintTestCase
 
@@ -18,6 +18,13 @@ def _skewed_state() -> TransformState:
     state = TransformState.from_matrix(matrix, RECT)
     assert state is not None
     return state
+
+
+def _perpendicular(state: TransformState, point: QPointF, along: QPointF, distance: float) -> QPointF:
+    """Returns a scene offset of distance, perpendicular to the scene direction that along takes at point."""
+    direction = state.matrix().map(point + along) - state.matrix().map(point)
+    length = (direction.x() ** 2 + direction.y() ** 2) ** 0.5
+    return QPointF(-direction.y(), direction.x()) * (distance / length)
 
 
 class TransformStateTest(IntraPaintTestCase):
@@ -150,6 +157,83 @@ class TransformStateTest(IntraPaintTestCase):
         self.assertAlmostEqual(corner.x(), 0.0, delta=TOLERANCE)
         self.assertGreater(corner.y(), 0.0)
         self.assert_points_equal(turned.origin_pos, state.origin_pos)
+
+    def test_edge_scale_changes_one_axis(self) -> None:
+        """Moving an edge midpoint scales only its axis, holding the opposite edge, and keeps skew and rotation."""
+        state = _skewed_state()
+        for edge, target, axis in ((QPointF(RECT.center().x(), RECT.top()), QPointF(0.0, RECT.top() - 50.0), 'y'),
+                                   (QPointF(RECT.right(), RECT.center().y()), QPointF(RECT.right() + 100.0, 0.0),
+                                    'x')):
+            with self.subTest(axis):
+                opposite = QPointF(RECT.left() + RECT.right() - edge.x(), RECT.top() + RECT.bottom() - edge.y())
+                scaled = state.with_edge_moved(edge, target)
+                for x in (RECT.left(), RECT.right()) if axis == 'y' else (opposite.x(),):
+                    for y in (opposite.y(),) if axis == 'y' else (RECT.top(), RECT.bottom()):
+                        self.assert_points_equal(scaled.matrix().map(QPointF(x, y)), state.matrix().map(QPointF(x, y)))
+                self.assertAlmostEqual(scaled.skew, state.skew, delta=TOLERANCE)
+                self.assertAlmostEqual(scaled.rotation, state.rotation, delta=TOLERANCE)
+                if axis == 'y':
+                    self.assertAlmostEqual(scaled.x_scale, state.x_scale, delta=TOLERANCE)
+                    self.assertAlmostEqual(scaled.y_scale, state.y_scale * 1.5, delta=TOLERANCE)
+                else:
+                    self.assertAlmostEqual(scaled.x_scale, state.x_scale * 1.5, delta=TOLERANCE)
+                    self.assertAlmostEqual(scaled.y_scale, state.y_scale, delta=TOLERANCE)
+
+    def test_edge_scale_keeps_ratio(self) -> None:
+        """With a fixed ratio, an edge move scales both axes about the opposite edge's midpoint."""
+        state = _skewed_state()
+        edge = QPointF(RECT.center().x(), RECT.bottom())
+        opposite = QPointF(RECT.center().x(), RECT.top())
+        ratio = abs(state.x_scale / state.y_scale)
+        scaled = state.with_edge_moved(edge, edge + QPointF(0.0, 50.0), ratio)
+        self.assertAlmostEqual(scaled.y_scale, state.y_scale * 1.5, delta=TOLERANCE)
+        self.assertAlmostEqual(abs(scaled.x_scale / scaled.y_scale), ratio, delta=TOLERANCE)
+        self.assert_points_equal(scaled.matrix().map(opposite), state.matrix().map(opposite))
+
+    def test_top_edge_shear_changes_only_skew(self) -> None:
+        """Sliding the top edge changes skew and position only, holds the bottom edge, and lands the dragged midpoint
+           on the target."""
+        state = _skewed_state()
+        top = QPointF(RECT.center().x(), RECT.top())
+        on_edge = state.matrix().map(top + QPointF(30.0, 0.0))
+        sheared = state.with_edge_sheared(top, on_edge + _perpendicular(state, top, QPointF(1.0, 0.0), 12.0))
+        for x in (RECT.left(), RECT.right()):
+            point = QPointF(x, RECT.bottom())
+            self.assert_points_equal(sheared.matrix().map(point), state.matrix().map(point))
+        self.assert_points_equal(sheared.matrix().map(top), on_edge)
+        self.assertNotAlmostEqual(sheared.skew, state.skew, places=2)
+        self.assertAlmostEqual(sheared.rotation, state.rotation, delta=TOLERANCE)
+        self.assertAlmostEqual(sheared.x_scale, state.x_scale, delta=TOLERANCE)
+        self.assertAlmostEqual(sheared.y_scale, state.y_scale, delta=TOLERANCE)
+
+    def test_side_edge_shear_holds_opposite_edge(self) -> None:
+        """Sliding the right edge holds the left edge and lands the dragged midpoint on the target."""
+        state = _skewed_state()
+        right = QPointF(RECT.right(), RECT.center().y())
+        on_edge = state.matrix().map(right + QPointF(0.0, 25.0))
+        sheared = state.with_edge_sheared(right, on_edge + _perpendicular(state, right, QPointF(0.0, 1.0), -7.0))
+        for y in (RECT.top(), RECT.bottom()):
+            point = QPointF(RECT.left(), y)
+            self.assert_points_equal(sheared.matrix().map(point), state.matrix().map(point))
+        self.assert_points_equal(sheared.matrix().map(right), on_edge)
+
+    def test_edge_shear_stops_at_max_skew(self) -> None:
+        """A top-edge shear far to the left stops at -MAX_SKEW, still holding the opposite edge."""
+        state = TransformState.from_matrix(QTransform(), RECT)
+        assert state is not None
+        top = QPointF(RECT.center().x(), RECT.top())
+        sheared = state.with_edge_sheared(top, QPointF(-100000.0, top.y()))
+        self.assertAlmostEqual(sheared.skew, -MAX_SKEW, delta=0.01)
+        point = QPointF(RECT.left(), RECT.bottom())
+        self.assert_points_equal(sheared.matrix().map(point), point)
+
+    def test_positive_skew_moves_top_edge_right(self) -> None:
+        """Positive skew about the center moves the top edge right and the bottom edge left."""
+        state = TransformState.from_matrix(QTransform(), RECT)
+        assert state is not None
+        skewed = state.with_skew(20.0)
+        self.assertGreater(skewed.matrix().map(RECT.topLeft()).x(), RECT.left())
+        self.assertLess(skewed.matrix().map(RECT.bottomLeft()).x(), RECT.left())
 
     def test_state_is_immutable(self) -> None:
         """Changing a Qt value read from a state leaves the state unchanged."""

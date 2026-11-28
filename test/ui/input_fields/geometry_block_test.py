@@ -7,7 +7,7 @@ from PySide6.QtCore import QObject, QSize, Qt, Signal
 from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
-from src.ui.input_fields.geometry_block import (ANGLE, GeometryBlock, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y,
+from src.ui.input_fields.geometry_block import (ANGLE, GeometryBlock, HEIGHT, SCALE_X, SCALE_Y, SKEW, WIDTH, X, Y,
                                                 bind_step_keys, MORE_KEY_STEPS, LOCK_TOOLTIP)
 from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
@@ -42,13 +42,28 @@ class GeometryBlockTest(IntraPaintTestCase):
         self.assertEqual(block.field(Y).toolTip(), 'Vertical position')
 
     def test_rows_follow_flags(self) -> None:
-        """Scale and angle fields exist only when requested."""
+        """Scale, angle and skew fields exist only when requested."""
         base = GeometryBlock()
         self.assertEqual([name for name in (X, Y, WIDTH, HEIGHT) if base.has_field(name)], [X, Y, WIDTH, HEIGHT])
         self.assertFalse(base.has_field(SCALE_X))
         self.assertFalse(base.has_field(ANGLE))
         full = GeometryBlock(show_scale=True, show_angle=True, integer=False)
         self.assertTrue(full.has_field(SCALE_X) and full.has_field(SCALE_Y) and full.has_field(ANGLE))
+        self.assertFalse(full.has_field(SKEW))
+
+    def test_skew_sits_beside_angle(self) -> None:
+        """The Skew field shares the Angle row, in the second column, both stacked and in a horizontal strip."""
+        block = GeometryBlock(show_scale=True, show_angle=True, show_skew=True, integer=False)
+        block.resize(400, 200)
+        block.show()
+        for horizontal in (False, True):
+            with self.subTest(horizontal=horizontal):
+                block.set_horizontal(horizontal)
+                block.layout().activate()
+                angle, skew = block.field(ANGLE).geometry(), block.field(SKEW).geometry()
+                self.assertTrue(block.field(SKEW).isVisible())
+                self.assertEqual(skew.top(), angle.top())
+                self.assertGreater(skew.left(), angle.right())
 
     def test_position_and_unit_switch(self) -> None:
         """Without a position the X and Y fields are hidden, and percent mode shows the scale fields in place of W and

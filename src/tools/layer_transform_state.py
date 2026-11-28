@@ -16,6 +16,10 @@ from src.util.shared_constants import MIN_NONZERO
 from src.util.visual.geometry_utils import combine_transform_parameters, extract_transform_parameters
 
 CENTER = (0.5, 0.5)
+# The largest skew, in degrees either way, that the panel accepts and an edge drag reaches:
+MAX_SKEW = 80.0
+# Bisection steps an edge shear takes to stop at MAX_SKEW:
+SHEAR_LIMIT_STEPS = 30
 
 # A QTransform's affine entries, in the order QTransform's six-argument constructor takes them:
 _AffineEntries = tuple[float, float, float, float, float, float]
@@ -181,16 +185,7 @@ class TransformState:
         The scale is applied before skew and rotation, so both keep their values. With fixed_ratio, the result keeps
         abs(x_scale / y_scale) at that ratio.
         """
-        rect = self.rect
-        fixed = QPointF(rect.left() + rect.right() - corner.x(), rect.top() + rect.bottom() - corner.y())
-
-        def _change(target_offset: float, span: float) -> float:
-            if span == 0.0:
-                return 1.0
-            if abs(target_offset) < MIN_NONZERO:
-                return MIN_NONZERO / abs(span)
-            return target_offset / span
-
+        fixed = self._opposite(corner)
         x_change = _change(target.x() - fixed.x(), corner.x() - fixed.x())
         y_change = _change(target.y() - fixed.y(), corner.y() - fixed.y())
         final_x_scale = x_change * self.x_scale
@@ -200,9 +195,100 @@ class TransformState:
                 x_change = math.copysign(x_change * final_y_scale / final_x_scale * fixed_ratio, x_change)
             else:
                 y_change = math.copysign(y_change * final_x_scale / final_y_scale / fixed_ratio, y_change)
-        if abs(final_x_scale) < MIN_NONZERO:
+        return self._scaled_about(fixed, x_change, y_change)
+
+    def with_edge_moved(self, edge: QPointF, target: QPointF,
+                        fixed_ratio: Optional[float] = None) -> 'TransformState':
+        """Returns the state scaled along one axis so that edge, the midpoint of one of `rect`'s edges, moves to
+           target's position on that axis, holding the opposite edge in place. Both points are in untransformed
+           coordinates.
+
+        Skew and rotation keep their values. With fixed_ratio, the other axis scales about the opposite edge's
+        midpoint to keep abs(x_scale / y_scale) at that ratio, without flipping.
+        """
+        fixed = self._opposite(edge)
+        if edge.x() != fixed.x():
+            x_change = _change(target.x() - fixed.x(), edge.x() - fixed.x())
+            y_change = 1.0
+            if fixed_ratio is not None:
+                y_change = abs(self.x_scale * x_change) / fixed_ratio / abs(self.y_scale)
+        elif edge.y() != fixed.y():
+            y_change = _change(target.y() - fixed.y(), edge.y() - fixed.y())
+            x_change = 1.0
+            if fixed_ratio is not None:
+                x_change = abs(self.y_scale * y_change) * fixed_ratio / abs(self.x_scale)
+        else:
+            return self
+        return self._scaled_about(fixed, x_change, y_change)
+
+    def with_edge_sheared(self, edge: QPointF, target: QPointF) -> 'TransformState':
+        """Returns the state sheared so that edge, the midpoint of one of `rect`'s edges, slides along its edge to the
+           point on it nearest target, holding the opposite edge in place. edge is in untransformed coordinates, and
+           target is a scene point.
+
+        - The top and bottom edges change only skew and position.
+        - The left and right edges make a vertical shear, which reads back as a change in rotation, skew and scale,
+          since rotation is the direction of the top edge.
+        - A shear that would take skew past MAX_SKEW, or past the state's own skew if that is larger, stops at it.
+        """
+        fixed = self._opposite(edge)
+        matrix = self.matrix()
+        along = QPointF(1.0, 0.0) if edge.y() != fixed.y() else QPointF(0.0, 1.0)
+        edge_start = matrix.map(edge)
+        direction = matrix.map(edge + along) - edge_start
+        length_squared = QPointF.dotProduct(direction, direction)
+        if length_squared == 0.0:
+            return self
+        # How far the midpoint slides, in untransformed units along its edge:
+        offset = QPointF.dotProduct(target - edge_start, direction) / length_squared
+        if edge.y() != fixed.y():
+            amount = offset / (edge.y() - fixed.y())
+
+            def _shear(fraction: float) -> QTransform:
+                return QTransform(1.0, 0.0, amount * fraction, 1.0, 0.0, 0.0)
+        elif edge.x() != fixed.x():
+            amount = offset / (edge.x() - fixed.x())
+
+            def _shear(fraction: float) -> QTransform:
+                return QTransform(1.0, amount * fraction, 0.0, 1.0, 0.0, 0.0)
+        else:
+            return self
+        if amount == 0.0:
+            return self
+        limit = max(MAX_SKEW, abs(self.skew))
+
+        def _sheared(fraction: float) -> Optional[TransformState]:
+            local = (QTransform.fromTranslate(-fixed.x(), -fixed.y()) * _shear(fraction)
+                     * QTransform.fromTranslate(fixed.x(), fixed.y()))
+            state = TransformState.from_matrix(local * matrix, self.rect, self.relative_origin)
+            return state if state is not None and abs(state.skew) <= limit else None
+
+        sheared = _sheared(1.0)
+        if sheared is not None:
+            return sheared
+        low, high = 0.0, 1.0
+        best: TransformState = self
+        for _ in range(SHEAR_LIMIT_STEPS):
+            middle = (low + high) / 2
+            candidate = _sheared(middle)
+            if candidate is None:
+                high = middle
+            else:
+                low, best = middle, candidate
+        return best
+
+    def _opposite(self, point: QPointF) -> QPointF:
+        """Returns point mirrored through the center of `rect`: the opposite corner of a corner, or the opposite edge's
+           midpoint of an edge midpoint."""
+        rect = self.rect
+        return QPointF(rect.left() + rect.right() - point.x(), rect.top() + rect.bottom() - point.y())
+
+    def _scaled_about(self, fixed: QPointF, x_change: float, y_change: float) -> 'TransformState':
+        """Returns the state with its scales multiplied by x_change and y_change about fixed, in untransformed
+           coordinates. A scale that would come closer to zero than MIN_NONZERO stops there."""
+        if abs(x_change * self.x_scale) < MIN_NONZERO:
             x_change = MIN_NONZERO / self.x_scale
-        if abs(final_y_scale) < MIN_NONZERO:
+        if abs(y_change * self.y_scale) < MIN_NONZERO:
             y_change = MIN_NONZERO / self.y_scale
         if x_change == 1.0 and y_change == 1.0:
             return self
@@ -210,7 +296,7 @@ class TransformState:
         matrix.translate(fixed.x(), fixed.y())
         matrix.scale(x_change, y_change)
         matrix.translate(-fixed.x(), -fixed.y())
-        scaled = TransformState.from_matrix(matrix, rect, self.relative_origin)
+        scaled = TransformState.from_matrix(matrix, self.rect, self.relative_origin)
         return self if scaled is None else scaled
 
     def with_corner_turned(self, corner: QPointF, target: QPointF) -> 'TransformState':
@@ -226,6 +312,16 @@ class TransformState:
         start_angle = math.degrees(math.atan2(start_vector.y(), start_vector.x()))
         target_angle = math.degrees(math.atan2(target_vector.y(), target_vector.x()))
         return self.with_rotation(self.rotation + target_angle - start_angle)
+
+
+def _change(target_offset: float, span: float) -> float:
+    """Returns the factor that scales span to target_offset, keeping the result at least MIN_NONZERO long. A zero span
+       can't scale and returns 1."""
+    if span == 0.0:
+        return 1.0
+    if abs(target_offset) < MIN_NONZERO:
+        return MIN_NONZERO / abs(span)
+    return target_offset / span
 
 
 def _local_point(rect: QRectF, relative: tuple[float, float]) -> QPointF:

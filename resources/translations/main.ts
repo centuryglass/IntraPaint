@@ -6042,7 +6042,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
-        <source>Move, scale, or rotate the active layer.</source>
+        <source>Move, scale, rotate or skew the active layer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6628,6 +6628,11 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Skew</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Horizontal position</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6659,6 +6664,11 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/input_fields/geometry_block.py"/>
         <source>Rotation angle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Skew angle: positive values lean the top edge right</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9098,7 +9108,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
-        <source>Remove all movement, scaling and rotation from this layer</source>
+        <source>Remove all movement, scaling, rotation and skew from this layer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

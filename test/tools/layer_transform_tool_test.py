@@ -6,10 +6,12 @@ from PySide6.QtCore import QPoint, QPointF, QRectF
 from PySide6.QtGui import QImage, QTransform, Qt
 from PySide6.QtWidgets import QMenu
 
+from src.tools.layer_transform_state import MAX_SKEW
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.ui.graphics_items.transform_outline import (TransformOutline, ORIGIN_HANDLE_ID, BR_HANDLE_ID,
-                                                     TRANSFORM_MODE_ROTATE)
-from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, WIDTH, X, Y
+                                                     TRANSFORM_MODE_ROTATE, TL_HANDLE_ID, TOP_HANDLE_ID,
+                                                     RIGHT_HANDLE_ID, BOTTOM_HANDLE_ID)
+from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, SKEW, WIDTH, X, Y
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
 from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import extract_transform_parameters
@@ -65,6 +67,7 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertAlmostEqual(self.panel.x_scale, x_scale, places=2)
         self.assertAlmostEqual(self.panel.y_scale, y_scale, places=2)
         self.assertAlmostEqual(self.panel.rotation, self.tool.state.rotation, places=2)
+        self.assertAlmostEqual(self.panel.skew, self.tool.state.skew, places=2)
 
     def _handle_image_point(self, handle_id: str) -> QPoint:
         handle = self.outline._handles[handle_id]
@@ -316,6 +319,85 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertAlmostEqual(params.rotation, 45.0, places=2)
         self.assertAlmostEqual(self.tool.state.width, LAYER_WIDTH * 1.5, places=2)
         self.assertAlmostEqual(self.panel.x_position, 75.0, places=2)
+
+    def test_panel_skew(self) -> None:
+        """A panel skew edit changes only skew, keeps X and Y, and a positive value moves the top edge right."""
+        before = self.tool.state
+        top_left = self._scene_point_of(QPointF(0, 0))
+        self.panel.geometry_block.field(SKEW).set_value(20.0)
+        state = self.tool.state
+        self.assertAlmostEqual(state.skew, 20.0, places=4)
+        self.assert_points_equal(state.origin_pos, before.origin_pos)
+        self.assertAlmostEqual(state.rotation, before.rotation, places=4)
+        self.assertAlmostEqual(state.x_scale, before.x_scale, places=4)
+        self.assertAlmostEqual(state.y_scale, before.y_scale, places=4)
+        self.assertGreater(self._scene_point_of(QPointF(0, 0)).x(), top_left.x())
+        self.assertEqual(self.outline.transform(), self.layer.transform)
+        self.assert_panel_matches_state()
+
+    def test_panel_skew_is_clamped(self) -> None:
+        """The skew field stops at MAX_SKEW."""
+        self.panel.geometry_block.field(SKEW).set_value(200.0)
+        self.assertAlmostEqual(self.tool.state.skew, MAX_SKEW, places=4)
+        self.assert_panel_matches_state()
+
+    def test_top_edge_skew_drag(self) -> None:
+        """In rotate mode, dragging the top midpoint changes only skew, keeps the bottom edge fixed, and slides the
+           midpoint to the cursor's position along the edge."""
+        self.outline.mode = TRANSFORM_MODE_ROTATE
+        bottom = [self._scene_point_of(QPointF(x, LAYER_HEIGHT)) for x in (0, LAYER_WIDTH)]
+        start = self._handle_image_point(TOP_HANDLE_ID)
+        self.mouse_drag([start, start + QPoint(20, 3), start + QPoint(40, 6)])
+        state = self.tool.state
+        self.assertGreater(state.skew, 0.0)
+        self.assertAlmostEqual(state.rotation, 0.0, places=4)
+        self.assertAlmostEqual(state.x_scale, 1.0, places=4)
+        self.assertAlmostEqual(state.y_scale, 1.0, places=4)
+        for actual, expected in zip([self._scene_point_of(QPointF(x, LAYER_HEIGHT)) for x in (0, LAYER_WIDTH)],
+                                    bottom):
+            self.assert_points_equal(actual, expected)
+        self.assert_points_equal(self._scene_point_of(QPointF(LAYER_WIDTH / 2, 0)), QPointF(start + QPoint(40, 0)))
+        self.assertEqual(self.outline.transform(), self.layer.transform)
+        self.assertEqual(UndoStack().undo_count(), 1)
+        self.assert_panel_matches_state()
+
+    def test_side_edge_skew_drag(self) -> None:
+        """In rotate mode, dragging the right midpoint keeps the left edge fixed, and reads back as a rotation."""
+        self.outline.mode = TRANSFORM_MODE_ROTATE
+        left = [self._scene_point_of(QPointF(0, y)) for y in (0, LAYER_HEIGHT)]
+        start = self._handle_image_point(RIGHT_HANDLE_ID)
+        self.mouse_drag([start, start + QPoint(2, 15), start + QPoint(4, 30)])
+        self.assertNotAlmostEqual(self.tool.state.rotation, 0.0, places=2)
+        for actual, expected in zip([self._scene_point_of(QPointF(0, y)) for y in (0, LAYER_HEIGHT)], left):
+            self.assert_points_equal(actual, expected)
+        self.assert_panel_matches_state()
+
+    def test_edge_scale_drag(self) -> None:
+        """In scale mode, dragging the bottom midpoint changes only the y-scale and keeps the top edge fixed."""
+        top = [self._scene_point_of(QPointF(x, 0)) for x in (0, LAYER_WIDTH)]
+        start = self._handle_image_point(BOTTOM_HANDLE_ID)
+        self.mouse_drag([start, start + QPoint(30, 25), start + QPoint(60, 50)])
+        state = self.tool.state
+        self.assertAlmostEqual(state.y_scale, (LAYER_HEIGHT + 50) / LAYER_HEIGHT, delta=0.02)
+        self.assertAlmostEqual(state.x_scale, 1.0, places=4)
+        self.assertAlmostEqual(state.skew, 0.0, places=4)
+        for actual, expected in zip([self._scene_point_of(QPointF(x, 0)) for x in (0, LAYER_WIDTH)], top):
+            self.assert_points_equal(actual, expected)
+        self.assert_panel_matches_state()
+
+    def test_press_picks_nearest_handle(self) -> None:
+        """On a layer small enough that a corner and an edge midpoint are both in range, a press picks the nearer."""
+        self.layer.set_transform(QTransform.fromTranslate(LAYER_OFFSET.x(), LAYER_OFFSET.y()).scale(0.05, 0.05))
+        corner = self._handle_image_point(TL_HANDLE_ID)
+        midpoint = self._handle_image_point(TOP_HANDLE_ID)
+        self.assertLess((midpoint - corner).manhattanLength(), 10)
+        for target, nearer, farther in ((midpoint, TOP_HANDLE_ID, TL_HANDLE_ID),
+                                        (corner, TL_HANDLE_ID, TOP_HANDLE_ID)):
+            with self.subTest(nearer):
+                self.mouse_press(target)
+                self.assertTrue(self.outline._handles[nearer].isSelected())
+                self.assertFalse(self.outline._handles[farther].isSelected())
+                self.mouse_release(target)
 
     def test_moving_origin_keeps_layer_fixed(self) -> None:
         """Dragging the transformation origin handle moves the origin, not the layer."""
