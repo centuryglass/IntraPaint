@@ -208,12 +208,12 @@
         "saved": true,
         "translate": false
     },
-    "hide_canvas_extras": {
-        "label": "Hide canvas extras",
+    "show_canvas_extras": {
+        "label": "Canvas extras",
         "category": "Cache",
-        "description": "Hide markers drawn over the image, except the active tool's while the cursor is over the image.",
+        "description": "Show markers drawn over the image. While off, the active tool's markers still show while the cursor is over the image.",
         "type": "bool",
-        "default": false,
+        "default": true,
         "saved": false,
         "translate": false
     },

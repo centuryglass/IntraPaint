@@ -185,22 +185,22 @@ class CanvasBarTest(IntraPaintTestCase):
         AppConfig().set(AppConfig.SHOW_SELECTION_OVERLAY, True)
         self.assertTrue(overlay.isChecked())
 
-    def test_hide_extras_toggle_follows_cache(self) -> None:
-        """The Hide extras toggle is checked while canvas extras are hidden, and toggling it hides or shows them."""
+    def test_extras_toggle_follows_cache(self) -> None:
+        """The Extras toggle is checked while canvas extras are shown, and toggling it shows or hides them."""
         extras_button = self.bar._extras_button  # pylint: disable=protected-access
         assert extras_button is not None
-        self.assertFalse(extras_button.isChecked())
-        extras_button.setChecked(True)
-        self.assertTrue(Cache().get(Cache.HIDE_CANVAS_EXTRAS))
-        Cache().set(Cache.HIDE_CANVAS_EXTRAS, False)
-        self.assertFalse(extras_button.isChecked())
+        self.assertTrue(extras_button.isChecked())
+        extras_button.setChecked(False)
+        self.assertFalse(Cache().get(Cache.SHOW_CANVAS_EXTRAS))
+        Cache().set(Cache.SHOW_CANVAS_EXTRAS, True)
+        self.assertTrue(extras_button.isChecked())
 
     def test_more_popover_toggles_options(self) -> None:
-        """The "..." popover's check boxes set hidden canvas extras, the selection overlay, rulers, ruler highlights
+        """The "..." popover's check boxes show canvas extras, the selection overlay, rulers, ruler highlights
         and control hints."""
         content = self.bar.more_popover_content()
         check_boxes = content.findChildren(QCheckBox)
-        options = ((Cache(), Cache.HIDE_CANVAS_EXTRAS), (AppConfig(), AppConfig.SHOW_SELECTION_OVERLAY),
+        options = ((Cache(), Cache.SHOW_CANVAS_EXTRAS), (AppConfig(), AppConfig.SHOW_SELECTION_OVERLAY),
                    (AppConfig(), AppConfig.SHOW_RULERS), (AppConfig(), AppConfig.SHOW_RULER_HIGHLIGHTS),
                    (AppConfig(), AppConfig.SHOW_TOOL_CONTROL_HINTS))
         self.assertEqual(len(check_boxes), len(options))

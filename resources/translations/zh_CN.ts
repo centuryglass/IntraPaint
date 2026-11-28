@@ -3331,12 +3331,12 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Hide canvas extras</source>
+        <source>Canvas extras</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Hide the selection, generation area, guides and other markers drawn over the image. The active tool's markers still show while the cursor is over the image.</source>
+        <source>Show or hide the selection, generation area, guides and other markers drawn over the image. While hidden, the active tool's markers still show while the cursor is over the image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10323,17 +10323,17 @@ Turns red when the text does not fit.</source>
     </message>
     <message>
         <location filename="../../src/ui/widget/canvas_bar.py"/>
-        <source>Hide extras</source>
+        <source>Extras</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/widget/canvas_bar.py"/>
-        <source>Hide canvas extras</source>
+        <source>Show canvas extras</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/widget/canvas_bar.py"/>
-        <source>Markers the active tool uses still show while the cursor is over the image</source>
+        <source>While hidden, markers the active tool uses still show while the cursor is over the image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
