@@ -333,7 +333,8 @@ QGraphicsItem subclasses drawn on the canvas: outlines, handles, pins, markers a
 - `src/ui/graphics_items/toast_message.py`: A graphics item that briefly displays a message, then removes itself from
   the scene.
 - `src/ui/graphics_items/transform_handle.py`: Draggable GraphicsItem used to reposition scene elements.
-- `src/ui/graphics_items/transform_outline.py`:
+- `src/ui/graphics_items/transform_outline.py`: Draws the transform tool's outline with corner, edge and origin handles,
+  and turns drags on them into intents.
 - `src/ui/graphics_items/viewport_highlight.py`: Shows another view's visible region within a scene: everything outside
   it dims, and it gets an accent outline.
 

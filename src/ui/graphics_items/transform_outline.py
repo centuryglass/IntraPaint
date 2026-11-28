@@ -1,4 +1,4 @@
-"""Draws the layer transform tool's outline and corner, edge and origin handles, and turns mouse input on them into edit intents."""
+"""Draws the transform tool's outline with corner, edge and origin handles, and turns drags on them into intents."""
 from typing import Optional, Iterable
 
 from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, Signal
