@@ -386,7 +386,7 @@ Draws geometric shapes within the image.
 
 ### ![Transform layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (V)
 
-Move, scale, or rotate image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
+Move, scale, rotate or skew image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
 
 #### Basic controls
 
@@ -394,6 +394,7 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 - **Left-click and drag within the active layer**: Move the layer within the image.
 - **Double-click the active layer**: Switch between scaling and rotation modes.
 - **Left-click and drag layer corners**: Either scale or rotate the layer, depending on whether you're in scaling mode or rotation mode.
+- **Left-click and drag edge midpoints**: In scaling mode, stretch the layer's width or height while the opposite edge stays in place. In rotation mode, skew the layer: the dragged edge slides along its own direction while the opposite edge stays in place.
 - **Left-click and drag the center origin point**: Adjusts the point within the layer that the layer will rotate around and scale from. It snaps to the layer's corners, edge midpoints and center when dragged near them.
 - **Right-click**: Select a layer under the cursor to activate.
 - **Arrow keys**: Move the layer within the image. **Shift + arrow keys** move it ten pixels at a time.
@@ -408,9 +409,9 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 1. **X and Y position inputs**: Show where the transformation origin is within the image, and move the layer so the origin lands on the value you type. Rotating or scaling about the origin leaves them unchanged. To place a rotated layer exactly, snap the origin to a corner, then type where that corner should go.
 2. **Width and height inputs**: Sets the layer's width and height in pixels, as measured before layer rotation is applied. Click the link icon between width and height to preserve aspect ratio during changes.
 3. **Scale X and Scale Y inputs**: Also sets the width and height, but as multiples of the initial width and height instead of as absolute measurements.
-4. **Angle input**: Sets the layer's angle of rotation.
+4. **Angle input**: Sets the layer's angle of rotation. The **Skew** input beside it slants the layer, up to 80 degrees either way. Positive values lean the top edge to the right, like italic text. On a skewed layer, the height is the distance between the top and bottom edges.
 5. **Revert button**:  Reset the layer transformation to whatever it was whenever the transformation tool was selected or the active layer changed, whichever was most recent.
-6. **Clear transform button**:  Remove all transformations from the layer. This moves the layer to the top-left corner of the image, sets the rotation angle to zero, and resets the layer's size to the actual resolution of its image content.
+6. **Clear transform button**:  Remove all transformations from the layer. This moves the layer to the top-left corner of the image, sets the rotation angle and skew to zero, and resets the layer's size to the actual resolution of its image content.
 7. **Transform preview**: Shows the position of the active layer within the image.
 8. The active layer, currently being transformed.
 9. An inactive transformed layer.  To change which layer is transformed, use the layer panel or layer menu to set it as the active layer.

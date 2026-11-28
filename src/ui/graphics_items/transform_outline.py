@@ -1,4 +1,4 @@
-"""Draws the layer transform tool's outline and handles, and turns mouse input on them into edit intents."""
+"""Draws the layer transform tool's outline and corner, edge and origin handles, and turns mouse input on them into edit intents."""
 from typing import Optional, Iterable
 
 from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, Signal
@@ -8,7 +8,9 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsObject
 
 from src.tools.layer_transform_state import TransformState
-from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
+from src.ui.graphics_items.transform_handle import (TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE,
+                                                   IMAGE_PATH_CORNER_SCALE_ARROW, IMAGE_PATH_CORNER_ROTATE_ARROW,
+                                                   IMAGE_PATH_EDGE_SCALE_ARROW, IMAGE_PATH_EDGE_SKEW_ARROW)
 from src.undo_stack import UndoStack, UndoStackRef
 from src.util.math_utils import clamp
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
@@ -25,6 +27,17 @@ TR_HANDLE_ID = 'top right'
 BL_HANDLE_ID = 'bottom left'
 BR_HANDLE_ID = 'bottom right'
 CORNER_HANDLE_IDS = (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID)
+TOP_HANDLE_ID = 'top'
+BOTTOM_HANDLE_ID = 'bottom'
+LEFT_HANDLE_ID = 'left'
+RIGHT_HANDLE_ID = 'right'
+EDGE_HANDLE_IDS = (TOP_HANDLE_ID, BOTTOM_HANDLE_ID, LEFT_HANDLE_ID, RIGHT_HANDLE_ID)
+
+# The direction each handle's arrow points away from the rectangle, in degrees clockwise from the +x axis:
+_ARROW_ANGLES = {
+    TL_HANDLE_ID: 225, TR_HANDLE_ID: 315, BR_HANDLE_ID: 45, BL_HANDLE_ID: 135,
+    TOP_HANDLE_ID: 270, RIGHT_HANDLE_ID: 0, BOTTOM_HANDLE_ID: 90, LEFT_HANDLE_ID: 180
+}
 
 LINE_COLOR = Qt.GlobalColor.black
 LINE_WIDTH = 3
@@ -42,19 +55,32 @@ def corner_point(rect: QRectF, handle_id: str) -> QPointF:
     return corners[handle_id]()
 
 
+def edge_point(rect: QRectF, handle_id: str) -> QPointF:
+    """Returns the midpoint of the edge of rect that an edge handle sits on."""
+    center = rect.center()
+    edges = {
+        TOP_HANDLE_ID: QPointF(center.x(), rect.top()),
+        BOTTOM_HANDLE_ID: QPointF(center.x(), rect.bottom()),
+        LEFT_HANDLE_ID: QPointF(rect.left(), center.y()),
+        RIGHT_HANDLE_ID: QPointF(rect.right(), center.y())
+    }
+    assert handle_id in edges, f'Invalid edge ID {handle_id}'
+    return edges[handle_id]
+
+
 class TransformOutline(QGraphicsObject):
-    """A view of the transform tool's `TransformState`: a rectangle with corner handles and an origin handle.
+    """A view of the transform tool's `TransformState`: a rectangle with corner, edge midpoint and origin handles.
 
     The outline changes nothing itself. `set_state` draws a state, and mouse input becomes intents that its owner
     turns into a new state:
     - A drag anywhere off the handles sends `moved` with each step's scene delta.
-    - A corner handle drag sends `handle_dragged` with the cursor's scene position. The owner reads `mode` to scale or
-      rotate.
+    - A corner or edge handle drag sends `handle_dragged` with the cursor's scene position. The owner reads `mode`:
+      corners scale or rotate, and edges scale one axis or skew.
     - An origin handle drag sends `origin_dragged` with the origin's new point in untransformed coordinates, snapped
       to the rectangle's corners, edge midpoints and center, and clamped to the rectangle.
     Double-clicking switches `mode` between scale and rotate. Presses, moves and releases on a handle reach the
     outline's own mouse handlers, which pass them to the handle, so every drag is one undo gesture between
-    `drag_started` and `drag_finished`.
+    `drag_started` and `drag_finished`. A press near several handles goes to the nearest one.
     """
 
     moved = Signal(float, float)
@@ -76,7 +102,7 @@ class TransformOutline(QGraphicsObject):
         self._pen = QPen(LINE_COLOR, LINE_WIDTH)
         self._pen.setCosmetic(True)
         self._mode = TRANSFORM_MODE_SCALE
-        for handle_id in (*CORNER_HANDLE_IDS, ORIGIN_HANDLE_ID):
+        for handle_id in (*CORNER_HANDLE_IDS, *EDGE_HANDLE_IDS, ORIGIN_HANDLE_ID):
             self._handles[handle_id] = _Handle(self, handle_id)
         self._handles[ORIGIN_HANDLE_ID].drawn_angle = 45
         self._update_handles()
@@ -88,7 +114,7 @@ class TransformOutline(QGraphicsObject):
 
     @property
     def mode(self) -> str:
-        """Whether corner drags scale or rotate: TRANSFORM_MODE_SCALE or TRANSFORM_MODE_ROTATE."""
+        """Whether handle drags scale (TRANSFORM_MODE_SCALE), or rotate and skew (TRANSFORM_MODE_ROTATE)."""
         return self._mode
 
     @mode.setter
@@ -146,22 +172,33 @@ class TransformOutline(QGraphicsObject):
             return
         self._undo_stack().begin_gesture('TransformOutline.drag')
         self.drag_started.emit()
-        for handle in self._handles.values():
-            # Ensure handles can still be selected during extreme transformations by passing off input to any handle
-            # within approx. 10px of the click event:
-            view = get_view(self)
-            handle_pos = map_scene_item_point_to_view_point(handle.rect().center(), handle)
-            click_pos = QPointF(view.mapFromGlobal(event.screenPos()))
-            distance = (click_pos - handle_pos).manhattanLength()
-            if distance < handle.rect().width() * 2:
-                handle.setSelected(True)
-                handle.press(event)
-                return
+        handle = self._handle_near(event)
+        if handle is not None:
+            handle.setSelected(True)
+            handle.press(event)
+            return
         super().mousePressEvent(event)
         self.setSelected(True)
 
+    def _handle_near(self, event: QGraphicsSceneMouseEvent) -> Optional['_Handle']:
+        """Returns the nearest enabled handle within twice its width of a press in view pixels, or None.
+
+        The range keeps handles pickable on layers transformed down to a few pixels, where they overlap."""
+        view = get_view(self)
+        click_pos = QPointF(view.mapFromGlobal(event.screenPos()))
+        nearest: Optional[_Handle] = None
+        nearest_distance = 0.0
+        for handle in self._handles.values():
+            if not handle.isVisible():
+                continue
+            handle_pos = map_scene_item_point_to_view_point(handle.rect().center(), handle)
+            distance = (click_pos - handle_pos).manhattanLength()
+            if distance < handle.rect().width() * 2 and (nearest is None or distance < nearest_distance):
+                nearest, nearest_distance = handle, distance
+        return nearest
+
     def mouseDoubleClickEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
-        """Switch corner drags between scaling and rotating."""
+        """Switch handle drags between scaling, and rotating and skewing."""
         assert event is not None
         self.mode = TRANSFORM_MODE_ROTATE if self._mode == TRANSFORM_MODE_SCALE else TRANSFORM_MODE_SCALE
 
@@ -198,7 +235,7 @@ class TransformOutline(QGraphicsObject):
             rect = self._rect
             self.origin_dragged.emit(QPointF(clamp(local_pos.x(), rect.left(), rect.right()),
                                              clamp(local_pos.y(), rect.top(), rect.bottom())))
-        elif handle_id in CORNER_HANDLE_IDS:
+        elif handle_id in CORNER_HANDLE_IDS or handle_id in EDGE_HANDLE_IDS:
             self.handle_dragged.emit(handle_id, QPointF(pos))
         else:
             raise RuntimeError(f'Invalid handle id {handle_id}')
@@ -253,9 +290,11 @@ class TransformOutline(QGraphicsObject):
         return QRectF(self._rect)
 
     def _update_handles(self) -> None:
-        """Keep the corners and origin positioned on the rectangle."""
+        """Keep the corners, edge midpoints and origin positioned on the rectangle."""
         for handle_id in CORNER_HANDLE_IDS:
             self._handles[handle_id].move_rect_center(corner_point(self._rect, handle_id))
+        for handle_id in EDGE_HANDLE_IDS:
+            self._handles[handle_id].move_rect_center(edge_point(self._rect, handle_id))
         self._handles[ORIGIN_HANDLE_ID].move_rect_center(self._origin)
 
 
@@ -263,16 +302,11 @@ class _Handle(TransformHandle):
     """Small square the user can drag to adjust the item properties."""
 
     def __init__(self, parent: TransformOutline, handle_id: str) -> None:
-        base_angle = 0
-        if handle_id == TL_HANDLE_ID:
-            base_angle = 225
-        elif handle_id == TR_HANDLE_ID:
-            base_angle = 315
-        elif handle_id == BR_HANDLE_ID:
-            base_angle = 45
-        elif handle_id == BL_HANDLE_ID:
-            base_angle = 135
-        super().__init__(parent, handle_id, base_angle, handle_id != ORIGIN_HANDLE_ID)
+        if handle_id in EDGE_HANDLE_IDS:
+            icons = (IMAGE_PATH_EDGE_SCALE_ARROW, IMAGE_PATH_EDGE_SKEW_ARROW)
+        else:
+            icons = (IMAGE_PATH_CORNER_SCALE_ARROW, IMAGE_PATH_CORNER_ROTATE_ARROW)
+        super().__init__(parent, handle_id, _ARROW_ANGLES.get(handle_id, 0), handle_id != ORIGIN_HANDLE_ID, *icons)
         self.dragged.connect(parent.move_transformation_handle)
 
     def _outline(self) -> TransformOutline:

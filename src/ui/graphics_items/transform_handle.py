@@ -13,6 +13,10 @@ from src.util.visual.graphics_scene_utils import map_scene_item_point_to_view_po
 
 IMAGE_PATH_CORNER_SCALE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner.svg'
 IMAGE_PATH_CORNER_ROTATE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner_rot.svg'
+# Edge icons are drawn along the top-left to bottom-right diagonal, as the corner arrows point, so a handle's arrow
+# angle turns them the same way:
+IMAGE_PATH_EDGE_SCALE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_edge.svg'
+IMAGE_PATH_EDGE_SKEW_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_edge_skew.svg'
 
 TRANSFORM_MODE_SCALE = 'scale'
 TRANSFORM_MODE_ROTATE = 'rotate'
@@ -27,7 +31,8 @@ class TransformHandle(QGraphicsObject):
     dragged = Signal(str, QPointF, QPointF)
 
     def __init__(self, parent: QGraphicsItem, handle_id: str, base_arrow_angle: int = 0,
-                 draw_arrows: bool = True) -> None:
+                 draw_arrows: bool = True, scale_icon_path: str = IMAGE_PATH_CORNER_SCALE_ARROW,
+                 rotate_icon_path: str = IMAGE_PATH_CORNER_ROTATE_ARROW) -> None:
         super().__init__(parent)
         self.setZValue(parent.zValue() + 2)
         self._draw_arrows = draw_arrows
@@ -41,8 +46,8 @@ class TransformHandle(QGraphicsObject):
         self._brush = Qt.GlobalColor.black
         self._pen = Qt.GlobalColor.white
         self._rect = QRectF()
-        self._arrow_icon = QIcon(IMAGE_PATH_CORNER_SCALE_ARROW)
-        self._rot_arrow_icon = QIcon(IMAGE_PATH_CORNER_ROTATE_ARROW)
+        self._arrow_icon = QIcon(scale_icon_path)
+        self._rot_arrow_icon = QIcon(rotate_icon_path)
         self._saved_bounds = None
         self._saved_arrow_bounds = None
         self._icon = self._arrow_icon

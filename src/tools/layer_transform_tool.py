@@ -1,4 +1,4 @@
-"""An image editing tool that moves, scales and rotates the active layer, through one TransformState."""
+"""An image editing tool that moves, scales, rotates and skews the active layer, through one TransformState."""
 import math
 from typing import Optional
 
@@ -16,14 +16,15 @@ from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool, ToolGroup
-from src.tools.layer_transform_state import TransformState
+from src.tools.layer_transform_state import MAX_SKEW, TransformState
 from src.ui.canvas_extras import CanvasExtraCategory
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.transform_handle import TRANSFORM_MODE_SCALE
-from src.ui.graphics_items.transform_outline import TransformOutline, corner_point
+from src.ui.graphics_items.transform_outline import TransformOutline, corner_point, edge_point, EDGE_HANDLE_IDS
 from src.ui.image_viewer import ImageViewer
-from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y
+from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, SCALE_Y, SKEW, WIDTH, X, Y
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
+from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
@@ -37,7 +38,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 TRANSFORM_LABEL = _tr('Transform layers')
-TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
+TRANSFORM_TOOLTIP = _tr('Move, scale, rotate or skew the active layer.')
 TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer'
                              '<br/>{right_mouse_icon}: choose from layers under cursor')
 
@@ -79,7 +80,7 @@ class LayerTransformTool(BaseTool):
         self._fixed_ratio = 1.0
         self._transform_outline = TransformOutline(image_stack.undo_stack)
         self._transform_outline.moved.connect(self._move_slot)
-        self._transform_outline.handle_dragged.connect(self._corner_drag_slot)
+        self._transform_outline.handle_dragged.connect(self._handle_drag_slot)
         self._transform_outline.origin_dragged.connect(self.set_transformation_origin)
         self._transform_outline.setVisible(False)
         image_viewer.canvas_extras.register(self._transform_outline, CanvasExtraCategory.TOOL)
@@ -100,6 +101,7 @@ class LayerTransformTool(BaseTool):
         self._control_panel.x_scale_changed.connect(self.set_x_scale)
         self._control_panel.y_scale_changed.connect(self.set_y_scale)
         self._control_panel.angle_changed.connect(self.set_rotation)
+        self._control_panel.skew_changed.connect(self.set_skew)
         self._control_panel.preserve_aspect_ratio_changed.connect(self._set_ratio_locked)
         self._control_panel.reset_signal.connect(self.reset_transformation)
         self._control_panel.clear_signal.connect(lambda: self._replace_layer_transform(QTransform()))
@@ -205,6 +207,11 @@ class LayerTransformTool(BaseTool):
         if self._state is not None:
             self._apply(self._state.with_rotation(rotation))
 
+    def set_skew(self, skew: float) -> None:
+        """Sets the skew angle in degrees about the transformation origin, clamped to MAX_SKEW either way."""
+        if self._state is not None:
+            self._apply(self._state.with_skew(clamp(skew, -MAX_SKEW, MAX_SKEW)))
+
     def set_transformation_origin(self, local_point: QPointF) -> None:
         """Moves the transformation origin to a point in the layer's untransformed coordinates, leaving the layer in
            place."""
@@ -233,15 +240,28 @@ class LayerTransformTool(BaseTool):
         if self._state is not None:
             self._apply(self._state.moved_by(dx, dy))
 
-    def _corner_drag_slot(self, handle_id: str, scene_pos: QPointF) -> None:
-        """Scales the layer holding the opposite corner, or rotates it about the origin, as the outline's mode says."""
+    def _handle_drag_slot(self, handle_id: str, scene_pos: QPointF) -> None:
+        """Applies a corner or edge handle drag, holding the opposite corner or edge, as the outline's mode says.
+
+        In scale mode, corners scale and edges scale one axis. In rotate mode, corners rotate about the origin and
+        edges skew."""
         state = self._state
         if state is None:
             return
+        scaling = self._transform_outline.mode == TRANSFORM_MODE_SCALE
+        fixed_ratio = self._fixed_ratio if self._ratio_locked else None
+        if handle_id in EDGE_HANDLE_IDS:
+            edge = edge_point(state.rect, handle_id)
+            if scaling:
+                target = state.matrix().inverted()[0].map(scene_pos)
+                self._apply(state.with_edge_moved(edge, target, fixed_ratio))
+            else:
+                self._apply(state.with_edge_sheared(edge, scene_pos))
+            return
         corner = corner_point(state.rect, handle_id)
-        if self._transform_outline.mode == TRANSFORM_MODE_SCALE:
+        if scaling:
             target = state.matrix().inverted()[0].map(scene_pos)
-            self._apply(state.with_corner_moved(corner, target, self._fixed_ratio if self._ratio_locked else None))
+            self._apply(state.with_corner_moved(corner, target, fixed_ratio))
         else:
             self._apply(state.with_corner_turned(corner, scene_pos))
 
@@ -312,7 +332,7 @@ class LayerTransformTool(BaseTool):
         origin = state.origin_pos
         self._control_panel.geometry_block.set_values(**{
             X: origin.x(), Y: origin.y(), WIDTH: state.width, HEIGHT: state.height,
-            SCALE_X: state.x_scale, SCALE_Y: state.y_scale, ANGLE: state.rotation})
+            SCALE_X: state.x_scale, SCALE_Y: state.y_scale, ANGLE: state.rotation, SKEW: state.skew})
 
     # -----------------------------------------------------------------------------------------------------------------
     # Adopting the layer

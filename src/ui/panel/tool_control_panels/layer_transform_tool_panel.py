@@ -1,6 +1,6 @@
 """Layer transform tool control panel: the shared `GeometryBlock`, Revert and Clear transform, and a preview.
 
-The geometry block includes its Scale and Angle rows, and the preview shows the layer over the image.
+The geometry block includes its Scale, Angle and Skew fields, and the preview shows the layer over the image.
 
 The panel is a view over the transform tool's state. It emits a signal per field the user changes, and the tool sets
 the fields back through the geometry block, without signals.
@@ -33,7 +33,8 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.button_weight import ButtonWeight, set_button_weight
-from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y, GeometryBlock,
+from src.tools.layer_transform_state import MAX_SKEW
+from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y, SKEW, WIDTH, X, Y, GeometryBlock,
                                                 bind_step_keys)
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
@@ -55,7 +56,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 REVERT_BUTTON_TEXT = _tr('Revert')
 REVERT_BUTTON_TOOLTIP = _tr('Restore the transform this layer had when you selected it')
 CLEAR_BUTTON_TEXT = _tr('Clear transform')
-CLEAR_BUTTON_TOOLTIP = _tr('Remove all movement, scaling and rotation from this layer')
+CLEAR_BUTTON_TOOLTIP = _tr('Remove all movement, scaling, rotation and skew from this layer')
 LEGEND_IMAGE = _tr('Image')
 LEGEND_LAYER = _tr('Layer')
 PERSPECTIVE_MESSAGE = _tr('This layer has a perspective transform, which this tool can\'t edit. Revert and Clear '
@@ -105,6 +106,7 @@ class LayerTransformToolPanel(FitToolPanel):
     x_scale_changed = Signal(float)
     y_scale_changed = Signal(float)
     angle_changed = Signal(float)
+    skew_changed = Signal(float)
     preserve_aspect_ratio_changed = Signal(bool)
     reset_signal = Signal()
     clear_signal = Signal()
@@ -112,12 +114,13 @@ class LayerTransformToolPanel(FitToolPanel):
     def __init__(self, image_stack: ImageStack, hotkey_filter: HotkeyFilter, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._undo_stack = UndoStackRef(image_stack.undo_stack)
-        self._geometry = GeometryBlock(show_scale=True, show_angle=True, integer=False, parent=self)
+        self._geometry = GeometryBlock(show_scale=True, show_angle=True, show_skew=True, integer=False, parent=self)
+        self._geometry.set_limits(SKEW, -MAX_SKEW, MAX_SKEW)
         self._geometry.set_image_size(image_stack.size)
         image_stack.size_changed.connect(self._geometry.set_image_size)
         field_signals = {X: self.x_changed, Y: self.y_changed, WIDTH: self.width_changed,
                          HEIGHT: self.height_changed, SCALE_X: self.x_scale_changed, SCALE_Y: self.y_scale_changed,
-                         ANGLE: self.angle_changed}
+                         ANGLE: self.angle_changed, SKEW: self.skew_changed}
         self._geometry.valueChanged.connect(lambda name, value: field_signals[name].emit(float(value)))
         for name in field_signals:
             field = self._geometry.field(name)
@@ -196,7 +199,7 @@ class LayerTransformToolPanel(FitToolPanel):
 
     @property
     def geometry_block(self) -> GeometryBlock:
-        """The position, size, scale and angle fields."""
+        """The position, size, scale, angle and skew fields."""
         return self._geometry
 
     @property
@@ -290,6 +293,15 @@ class LayerTransformToolPanel(FitToolPanel):
     @rotation.setter
     def rotation(self, rotation: float) -> None:
         self._geometry.set_value(ANGLE, rotation)
+
+    @property
+    def skew(self) -> float:
+        """Accesses the layer's skew angle."""
+        return float(self._geometry.value(SKEW))
+
+    @skew.setter
+    def skew(self, skew: float) -> None:
+        self._geometry.set_value(SKEW, skew)
 
     @property
     def preserve_aspect_ratio(self) -> bool:

@@ -1,4 +1,4 @@
-"""The X, Y, W and H fields, ratio lock and optional scale and angle rows that several tool panels share.
+"""The X, Y, W and H fields, ratio lock and optional scale, angle and skew fields that several tool panels share.
 
 The text, layer transform and generation area panels use it.
 
@@ -43,6 +43,7 @@ HEIGHT_LABEL = _tr('H')
 SCALE_X_LABEL = _tr('Scale X')
 SCALE_Y_LABEL = _tr('Scale Y')
 ANGLE_LABEL = _tr('Angle')
+SKEW_LABEL = _tr('Skew')
 X_TOOLTIP = _tr('Horizontal position')
 Y_TOOLTIP = _tr('Vertical position')
 WIDTH_TOOLTIP = _tr('Width')
@@ -50,6 +51,7 @@ HEIGHT_TOOLTIP = _tr('Height')
 SCALE_X_TOOLTIP = _tr('Horizontal scale')
 SCALE_Y_TOOLTIP = _tr('Vertical scale')
 ANGLE_TOOLTIP = _tr('Rotation angle')
+SKEW_TOOLTIP = _tr('Skew angle: positive values lean the top edge right')
 LOCK_TOOLTIP = _tr('Lock the width:height ratio')
 LOCK_TEMPORARY_TOOLTIP = _tr('Lock the width:height ratio ({modifier} locks it temporarily)')
 PIXEL_SUFFIX = _tr(' px')
@@ -65,7 +67,8 @@ HEIGHT = 'h'
 SCALE_X = 'scale_x'
 SCALE_Y = 'scale_y'
 ANGLE = 'angle'
-FIELD_NAMES = (X, Y, WIDTH, HEIGHT, SCALE_X, SCALE_Y, ANGLE)
+SKEW = 'skew'
+FIELD_NAMES = (X, Y, WIDTH, HEIGHT, SCALE_X, SCALE_Y, ANGLE, SKEW)
 
 DEFAULT_IMAGE_SIZE = QSize(512, 512)
 SCALE_STEP = 0.05
@@ -73,6 +76,7 @@ SCALE_STEP = 0.05
 PERCENT_STEP = 0.01
 SCALE_SCRUB_MAX = 4.0
 ANGLE_SCRUB_RANGE = 360.0
+SKEW_SCRUB_RANGE = 160.0
 FLOAT_PIXEL_STEP = 0.01
 GRID_SPACING = 6
 LOCK_WIDTH = FIELD_HEIGHT
@@ -164,7 +168,7 @@ class RatioLockButton(QAbstractButton):
 
 
 class GeometryBlock(QWidget):
-    """X, Y, W and H fields with a ratio lock, plus optional Scale X, Scale Y and Angle rows.
+    """X, Y, W and H fields with a ratio lock, plus optional Scale X, Scale Y, Angle and Skew fields.
 
     Parameters
     ----------
@@ -172,6 +176,8 @@ class GeometryBlock(QWidget):
         Adds a Scale X / Scale Y row, which the ratio lock also links.
     show_angle: bool
         Adds an Angle row.
+    show_skew: bool
+        Adds a Skew field, in degrees, on the Angle row's second column. Its owner sets its limits.
     integer: bool
         Whole-number fields for position and size. Otherwise they take fractional pixels.
     show_position: bool
@@ -190,8 +196,8 @@ class GeometryBlock(QWidget):
     ratioLockToggled = Signal(bool)
     temporaryLockToggled = Signal(bool)
 
-    def __init__(self, show_scale: bool = False, show_angle: bool = False, integer: bool = True,
-                 show_position: bool = True, unit_switch: bool = False,
+    def __init__(self, show_scale: bool = False, show_angle: bool = False, show_skew: bool = False,
+                 integer: bool = True, show_position: bool = True, unit_switch: bool = False,
                  field_text: Optional[Mapping[str, tuple[str, str]]] = None, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         if unit_switch and show_scale:
@@ -229,6 +235,7 @@ class GeometryBlock(QWidget):
                         PIXEL_SUFFIX)
         self._show_scale = show_scale
         self._show_angle = show_angle
+        self._show_skew = show_skew
         if show_scale or unit_switch:
             scale_step = PERCENT_STEP if unit_switch else SCALE_STEP
             self._add_field(SCALE_X, SCALE_X_LABEL, SCALE_X_TOOLTIP, 1.0, FLOAT_MIN, FLOAT_MAX, scale_step,
@@ -237,6 +244,9 @@ class GeometryBlock(QWidget):
                             SCALE_SUFFIX, decimals=2)
         if show_angle:
             self._add_field(ANGLE, ANGLE_LABEL, ANGLE_TOOLTIP, 0.0, FLOAT_MIN, FLOAT_MAX, 1.0, DEGREE_SUFFIX,
+                            decimals=2)
+        if show_skew:
+            self._add_field(SKEW, SKEW_LABEL, SKEW_TOOLTIP, 0.0, FLOAT_MIN, FLOAT_MAX, 1.0, DEGREE_SUFFIX,
                             decimals=2)
         self._key_steps = {name: field.step() for name, field in self._fields.items()}
         self.set_image_size(DEFAULT_IMAGE_SIZE)
@@ -308,6 +318,7 @@ class GeometryBlock(QWidget):
         self._set_scrub_range(SCALE_X, 0, SCALE_SCRUB_MAX)
         self._set_scrub_range(SCALE_Y, 0, SCALE_SCRUB_MAX)
         self._set_scrub_range(ANGLE, -ANGLE_SCRUB_RANGE / 2, ANGLE_SCRUB_RANGE / 2)
+        self._set_scrub_range(SKEW, -SKEW_SCRUB_RANGE / 2, SKEW_SCRUB_RANGE / 2)
 
     def _set_scrub_range(self, name: str, minimum: float, maximum: float) -> None:
         field = self._fields.get(name)
@@ -457,6 +468,8 @@ class GeometryBlock(QWidget):
             shown.update((SCALE_X, SCALE_Y))
         if self._show_angle:
             shown.add(ANGLE)
+        if self._show_skew:
+            shown.add(SKEW)
         for name, field in self._fields.items():
             field.setVisible(name in shown)
         if self._horizontal:
@@ -492,6 +505,8 @@ class GeometryBlock(QWidget):
             next_row += 1
         if self._show_angle:
             grid.addWidget(self._fields[ANGLE], next_row, 0)
+        if self._show_skew:
+            grid.addWidget(self._fields[SKEW], next_row, 2 if not self._horizontal else 1)
         self.updateGeometry()
 
 
