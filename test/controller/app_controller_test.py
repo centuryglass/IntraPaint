@@ -205,6 +205,7 @@ class TestAppController(IntraPaintTestCase):
         self.assertEqual(changed_settings['max_undo'], AppConfig().get('max_undo'))
         self.assertEqual(changed_settings['zoom_in'], KeyConfig().get('zoom_in'))
         KeyConfig().set('zoom_in', ['PgUp'])
+        mock_warning_dialog.reset_mock()  # Its recorded calls hold the window (test/qt_cycles.py).
 
     @patch('src.ui.theme.qdarktheme')
     @patch('src.ui.theme.qt_material')
@@ -308,6 +309,7 @@ class TestAppController(IntraPaintTestCase):
         self.controller.quit()
         mock_choice.assert_called_once()
         mock_exit.assert_called_once()
+        mock_choice.reset_mock()  # Its recorded calls hold the window (test/qt_cycles.py).
 
     @patch('src.ui.window.main_window.QApplication.exit')
     @patch(UNSAVED_CHOICE, return_value=UNSAVED_DISCARD)
@@ -326,6 +328,7 @@ class TestAppController(IntraPaintTestCase):
         mock_choice.assert_called_once()
         mock_exit.assert_not_called()
         self.assertTrue(self.controller._window.isVisible())
+        mock_choice.reset_mock()  # Its recorded calls hold the window (test/qt_cycles.py).
 
     @patch('src.ui.window.main_window.QApplication.exit')
     @patch(UNSAVED_CHOICE, return_value=UNSAVED_DISCARD)
@@ -342,6 +345,7 @@ class TestAppController(IntraPaintTestCase):
         self.controller._window.close()
         mock_choice.assert_called_once()
         mock_exit.assert_called_once()
+        mock_choice.reset_mock()  # Its recorded calls hold the window (test/qt_cycles.py).
 
     @patch('src.ui.window.main_window.QApplication.exit')
     @patch(UNSAVED_CHOICE, return_value=UNSAVED_CANCEL)
@@ -352,6 +356,7 @@ class TestAppController(IntraPaintTestCase):
         mock_choice.assert_called_once()
         mock_exit.assert_not_called()
         self.assertTrue(self.controller._window.isVisible())
+        mock_choice.reset_mock()  # Its recorded calls hold the window (test/qt_cycles.py).
 
     def test_window_title_shows_file_and_modified_state(self):
         """The title names the open file, or Untitled, and marks unsaved changes."""

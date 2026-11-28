@@ -1360,6 +1360,17 @@
         ],
         "saved": true
     },
+    "group_layers_shortcut": {
+        "label": "Group selected layers",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Move the selected layers into a new layer group.",
+        "type": "list",
+        "default": [
+            "Ctrl+G"
+        ],
+        "saved": true
+    },
     "copy_layer_shortcut": {
         "label": "Duplicate layer",
         "category": "Menu Shortcuts",

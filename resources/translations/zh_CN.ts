@@ -3646,6 +3646,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Group selected layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the selected layers into a new layer group.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Duplicate layer</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8462,6 +8472,11 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
         <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Group selected layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
