@@ -1,10 +1,11 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
+import math
 import sys
 from typing import Any, Optional
 from weakref import ref
 
-from PySide6.QtCore import Qt, QRectF, QRect, QTimer
-from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor
+from PySide6.QtCore import Qt, QRectF, QRect, QTimer, QPointF
+from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor, QPolygonF, QTransform
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
 
@@ -17,14 +18,43 @@ DASH_ANIMATION_INTERVAL_MS = 66
 DASH_ANIMATION_STEP = 5
 
 
+def _offset_quad(corners: QPolygonF, offset: float) -> QPolygonF:
+    """Returns a convex polygon with each edge moved outward by an offset, keeping its corners mitered."""
+    count = corners.size()
+    if count < 3:
+        return QPolygonF(corners)
+    center = QPointF(sum(pt.x() for pt in corners) / count, sum(pt.y() for pt in corners) / count)
+
+    def _outward_normal(start: QPointF, end: QPointF) -> QPointF:
+        edge = end - start
+        length = math.hypot(edge.x(), edge.y())
+        if length == 0:
+            return QPointF()
+        normal = QPointF(edge.y() / length, -edge.x() / length)
+        midpoint = (start + end) / 2
+        if QPointF.dotProduct(normal, midpoint - center) < 0:
+            normal = -normal
+        return normal
+
+    offset_corners = QPolygonF()
+    for i in range(count):
+        before = _outward_normal(corners[i - 1], corners[i])
+        after = _outward_normal(corners[i], corners[(i + 1) % count])
+        denominator = 1 + QPointF.dotProduct(before, after)
+        miter = (before + after) / denominator if denominator > 1e-6 else before
+        offset_corners.append(corners[i] + miter * offset)
+    return offset_corners
+
+
 class Outline(QGraphicsObject):
     """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale.
 
     The outline will have the following properties:
 
-    - When set to a scene rectangle, it will resize to draw its borders exactly around that rectangle, with zero
-      overlap.
-    - Line width will be set to either 1px in scene coordinates or 4px in view coordinates, whichever is larger.
+    - When set to a rectangle in item coordinates, it will draw its borders exactly around that rectangle as the item
+      transform and view map it, with zero overlap.
+    - Line width is measured in view pixels, ignoring the item transform: 6px, or 1 scene pixel if that is larger and
+      the outline is not cosmetic.
     - The outline will be a solid white line with 0.7 opacity.
     - Overlapping the outer and inner edges of the outline, two more rectangles will be drawn to make the outline
       borders clearer. These will each have widths of line_width / 4, and will be drawn as black dashed lines with
@@ -99,48 +129,62 @@ class Outline(QGraphicsObject):
         self._update_animation_state()
 
     def get_outline_width(self) -> float:
-        """Gets the outline width based on the current scale of the scene within its QGraphicsView."""
+        """Returns the outline's total width in view pixels: 6, or one scene pixel if that is wider and not cosmetic.
+
+        The width is measured on screen, so it ignores the outline's own item transform. A transformed layer's
+        outline is no thicker than an untransformed one.
+        """
         if self.scene() is None or self._view is None or self._rect.isEmpty():
             return 0.0
-        view_scale = self._view.transform().m11()
         if self._cosmetic:
-            return 6.0 / view_scale
-        return max(1.0, 6.0 / view_scale)
+            return 6.0
+        return max(6.0, self._view.transform().m11())
+
+    def _device_borders(self, device_transform: QTransform, line_width: float) -> list[QPolygonF]:
+        """Returns the inner, middle and outer border polygons in device pixels, under a transform from item space."""
+        corners = device_transform.map(QPolygonF(self._rect))
+        if corners.size() > 4:
+            corners.remove(4)  # QPolygonF(QRectF) repeats the first corner to close the polygon.
+        inner_offset = line_width / 4
+        mid_offset = inner_offset + line_width / 3
+        outer_offset = mid_offset + line_width / 4
+        return [_offset_quad(corners, offset) for offset in (inner_offset, mid_offset, outer_offset)]
 
     def paint(self,
               painter: Optional[QPainter],
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
-        """Draws the outline within the scene."""
+        """Draws the outline in device pixels, so the item transform moves it without thickening its lines."""
         if painter is None:
             return
         line_width = self.get_outline_width()
+        if line_width <= 0:
+            return
+        inner_border, mid_border, outer_border = self._device_borders(painter.worldTransform(), line_width)
 
         outline_white = QColor(Qt.GlobalColor.white)
         outline_white.setAlphaF(0.7)
         outline_black = QColor(Qt.GlobalColor.black)
         outline_black.setAlphaF(0.7)
 
-        inner_border = self._rect.adjusted(-line_width / 4, -line_width / 4, line_width / 4, line_width / 4)
-        mid_border = inner_border.adjusted(-line_width / 3, -line_width / 3, line_width / 3, line_width / 3)
-        outer_border = mid_border.adjusted(-line_width / 4, -line_width / 4, line_width / 4, line_width / 4)
-
-        black_line_pen = QPen(outline_black, line_width / 4 if not self._cosmetic else 1, Qt.PenStyle.SolidLine)
-        white_line_pen = QPen(outline_white, line_width if not self._cosmetic else 4)
-        dotted_line_pen = QPen(Qt.GlobalColor.black, line_width / 4 if not self._cosmetic else 1, Qt.PenStyle.DotLine)
+        thin_width = 1 if self._cosmetic else line_width / 4
+        black_line_pen = QPen(outline_black, thin_width, Qt.PenStyle.SolidLine)
+        white_line_pen = QPen(outline_white, 4 if self._cosmetic else line_width)
+        dotted_line_pen = QPen(Qt.GlobalColor.black, thin_width, Qt.PenStyle.DotLine)
         dotted_line_pen.setDashPattern(self.dash_pattern)
         dotted_line_pen.setDashOffset(self._dash_offset / 10)
-        if self._cosmetic:
-            black_line_pen.setCosmetic(True)
-            white_line_pen.setCosmetic(True)
-            dotted_line_pen.setCosmetic(True)
+        for pen in (black_line_pen, white_line_pen, dotted_line_pen):
+            pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
 
+        painter.save()
+        painter.resetTransform()
         painter.setPen(white_line_pen)
-        painter.drawRect(mid_border)
+        painter.drawPolygon(mid_border)
         painter.setPen(dotted_line_pen)
-        painter.drawRect(inner_border)
+        painter.drawPolygon(inner_border)
         painter.setPen(black_line_pen)
-        painter.drawRect(outer_border)
+        painter.drawPolygon(outer_border)
+        painter.restore()
 
     @property
     def outlined_region(self) -> QRectF:
@@ -155,9 +199,18 @@ class Outline(QGraphicsObject):
         self._update_animation_state()
 
     def boundingRect(self) -> QRectF:
-        """Returns the rectangle within the scene containing all pixels drawn by the outline."""
+        """Returns the rectangle in item coordinates containing all pixels drawn by the outline in its view."""
         line_width = self.get_outline_width()
-        return self._rect.adjusted(-line_width, -line_width, line_width, line_width)
+        view = self._view
+        if line_width <= 0 or view is None:
+            return QRectF(self._rect)
+        device_transform = self.deviceTransform(view.viewportTransform())
+        item_transform, invertible = device_transform.inverted()
+        if not invertible:
+            return QRectF(self._rect)
+        # The outer border's center line, plus the half-width of the widest pen and a pixel of antialiasing:
+        drawn_bounds = _offset_quad(self._device_borders(device_transform, line_width)[1], line_width / 2 + 1)
+        return item_transform.map(drawn_bounds).boundingRect()
 
     def shape(self) -> QPainterPath:
         """Returns the outline's bounds as a shape."""
