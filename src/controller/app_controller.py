@@ -66,8 +66,8 @@ from src.controller.image_generation.sd_generator import MENU_GENERATION, STABLE
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME
-from src.controller.menu_requirements import met_requirements, SELECTION, UNLOCKED_LAYER, NOT_TOP_LAYER, \
-    NOT_BOTTOM_LAYER, NOT_LAYER_STACK, NOT_FLAT, LAYER_GROUP, NOT_LAYER_GROUP, NOT_TEXT_LAYER, PAINTABLE_LAYER
+from src.controller.menu_requirements import met_requirements, SELECTION, UNLOCKED_LAYER, HAS_PREVIOUS_LAYER, \
+    HAS_NEXT_LAYER, NOT_LAYER_STACK, NOT_FLAT, LAYER_GROUP, NOT_LAYER_GROUP, NOT_TEXT_LAYER, PAINTABLE_LAYER
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
 from src.image.image_metadata import ImageMetadata
@@ -1379,13 +1379,14 @@ class AppController(MenuBuilder):
             panel.start_rename()
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_previous_layer_shortcut', 420,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], requires={NOT_TOP_LAYER, NOT_LAYER_STACK})
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION],
+                 requires={HAS_PREVIOUS_LAYER, NOT_LAYER_STACK})
     def select_previous_layer(self) -> None:
         """Select the layer above the current active layer."""
         self._image_stack.offset_active_selection(-1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_next_layer_shortcut', 421,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], requires={NOT_BOTTOM_LAYER})
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], requires={HAS_NEXT_LAYER})
     def select_next_layer(self) -> None:
         """Select the layer below the current active layer."""
         self._image_stack.offset_active_selection(1)
@@ -1403,19 +1404,20 @@ class AppController(MenuBuilder):
         layer_selection_ops.extend_layer_selection(self._image_stack, 1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_up_shortcut', 424,
-                 valid_app_states=[APP_STATE_EDITING], separator_before=True, requires={NOT_TOP_LAYER, NOT_LAYER_STACK})
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True,
+                 requires={HAS_PREVIOUS_LAYER, NOT_LAYER_STACK})
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
         self._image_stack.move_layer_by_offset(-1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_down_shortcut', 425,
-                 valid_app_states=[APP_STATE_EDITING], requires={NOT_BOTTOM_LAYER, NOT_LAYER_STACK})
+                 valid_app_states=[APP_STATE_EDITING], requires={HAS_NEXT_LAYER, NOT_LAYER_STACK})
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
         self._image_stack.move_layer_by_offset(1)
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_to_top_shortcut', 426,
-                 valid_app_states=[APP_STATE_EDITING], requires={NOT_TOP_LAYER, NOT_LAYER_STACK})
+                 valid_app_states=[APP_STATE_EDITING], requires={HAS_PREVIOUS_LAYER, NOT_LAYER_STACK})
     def move_layer_to_top(self) -> None:
         """Move the active layer to the top of the layer stack."""
         self._image_stack.move_layer(self._image_stack.active_layer, self._image_stack.layer_stack, 0)
@@ -1489,7 +1491,7 @@ class AppController(MenuBuilder):
 
     @menu_action(MENU_LAYER, 'merge_layer_down_shortcut', 440,
                  valid_app_states=[APP_STATE_EDITING], separator_before=True,
-                 requires={UNLOCKED_LAYER, NOT_BOTTOM_LAYER, NOT_LAYER_GROUP})
+                 requires={UNLOCKED_LAYER, HAS_NEXT_LAYER, NOT_LAYER_GROUP})
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()

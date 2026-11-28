@@ -13,10 +13,10 @@ SELECTION = 'selection'
 """The selection is not empty."""
 UNLOCKED_LAYER = 'unlocked_layer'
 """The active layer and all of its parents are unlocked."""
-NOT_TOP_LAYER = 'not_top_layer'
-"""The active layer has a layer above it, other than the root layer stack."""
-NOT_BOTTOM_LAYER = 'not_bottom_layer'
-"""The active layer has a layer after it in stack order. The root layer stack always meets it."""
+HAS_PREVIOUS_LAYER = 'has_previous_layer'
+"""The active layer has a previous layer in list order. The root layer stack doesn't count as one."""
+HAS_NEXT_LAYER = 'has_next_layer'
+"""The active layer has a next layer in list order. The root layer stack meets it while it holds any layers."""
 NOT_LAYER_STACK = 'not_layer_stack'
 """The active layer is not the root layer stack."""
 NOT_FLAT = 'not_flat'
@@ -35,16 +35,13 @@ def met_requirements(image_stack: ImageStack) -> set[str]:
     """Returns the requirement names that `image_stack`'s current selection and active layer meet."""
     active_layer = image_stack.active_layer
     layer_stack = image_stack.layer_stack
-    is_layer_stack = active_layer == layer_stack
-    is_top_layer = is_layer_stack or image_stack.prev_layer(active_layer) in (None, layer_stack)
-    is_bottom_layer = not is_layer_stack and image_stack.next_layer(active_layer) is None
     is_group = isinstance(active_layer, LayerGroup)
     conditions = {
         SELECTION: not image_stack.selection_layer.empty,
         UNLOCKED_LAYER: not (active_layer.locked or active_layer.parent_locked),
-        NOT_TOP_LAYER: not is_top_layer,
-        NOT_BOTTOM_LAYER: not is_bottom_layer,
-        NOT_LAYER_STACK: not is_layer_stack,
+        HAS_PREVIOUS_LAYER: image_stack.prev_layer(active_layer) not in (None, layer_stack),
+        HAS_NEXT_LAYER: image_stack.next_layer(active_layer) is not None,
+        NOT_LAYER_STACK: active_layer != layer_stack,
         NOT_FLAT: not image_stack.layer_is_flat(active_layer),
         LAYER_GROUP: is_group,
         NOT_LAYER_GROUP: not is_group,

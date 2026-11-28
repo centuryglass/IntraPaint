@@ -1,8 +1,8 @@
 """Tests met_requirements, which reports which menu action requirements an image stack meets."""
 from PySide6.QtCore import QSize
 
-from src.controller.menu_requirements import met_requirements, SELECTION, UNLOCKED_LAYER, NOT_TOP_LAYER, \
-    NOT_BOTTOM_LAYER, NOT_LAYER_STACK, NOT_FLAT, LAYER_GROUP, NOT_LAYER_GROUP, NOT_TEXT_LAYER, PAINTABLE_LAYER
+from src.controller.menu_requirements import met_requirements, SELECTION, UNLOCKED_LAYER, HAS_PREVIOUS_LAYER, \
+    HAS_NEXT_LAYER, NOT_LAYER_STACK, NOT_FLAT, LAYER_GROUP, NOT_LAYER_GROUP, NOT_TEXT_LAYER, PAINTABLE_LAYER
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -43,23 +43,27 @@ class MetRequirementsTest(IntraPaintTestCase):
         group.locked = True
         self._assert_met(UNLOCKED_LAYER, False)
 
-    def test_not_top_layer(self) -> None:
-        """NOT_TOP_LAYER needs a layer above the active one."""
-        self._assert_met(NOT_TOP_LAYER, True)
+    def test_has_previous_layer(self) -> None:
+        """HAS_PREVIOUS_LAYER needs a previous layer in list order other than the root stack."""
+        self._assert_met(HAS_PREVIOUS_LAYER, True)
         self.image_stack.active_layer = self.upper
-        self._assert_met(NOT_TOP_LAYER, False)
+        self._assert_met(HAS_PREVIOUS_LAYER, False)
         self.image_stack.active_layer = self.image_stack.layer_stack
-        self._assert_met(NOT_TOP_LAYER, False)
+        self._assert_met(HAS_PREVIOUS_LAYER, False)
 
-    def test_not_bottom_layer(self) -> None:
-        """NOT_BOTTOM_LAYER needs a layer after the active one in stack order, and the root stack always meets it."""
+    def test_has_next_layer(self) -> None:
+        """HAS_NEXT_LAYER needs a next layer in list order, which the root stack has while it holds any layers."""
         self.image_stack.active_layer = self.upper
-        self._assert_met(NOT_BOTTOM_LAYER, True)
-        bottom = self.image_stack.layer_stack.child_layers[-1]
-        self.image_stack.active_layer = bottom
-        self._assert_met(NOT_BOTTOM_LAYER, False)
-        self.image_stack.active_layer = self.image_stack.layer_stack
-        self._assert_met(NOT_BOTTOM_LAYER, True)
+        self._assert_met(HAS_NEXT_LAYER, True)
+        root = self.image_stack.layer_stack
+        self.image_stack.active_layer = root.child_layers[-1]
+        self._assert_met(HAS_NEXT_LAYER, False)
+        self.image_stack.active_layer = root
+        self._assert_met(HAS_NEXT_LAYER, True)
+        for layer in list(root.child_layers):
+            self.image_stack.remove_layer(layer)
+        self.image_stack.active_layer = root
+        self._assert_met(HAS_NEXT_LAYER, False)
 
     def test_not_layer_stack(self) -> None:
         """NOT_LAYER_STACK needs an active layer other than the root stack."""
