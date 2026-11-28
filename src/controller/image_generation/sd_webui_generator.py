@@ -75,7 +75,7 @@ SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI = _tr("""
 <h3>About Stable Diffusion WebUI reForge</h3>
 <p>
     <a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge">
-    Stable Diffusion WebUI re Forge</a> is a third version of the WebUI that includes the improved performance of
+    Stable Diffusion WebUI reForge</a> is a third version of the WebUI that includes the improved performance of
     WebUI Forge without any of the compatibility issues. <b>This is the recommended version to use with IntraPaint</b>.
 </p>
 """)
